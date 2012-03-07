@@ -1,6 +1,7 @@
 /*
 This file is part of mfaktc (mfakto).
 Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
+                                Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -152,10 +153,11 @@ other return value
 
   if(use_kernel == AUTOSELECT_KERNEL)
   {
-    if                          (bit_max <= 64)   use_kernel = _64BIT_64_OpenCL;
-    else if                     (bit_max <= 71)   use_kernel = _71BIT_MUL24;
-//    else if ((bit_min >= 64) && (bit_max <= 92))  use_kernel = BARRETT92_64_OpenCL;
-    else                                          use_kernel = _95BIT_64_OpenCL;
+    if                          (bit_max <= 64)                               use_kernel = _64BIT_64_OpenCL;
+    else if                     (bit_max <= 71)                               use_kernel = _71BIT_MUL24;
+    else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
+    else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
+    else                                                                      use_kernel = _95BIT_64_OpenCL;
 /* select the GPU kernel (fastest GPU kernel has highest priority)
     if(mystuff->compcapa_major == 1)
     {
@@ -262,18 +264,16 @@ other return value
  //       case BARRETT92_MUL32:  factorsfound+=tf_class_barrett92(exp, bit_min, k_min+cur_class, k_max, mystuff); break;
           case _71BIT_MUL24:  if(mystuff->mode == MODE_NORMAL) switch (mystuff->vectorsize)
                               { // disregard vectorsize for the selftest
-                                case 2:  use_kernel = _71BIT_MUL24_2;  break;
                                 case 4:  use_kernel = _71BIT_MUL24_4;  break;
                                 case 8:  use_kernel = _71BIT_MUL24_8;  break;
-                                case 16: use_kernel = _71BIT_MUL24_16; break;
-                                // default (1):  no change, fall through
+                                default: use_kernel = _71BIT_MUL24_4;  break;
                               }
-          case _71BIT_MUL24_2:
           case _71BIT_MUL24_4:
           case _71BIT_MUL24_8:
-          case _71BIT_MUL24_16:
           case _64BIT_64_OpenCL:
           case _95BIT_64_OpenCL:
+          case BARRETT79_MUL32:
+          case BARRETT92_MUL32:
           case BARRETT92_64_OpenCL: factorsfound+=tf_class_opencl (exp, bit_min, k_min+cur_class, k_max, mystuff, use_kernel); break;
           default:  printf("ERROR: Unknown kernel selected (%d)!\n", use_kernel);  return RET_ERROR;
         }
@@ -323,7 +323,7 @@ other return value
   {
     if(mystuff->h_RES[0] == 0)
     {
-      printf("ERROR: selftest failed for M%u\n", exp);
+      printf("ERROR: selftest failed for M%u (%s)\n", exp, kernel_info[use_kernel].kernelname);
       printf("  no factor found\n");
       retval = 1;
     }
@@ -350,7 +350,7 @@ k_max and k_min are used as 64bit temporary integers here...
 
       f_hi  = k_min + (exp * f_hi); /* f_{hi|med|low} = 2 * k_hint * exp +1 */
       
-      if((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_16)) /* 71bit kernel uses only 24bit per int */
+      if((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_8)) /* 71bit kernel uses only 24bit per int */
       {
         f_hi  <<= 16;
         f_hi   += f_med >> 16;
@@ -458,11 +458,12 @@ RET_ERROR we might have a serios problem
   unsigned long long int k[NUM_SELFTESTS];
   int retval=1, ind;
   enum GPUKernels kernels[9];
-  unsigned int index[] = {   2 ,  25,   57,    /* some factors below 2^71 (test the 71/75 bit kernel depending on compute capability) */
-                            70 ,  88,  106,    /* some factors below 2^75 (test 75 bit kernel) */
+  unsigned int index[] = {  2 , 25,  57,    /* some factors below 2^71 (test the 71/75 bit kernel depending on compute capability) */
+                            70 , 72,  73,  88,  106,    /* some factors below 2^75 (test 75 bit kernel) */
+                            355, 358,    /* some very small factors */
                            1547, 1552, 1556 }; /* some factors below 2^95 (test 95 bit kernel) */
 
-#include "selftest-data.h"  
+#include "selftest-data.h"
 
   for(i=0; i<NUM_SELFTESTS; i++)
   {
@@ -487,33 +488,30 @@ RET_ERROR we might have a serios problem
 
 /* create a list which kernels can handle this testcase */
       j = 0;
-//      if((bit_min[i] >= 64) && (bit_min[i]+1) <= 92)kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-//      if((bit_min[i] >= 64) && (bit_min[i]+1) <= 79)kernels[j++] = BARRETT79_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-//                                                    kernels[j++] = _95BIT_MUL32;
-//      if((bit_min[i]+1) <= 75)                      kernels[j++] = _75BIT_MUL32;
-      if((bit_min[ind]) <= 71)                        kernels[j++] = _71BIT_MUL24;
-      if((bit_min[ind]) <= 71)                        kernels[j++] = _71BIT_MUL24_2;
-      if((bit_min[ind]) <= 71)                        kernels[j++] = _71BIT_MUL24_4;
-      if((bit_min[ind]) <= 71)                        kernels[j++] = _71BIT_MUL24_8;
-      if((bit_min[ind]) <= 71)                        kernels[j++] = _71BIT_MUL24_16;
-//      if(bit_min[ind]+1 <= 63)                        kernels[j++] = _64BIT_64_OpenCL;
-      if((bit_min[ind] >= 64) && (bit_min[ind] <= 95)) kernels[j++] = _95BIT_64_OpenCL;
+      if((bit_min[ind] >= 64) && (bit_min[ind]) < 92)   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
+      if((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = BARRETT79_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
+//      if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24;
+      if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24_4;
+      if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24_8;
+      if(bit_min[ind]+1 <= 63)                          kernels[j++] = _64BIT_64_OpenCL;
+      if((bit_min[ind] >= 64) && (bit_min[ind] <= 95))  kernels[j++] = _95BIT_64_OpenCL;
       // if((bit_min[ind] >= 64) && (bit_min[ind]) <= 91) kernels[j++] = BARRETT92_64_OpenCL;
+
 
       while(j>0)
       {
         num_selftests++;
-#ifdef DETAILED_INFO
-        printf("Test %d (so far s: %d, n: %d, w: %d, u: %d) ", num_selftests, st_success, st_nofactor, st_wrongfactor, st_unknown);
-        fflush(NULL);
-#endif
         tf_res=tf(exp[ind], bit_min[ind], bit_min[ind]+1, mystuff, f_class, k[ind], kernels[--j]);
              if(tf_res == 0)st_success++;
         else if(tf_res == 1)st_nofactor++;
         else if(tf_res == 2)st_wrongfactor++;
         else if(tf_res == RET_ERROR)return RET_ERROR; /* bail out, we might have a serios problem */
         else           st_unknown++;
-      }
+#ifdef DETAILED_INFO
+        printf("Test %d finished, so far suc: %d, no: %d, wr: %d, unk: %d\n", num_selftests, st_success, st_nofactor, st_wrongfactor, st_unknown);
+        fflush(NULL);
+#endif
+     }
   }
 
 //  if((type == 0) || (st_success != num_selftests))
@@ -685,13 +683,12 @@ int main(int argc, char **argv)
   printf("  CL_PERFORMANCE_INFO       enabled (DEBUG option)\n");
 #endif
 
-
-  printf("\nOpenCL device info\n");
   if(init_CL(mystuff.num_streams, devicenumber)!=CL_SUCCESS)
   {
     printf("init_CL(%d, %d) failed\n", mystuff.num_streams, devicenumber);
     return 1;
   }
+  printf("\nOpenCL device info\n");
   printf("  name                      %s (%s)\n",deviceinfo.d_name, deviceinfo.v_name);
   printf("  device (driver) version   %s (%s)\n",deviceinfo.d_ver, deviceinfo.dr_version);
   printf("  maximum threads per block %d\n",deviceinfo.maxThreadsPerBlock);

@@ -143,7 +143,7 @@ smaller ints */
   nn_old=jj;
   jj=nn;
 
-  if(jj==1)		/* qi0 * j = -1 mod n     FIXME, is the describtion correct?*/
+  if(jj==1)		/* qi0 * j = -1 mod n     FIXME, is the description correct?*/
   {
     tmp=((-r*qi0) % n) + n;
     return (int)tmp;
@@ -211,14 +211,18 @@ still a brute force trail&error method */
     k_init[i]=k;*/
 
 /* third version using a modified euclidean algorithm */
-    ii=(2ULL * (exp%p) * (k_start%p))%p;
-    jj=(2ULL * (exp%p) * (NUM_CLASSES%p))%p;     // PERF: skip %p for NUM_CLASSES
+    // ii=(2ULL * (exp%p) * (k_start%p))%p;
+    // jj=(2ULL * (exp%p) * (NUM_CLASSES%p))%p;     // PERF: skip %p for NUM_CLASSES
+
+    // skip 3 modulo's and the error checking: saves 10-20 CPU-ms per class
+    ii = (2ULL * (unsigned long long int)exp * (k_start%p))%p;
+    jj = (9240ULL * (unsigned long long int)exp)%p;
 
     k = sieve_euclid_modified(jj, p, p-(1+ii));
     k_init[i]=k;
 
 // error checking
-    check = k_start + (unsigned long long int) k * NUM_CLASSES;
+/*    check = k_start + (unsigned long long int) k * NUM_CLASSES;
     check %= p;
     check *= exp;
     check <<= 1;
@@ -233,7 +237,7 @@ still a brute force trail&error method */
       printf("  k= %d\n",k);
       printf("  p= %d\n",p);
       printf("  check= %" PRId64 "\n",check);
-    }
+    } */
   }
   
   for(i=0;i<SIEVE_SIZE;i++)sieve_set_bit(sieve_base,i);

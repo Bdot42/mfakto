@@ -277,9 +277,9 @@ int read_config(mystuff_t *mystuff)
     printf("WARNING: Cannot read VectorSize from mfakto.ini, set to 4 by default\n");
     i=4;
   }
-  else if(i != 1 && i != 2 && i != 4 && i != 8 && i != 16)
+  else if(i != 1 && i != 2 && i != 4 && i != 8 )
   {
-    printf("WARNING: VectorSize must be one of 1, 2, 4, 8 or 16, set to 4 by default\n");
+    printf("WARNING: VectorSize must be one of 1, 2, 4, or 8, set to 4 by default\n");
     i=4;
   }
   printf("  VectorSize                %d\n", i);

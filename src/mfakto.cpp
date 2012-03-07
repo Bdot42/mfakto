@@ -1,6 +1,7 @@
 /*
 This file is part of mfaktc (mfakto).
 Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
+                                Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -55,10 +56,10 @@ kernel_info_t       kernel_info[NUM_KERNELS] = {
          _95BIT_64_OpenCL,    "mfakto_cl_95",         63,     95,         NULL,
          BARRETT92_64_OpenCL, "mfakto_cl_barrett92",  64,     92,         NULL,
          _71BIT_MUL24,        "mfakto_cl_71",          0,     71,         NULL,
-         _71BIT_MUL24_2,      "mfakto_cl_71_2",        0,     71,         NULL,
          _71BIT_MUL24_4,      "mfakto_cl_71_4",        0,     71,         NULL,
          _71BIT_MUL24_8,      "mfakto_cl_71_8",        0,     71,         NULL,
-         _71BIT_MUL24_16,     "mfakto_cl_71_16",       0,     71,         NULL,
+         BARRETT79_MUL32,     "mfakto_cl_barrett79",  64,     79,         NULL,
+         BARRETT92_MUL32,     "mfakto_cl_barrett92",  64,     79,         NULL,
          UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         NULL
 };
 
@@ -133,6 +134,7 @@ int init_CL(int num_streams, cl_uint devnumber)
   cl_platform_id platform = NULL;
   cl_platform_id* platformlist = NULL;
 
+  printf("Select device - ");
   status = clGetPlatformIDs(0, NULL, &numplatforms);
   if(status != CL_SUCCESS)
   {
@@ -290,6 +292,7 @@ int init_CL(int num_streams, cl_uint devnumber)
       dev_from  = --devnumber;  // index from 0
     }
   }
+  printf("Get device info - ");
    
   for (i=dev_from; i<dev_to; i++)
   {
@@ -440,10 +443,11 @@ int init_CL(int num_streams, cl_uint devnumber)
 	  return 1;
 	}
 
+  printf("Compiling kernels.");
+
   status = clBuildProgram(program, 1, &devices[devnumber], "-O3", NULL, NULL);
   if(status != CL_SUCCESS) 
   { 
-#ifdef DETAILED_INFO
     if(status == CL_BUILD_PROGRAM_FAILURE)
     {
       cl_int logstatus;
@@ -477,72 +481,23 @@ int init_CL(int num_streams, cl_uint devnumber)
       std::cout << " \tEND OF BUILD OUTPUT\n";
       free(buildLog);
     }
-#endif
 		std::cerr<<"Error " << status << ": clBuildProgram\n";
 		return 1; 
   }
 
   free(source);  
-
-  /* get kernel by name */
-  kernel_info[_64BIT_64_OpenCL].kernel = clCreateKernel(program, kernel_info[_64BIT_64_OpenCL].kernelname, &status);
-  if(status != CL_SUCCESS) 
-	{  
-		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_64BIT_64_OpenCL].kernelname << " from program. (clCreateKernel)\n";
-		return 1;
-	}
-
-  kernel_info[BARRETT92_64_OpenCL].kernel = clCreateKernel(program, kernel_info[BARRETT92_64_OpenCL].kernelname, &status);
-  if(status != CL_SUCCESS) 
-	{  
-		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[BARRETT92_64_OpenCL].kernelname << " from program. (clCreateKernel)\n";
-		return 1;
-	}
-
-  kernel_info[_TEST_MOD_].kernel = clCreateKernel(program, kernel_info[_TEST_MOD_].kernelname, &status);
-  if(status != CL_SUCCESS) 
-	{  
-		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_TEST_MOD_].kernelname << " from program. (clCreateKernel)\n";
-		return 1;
-	}
-
-  kernel_info[_95BIT_64_OpenCL].kernel = clCreateKernel(program, kernel_info[_95BIT_64_OpenCL].kernelname, &status);
-  if(status != CL_SUCCESS) 
-	{  
-		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_95BIT_64_OpenCL].kernelname << " from program. (clCreateKernel)\n";
-		return 1;
-	}
-
-  kernel_info[_71BIT_MUL24].kernel = clCreateKernel(program, kernel_info[_71BIT_MUL24].kernelname, &status);
-  if(status != CL_SUCCESS) 
-	{  
-		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_71BIT_MUL24].kernelname << " from program. (clCreateKernel)\n";
-		return 1;
-	}
-  kernel_info[_71BIT_MUL24_2].kernel = clCreateKernel(program, kernel_info[_71BIT_MUL24_2].kernelname, &status);
-  if(status != CL_SUCCESS) 
-	{  
-		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_71BIT_MUL24_2].kernelname << " from program. (clCreateKernel)\n";
-		return 1;
-	}
-  kernel_info[_71BIT_MUL24_4].kernel = clCreateKernel(program, kernel_info[_71BIT_MUL24_4].kernelname, &status);
-  if(status != CL_SUCCESS) 
-	{  
-		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_71BIT_MUL24_4].kernelname << " from program. (clCreateKernel)\n";
-		return 1;
-	}
-  kernel_info[_71BIT_MUL24_8].kernel = clCreateKernel(program, kernel_info[_71BIT_MUL24_8].kernelname, &status);
-  if(status != CL_SUCCESS) 
-	{  
-		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_71BIT_MUL24_8].kernelname << " from program. (clCreateKernel)\n";
-		return 1;
-	}
-  kernel_info[_71BIT_MUL24_16].kernel = clCreateKernel(program, kernel_info[_71BIT_MUL24_16].kernelname, &status);
-  if(status != CL_SUCCESS) 
-	{  
-		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_71BIT_MUL24_16].kernelname << " from program. (clCreateKernel)\n";
-		return 1;
-	}
+  /* get kernels by name */
+  for (i=_TEST_MOD_; i<UNKNOWN_KERNEL; i++)
+  {
+    printf(".");
+    kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
+    if(status != CL_SUCCESS) 
+  	{  
+  		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
+	  	return 1;
+  	}
+  }
+  printf("\n");
   return 0;
 }
 
@@ -809,22 +764,82 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
   return run_kernel(l_kernel, exp, stream, res);
 }
 
+int run_barrett_kernel32(cl_kernel l_kernel, cl_uint exp, int96 k_base, int stream,
+                  int192 b_preinit, cl_mem res, cl_int shiftcount, cl_int bin_min63)
+{
+  cl_int   status;
+  /* __kernel void mfakto_cl_barrett79(__private uint exp, __private int96 k, __global uint *k_tab,
+         __private int shiftcount, __private int192_t b, __global uint *RES, __private int bit_max64) */
+  // first set the specific params that don't change per block: b_pre_shift, bin_min63
+  if (new_class)
+  {
+    status = clSetKernelArg(l_kernel, 
+                    3, 
+                    sizeof(cl_int), 
+                    (void *)&shiftcount);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (shiftcount)\n";
+  		return 1;
+  	}
+
+    status = clSetKernelArg(l_kernel, 
+                    4, 
+                    sizeof(int192), 
+                    (void *)&b_preinit);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (b_preinit)\n";
+  		return 1;
+  	}
+
+    /* the bit_max-64 for the barrett kernels (the others ignore it) */
+    status = clSetKernelArg(l_kernel, 
+                    6, 
+                    sizeof(cl_int), 
+                    (void *)&bin_min63);
+    if(status != CL_SUCCESS) 
+  	{ 
+	  	std::cerr<<"Warning " << status << ": Setting kernel argument. (bit_min)\n";
+  		
+  	}
+#ifdef DETAILED_INFO
+    printf("run_barrett_kernel32: b=%x:%x:%x:%x:%x:%x, shift=%d\n", b_preinit.d5, b_preinit.d4,
+        b_preinit.d3, b_preinit.d2, b_preinit.d1, b_preinit.d0, shiftcount);
+#endif
+  }
+  // now the params that change everytime
+  status = clSetKernelArg(l_kernel, 
+                    1, 
+                    sizeof(int96), 
+                    (void *)&k_base);
+  if(status != CL_SUCCESS) 
+	{ 
+		std::cerr<<"Error " << status << ": Setting kernel argument. (k_base)\n";
+		return 1;
+	}
+#ifdef DETAILED_INFO
+  printf("run_barrett_kernel32: kbase=%x:%x:%x\n", k_base.d2, k_base.d1, k_base.d0);
+#endif
+  return run_kernel(l_kernel, exp, stream, res);
+}
+
 int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
 {
   cl_int   status;
   cl_mem   k_tab = mystuff.d_ktab[stream];
   size_t   globalThreads[2];
+  size_t   localThreads[2];
   size_t   total_threads = mystuff.threads_per_grid;
 
-  // adjust for vector4 kernel: each thread processes 4 FC's, use 4 times less threads
-  if (kernel_info[_71BIT_MUL24_2].kernel == l_kernel) total_threads >>=1;
+  // adjust for vector kernels: each thread processes 2-16 FC's, use accordingly less threads
   if (kernel_info[_71BIT_MUL24_4].kernel == l_kernel) total_threads >>=2;
   if (kernel_info[_71BIT_MUL24_8].kernel == l_kernel) total_threads >>=3;
-  if (kernel_info[_71BIT_MUL24_16].kernel == l_kernel) total_threads >>=4;
     
   globalThreads[0] = (total_threads > deviceinfo.maxThreadsPerBlock) ? deviceinfo.maxThreadsPerBlock : total_threads;
   globalThreads[1] = (total_threads > deviceinfo.maxThreadsPerBlock) ? total_threads/deviceinfo.maxThreadsPerBlock : 1;
-
+  localThreads[0] = globalThreads[0];
+  localThreads[1] = 1;
 
   // first set the params that don't change per block: exp, RES
   if (new_class)
@@ -868,7 +883,7 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
                  2,
                  NULL,
                  globalThreads,
-                 NULL,
+                 localThreads,
                  1,
                  &mystuff.copy_events[stream], // wait for the k_tab write to finish
                  &mystuff.exec_events[stream]);
@@ -941,11 +956,11 @@ int cleanup_CL(void)
 	return 0;
 }
 
-void print1DArray(const char * Name, const unsigned int * Data, const unsigned int len)
+void printArray(const char * Name, const unsigned int * Data, const unsigned int len)
 {
     cl_uint i, o;
 
-    o = printf("%s: ", Name);
+    o = printf("%s (%d): ", Name, len);
     for(i = 0; i < len && o < 300; i++) // limit to ~ 4 lines (~ 4x80 chars)
     {
         o += printf("%d ", Data[i]);
@@ -1040,26 +1055,6 @@ writes "a" into "buf" in decimal
 }
 
 
-int tf_class_71(unsigned int exp, int bit_min, unsigned long long int k_min, unsigned long long int k_max, mystuff_t *mystuff)
-{
-  return 0;
-}
-int tf_class_75(unsigned int exp, int bit_min, unsigned long long int k_min, unsigned long long int k_max, mystuff_t *mystuff)
-{
-  return 0;
-}
-int tf_class_barrett79(unsigned int exp, int bit_min, unsigned long long int k_min, unsigned long long int k_max, mystuff_t *mystuff)
-{
-  return 0;
-}
-int tf_class_barrett92(unsigned int exp, int bit_min, unsigned long long int k_min, unsigned long long int k_max, mystuff_t *mystuff)
-{
-  return 0;
-}
-int tf_class_95(unsigned int exp, int bit_min, unsigned long long int k_min, unsigned long long int k_max, mystuff_t *mystuff)
-{
-  return 0;
-}
 int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min, unsigned long long int k_max, mystuff_t *mystuff, enum GPUKernels use_kernel)
 {
   size_t size = mystuff->threads_per_grid * sizeof(int);
@@ -1070,6 +1065,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
 // for TF_72BIT  
   int72  k_base;
   int144 b_preinit = {0};
+  int192 b_192 = {0};
 
   unsigned int factor_lo, factor_mid, factor_hi;
   unsigned long long int b_preinit_lo, b_preinit_mid, b_preinit_hi;
@@ -1134,7 +1130,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
 #endif
   b_preinit_hi=0;b_preinit_mid=0;b_preinit_lo=0;
   count=0;
-  if ((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_16))
+  if ((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_8)) //PERF: skip smallest part(s)
   {
     if     (ln2b<24 )b_preinit.d0=1<< ln2b;       // should not happen
     else if(ln2b<48 )b_preinit.d1=1<<(ln2b-24);   // should not happen
@@ -1143,16 +1139,24 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
     else if(ln2b<120)b_preinit.d4=1<<(ln2b-96);
     else             b_preinit.d5=1<<(ln2b-120);	// b_preinit = 2^ln2b
   }
+  else if ((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT92_MUL32))
+  {
+    if     (ln2b<32 )b_192.d0=1<< ln2b;       // should not happen
+    else if(ln2b<64 )b_192.d1=1<<(ln2b-32);   // should not happen
+    else if(ln2b<96 )b_192.d2=1<<(ln2b-64);
+    else if(ln2b<128)b_192.d3=1<<(ln2b-96);
+    else if(ln2b<160)b_192.d4=1<<(ln2b-128);
+    else             b_192.d5=1<<(ln2b-160);	// b_preinit = 2^ln2b
+  }
   else
   {
-    --shiftcount;  // an adjustment the kernel would have to do otherwise - or not (Barrett?) TODO
     if     (ln2b<64 )b_preinit_lo = 1ULL<< ln2b;
     else if(ln2b<128)b_preinit_mid= 1ULL<<(ln2b-64);
     else             b_preinit_hi = 1ULL<<(ln2b-128); // b_preinit = 2^ln2b
   }
 
   // combine for more efficient passing of parameters
-  cl_ulong4 b_preinit4 = {b_preinit_lo, b_preinit_mid, b_preinit_hi, shiftcount};
+  cl_ulong4 b_preinit4 = {b_preinit_lo, b_preinit_mid, b_preinit_hi, shiftcount-1};
 
 #ifdef VERBOSE_TIMING
   printf("mfakt(%u,...) init:     %" PRIu64 "msec\n",exp,timer_diff(&timer)/1000);
@@ -1207,9 +1211,9 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
 	    }
 	    mystuff->stream_status[h_ktab_index] = PREPARED;
       running++;
-#ifdef DEBUG_STREAM_SCHEDULE
+#ifdef DETAILED_INFO
       printf("k-base: %llu, ", k_min);
-      print1DArray("ktab", mystuff->h_ktab[h_ktab_index], mystuff->threads_per_grid);
+      printArray("ktab", mystuff->h_ktab[h_ktab_index], mystuff->threads_per_grid);
 #endif
 
 #ifdef VERBOSE_TIMING
@@ -1225,25 +1229,48 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
     {
       switch (mystuff->stream_status[i])
       {
-        case UNUSED:   if (k_min <= k_max) wait = 0; break;  // still some work to do
+        case UNUSED:
+          {
+            if (k_min <= k_max)
+            {
+              wait = 0;
+            }
+            break;  // still some work to do
+            continue; // check the other streams
+          }
         case PREPARED:                   // start the calculation of a preprocessed dataset on the device
           {
-            if ((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_16))
+            if ((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_8))
             {
               k_base.d0 =  k_min_grid[i] & 0xFFFFFF;
               k_base.d1 = (k_min_grid[i] >> 24) & 0xFFFFFF;
               k_base.d2 =  k_min_grid[i] >> 48;
-              run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount);
+              status = run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount);
             }
-            else 
+            else if ((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT92_MUL32))
             {
-              run_kernel64(kernel_info[use_kernel].kernel, exp, k_min_grid[i], i, b_preinit4, mystuff->d_RES, bit_min-63);
+              int96 k;
+              k.d0 = (unsigned int) k_min_grid[i];
+              k.d1 = k_min_grid[i] >> 32;
+              k.d2 = 0;
+              status = run_barrett_kernel32(kernel_info[use_kernel].kernel, exp, k, i, b_192, mystuff->d_RES, shiftcount, bit_min-63);
             }
+            else
+            {
+              status = run_kernel64(kernel_info[use_kernel].kernel, exp, k_min_grid[i], i, b_preinit4, mystuff->d_RES, bit_min-63);
+            }
+            if(status != CL_SUCCESS) 
+            { 
+	            std::cerr<< "Error " << status << ": Starting kernel " << kernel_info[use_kernel].kernelname << ". (run_kernel)\n";
+	    	      return RET_ERROR;
+            }
+
 #ifdef DEBUG_STREAM_SCHEDULE
             printf(" STREAM_SCHEDULE: started GPU kernel using h_ktab[%d] (%s, %u, %u, ...)\n", i, kernel_info[use_kernel].kernelname, exp, k_min_grid[i]);
 #endif
             mystuff->stream_status[i] = RUNNING;
             break;
+            continue; // examine the next stream
           }
         case RUNNING:                    // check if it really is still running
           {
@@ -1268,6 +1295,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
                                                any error: <0 */
             {
               break;
+              continue; // examine the next stream
             }
             else // finished
             {
@@ -1283,7 +1311,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
               if(status != CL_SUCCESS)
  	            { 
 		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
-                return 1;
+                return RET_ERROR;
               }
               status = clGetEventProfilingInfo(mystuff->copy_events[i],
                                 CL_PROFILING_COMMAND_END,
@@ -1293,7 +1321,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
               if(status != CL_SUCCESS)
  	            { 
 		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
-                return 1;
+                return RET_ERROR;
               }
               std::cout<< mystuff->threads_per_grid << " candidates copied in " << (endTime - startTime)/1e3 << " us ("
                        << size * 1e3 / (endTime - startTime) << "MB/s), " ;
@@ -1305,7 +1333,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
               if(status != CL_SUCCESS)
  	            { 
 		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
-                return 1;
+                return RET_ERROR;
               }
               status = clGetEventProfilingInfo(mystuff->exec_events[i],
                                 CL_PROFILING_COMMAND_END,
@@ -1315,7 +1343,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
               if(status != CL_SUCCESS)
  	            { 
 		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
-                return 1;
+                return RET_ERROR;
               }
               std::cout<< "processed in " << (endTime - startTime)/1e6 << " ms (" << double(mystuff->threads_per_grid) *1e3/ (endTime - startTime) << " M/s)\n";
 #endif
@@ -1348,10 +1376,15 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
           {                              // or maybe not; wait until the class is done.
             mystuff->stream_status[i] = UNUSED;
             --running;
-            if ((k_min <= k_max) || (running==0)) wait = 0;  // some k's left to be processed, or nothing running on GPU - not time to sleep!
+            if ((k_min <= k_max) || (running==0))
+            {
+              wait = 0;  // some k's left to be processed, or nothing running on GPU - not time to sleep!
+            }
             break;
+            continue; // check the other streams
           }
       }
+     // break; // out of the loop as we can process another stream (shortcut: don't check the other streams now)
     }
 
     if(wait > 0)
@@ -1364,15 +1397,24 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
       so let's wait for the stream that was scheduled first, or any other busy one */
       timer_init(&timer2);
 
-      i = (count - running) % mystuff->num_streams; // the oldest still running stream
+      if (k_min >= k_max)
+      {
+        i = count % mystuff->num_streams; // at the end of the class: just wait for the last stream
+      }
+      else
+      {
+        i = (count - running) % mystuff->num_streams;  // the oldest still running stream
+      }
+
       if (mystuff->stream_status[i] != RUNNING)     // if that one is not running, take the first running one
       {
         for(i=0; (mystuff->stream_status[i] != RUNNING) && (i<mystuff->num_streams); i++) ;
       }
+
       if(i<mystuff->num_streams)
       {
 #ifdef DEBUG_STREAM_SCHEDULE
-        printf(" STREAM_SCHEDULE: Wait for stream %d\n", i);
+        printf(" STREAM_SCHEDULE: Wait for stream %d, already waited %" PRIu64 "us, %d times of %d blocks\n", i, twait, cwait, count);
 #endif
         status = clWaitForEvents(1, &mystuff->exec_events[i]); // wait for completion
         if(status != CL_SUCCESS) 
@@ -1394,6 +1436,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
       // leave the stream in status RUNNING to let the case-loop above check for errors and do cleanup
     }
   }
+
   // all done?
 
   for(i=0; i<mystuff->num_streams; i++)
@@ -1427,7 +1470,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
   }
 
 #ifdef DETAILED_INFO
-  print1DArray("RES", mystuff->h_RES, 32);
+  printArray("RES", mystuff->h_RES, 32);
 #endif
 
 #ifdef VERBOSE_TIMING
@@ -1454,7 +1497,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
     printf(" | %6.2fM/s", (double)mystuff->threads_per_grid * (double)count / ((double)t * 1000.0));
     
     printf(" | %11d", mystuff->sieve_primes);
- 
+
     if(mystuff->mode == MODE_NORMAL)
     {
       if(t > 250.0)
@@ -1474,18 +1517,18 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
     else if(mystuff->mode == MODE_SELFTEST_FULL)printf(" |   n.a.");
   }
 
-  if(cwait>0)
+  if(count>0)
   {
-    twait/=cwait;
+    twait/=count;
     if(mystuff->mode != MODE_SELFTEST_SHORT)printf(" | %7" PRIu64 "us", twait);
-    if(mystuff->sieve_primes_adjust==1 && twait>750 && mystuff->sieve_primes < mystuff->sieve_primes_max && (mystuff->mode != MODE_SELFTEST_SHORT))
+    if(mystuff->sieve_primes_adjust==1 && twait>3600 && mystuff->sieve_primes < mystuff->sieve_primes_max && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
       mystuff->sieve_primes *= 9;
       mystuff->sieve_primes /= 8;
       if(mystuff->sieve_primes > mystuff->sieve_primes_max) mystuff->sieve_primes = mystuff->sieve_primes_max;
 //      printf("\navg. wait > 750us, increasing SievePrimes to %d",mystuff->sieve_primes);
     }
-    if(mystuff->sieve_primes_adjust==1 && twait<200 && mystuff->sieve_primes > SIEVE_PRIMES_MIN && (mystuff->mode != MODE_SELFTEST_SHORT))
+    if(mystuff->sieve_primes_adjust==1 && twait<1800 && mystuff->sieve_primes > SIEVE_PRIMES_MIN && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
       mystuff->sieve_primes *= 7;
       mystuff->sieve_primes /= 8;
@@ -1512,7 +1555,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
     factor_hi  = mystuff->h_RES[i*3 + 1];
     factor_mid = mystuff->h_RES[i*3 + 2];
     factor_lo  = mystuff->h_RES[i*3 + 3];
-    if ((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_16))
+    if ((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_8))
     {
       int72 factor={factor_lo, factor_mid, factor_hi};
       print_dez72(factor,string);
@@ -1521,7 +1564,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
     {
       print_dez96(factor_hi, factor_mid, factor_lo, string);
     }
- //    if(mystuff->mode != MODE_SELFTEST_SHORT)
+    if(mystuff->mode != MODE_SELFTEST_SHORT)
     {
       if(mystuff->printmode == 1 && i == 0) printf("\n");
       printf("Result[%02d]: M%u has a factor: %s\n", i, exp, string);
@@ -1990,7 +2033,7 @@ void CL_test(cl_uint devnumber)
   cl_ulong startTime, endTime;
 
   timer_init(&timer);
-#define TEST_LOOPS 10
+#define TEST_LOOPS 1
 
   for (i=0; i<TEST_LOOPS; i++)
   {
@@ -2014,14 +2057,14 @@ void CL_test(cl_uint devnumber)
   	  std::cerr<< "Error " << status << ": Waiting for mod call to finish. (clWaitForEvents)\n";
     }
 
-              /* Get kernel profiling info */
-              status = clGetEventProfilingInfo(mod_evt,
+    /* Get kernel profiling info */
+    status = clGetEventProfilingInfo(mod_evt,
                                 CL_PROFILING_COMMAND_START,
                                 sizeof(cl_ulong),
                                 &startTime,
                                 0);
-              if(status != CL_SUCCESS)
- 	            { 
+     if(status != CL_SUCCESS)
+ 	   { 
 		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
               }
               status = clGetEventProfilingInfo(mod_evt,
@@ -2058,11 +2101,9 @@ void CL_test(cl_uint devnumber)
 	{ 
     std::cerr << "Error " << status << ": clEnqueueReadBuffer RES failed. (clEnqueueReadBuffer)\n";
   }
+
   res_hi = mystuff.h_RES[0];
   res_lo = mystuff.h_RES[1];
 
-
   printf("res-mod: %llx:%llx mod %llx = %llx:%llx\n", hi, lo, q, res_hi, res_lo);
-
-
 }

@@ -1,6 +1,7 @@
 /*
 This file is part of mfaktc (mfakto).
 Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
+                                Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -110,14 +111,12 @@ enum GPUKernels
   _95BIT_64_OpenCL,
   BARRETT92_64_OpenCL,
   _71BIT_MUL24,
-  _71BIT_MUL24_2,
   _71BIT_MUL24_4,
   _71BIT_MUL24_8,
-  _71BIT_MUL24_16,
-  _95BIT_MUL32,
   BARRETT79_MUL32,
   BARRETT92_MUL32,
-  UNKNOWN_KERNEL
+  UNKNOWN_KERNEL, /* what comes after this one will not be loaded */
+  _95BIT_MUL32  /* not yet there */
 };
 
 typedef struct _kernel_info

@@ -23,7 +23,7 @@ Content
 # 0 What is mfakto #
 ####################
 
-mfakto is the OpenCL-port of mfactc. It aims to contain the same features
+mfakto is the OpenCL-port of mfaktc. It aims to contain the same features
 and application use cases in time.
 mfaktc is a program for trial factoring of mersenne numbers. The name mfaktc
 is "Mersenne FAKTorisation with Cuda". Faktorisation is a mixture of the
@@ -207,7 +207,7 @@ A Currently, the 71-bit kernel is the only fast one (though everything up to
 - SievePrimesAdjust
 
 not planned for a specific release / ongoing
-- keep features in sync with mfactc
+- keep features in sync with mfaktc
 - performance improvements whenever I find them ;)
 - find the reason for the occasional aborts
 - documentation and comments in code

@@ -1,6 +1,7 @@
 /*
 This file is part of mfaktc (mfakto).
 Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
+                                Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -26,21 +27,9 @@ This is just the upper LIMIT of the SIEVE_SIZE, the actual sieve size depends
 on some other factors as well, but you don't have to worry about.
 */
 
-#define SIEVE_SIZE_LIMIT 32
+#define SIEVE_SIZE_LIMIT 64
 
 
-
-/*
-If MORE_CLASSES is defined then the TF process is split into 4620
-(4 * 3*5*7*11) classes. Otherwise it will be split into 420 (4 * 3*5*7)
-classes. With 4620 the siever runs a bit more efficent at the cost of 10 times
-more sieve initializations. This will allow to increase SIEVE_PRIMES a little
-bit further. The OpenCL version mfakto requires MORE_CLASSES be defined.
-This starts to become useful on my system for e.g. TF M66xxxxxx from 2^66 to
-2^67.
-*/
-
-#define MORE_CLASSES
 
 
 /******************
@@ -52,11 +41,11 @@ This starts to become useful on my system for e.g. TF M66xxxxxx from 2^66 to
 
 
 /* enable for printf's from device (GPU) code. Only used in sm_20 or newer
-code path */
+code path - not used by mfakto */
 //#define USE_DEVICE_PRINTF
 
 
-/* do some checks on the mod routine */
+/* do some checks on the mod routine - not yet used by mfakto */
 //#define CHECKS_MODBASECASE
 
 
@@ -74,12 +63,13 @@ code path */
 /* issue lots of additional trace output from the C-part of the program
    (see mfakto_kernels.cl - TRACE_KERNEL and TRACE_TID for how to trace the
    kernel execution */
+
 //#define DETAILED_INFO
 
 
 /* enable the OpenCL built-in performance measurement. This will print the
    pure times needed to copy the data over, and to test the FC's of the chunk
-   (pure run time per kernel invokation */
+   (pure run time per kernel invokation) */
 //#define CL_PERFORMANCE_INFO 
 
 
@@ -92,10 +82,23 @@ code path */
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.05" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.06" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.05-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.06-Win" /* DO NOT CHANGE! */
 #endif
+
+
+/*
+If MORE_CLASSES is defined then the TF process is split into 4620
+(4 * 3*5*7*11) classes. Otherwise it will be split into 420 (4 * 3*5*7)
+classes. With 4620 the siever runs a bit more efficent at the cost of 10 times
+more sieve initializations. This will allow to increase SIEVE_PRIMES a little
+bit further. The OpenCL version mfakto requires MORE_CLASSES be defined.
+This starts to become useful on my system for e.g. TF M66xxxxxx from 2^66 to
+2^67.
+*/
+
+#define MORE_CLASSES
 
 
 
