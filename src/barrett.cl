@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.10
+Version 0.10p1
 */
 
 /****************************************
@@ -63,7 +63,7 @@ typedef struct _int192_t
 #define int_v int
 #define uint_v uint
 #define float_v float
-#define CONVERT_FLOAT_V convert_float_rtz
+#define CONVERT_FLOAT_V convert_float
 #define CONVERT_UINT_V convert_uint
 #define AS_UINT_V as_uint
 
@@ -81,7 +81,7 @@ typedef struct _int192_t
 #define int_v int2
 #define uint_v uint2
 #define float_v float2
-#define CONVERT_FLOAT_V convert_float2_rtz
+#define CONVERT_FLOAT_V convert_float2
 #define CONVERT_UINT_V convert_uint2
 #define AS_UINT_V as_uint2
 
@@ -100,7 +100,7 @@ typedef struct _int192_t
 #define int_v int4
 #define uint_v uint4
 #define float_v float4
-#define CONVERT_FLOAT_V convert_float4_rtz
+#define CONVERT_FLOAT_V convert_float4
 #define CONVERT_UINT_V convert_uint4
 #define AS_UINT_V as_uint4
 
@@ -118,7 +118,7 @@ typedef struct _int192_t
 #define int_v int8
 #define uint_v uint8
 #define float_v float8
-#define CONVERT_FLOAT_V convert_float8_rtz
+#define CONVERT_FLOAT_V convert_float8
 #define CONVERT_UINT_V convert_uint8
 #define AS_UINT_V as_uint8
 
@@ -137,7 +137,7 @@ typedef struct _int192_t
 #define int_v int16
 #define uint_v uint16
 #define float_v float16
-#define CONVERT_FLOAT_V convert_float16_rtz
+#define CONVERT_FLOAT_V convert_float16
 #define CONVERT_UINT_V convert_uint16
 #define AS_UINT_V as_uint16
 
@@ -146,15 +146,15 @@ typedef struct _int192_t
 #endif
 
 #ifndef CHECKS_MODBASECASE
-void div_192_96(int96_t *res, int192_t q, int96_t n, float_v nf);
-void div_160_96(int96_t *res, int192_t q, int96_t n, float_v nf);
+void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf);
+void div_160_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf);
 #else
-void div_192_96(int96_t *res, int192_t q, int96_t n, float_v nf, __global uint* modcasebase_debug);
-void div_160_96(int96_t *res, int192_t q, int96_t n, float_v nf, __global uint* modcasebase_debug);
+void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf, __global uint* modcasebase_debug);
+void div_160_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf, __global uint* modcasebase_debug);
 #endif
-void mul_96(int96_t *res, int96_t a, int96_t b);
-void mul_96_192_no_low2(int192_t *res, int96_t a, int96_t b);
-void mul_96_192_no_low3(int192_t *res, int96_t a, int96_t b);
+void mul_96(int96_t * const res, const int96_t a, const int96_t b);
+void mul_96_192_no_low2(int192_t *const res, const int96_t a, const int96_t b);
+void mul_96_192_no_low3(int192_t *const res, const int96_t a, const int96_t b);
 
 
 /****************************************
@@ -164,7 +164,7 @@ void mul_96_192_no_low3(int192_t *res, int96_t a, int96_t b);
  ****************************************
  ****************************************/
 
-int96_t sub_if_gte_96(int96_t a, int96_t b)
+int96_t sub_if_gte_96(const int96_t a, const int96_t b)
 /* return (a>b)?a-b:a */
 {
   int96_t tmp;
@@ -184,9 +184,9 @@ int96_t sub_if_gte_96(int96_t a, int96_t b)
   return tmp;
 }
 
-void inc_if_ge_96(int96_t *res, int96_t a, int96_t b)
+void inc_if_ge_96(int96_t * const res, const int96_t a, const int96_t b)
 { /* if (a >= b) res++ */
-  uint_v ge, carry;
+  __private uint_v ge, carry;
 
   ge = AS_UINT_V(a.d2 == b.d2);
   ge = AS_UINT_V(ge ? ((a.d1 == b.d1) ? (a.d0 >= b.d0) : (a.d1 > b.d1)) : (a.d2 > b.d2));
@@ -198,10 +198,10 @@ void inc_if_ge_96(int96_t *res, int96_t a, int96_t b)
   res->d2 += AS_UINT_V((carry > res->d1)? 1 : 0);
 }
 
-void mul_96(int96_t *res, int96_t a, int96_t b)
+void mul_96(int96_t * const res, const int96_t a, const int96_t b)
 /* res = a * b */
 {
-  uint_v tmp;
+  __private uint_v tmp;
 
   res->d0  = a.d0 * b.d0;
   res->d1  = mul_hi(a.d0, b.d0);
@@ -222,7 +222,7 @@ void mul_96(int96_t *res, int96_t a, int96_t b)
 }
 
 
-void mul_96_192_no_low2(int192_t *res, int96_t a, int96_t b)
+void mul_96_192_no_low2(int192_t * const res, const int96_t a, const int96_t b)
 /*
 res ~= a * b
 res.d0 and res.d1 are NOT computed. Carry from res.d1 to res.d2 is ignored,
@@ -255,7 +255,7 @@ of mul_96_192().
   res->d4 = __addc_cc(res->d4, __umul32hi(a.d2, b.d1));
   res->d5 = __addc   (res->d5,                      0);
   */
-  uint_v tmp;
+  __private uint_v tmp;
   
   res->d2  = mul_hi(a.d1, b.d0);
 
@@ -314,7 +314,7 @@ of mul_96_192().
 }
 
 
-void mul_96_192_no_low3(int192_t *res, int96_t a, int96_t b)
+void mul_96_192_no_low3(int192_t * const res, const int96_t a, const int96_t b)
 /*
 res ~= a * b
 res.d0, res.d1 and res.d2 are NOT computed. Carry to res.d3 is ignored,
@@ -344,7 +344,7 @@ than of mul_96_192().
   res->d4 = __addc_cc(res->d4, __umul32hi(a.d2, b.d1));
   res->d5 = __addc   (res->d5,                      0);
   */
-  uint_v tmp;
+  __private uint_v tmp;
 
   res->d3  = mul_hi(a.d2, b.d0);
 
@@ -382,7 +382,7 @@ than of mul_96_192().
 }
 
 
-void square_96_192(int192_t *res, int96_t a)
+void square_96_192(int192_t * const res, const int96_t a)
 /* res = a^2 = a.d0^2 + a.d1^2 + a.d2^2 + 2(a.d0*a.d1 + a.d0*a.d2 + a.d1*a.d2) */
 {
 /*
@@ -390,7 +390,7 @@ highest possible value for x * x is 0xFFFFFFF9
 this occurs for x = {479772853, 1667710795, 2627256501, 3815194443}
 Adding x*x to a few carries will not cascade the carry
 */
-  uint_v tmp;
+  __private uint_v tmp;
 
   res->d0  = a.d0 * a.d0;
 
@@ -448,7 +448,7 @@ Adding x*x to a few carries will not cascade the carry
 }
 
 
-void square_96_160(int192_t *res, int96_t a)
+void square_96_160(int192_t * const res, const int96_t a)
 /* res = a^2 */
 /* this is a stripped down version of square_96_192, it doesn't compute res.d5
 and is a little bit faster.
@@ -459,7 +459,7 @@ highest possible value for x * x is 0xFFFFFFF9
 this occurs for x = {479772853, 1667710795, 2627256501, 3815194443}
 Adding x*x to a few carries will not cascade the carry
 */
-  uint_v tmp, TWOad2 = a.d2 << 1; // a.d2 < 2^16 so this always fits
+  __private uint_v tmp, TWOad2 = a.d2 << 1; // a.d2 < 2^16 so this always fits
 
   res->d0  = a.d0 * a.d0;
 
@@ -504,7 +504,7 @@ Adding x*x to a few carries will not cascade the carry
 }
 
 
-void shl_96(int96_t *a)
+void shl_96(int96_t * const a)
 /* shiftleft a one bit */
 {
   a->d2 = (a->d2 << 1) + (a->d1 >> 31);
@@ -515,16 +515,16 @@ void shl_96(int96_t *a)
 
 #undef DIV_160_96
 #ifndef CHECKS_MODBASECASE
-void div_192_96(int96_t *res, int192_t q, int96_t n, float_v nf)
+void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf)
 #else
-void div_192_96(int96_t *res, int192_t q, int96_t n, float_v nf, __global uint *modbasecase_debug)
+void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf, __global uint * restrict modbasecase_debug)
 #endif
 /* res = q / n (integer division) */
 {
-  float_v qf;
-  uint_v qi, tmp, carry;
-  int192_t nn;
-  int96_t tmp96;
+  __private float_v qf;
+  __private uint_v qi, tmp, carry;
+  __private int192_t nn;
+  __private int96_t tmp96;
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
@@ -831,9 +831,9 @@ one. Sometimes the result is a little bit bigger than n
 
 #define DIV_160_96
 #ifndef CHECKS_MODBASECASE
-void div_160_96(int96_t *res, int192_t q, int96_t n, float_v nf)
+void div_160_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf)
 #else
-void div_160_96(int96_t *res, int192_t q, int96_t n, float_v nf, __global uint *modbasecase_debug)
+void div_160_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf, __global uint * restrict modbasecase_debug)
 #endif
 /* res = q / n (integer division) */
 /* the code of div_160_96() is an EXACT COPY of div_192_96(), the only
@@ -841,10 +841,10 @@ difference is that the 160bit version ignores the most significant
 word of q (q.d5) because it assumes it is 0. This is controlled by defining
 DIV_160_96 here. */
 {
-  float_v qf;
-  uint_v qi, tmp, carry;
-  int192_t nn;
-  int96_t tmp96;
+  __private float_v qf;
+  __private uint_v qi, tmp, carry;
+  __private int192_t nn;
+  __private int96_t tmp96;
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
@@ -1153,12 +1153,12 @@ one. Sometimes the result is a little bit bigger than n
 
 
 
-void mod_simple_96(int96_t *res, int96_t q, int96_t n, float_v nf
+void mod_simple_96(int96_t * const res, const int96_t q, const int96_t n, const float_v nf
 #if (TRACE_KERNEL > 1)
-                  , __private uint tid
+                  , const uint tid
 #endif
 #ifdef CHECKS_MODBASECASE
-                  , int bit_max64, uint limit, __global uint *modbasecase_debug
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
 #endif
 )
 /*
@@ -1167,9 +1167,9 @@ used for refinement in barrett modular multiplication
 assumes q < 6n (6n includes "optional mul 2")
 */
 {
-  float_v qf;
-  uint_v qi, tmp, carry;
-  int96_t nn;
+  __private float_v qf;
+  __private uint_v qi, tmp, carry;
+  __private int96_t nn;
 
   qf = CONVERT_FLOAT_V(q.d2);
   qf = qf * 4294967296.0f + CONVERT_FLOAT_V(q.d1);
@@ -1228,15 +1228,15 @@ are "out of range".
   res->d2 = q.d2 - nn.d2 - carry;
 }
 
-__kernel void mfakto_cl_barrett92(__private uint exp, __private int96_1t k_base, const __global uint * restrict k_tab, __private int shiftcount,
+__kernel void mfakto_cl_barrett92(__private uint exp, const int96_1t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
-                           __private uint8 b_in,
+                           const uint8 b_in,
 #else
                            __private int192_1t bb,
 #endif
-                           __global uint * restrict RES, __private int bit_max64
+                           __global uint * restrict RES, const int bit_max64
 #ifdef CHECKS_MODBASECASE
-         , __global uint *modbasecase_debug
+         , __global uint * restrict modbasecase_debug
 #endif
          )
 /*
@@ -1552,15 +1552,15 @@ Precalculated here since it is the same for all steps in the following loop */
  
 }
 
-__kernel void mfakto_cl_barrett79(__private uint exp, __private int96_1t k_base, const __global uint * restrict k_tab, __private int shiftcount,
+__kernel void mfakto_cl_barrett79(__private uint exp, const int96_1t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
-                           __private uint8 b_in,
+                           const uint8 b_in,
 #else
                            __private int192_1t bb,
 #endif
-                           __global uint * restrict RES, __private int bit_max64
+                           __global uint * restrict RES, const int bit_max64
 #ifdef CHECKS_MODBASECASE
-         , __global uint *modbasecase_debug
+         , __global uint * restrict modbasecase_debug
 #endif
          )
 /*
@@ -1879,15 +1879,15 @@ Precalculated here since it is the same for all steps in the following loop */
 
 
 // a copy of the 79-bit barrett for testing the effect of (not) sieving
-__kernel void mfakto_cl_barrett79_ns(__private uint exp, __private int96_1t k_base, const __global uint * restrict k_tab, __private int shiftcount,
+__kernel void mfakto_cl_barrett79_ns(__private uint exp, const int96_1t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
-                           __private uint8 b_in,
+                           const uint8 b_in,
 #else
                            __private int192_1t bb,
 #endif
-                           __global uint * restrict RES, __private int bit_max64
+                           __global uint * restrict RES, const int bit_max64
 #ifdef CHECKS_MODBASECASE
-         , __global uint *modbasecase_debug
+         , __global uint * restrict modbasecase_debug
 #endif
          )
 /*

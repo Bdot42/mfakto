@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.10
+Version 0.10p1
 */
 
 /* This file will be included TWICE by the main kernel file, once with
@@ -65,7 +65,7 @@ typedef struct _int144_v
 #define int_v int
 #define uint_v uint
 #define float_v float
-#define CONVERT_FLOAT_V convert_float_rtz
+#define CONVERT_FLOAT_V convert_float
 #define CONVERT_UINT_V convert_uint
 #define AS_UINT_V as_uint
 // tracing does not work with no vectors ...
@@ -84,7 +84,7 @@ typedef struct _int144_v
 #define int_v int2
 #define uint_v uint2
 #define float_v float2
-#define CONVERT_FLOAT_V convert_float2_rtz
+#define CONVERT_FLOAT_V convert_float2
 #define CONVERT_UINT_V convert_uint2
 #define AS_UINT_V as_uint2
 #define s0 x  // to make traceing work
@@ -102,7 +102,7 @@ typedef struct _int144_v
 #define int_v int4
 #define uint_v uint4
 #define float_v float4
-#define CONVERT_FLOAT_V convert_float4_rtz
+#define CONVERT_FLOAT_V convert_float4
 #define CONVERT_UINT_V convert_uint4
 #define AS_UINT_V as_uint4
 #define s0 x  // to make traceing work
@@ -121,7 +121,7 @@ typedef struct _int144_v
 #define int_v int8
 #define uint_v uint8
 #define float_v float8
-#define CONVERT_FLOAT_V convert_float8_rtz
+#define CONVERT_FLOAT_V convert_float8
 #define CONVERT_UINT_V convert_uint8
 #define AS_UINT_V as_uint8
 
@@ -140,7 +140,7 @@ typedef struct _int144_v
 #define int_v int16
 #define uint_v uint16
 #define float_v float16
-#define CONVERT_FLOAT_V convert_float16_rtz
+#define CONVERT_FLOAT_V convert_float16
 #define CONVERT_UINT_V convert_uint16
 #define AS_UINT_V as_uint16
 
@@ -149,7 +149,7 @@ typedef struct _int144_v
 #endif
 
 
-void mul_24_48(uint_v *res_hi, uint_v *res_lo, uint_v a, uint_v b)
+void mul_24_48(uint_v * const res_hi, uint_v * const res_lo, const uint_v a, const uint_v b)
 /* res_hi*(2^24) + res_lo = a * b */
 { // PERF: inline its use
 /* thats how it should be, but the mul24_hi is missing ...
@@ -163,7 +163,7 @@ void mul_24_48(uint_v *res_hi, uint_v *res_lo, uint_v a, uint_v b)
 }
 
 
-int72_v sub_if_gte_72(int72_v a, int72_v b)
+int72_v sub_if_gte_72(const int72_v a, const int72_v b)
 /* return (a>b)?a-b:a */
 {
   int72_v tmp;
@@ -182,7 +182,7 @@ int72_v sub_if_gte_72(int72_v a, int72_v b)
   return tmp;
 }
 
-void mul_72(int72_v *res, int72_v a, int72_t b)
+void mul_72(int72_v * const res, const int72_v a, const int72_t b)
 /* res = (a * b) mod (2^72), a vector, b scalar*/
 {
   uint_v hi,lo;
@@ -214,10 +214,10 @@ void mul_72(int72_v *res, int72_v a, int72_t b)
 }
 
 
-void square_72_144(int144_v *res, int72_v a)
+void square_72_144(int144_v * const res, const int72_v a)
 /* res = a^2 */
 {
-  uint_v tmp;
+  __private uint_v tmp;
 
   tmp      =  mul24(a.d0, a.d0);
 //  res->d1  = (mul_hi(a.d0, a.d0) << 8) | (tmp >> 24);
@@ -261,10 +261,10 @@ void square_72_144(int144_v *res, int72_v a)
 }
 
 
-void square_72_144_shl(int144_v *res, int72_v a)
+void square_72_144_shl(int144_v * const res, const int72_v a)
 /* res = 2* a^2 */
 {
-  uint_v tmp;
+  __private uint_v tmp;
 
   tmp      =  mul24(a.d0, a.d0);
   res->d1  =  mad24(mul_hi(a.d0, a.d0), 512u, (tmp >> 23));
@@ -311,20 +311,20 @@ void mod_144_64
 #else
 void mod_144_72
 #endif
-    (int72_v *res, int144_v q, int72_v n, float_v nf
+    (int72_v * const res, __private int144_v q, const int72_v n, const float_v nf
 #if (TRACE_KERNEL > 1)
-                   , __private uint tid
+                   , const uint tid
 #endif
 #ifdef CHECKS_MODBASECASE
-                   , __global uint *modbasecase_debug
+                   , __global uint * restrict modbasecase_debug
 #endif
 
 )
 /* res = q mod n */
 {
-  float_v  qf;
-  uint_v   qi, tmp;
-  int144_v nn; // ={0,0,0,0};  // PERF: initialization needed?
+  __private float_v  qf;
+  __private uint_v   qi, tmp;
+  __private int144_v nn; // ={0,0,0,0};  // PERF: initialization needed?
 
 /********** Step 1, Offset 2^51 (2*24 + 3) **********/
 #ifdef _63BIT_MUL24_K
@@ -741,9 +741,9 @@ __kernel void mfakto_cl_63
 #else
 __kernel void mfakto_cl_71
 #endif
-      (__private uint exp, __private int72_t k_base, const __global uint * restrict k_tab, __private int shiftcount
+      (__private uint exp, const int72_t k_base, const __global uint * restrict k_tab, const int shiftcount
 #ifdef WA_FOR_CATALYST11_10_BUG
-                           , __private uint8 b_in
+                           , const uint8 b_in
 #else
                            , __private int144_t b_in
 #endif
@@ -756,14 +756,14 @@ __kernel void mfakto_cl_71
 shiftcount is used for precomputing without mod
 a is precomputed on host ONCE. */
 {
-  int72_t  exp72;
-  int72_v  k;  
-  int72_v  a;       // result of the modulo
-  int144_v b;       // result of the squaring;
-  int72_v  f;       // the factor(s) to be tested
-  int       tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-  float_v    ff;
-  uint_v     t;
+  __private int72_t  exp72;
+  __private int72_v  k;  
+  __private int72_v  a;       // result of the modulo
+  __private int144_v b;       // result of the squaring;
+  __private int72_v  f;       // the factor(s) to be tested
+  __private int      tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
+  __private float_v  ff;
+  __private uint_v   t;
 
   exp72.d2=0;exp72.d1=exp>>23;exp72.d0=(exp+exp)&0xFFFFFF;	// exp72 = 2 * exp
   k.d0 = k_base.d0; k.d1 = k_base.d1; k.d2 = k_base.d2;   // widen to vectored "k"
