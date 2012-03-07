@@ -64,10 +64,11 @@ It uses CPU and GPU resources.
 # 2 Running mfakto #
 ####################
 
-Install AMD Catalyst driver, version >= 11.7
-  http://support.amd.com/us/gpudownload/Pages/index.aspx
 Install AMD APP version >= 2.4.
-  http://developer.amd.com/sdks/AMDAPPSDK/downloads/Pages/default.aspx
+Install Catalyst driver, version >= 11.7
+
+Catalyst driver 11.9 uses up to one CPU core less than its predecessors:
+11.9 strongly recommended.
 
 Open a command shell and run 'mfakto -h'. It will tell you what parameters
 it accepts. Maybe you want to tweak the parameters in mfakto.ini. A short
@@ -244,6 +245,7 @@ A Currently, the 79-bit-barrett kernel is the fastest one, working for factors
   results. The 92-bit-barrett kernel is quite fast too, but avoid factors
   between 92 bits and 95 bits - they will work but terribly slow.
 
+
 ###########
 # 7 .plan #
 ###########
@@ -256,3 +258,5 @@ A Currently, the 79-bit-barrett kernel is the fastest one, working for factors
   compile-time definition)
 - full 95-bit implementation
 - Makefile.win
+- improve the 72-bit kernel to be as fast as before the fix of version 0.09
+

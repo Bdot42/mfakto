@@ -2401,8 +2401,8 @@ void mod_144_72(int72_t *res, int144_t q, int72_t n, float nf
 /********** Step 1, Offset 2^51 (2*24 + 3) **********/
   qf= convert_float_rte(q.d5);
   qf= qf * 16777216.0f + convert_float_rte(q.d4);
-//  qf= qf * 16777216.0f + convert_float_rte(q.d3);
-  qf*= 2097152.0f * 16777216.0f;
+  qf= qf * 16777216.0f + convert_float_rte(q.d3);
+  qf*= 2097152.0f;
 
   qi=convert_uint(qf*nf);
 
@@ -2573,9 +2573,8 @@ void mod_144_72(int72_t *res, int144_t q, int72_t n, float nf
   qf= convert_float_rte(q.d4);
   qf= qf * 16777216.0f + convert_float_rte(q.d3);
   qf= qf * 16777216.0f + convert_float_rte(q.d2);
-// d1 not needed as d2, 3 and 4 provide enough significant bits
-//  qf= qf * 16777216.0f + convert_float_rte(q.d1);
-  qf*= 8192.0f * 16777216.0f;
+  qf= qf * 16777216.0f + convert_float_rte(q.d1);
+  qf*= 8192.0f;
 
   qi=convert_uint(qf*nf);
 
@@ -3096,8 +3095,8 @@ void mod_144_72_8(int72_8t *res, int144_8t q, int72_8t n, float8 nf
 /********** Step 1, Offset 2^51 (2*24 + 3) **********/
   qf= convert_float8_rte(q.d5);
   qf= qf * 16777216.0f + convert_float8_rte(q.d4);
-//  qf= qf * 16777216.0f + convert_float8_rte(q.d3);
-  qf*= 2097152.0f * 16777216.0f;
+  qf= qf * 16777216.0f + convert_float8_rte(q.d3);
+  qf*= 2097152.0f;
 
   qi=convert_uint8(qf*nf);
 
@@ -3262,8 +3261,8 @@ void mod_144_72_8(int72_8t *res, int144_8t q, int72_8t n, float8 nf
   qf= convert_float8_rte(q.d4);
   qf= qf * 16777216.0f + convert_float8_rte(q.d3);
   qf= qf * 16777216.0f + convert_float8_rte(q.d2);
-//  qf= qf * 16777216.0f + convert_float8_rte(q.d1);
-  qf*= 8192.0f * 16777216.0f;
+  qf= qf * 16777216.0f + convert_float8_rte(q.d1);
+  qf*= 8192.0f;
 
   qi=convert_uint8(qf*nf);
 
@@ -3754,8 +3753,8 @@ void mod_144_72_4(int72_4t *res, int144_4t q, const int72_4t n, const float4 nf
 /********** Step 1, Offset 2^51 (2*24 + 3) **********/
   qf= convert_float4_rte(q.d5);
   qf= qf * 16777216.0f + convert_float4_rte(q.d4);
-//  qf= qf * 16777216.0f + convert_float4_rte(q.d3);
-  qf*= 2097152.0f * 16777216.0f;
+  qf= qf * 16777216.0f + convert_float4_rte(q.d3);
+  qf*= 2097152.0f;
 
   qi=convert_uint4(qf*nf);
 
@@ -3920,8 +3919,8 @@ void mod_144_72_4(int72_4t *res, int144_4t q, const int72_4t n, const float4 nf
   qf= convert_float4_rte(q.d4);
   qf= qf * 16777216.0f + convert_float4_rte(q.d3);
   qf= qf * 16777216.0f + convert_float4_rte(q.d2);
-//  qf= qf * 16777216.0f + convert_float4_rte(q.d1);
-  qf*= 8192.0f * 16777216.0f;
+  qf= qf * 16777216.0f + convert_float4_rte(q.d1);
+  qf*= 8192.0f;
 
   qi=convert_uint4(qf*nf);
 

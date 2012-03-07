@@ -39,10 +39,10 @@ TODO
 +DONE+ - max 128 threads per block ... needed at all?
 +DONE+ - --help
 +DONE+ - complain about bad args
++DONE+ - calibrate auto-adjust
 - -d g
 - merge mfaktc 0.18
 - make/allow for small exps/bit-levels
-- calibrate auto-adjust
 - verify factors using the modulo-kernels and clEnqueueTask 
 - http://mersenneforum.org/showpost.php?p=258140&postcount=7 trialfactor_72.cl
 - div/mul-modulo for 96 bits
@@ -54,3 +54,6 @@ TODO
 - GPU sieve
 - clGetKernelWorkGroupInfo in load kernels: preferred size, local mem
 - evaluate max mem alloc (device info)
+- optimize 72-bit kernel for small vs. large factors (skip some converts depending on the size)
+
+

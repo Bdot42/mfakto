@@ -1,4 +1,10 @@
-version 0.08 (2011-09-02)
+version 0.09 (2011-10-01)
+- fixed bug in 72-bit kernel that might miss small factors (<48 bit)
+  unfortunately, the fix slows this kernel by ~3-5%
+- added test for the above bug to the selftest
+- better calculation for SievePrimesAdjust
+
+version 0.08 (2011-09-13)
 - added --help and parameter checking
 - exclude single-vectored 72-bit-mul24-kernel (not working with AMD APP SDK 2.5)
 - removed THREADS_PER_BLOCK (no longer needed, will be selected automatically
@@ -7,6 +13,7 @@ version 0.08 (2011-09-02)
 - added to mfakto.ini a config setting
   PreferKernel=mfakto_cl_barrett79|mfakto_cl_71 as HD5xxx and HD6xxx
   have their top-speed with different kernels
+- tuned the settings for SievePrimesAdjust - should now be usable
 
 version 0.07 (2011-08-10)
 - vectorized barrett kernels

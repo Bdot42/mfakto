@@ -1544,10 +1544,10 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
 
 #ifdef DEBUG_STREAM_SCHEDULE
       unsigned long long twait1 = timer_diff(&timer2);
-      printf(" STREAM_SCHEDULE: Waited %" PRIu64 "us.\n", twait1);
-      twait += twait1;
+      printf(" STREAM_SCHEDULE: Waited %" PRIu64 "us, %d blocks running.\n", twait1, running);
+      if (running > 1) twait += twait1;  // don't count the waiting period for the last block as this is unavoidable
 #else
-      twait += timer_diff(&timer2);
+      if (running > 1) twait += timer_diff(&timer2); // see above. Note this would not work for num_streams=1, and not reliably for num_streams=2
 #endif
 
       cwait++;
