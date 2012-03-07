@@ -1,19 +1,19 @@
 /*
-This file is part of mfaktc.
+This file is part of mfaktc (mfakto).
 Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
 
-mfaktc is free software: you can redistribute it and/or modify
+mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-mfaktc is distributed in the hope that it will be useful,
+mfaktc (mfakto) is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
                                 
 You should have received a copy of the GNU General Public License
-along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
+along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
@@ -260,7 +260,18 @@ other return value
  //       case _95BIT_MUL32:     factorsfound+=tf_class_95       (exp, bit_min, k_min+cur_class, k_max, mystuff); break;
  //       case BARRETT79_MUL32:  factorsfound+=tf_class_barrett79(exp, bit_min, k_min+cur_class, k_max, mystuff); break;
  //       case BARRETT92_MUL32:  factorsfound+=tf_class_barrett92(exp, bit_min, k_min+cur_class, k_max, mystuff); break;
-          case _71BIT_MUL24:
+          case _71BIT_MUL24:  if(mystuff->mode == MODE_NORMAL) switch (mystuff->vectorsize)
+                              { // disregard vectorsize for the selftest
+                                case 2:  use_kernel = _71BIT_MUL24_2;  break;
+                                case 4:  use_kernel = _71BIT_MUL24_4;  break;
+                                case 8:  use_kernel = _71BIT_MUL24_8;  break;
+                                case 16: use_kernel = _71BIT_MUL24_16; break;
+                                // default (1):  no change, fall through
+                              }
+          case _71BIT_MUL24_2:
+          case _71BIT_MUL24_4:
+          case _71BIT_MUL24_8:
+          case _71BIT_MUL24_16:
           case _64BIT_64_OpenCL:
           case _95BIT_64_OpenCL:
           case BARRETT92_64_OpenCL: factorsfound+=tf_class_opencl (exp, bit_min, k_min+cur_class, k_max, mystuff, use_kernel); break;
@@ -339,7 +350,7 @@ k_max and k_min are used as 64bit temporary integers here...
 
       f_hi  = k_min + (exp * f_hi); /* f_{hi|med|low} = 2 * k_hint * exp +1 */
       
-      if(use_kernel == _71BIT_MUL24) /* 71bit kernel uses only 24bit per int */
+      if((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_16)) /* 71bit kernel uses only 24bit per int */
       {
         f_hi  <<= 16;
         f_hi   += f_med >> 16;
@@ -407,7 +418,7 @@ k_max and k_min are used as 64bit temporary integers here...
 
 void print_help(char *string)
 {
-  printf("mfaktc v%s Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)\n", MFAKTO_VERSION);
+  printf("mfaktc (%s) Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)\n", MFAKTO_VERSION);
   printf("This program comes with ABSOLUTELY NO WARRANTY; for details see COPYING.\n");
   printf("This is free software, and you are welcome to redistribute it\n");
   printf("under certain conditions; see COPYING for details.\n\n\n");
@@ -431,7 +442,7 @@ void print_help(char *string)
 int selftest(mystuff_t *mystuff, int type)
 /*
 type = 0: full selftest
-type = 1: small selftest (this is executed EACH time mfaktc is started)
+type = 1: small selftest (this is executed EACH time mfakto is started)
 
 return value
 0 selftest passed
@@ -446,10 +457,10 @@ RET_ERROR we might have a serios problem
   int bit_min[NUM_SELFTESTS], f_class;
   unsigned long long int k[NUM_SELFTESTS];
   int retval=1, ind;
-  enum GPUKernels kernels[6];
+  enum GPUKernels kernels[9];
   unsigned int index[] = {   2 ,  25,   57,    /* some factors below 2^71 (test the 71/75 bit kernel depending on compute capability) */
-                            70 /* ,  88,  106,    /* some factors below 2^75 (test 75 bit kernel) */
-                           /*1547, 1552, 1556 */};   /* some factors below 2^95 (test 95 bit kernel) */
+                            70 ,  88,  106,    /* some factors below 2^75 (test 75 bit kernel) */
+                           1547, 1552, 1556 }; /* some factors below 2^95 (test 95 bit kernel) */
 
 #include "selftest-data.h"  
 
@@ -480,12 +491,16 @@ RET_ERROR we might have a serios problem
 //      if((bit_min[i] >= 64) && (bit_min[i]+1) <= 79)kernels[j++] = BARRETT79_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
 //                                                    kernels[j++] = _95BIT_MUL32;
 //      if((bit_min[i]+1) <= 75)                      kernels[j++] = _75BIT_MUL32;
-      if((bit_min[ind]+1) <= 71)                      kernels[j++] = _71BIT_MUL24;
-      if(bit_min[ind] <= 63)                          kernels[j++] = _64BIT_64_OpenCL;
-      if((bit_min[ind] >= 63) && (bit_min[ind] <= 95)) kernels[j++] = _95BIT_64_OpenCL;
+      if((bit_min[ind]) <= 71)                        kernels[j++] = _71BIT_MUL24;
+      if((bit_min[ind]) <= 71)                        kernels[j++] = _71BIT_MUL24_2;
+      if((bit_min[ind]) <= 71)                        kernels[j++] = _71BIT_MUL24_4;
+      if((bit_min[ind]) <= 71)                        kernels[j++] = _71BIT_MUL24_8;
+      if((bit_min[ind]) <= 71)                        kernels[j++] = _71BIT_MUL24_16;
+//      if(bit_min[ind]+1 <= 63)                        kernels[j++] = _64BIT_64_OpenCL;
+      if((bit_min[ind] >= 64) && (bit_min[ind] <= 95)) kernels[j++] = _95BIT_64_OpenCL;
       // if((bit_min[ind] >= 64) && (bit_min[ind]) <= 91) kernels[j++] = BARRETT92_64_OpenCL;
 
-      do
+      while(j>0)
       {
         num_selftests++;
 #ifdef DETAILED_INFO
@@ -499,7 +514,6 @@ RET_ERROR we might have a serios problem
         else if(tf_res == RET_ERROR)return RET_ERROR; /* bail out, we might have a serios problem */
         else           st_unknown++;
       }
-      while(j>0);
   }
 
 //  if((type == 0) || (st_success != num_selftests))
@@ -664,6 +678,12 @@ int main(int argc, char **argv)
 #ifdef RAW_GPU_BENCH
   printf("  RAW_GPU_BENCH             enabled (DEBUG option)\n");
 #endif
+#ifdef DETAILED_INFO
+  printf("  DETAILED_INFO             enabled (DEBUG option)\n");
+#endif
+#ifdef CL_PERFORMANCE_INFO
+  printf("  CL_PERFORMANCE_INFO       enabled (DEBUG option)\n");
+#endif
 
 
   printf("\nOpenCL device info\n");
@@ -685,18 +705,11 @@ int main(int argc, char **argv)
   }
 
   printf("\nAutomatic parameters\n");
-  i = THREADS_PER_BLOCK * deviceinfo.units;
+  i = THREADS_PER_BLOCK * deviceinfo.units * mystuff.vectorsize;
   while( (i * 2) <= mystuff.threads_per_grid_max) i = i * 2;
   mystuff.threads_per_grid = i;
-  printf("  threads per grid          %d\n", mystuff.threads_per_grid);
+  printf("  threads per grid          %d\n\n", mystuff.threads_per_grid);
 
-  if(mystuff.threads_per_grid % THREADS_PER_BLOCK)
-  {
-    printf("ERROR: mystuff.threads_per_grid is _NOT_ a multiple of THREADS_PER_BLOCK\n");
-    return 1;
-  }
-  printf("\n");
-  
   if (init_CLstreams())
   {
     printf("ERROR: init_CLstreams (malloc buffers?) failed\n");

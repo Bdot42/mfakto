@@ -1,19 +1,19 @@
 /*
-This file is part of mfaktc.
+This file is part of mfaktc (mfakto).
 Copyright (C) 2011  Oliver Weihe (o.weihe@t-online.de)
 
-mfaktc is free software: you can redistribute it and/or modify
+mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-mfaktc is distributed in the hope that it will be useful,
+mfaktc (mfakto) is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
                                 
 You should have received a copy of the GNU General Public License
-along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
+along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <signal.h>
@@ -43,12 +43,12 @@ invoked so we just register it again. */
   signal_handler_mystuff->quit++;
   if(signal_handler_mystuff->quit == 1)
   {
-    printf("mfaktc will exit once the current class is finished.\n");
-    printf("press ^C again to exit imediately\n");
+    printf("mfakto will exit once the current class is finished.\n");
+    printf("press ^C again to exit immediately\n");
   }
   if(signal_handler_mystuff->quit > 1)
   {
-    printf("mfaktc will exit NOW!\n");
+    printf("mfakto will exit NOW!\n");
     exit(1);
   }
   signum++; /* useless but avoids warning about unused variable... */

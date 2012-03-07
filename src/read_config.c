@@ -1,19 +1,19 @@
 /*
-This file is part of mfaktc.
+This file is part of mfaktc (mfakto).
 Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
 
-mfaktc is free software: you can redistribute it and/or modify
+mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-mfaktc is distributed in the hope that it will be useful,
+mfaktc (mfakto) is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
                                 
 You should have received a copy of the GNU General Public License
-along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
+along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
@@ -70,21 +70,21 @@ int read_config(mystuff_t *mystuff)
   int i;
   printf("\nRuntime options\n");
 
-  if(my_read_int("mfaktc.ini", "SievePrimes", &i))
+  if(my_read_int("mfakto.ini", "SievePrimes", &i))
   {
-    printf("WARNING: Cannot read SievePrimes from mfaktc.ini, using default value (%d)\n",SIEVE_PRIMES_DEFAULT);
+    printf("WARNING: Cannot read SievePrimes from mfakto.ini, using default value (%d)\n",SIEVE_PRIMES_DEFAULT);
     i=SIEVE_PRIMES_DEFAULT;
   }
   else
   {
     if(i>SIEVE_PRIMES_MAX)
     {
-      printf("WARNING: Read SievePrimes=%d from mfaktc.ini, using max value (%d)\n",i,SIEVE_PRIMES_MAX);
+      printf("WARNING: Read SievePrimes=%d from mfakto.ini, using max value (%d)\n",i,SIEVE_PRIMES_MAX);
       i=SIEVE_PRIMES_MAX;
     }
     else if(i<SIEVE_PRIMES_MIN)
     {
-      printf("WARNING: Read SievePrimes=%d from mfaktc.ini, using min value (%d)\n",i,SIEVE_PRIMES_MIN);
+      printf("WARNING: Read SievePrimes=%d from mfakto.ini, using min value (%d)\n",i,SIEVE_PRIMES_MIN);
       i=SIEVE_PRIMES_MIN;
     }
   }
@@ -93,9 +93,9 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/  
 
-  if(my_read_int("mfaktc.ini", "SievePrimesAdjust", &i))
+  if(my_read_int("mfakto.ini", "SievePrimesAdjust", &i))
   {
-    printf("WARNING: Cannot read SievePrimesAdjust from mfaktc.ini, using default value (0)\n");
+    printf("WARNING: Cannot read SievePrimesAdjust from mfakto.ini, using default value (0)\n");
     i=0;
   }
   else if(i != 0 && i != 1)
@@ -108,21 +108,21 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_int("mfaktc.ini", "NumStreams", &i))
+  if(my_read_int("mfakto.ini", "NumStreams", &i))
   {
-    printf("WARNING: Cannot read NumStreams from mfaktc.ini, using default value (%d)\n",NUM_STREAMS_DEFAULT);
+    printf("WARNING: Cannot read NumStreams from mfakto.ini, using default value (%d)\n",NUM_STREAMS_DEFAULT);
     i=NUM_STREAMS_DEFAULT;
   }
   else
   {
     if(i>NUM_STREAMS_MAX)
     {
-      printf("WARNING: Read NumStreams=%d from mfaktc.ini, using max value (%d)\n",i,NUM_STREAMS_MAX);
+      printf("WARNING: Read NumStreams=%d from mfakto.ini, using max value (%d)\n",i,NUM_STREAMS_MAX);
       i=NUM_STREAMS_MAX;
     }
     else if(i<NUM_STREAMS_MIN)
     {
-      printf("WARNING: Read NumStreams=%d from mfaktc.ini, using min value (%d)\n",i,NUM_STREAMS_MIN);
+      printf("WARNING: Read NumStreams=%d from mfakto.ini, using min value (%d)\n",i,NUM_STREAMS_MIN);
       i=NUM_STREAMS_MIN;
     }
   }
@@ -132,21 +132,21 @@ int read_config(mystuff_t *mystuff)
 /*****************************************************************************/
 
 /* CPU streams not used by mfakto
-  if(my_read_int("mfaktc.ini", "CPUStreams", &i))
+  if(my_read_int("mfakto.ini", "CPUStreams", &i))
   {
-    printf("WARNING: Cannot read CPUStreams from mfaktc.ini, using default value (%d)\n",CPU_STREAMS_DEFAULT);
+    printf("WARNING: Cannot read CPUStreams from mfakto.ini, using default value (%d)\n",CPU_STREAMS_DEFAULT);
     i=CPU_STREAMS_DEFAULT;
   }
   else
   {
     if(i>CPU_STREAMS_MAX)
     {
-      printf("WARNING: Read CPUStreams=%d from mfaktc.ini, using max value (%d)\n",i,CPU_STREAMS_MAX);
+      printf("WARNING: Read CPUStreams=%d from mfakto.ini, using max value (%d)\n",i,CPU_STREAMS_MAX);
       i=CPU_STREAMS_MAX;
     }
     else if(i<CPU_STREAMS_MIN)
     {
-      printf("WARNING: Read CPUStreams=%d from mfaktc.ini, using min value (%d)\n",i,CPU_STREAMS_MIN);
+      printf("WARNING: Read CPUStreams=%d from mfakto.ini, using min value (%d)\n",i,CPU_STREAMS_MIN);
       i=CPU_STREAMS_MIN;
     }
   }
@@ -155,21 +155,21 @@ int read_config(mystuff_t *mystuff)
   */
 /*****************************************************************************/
 
-  if(my_read_int("mfaktc.ini", "GridSize", &i))
+  if(my_read_int("mfakto.ini", "GridSize", &i))
   {
-    printf("WARNING: Cannot read GridSize from mfaktc.ini, using default value (3)\n");
+    printf("WARNING: Cannot read GridSize from mfakto.ini, using default value (3)\n");
     i = 3;
   }
   else
   {
     if(i > 4)
     {
-      printf("WARNING: Read GridSize=%d from mfaktc.ini, using max value (4)\n", i);
+      printf("WARNING: Read GridSize=%d from mfakto.ini, using max value (4)\n", i);
       i = 4;
     }
     else if(i < 0)
     {
-      printf("WARNING: Read GridSize=%d from mfaktc.ini, using min value (0)\n", i);
+      printf("WARNING: Read GridSize=%d from mfakto.ini, using min value (0)\n", i);
       i = 0;
     }
   }
@@ -182,18 +182,18 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_string("mfaktc.ini", "WorkFile", mystuff->workfile))
+  if(my_read_string("mfakto.ini", "WorkFile", mystuff->workfile))
   {
-    printf("WARNING: can't read WorkFile from mfaktc.ini, using default (worktodo.ini)\n");
+    printf("WARNING: can't read WorkFile from mfakto.ini, using default (worktodo.ini)\n");
     sprintf(mystuff->workfile, "worktodo.ini");
   }
   printf("  WorkFile                  %s\n", mystuff->workfile);
 
 /*****************************************************************************/
 
-  if(my_read_int("mfaktc.ini", "Checkpoints", &i))
+  if(my_read_int("mfakto.ini", "Checkpoints", &i))
   {
-    printf("WARNING: Cannot read Checkpoints from mfaktc.ini, enabled by default\n");
+    printf("WARNING: Cannot read Checkpoints from mfakto.ini, enabled by default\n");
     i=1;
   }
   else if(i != 0 && i != 1)
@@ -207,9 +207,9 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_int("mfaktc.ini", "Stages", &i))
+  if(my_read_int("mfakto.ini", "Stages", &i))
   {
-    printf("WARNING: Cannot read Stages from mfaktc.ini, enabled by default\n");
+    printf("WARNING: Cannot read Stages from mfakto.ini, enabled by default\n");
     i=1;
   }
   else if(i != 0 && i != 1)
@@ -223,9 +223,9 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_int("mfaktc.ini", "StopAfterFactor", &i))
+  if(my_read_int("mfakto.ini", "StopAfterFactor", &i))
   {
-    printf("WARNING: Cannot read StopAfterFactor from mfaktc.ini, set to 1 by default\n");
+    printf("WARNING: Cannot read StopAfterFactor from mfakto.ini, set to 1 by default\n");
     i=1;
   }
   else if( (i < 0) || (i > 2) )
@@ -240,9 +240,9 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_int("mfaktc.ini", "PrintMode", &i))
+  if(my_read_int("mfakto.ini", "PrintMode", &i))
   {
-    printf("WARNING: Cannot read PrintMode from mfaktc.ini, set to 0 by default\n");
+    printf("WARNING: Cannot read PrintMode from mfakto.ini, set to 0 by default\n");
     i=0;
   }
   else if(i != 0 && i != 1)
@@ -256,9 +256,9 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_int("mfaktc.ini", "AllowSleep", &i))
+  if(my_read_int("mfakto.ini", "AllowSleep", &i))
   {
-    printf("WARNING: Cannot read AllowSleep from mfaktc.ini, set to 0 by default\n");
+    printf("WARNING: Cannot read AllowSleep from mfakto.ini, set to 0 by default\n");
     i=0;
   }
   else if(i != 0 && i != 1)
@@ -269,6 +269,21 @@ int read_config(mystuff_t *mystuff)
   if(i == 0)printf("  AllowSleep                no\n");
   else      printf("  AllowSleep                yes\n");
   mystuff->allowsleep = i;
+
+  /*****************************************************************************/
+
+  if(my_read_int("mfakto.ini", "VectorSize", &i))
+  {
+    printf("WARNING: Cannot read VectorSize from mfakto.ini, set to 4 by default\n");
+    i=4;
+  }
+  else if(i != 1 && i != 2 && i != 4 && i != 8 && i != 16)
+  {
+    printf("WARNING: VectorSize must be one of 1, 2, 4, 8 or 16, set to 4 by default\n");
+    i=4;
+  }
+  printf("  VectorSize                %d\n", i);
+  mystuff->vectorsize = i;
 
   return 0;
 }

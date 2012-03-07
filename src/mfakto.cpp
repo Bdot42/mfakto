@@ -1,3 +1,20 @@
+/*
+This file is part of mfaktc (mfakto).
+Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
+
+mfaktc (mfakto) is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+mfaktc (mfakto) is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+                                
+You should have received a copy of the GNU General Public License
+along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
+*/
 /* OpenCL specific code for trial factoring */
 
 #include <cstdlib>
@@ -38,6 +55,10 @@ kernel_info_t       kernel_info[NUM_KERNELS] = {
          _95BIT_64_OpenCL,    "mfakto_cl_95",         63,     95,         NULL,
          BARRETT92_64_OpenCL, "mfakto_cl_barrett92",  64,     92,         NULL,
          _71BIT_MUL24,        "mfakto_cl_71",          0,     71,         NULL,
+         _71BIT_MUL24_2,      "mfakto_cl_71_2",        0,     71,         NULL,
+         _71BIT_MUL24_4,      "mfakto_cl_71_4",        0,     71,         NULL,
+         _71BIT_MUL24_8,      "mfakto_cl_71_8",        0,     71,         NULL,
+         _71BIT_MUL24_16,     "mfakto_cl_71_16",       0,     71,         NULL,
          UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         NULL
 };
 
@@ -498,6 +519,30 @@ int init_CL(int num_streams, cl_uint devnumber)
 		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_71BIT_MUL24].kernelname << " from program. (clCreateKernel)\n";
 		return 1;
 	}
+  kernel_info[_71BIT_MUL24_2].kernel = clCreateKernel(program, kernel_info[_71BIT_MUL24_2].kernelname, &status);
+  if(status != CL_SUCCESS) 
+	{  
+		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_71BIT_MUL24_2].kernelname << " from program. (clCreateKernel)\n";
+		return 1;
+	}
+  kernel_info[_71BIT_MUL24_4].kernel = clCreateKernel(program, kernel_info[_71BIT_MUL24_4].kernelname, &status);
+  if(status != CL_SUCCESS) 
+	{  
+		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_71BIT_MUL24_4].kernelname << " from program. (clCreateKernel)\n";
+		return 1;
+	}
+  kernel_info[_71BIT_MUL24_8].kernel = clCreateKernel(program, kernel_info[_71BIT_MUL24_8].kernelname, &status);
+  if(status != CL_SUCCESS) 
+	{  
+		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_71BIT_MUL24_8].kernelname << " from program. (clCreateKernel)\n";
+		return 1;
+	}
+  kernel_info[_71BIT_MUL24_16].kernel = clCreateKernel(program, kernel_info[_71BIT_MUL24_16].kernelname, &status);
+  if(status != CL_SUCCESS) 
+	{  
+		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[_71BIT_MUL24_16].kernelname << " from program. (clCreateKernel)\n";
+		return 1;
+	}
   return 0;
 }
 
@@ -769,9 +814,16 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
   cl_int   status;
   cl_mem   k_tab = mystuff.d_ktab[stream];
   size_t   globalThreads[2];
+  size_t   total_threads = mystuff.threads_per_grid;
+
+  // adjust for vector4 kernel: each thread processes 4 FC's, use 4 times less threads
+  if (kernel_info[_71BIT_MUL24_2].kernel == l_kernel) total_threads >>=1;
+  if (kernel_info[_71BIT_MUL24_4].kernel == l_kernel) total_threads >>=2;
+  if (kernel_info[_71BIT_MUL24_8].kernel == l_kernel) total_threads >>=3;
+  if (kernel_info[_71BIT_MUL24_16].kernel == l_kernel) total_threads >>=4;
     
-  globalThreads[0] = (mystuff.threads_per_grid > deviceinfo.maxThreadsPerBlock) ? deviceinfo.maxThreadsPerBlock : mystuff.threads_per_grid;
-  globalThreads[1] = (mystuff.threads_per_grid > deviceinfo.maxThreadsPerBlock) ? mystuff.threads_per_grid/deviceinfo.maxThreadsPerBlock : 1;
+  globalThreads[0] = (total_threads > deviceinfo.maxThreadsPerBlock) ? deviceinfo.maxThreadsPerBlock : total_threads;
+  globalThreads[1] = (total_threads > deviceinfo.maxThreadsPerBlock) ? total_threads/deviceinfo.maxThreadsPerBlock : 1;
 
 
   // first set the params that don't change per block: exp, RES
@@ -822,7 +874,7 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
                  &mystuff.exec_events[stream]);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<< "Error " << status << ": Enqueueing kernel(clEnqueueNDRangeKernel)\n";
+		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)\n";
 		return 1;
 	}
   clFlush(commandQueue);
@@ -899,29 +951,6 @@ void print1DArray(const char * Name, const unsigned int * Data, const unsigned i
         o += printf("%d ", Data[i]);
     }
     printf("... %d %d\n", Data[len-2], Data[len-1]);
-}
-
-bool prime(cl_ulong pp, bool quick)
-{
-  cl_ulong i=0;
-  if (quick)
-  {
-    cl_uint primes[]={3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,91,97,0};
-
-    int j=primes[i];
-    while (j)
-    {
-      if (pp == j)   return true;
-      if (pp%j == 0) return false;
-      j=primes[++i];
-    }
-  }
-  else
-  {
-    for (i=3; i*i<=pp;i+=2)
-      if (pp%i == 0) return false;
-  }
-  return true;
 }
 
 void print_dez72(int72 a, char *buf)
@@ -1105,7 +1134,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
 #endif
   b_preinit_hi=0;b_preinit_mid=0;b_preinit_lo=0;
   count=0;
-  if (use_kernel == _71BIT_MUL24)
+  if ((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_16))
   {
     if     (ln2b<24 )b_preinit.d0=1<< ln2b;       // should not happen
     else if(ln2b<48 )b_preinit.d1=1<<(ln2b-24);   // should not happen
@@ -1199,7 +1228,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
         case UNUSED:   if (k_min <= k_max) wait = 0; break;  // still some work to do
         case PREPARED:                   // start the calculation of a preprocessed dataset on the device
           {
-            if (use_kernel == _71BIT_MUL24)
+            if ((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_16))
             {
               k_base.d0 =  k_min_grid[i] & 0xFFFFFF;
               k_base.d1 = (k_min_grid[i] >> 24) & 0xFFFFFF;
@@ -1233,8 +1262,10 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
 	    	      return RET_ERROR;
             }
             if (event_status > CL_COMPLETE) /* still running: CL_QUEUED=3 (command has been enqueued in the command-queue),
-                                               CL_SUBMITTED=2 (enqueued command has been submitted by the host to the device associated with the command-queue),
-                                               CL_RUNNING=1 (device is currently executing this command), CL_COMPLETE=0 */
+                                               CL_SUBMITTED=2 (enqueued command has been submitted by the host to the
+                                               device associated with the command-queue),
+                                               CL_RUNNING=1 (device is currently executing this command), CL_COMPLETE=0,
+                                               any error: <0 */
             {
               break;
             }
@@ -1478,10 +1509,10 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
   factorsfound=mystuff->h_RES[0];
   for(i=0; (i<factorsfound) && (i<10); i++)
   {
-    factor_hi =mystuff->h_RES[i*3 + 1];
-    factor_mid=mystuff->h_RES[i*3 + 2];
-    factor_lo =mystuff->h_RES[i*3 + 3];
-    if (use_kernel == _71BIT_MUL24)
+    factor_hi  = mystuff->h_RES[i*3 + 1];
+    factor_mid = mystuff->h_RES[i*3 + 2];
+    factor_lo  = mystuff->h_RES[i*3 + 3];
+    if ((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_16))
     {
       int72 factor={factor_lo, factor_mid, factor_hi};
       print_dez72(factor,string);
@@ -1492,19 +1523,19 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
     }
  //    if(mystuff->mode != MODE_SELFTEST_SHORT)
     {
-      if(mystuff->printmode == 1 && i == 0)printf("\n");
-      printf("Result[%02d]: M%u has a factor: %s\n",i,exp,string);
+      if(mystuff->printmode == 1 && i == 0) printf("\n");
+      printf("Result[%02d]: M%u has a factor: %s\n", i, exp, string);
     }
     if(mystuff->mode == MODE_NORMAL)
     {
-      resultfile=fopen("results.txt", "a");
-      fprintf(resultfile,"M%u has a factor: %s\n",exp,string);
+      resultfile = fopen("results.txt", "a");
+      fprintf(resultfile,"M%u has a factor: %s\n", exp, string);
       fclose(resultfile);
     }
   }
   if(factorsfound>=10)
   {
-    if(mystuff->mode != MODE_SELFTEST_SHORT)printf("M%u: %d additional factors not shown\n",exp,factorsfound-10);
+    if(mystuff->mode != MODE_SELFTEST_SHORT)printf("M%u: %d additional factors not shown\n", exp, factorsfound - 10);
     if(mystuff->mode == MODE_NORMAL)
     {
       resultfile=fopen("results.txt", "a");

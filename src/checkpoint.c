@@ -1,27 +1,25 @@
 /*
-This file is part of mfaktc.
+This file is part of mfaktc (mfakto).
 Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
 
-mfaktc is free software: you can redistribute it and/or modify
+mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-mfaktc is distributed in the hope that it will be useful,
+mfaktc (mfakto) is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
                                 
 You should have received a copy of the GNU General Public License
-along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
+along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
 #include <string.h>
 
 #include "params.h"
-
-#define CHECKPOINT_FILE "mfaktc.ckp"
 
 unsigned int checkpoint_checksum(char *string, int chars)
 /* generates a CRC-32 like checksum of the string */
@@ -60,7 +58,7 @@ checkpoint_write() writes the checkpoint file.
   f=fopen(filename, "w");
   if(f==NULL)
   {
-    printf("WARNING, could not write checkpoint file \"%s\"\n", CHECKPOINT_FILE);
+    printf("WARNING, could not write checkpoint file \"%s\"\n", filename);
   }
   else
   {
@@ -137,6 +135,6 @@ tries to delete the checkpoint file
   
   if(remove(filename))
   {
-    printf("WARNING: can't delete the checkpoint file \"%s\"\n", CHECKPOINT_FILE);
+    printf("WARNING: can't delete the checkpoint file \"%s\"\n", filename);
   }
 }

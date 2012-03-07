@@ -1,19 +1,19 @@
 /*
-This file is part of mfaktc.
+This file is part of mfaktc (mfakto).
 Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
 
-mfaktc is free software: you can redistribute it and/or modify
+mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-mfaktc is distributed in the hope that it will be useful,
+mfaktc (mfakto) is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
                                 
 You should have received a copy of the GNU General Public License
-along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
+along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /* 72bit (3x 24bit) integer
@@ -87,6 +87,7 @@ typedef struct
   unsigned int *h_modbasecase_debug;
 #endif  
 
+  int vectorsize;
   int printmode;
   int class_counter;		/* needed for ETA calculation */
   int allowsleep;
@@ -109,6 +110,10 @@ enum GPUKernels
   _95BIT_64_OpenCL,
   BARRETT92_64_OpenCL,
   _71BIT_MUL24,
+  _71BIT_MUL24_2,
+  _71BIT_MUL24_4,
+  _71BIT_MUL24_8,
+  _71BIT_MUL24_16,
   _95BIT_MUL32,
   BARRETT79_MUL32,
   BARRETT92_MUL32,

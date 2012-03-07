@@ -1,19 +1,19 @@
 /*
-This file is part of mfaktc.
+This file is part of mfaktc (mfakto).
 Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
 
-mfaktc is free software: you can redistribute it and/or modify
+mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-mfaktc is distributed in the hope that it will be useful,
+mfaktc (mfakto) is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
                                 
 You should have received a copy of the GNU General Public License
-along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
+along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
@@ -48,7 +48,7 @@ This starts to become useful on my system for e.g. TF M66xxxxxx from 2^66 to
 ******************/
 
 /* print some more timing information */
-// #define VERBOSE_TIMING
+//#define VERBOSE_TIMING
 
 
 /* enable for printf's from device (GPU) code. Only used in sm_20 or newer
@@ -60,8 +60,8 @@ code path */
 //#define CHECKS_MODBASECASE
 
 
-/* print stream and h_ktab usage */
-// #define DEBUG_STREAM_SCHEDULE
+/* print stream, kernel schedule and h_ktab usage */
+//#define DEBUG_STREAM_SCHEDULE
 
 /* perform a sanity check on the h_ktab usage */
 //#define DEBUG_STREAM_SCHEDULE_CHECK
@@ -71,8 +71,16 @@ code path */
 //#define RAW_GPU_BENCH
 
 
+/* issue lots of additional trace output from the C-part of the program
+   (see mfakto_kernels.cl - TRACE_KERNEL and TRACE_TID for how to trace the
+   kernel execution */
+//#define DETAILED_INFO
 
 
+/* enable the OpenCL built-in performance measurement. This will print the
+   pure times needed to copy the data over, and to test the FC's of the chunk
+   (pure run time per kernel invokation */
+//#define CL_PERFORMANCE_INFO 
 
 
 /******************************************************************************
@@ -84,9 +92,9 @@ code path */
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.04" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.05" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.04-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.05-Win" /* DO NOT CHANGE! */
 #endif
 
 
@@ -110,7 +118,7 @@ SIEVE_PRIMES defines how far we sieve the factor candidates.
 The first <SIEVE_PRIMES> odd primes are sieved.
 The optimal value depends greatly on the speed of the CPU (one core) and the
 speed of the CPU.
-The actual configuration is done in mfaktc.ini.
+The actual configuration is done in mfakto.ini.
 The following lines define the min, default and max value.
 */
 
@@ -129,7 +137,7 @@ when the siever switches between those two code variants. */
 
 /*
 The number of streams used by mfakto. No distinction between CPU and GPU streams anymore
-The actual configuration is done in mfaktc.ini. This ini-file contains
+The actual configuration is done in mfakto.ini. This ini-file contains
 a small description, too
 The following lines define the min, default and max value.
 */

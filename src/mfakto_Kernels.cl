@@ -1,4 +1,21 @@
 /*
+This file is part of mfaktc.
+Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
+
+mfaktc is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+mfaktc is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+                                
+You should have received a copy of the GNU General Public License
+along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
+*/
+/*
  All OpenCL kernels for mfakto Trial-Factoring
 
    is 2^p-1 divisible by q (q=2kp+1)? 
@@ -1374,21 +1391,36 @@ Precalculated here since it is the same for all steps in the following loop */
   }
 }
 
-/*
+/****************************************
  * 24-bit-stuff for the 71-bit-kernel
  *
- */
+ ****************************************/
+
+#define EVAL_RES(comp) \
+  if((a.d2.comp|a.d1.comp)==0 && a.d0.comp==1) \
+  { \
+    if ((f.d2.comp|f.d1.comp)!=0 || f.d0.comp != 1) \
+    { \
+      tid=atomic_inc(&RES[0]); \
+      if(tid<10) \
+      { \
+        RES[tid*3 + 1]=f.d2.comp; \
+        RES[tid*3 + 2]=f.d1.comp; \
+        RES[tid*3 + 3]=f.d0.comp; \
+      } \
+    } \
+  }
 
 /* 72bit (3x 24bit) integer
 D=d0 + d1*(2^24) + d2*(2^48) */
-typedef struct
+typedef struct _int72_t
 {
   uint d0,d1,d2;
 }int72_t;
 
 /* 144bit (6x 24bit) integer
 D=d0 + d1*(2^24) + d2*(2^48) + ... */
-typedef struct
+typedef struct _int144_t
 {
   uint d0,d1,d2,d3,d4,d5;
 }int144_t;
@@ -1455,8 +1487,9 @@ res = a - b */
   res->d2 = __subc   (a.d2, b.d2) & 0xFFFFFF;
   */
   res->d0 = (a.d0 - b.d0) & 0xFFFFFF;
-  res->d1 = (a.d1 - b.d1 - ((b.d0 > a.d0) ? 1 : 0)) & 0xFFFFFF;
+  res->d1 = (a.d1 - b.d1 - ((b.d0 > a.d0) ? 1 : 0));
   res->d2 = (a.d2 - b.d2 - ((res->d1 > a.d1) ? 1 : 0)) & 0xFFFFFF;
+  res->d1&= 0xFFFFFF;
 }
 
 int72_t sub_if_gte_72(int72_t a, int72_t b)
@@ -1466,8 +1499,9 @@ int72_t sub_if_gte_72(int72_t a, int72_t b)
   /* do the subtraction and use tmp.d2 to decide if the result is valid (if a was > b) */
 
   tmp.d0 = (a.d0 - b.d0) & 0xFFFFFF;
-  tmp.d1 = (a.d1 - b.d1 - ((b.d0 > a.d0) ? 1 : 0)) & 0xFFFFFF;
+  tmp.d1 = (a.d1 - b.d1 - ((b.d0 > a.d0) ? 1 : 0));
   tmp.d2 = (a.d2 - b.d2 - ((tmp.d1 > a.d1) ? 1 : 0)) & 0xFFFFFF;
+  tmp.d1&= 0xFFFFFF;
 
   return (tmp.d2 > a.d2) ? a : tmp;
 }
@@ -2045,6 +2079,2688 @@ Precalculated here since it is the same for all steps in the following loop */
         RES[tid*3 + 1]=f.d2;
         RES[tid*3 + 2]=f.d1;
         RES[tid*3 + 3]=f.d0;
+      }
+    }
+  }
+}
+
+
+/***********************************************
+ * 16-vector implementation of all
+ * 24-bit-stuff for the 71-bit-kernel
+ *
+ ***********************************************/
+
+/* 72bit (3x 24bit) integer
+D=d0 + d1*(2^24) + d2*(2^48) */
+typedef struct _int72_16t
+{
+  uint16 d0,d1,d2;
+}int72_16t;
+
+/* 144bit (6x 24bit) integer
+D=d0 + d1*(2^24) + d2*(2^48) + ... */
+typedef struct _int144_16t
+{
+  uint16 d0,d1,d2,d3,d4,d5;
+}int144_16t;
+
+
+void mul_24_48_16(uint16 *res_hi, uint16 *res_lo, uint16 a, uint16 b)
+/* res_hi*(2^24) + res_lo = a * b */
+{ // PERF: inline its use
+/* thats how it should be, but the mul24_hi is missing ...
+  *res_lo = mul24(a,b) & 0xFFFFFF;
+  *res_hi = mul24_hi(a,b) >> 8;       // PERF: check for mul24_hi
+  */
+  *res_lo  = mul24(a,b);
+//  *res_hi  = (mul_hi(a,b) << 8) | (*res_lo >> 24);       
+  *res_hi  = mad24(mul_hi(a,b), 256, (*res_lo >> 24));       
+  *res_lo &= 0xFFFFFF;
+}
+
+
+void copy_72_16(int72_16t *a, int72_16t b)
+/* a = b */
+{
+  a->d0 = b.d0;
+  a->d1 = b.d1;
+  a->d2 = b.d2;
+}
+
+void sub_72_16(int72_16t *res, int72_16t a, int72_16t b)
+/* a must be greater or equal b!
+res = a - b */
+{
+  /*
+  res->d0 = __sub_cc (a.d0, b.d0) & 0xFFFFFF;
+  res->d1 = __subc_cc(a.d1, b.d1) & 0xFFFFFF;
+  res->d2 = __subc   (a.d2, b.d2) & 0xFFFFFF;
+  */
+
+  res->d0 = (a.d0 - b.d0) & 0xFFFFFF;
+  res->d1 = a.d1 - b.d1 - as_uint16((b.d0 > a.d0) ? 1 : 0);
+  res->d2 = (a.d2 - b.d2 - as_uint16((res->d1 > a.d1) ? 1 : 0)) & 0xFFFFFF;
+  res->d1&= 0xFFFFFF;
+}
+
+int72_16t sub_if_gte_72_16(int72_16t a, int72_16t b)
+/* return (a>b)?a-b:a */
+{
+  int72_16t tmp;
+  /* do the subtraction and use tmp.d2 to decide if the result is valid (if a was > b) */
+
+  tmp.d0 = (a.d0 - b.d0) & 0xFFFFFF;
+  tmp.d1 = (a.d1 - b.d1 - as_uint16((b.d0 > a.d0) ? 1 : 0));
+  tmp.d2 = (a.d2 - b.d2 - as_uint16((tmp.d1 > a.d1) ? 1 : 0));
+  tmp.d1&= 0xFFFFFF;
+
+  /* tmp valid if tmp.d2 <= a.d2 (separately for each part of the vector) */
+  tmp.d0 = (tmp.d2 > a.d2) ? a.d0 : tmp.d0;
+  tmp.d1 = (tmp.d2 > a.d2) ? a.d1 : tmp.d1;
+  tmp.d2 = (tmp.d2 > a.d2) ? a.d2 : tmp.d2 & 0xFFFFFF;
+
+  return tmp;
+}
+
+void mul_72_16(int72_16t *res, int72_16t a, int72_t b)
+/* res = (a * b) mod (2^72) */
+{
+  uint16 hi,lo; // PERF: inline mul_24_48
+
+  mul_24_48_16(&hi, &lo, a.d0, b.d0);
+  res->d0 = lo;
+  res->d1 = hi;
+
+  mul_24_48_16(&hi, &lo, a.d1, b.d0);
+  res->d1 += lo;
+  res->d2 = hi;
+
+  mul_24_48_16(&hi, &lo, a.d0, b.d1);
+  res->d1 += lo;
+  res->d2 += hi;
+
+  res->d2 = mad24(a.d2,b.d0,res->d2);
+
+  res->d2 = mad24(a.d1,b.d1,res->d2);
+
+  res->d2 = mad24(a.d0,b.d2,res->d2);
+
+//  no need to carry res->d0
+
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
+
+  res->d2 &= 0xFFFFFF;
+}
+
+
+void square_72_144_16(int144_16t *res, int72_16t a)
+/* res = a^2 */
+{ // PERF: use local copy for intermediate res->...?
+  uint16 tmp;
+
+  tmp      =  mul24(a.d0, a.d0);
+//  res->d1  = (mul_hi(a.d0, a.d0) << 8) | (tmp >> 24);
+  res->d1  =  mad24(mul_hi(a.d0, a.d0), 256, (tmp >> 24));
+  res->d0  =  tmp       & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d0);
+//  res->d2  = (mul_hi(a.d1, a.d0) << 9) | (tmp >> 23);
+  res->d2  =  mad24(mul_hi(a.d1, a.d0), 512, (tmp >> 23));
+  res->d1 += (tmp << 1) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d0);
+  res->d3  =  mad24(mul_hi(a.d2, a.d0), 512, (tmp >> 23));
+  res->d2 += (tmp << 1) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d1);
+  res->d3 +=  mad24(mul_hi(a.d1, a.d1), 256, (tmp >> 24));
+  res->d2 +=  tmp       & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d2, a.d1);
+  res->d4  =  mad24(mul_hi(a.d2, a.d1), 512, (tmp >> 23));
+  res->d3 += (tmp << 1) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d2);
+  res->d5  =  mad24(mul_hi(a.d2, a.d2), 256, (tmp >> 24));
+  res->d4 +=  tmp       & 0xFFFFFF;
+
+/*  res->d0 doesn't need carry */
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
+
+  res->d3 += res->d2 >> 24;
+  res->d2 &= 0xFFFFFF;
+
+  res->d4 += res->d3 >> 24;
+  res->d3 &= 0xFFFFFF;
+
+  res->d5 += res->d4 >> 24;
+  res->d4 &= 0xFFFFFF;
+/*  res->d5 doesn't need carry */
+}
+
+
+void square_72_144_16_shl(int144_16t *res, int72_16t a)
+/* res = 2* a^2 */
+{ // PERF: use local copy for intermediate res->...?
+  uint16 tmp;
+
+  tmp      =  mul24(a.d0, a.d0);
+  res->d1  =  mad24(mul_hi(a.d0, a.d0), 512, (tmp >> 23));
+  res->d0  = (tmp << 1) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d0);
+  res->d2  =  mad24(mul_hi(a.d1, a.d0), 1024, (tmp >> 22));
+  res->d1 += (tmp << 2) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d0);
+  res->d3  =  mad24(mul_hi(a.d2, a.d0), 1024, (tmp >> 22));
+  res->d2 += (tmp << 2) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d1);
+  res->d3 +=  mad24(mul_hi(a.d1, a.d1), 512, (tmp >> 23));
+  res->d2 += (tmp << 1) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d2, a.d1);
+  res->d4  =  mad24(mul_hi(a.d2, a.d1), 1024, (tmp >> 22));
+  res->d3 += (tmp << 2) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d2);
+  res->d5  =  mad24(mul_hi(a.d2, a.d2), 512, (tmp >> 23));
+  res->d4 += (tmp << 1) & 0xFFFFFF;
+
+/*  res->d0 doesn't need carry */
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
+
+  res->d3 += res->d2 >> 24;
+  res->d2 &= 0xFFFFFF;
+
+  res->d4 += res->d3 >> 24;
+  res->d3 &= 0xFFFFFF;
+
+  res->d5 += res->d4 >> 24;
+  res->d4 &= 0xFFFFFF;
+/*  res->d5 doesn't need carry */
+}
+
+
+void mod_144_72_16(int72_16t *res, int144_16t q, int72_16t n, float16 nf
+#if (TRACE_KERNEL > 1)
+                   , __private uint tid
+#endif
+)
+/* res = q mod n */
+{
+  float16 qf;
+  uint16  qi, tmp;
+  int144_16t nn; // ={0,0,0,0};  // PERF: initialization needed?
+
+/********** Step 1, Offset 2^51 (2*24 + 3) **********/
+  qf= convert_float16_rte(q.d5);
+  qf= qf * 16777216.0f + convert_float16_rte(q.d4);
+  qf= qf * 16777216.0f + convert_float16_rte(q.d3);
+  qf*= 2097152.0f;
+
+  qi=convert_uint16(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#1: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.x, nf.x, (qf*nf).x, qi.x);
+//    if (tid==TRACE_TID) printf("g: %g, G: %G, #g %#g, #G %#G, f %f, F %F, #f %#f, #F %#F, e %e, E %E, #e %#e, #E %#E\n", qf, qf, qf, qf, qf, qf, qf, qf, qf, qf, qf, qf);
+ //   if (tid==TRACE_TID) printf("g: %g, G: %G, #g %#g, #G %#G, f %f, F %F, #f %#f, #F %#F, e %e, E %E, #e %#e, #E %#E\n", nf, nf, nf, nf, nf, nf, nf, nf, nf, nf, nf, nf);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+//  nn.d0=0;
+//  nn.d1=0;
+// nn = n * qi AND shiftleft 3 bits at once, carry is done later
+  tmp    =  mul24(n.d0, qi);
+  nn.d3  =  mad24(mul_hi(n.d0, qi), 2048, (tmp >> 21));
+//  nn.d3  = (mul_hi(n.d0, qi) << 11) | (tmp >> 21);
+  nn.d2  = (tmp << 3) & 0xFFFFFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#1.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d1, qi);
+//  nn.d4  = (mul_hi(n.d1, qi) << 11) | (tmp >> 21);
+  nn.d4  =  mad24(mul_hi(n.d1, qi), 2048, (tmp >> 21));
+  nn.d3 += (tmp << 3) & 0xFFFFFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#1.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d2, qi);
+//  nn.d5  = (mul_hi(n.d2, qi) << 11) | (tmp >> 21);
+  nn.d5  =  mad24(mul_hi(n.d2, qi), 2048, (tmp >> 21));
+  nn.d4 += (tmp << 3) & 0xFFFFFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#1.3: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+
+/* do carry */
+  nn.d4 += nn.d3 >> 24; nn.d3 &= 0xFFFFFF;
+  nn.d5 += nn.d4 >> 24; nn.d4 &= 0xFFFFFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#1: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/*  q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d2 = __sub_cc (q.d2, nn.d2) & 0xFFFFFF;
+  q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
+  q.d4 = __subc_cc(q.d4, nn.d4) & 0xFFFFFF;
+  q.d5 = __subc   (q.d5, nn.d5); */
+  q.d2 = q.d2 - nn.d2;
+  q.d3 = q.d3 - nn.d3 - as_uint16((q.d2 > 0xFFFFFF)?1:0);
+  q.d4 = q.d4 - nn.d4 - as_uint16((q.d3 > 0xFFFFFF)?1:0);
+  q.d5 = q.d5 - nn.d5 - as_uint16((q.d4 > 0xFFFFFF)?1:0);
+  q.d2 &= 0xFFFFFF;
+  q.d3 &= 0xFFFFFF;
+  q.d4 &= 0xFFFFFF;
+
+/********** Step 2, Offset 2^31 (1*24 + 7) **********/
+  qf= convert_float16_rte(q.d5);
+  qf= qf * 16777216.0f + convert_float16_rte(q.d4);
+  qf= qf * 16777216.0f + convert_float16_rte(q.d3);
+  qf= qf * 16777216.0f + convert_float16_rte(q.d2);
+  qf*= 131072.0f;
+
+  qi=convert_uint16(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#2: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.x, nf.x, (qf*nf).x, qi.x);
+    //if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", 0.0f, 1.0f, qi);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+//  nn.d0=0;
+// nn = n * qi AND shiftleft 7 bits at once, carry is done later
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.0: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d0, qi);
+//  nn.d2  = (mul_hi(n.d0, qi) << 15) | (tmp >> 17);
+  nn.d2  =  mad24(mul_hi(n.d0, qi), 32768, (tmp >> 17));
+  nn.d1  = (tmp << 7) & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d1, qi);
+//  nn.d3  = (mul_hi(n.d1, qi) << 15) | (tmp >> 17);
+  nn.d3  =  mad24(mul_hi(n.d1, qi), 32768, (tmp >> 17));
+  nn.d2 += (tmp << 7) & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d2, qi);
+//  nn.d4  = (mul_hi(n.d2, qi) << 15) | (tmp >> 17);
+  nn.d4  =  mad24(mul_hi(n.d2, qi), 32768, (tmp >> 17));
+  nn.d3 += (tmp << 7) & 0xFFFFFF;
+#if (TRACE_KERNEL > 2)
+  nn.d5=0;
+#endif
+ 
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+/* do carry */
+  nn.d3 += nn.d2 >> 24; nn.d2 &= 0xFFFFFF;
+  nn.d4 += nn.d3 >> 24; nn.d3 &= 0xFFFFFF;
+#if (TRACE_KERNEL > 2)
+  nn.d5 += nn.d4 >> 24; nn.d4 &= 0xFFFFFF;
+#endif
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#2: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/* q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d1 = __sub_cc (q.d1, nn.d1) & 0xFFFFFF;
+  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
+  q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE  
+  q.d4 = __subc   (q.d4, nn.d4) & 0xFFFFFF;
+#else
+  q.d4 = __subc_cc(q.d4, nn.d4) & 0xFFFFFF;
+  q.d5 = __subc   (q.d5, nn.d5);
+#endif */
+  q.d1 = q.d1 - nn.d1;
+  q.d2 = q.d2 - nn.d2 - as_uint16((q.d1 > 0xFFFFFF)?1:0);
+  q.d3 = q.d3 - nn.d3 - as_uint16((q.d2 > 0xFFFFFF)?1:0);
+  q.d4 = q.d4 - nn.d4 - as_uint16((q.d3 > 0xFFFFFF)?1:0);
+  q.d1 &= 0xFFFFFF;
+  q.d2 &= 0xFFFFFF;
+  q.d3 &= 0xFFFFFF;
+  q.d4 &= 0xFFFFFF;
+
+/********** Step 3, Offset 2^11 (0*24 + 11) **********/
+  qf= convert_float16_rte(q.d4);
+  qf= qf * 16777216.0f + convert_float16_rte(q.d3);
+  qf= qf * 16777216.0f + convert_float16_rte(q.d2);
+  qf= qf * 16777216.0f + convert_float16_rte(q.d1);
+  qf*= 8192.0f;
+
+  qi=convert_uint16(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#3: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf, nf, qf*nf, qi);
+    // if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", -1.0e10f, 3.2e8f, qi);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#3: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+//nn = n * qi, shiftleft is done later
+/*  nn.d0 =                                  mul24(n.d0, qi)               & 0xFFFFFF;
+  nn.d1 = __add_cc (mul_hi(n.d0, qi) >> 8, mul24(n.d1, qi) | 0xFF000000) & 0xFFFFFF;
+  nn.d2 = __addc_cc(mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi) | 0xFF000000) & 0xFFFFFF;
+  nn.d3 = __addc   (mul_hi(n.d2, qi) >> 8, 0); */
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.0: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d0, qi);
+//  nn.d1 = (mul_hi(n.d0, qi) << 8) | (tmp >> 24);
+  nn.d1 = mad24(mul_hi(n.d0, qi), 256, tmp >> 24);
+  nn.d0 = tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d1, qi);
+//  nn.d2 = (mul_hi(n.d1, qi) << 8) | (tmp >> 24);
+  nn.d2 = mad24(mul_hi(n.d1, qi), 256, tmp >> 24);
+  nn.d1 += tmp & 0xFFFFFF;
+ 
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d2, qi);
+//  nn.d3 = (mul_hi(n.d2, qi) << 8) | (tmp >> 24);
+  nn.d3 = mad24(mul_hi(n.d2, qi), 256, tmp >> 24);
+  nn.d2 += tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.3: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  /* do carry */
+  nn.d2 += nn.d1 >> 24; nn.d1 &= 0xFFFFFF;
+  nn.d3 += nn.d2 >> 24; nn.d2 &= 0xFFFFFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#3: before shl(11): nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+// shiftleft 11 bits
+#ifdef CHECKS_MODBASECASE
+  nn.d4 =                           nn.d3>>13;
+  nn.d3 = ((nn.d3 & 0x1FFF)<<11) + (nn.d2>>13);
+#else  
+//  nn.d3 = ( nn.d3          <<11) + (nn.d2>>13);	// we don't need to clear top bits here, this is done during q = q - nn
+  nn.d3 = mad24(nn.d3,          2048, nn.d2>>13);	// we don't need to clear top bits here, this is done during q = q - nn
+#endif  
+//  nn.d2 = ((nn.d2 & 0x1FFF)<<11) + (nn.d1>>13);
+//  nn.d1 = ((nn.d1 & 0x1FFF)<<11) + (nn.d0>>13);
+  nn.d2 = mad24(nn.d2 & 0x1FFF, 2048, nn.d1>>13);
+  nn.d1 = mad24(nn.d1 & 0x1FFF, 2048, nn.d0>>13);
+  nn.d0 = ((nn.d0 & 0x1FFF)<<11);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/*  q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d0 = __sub_cc (q.d0, nn.d0) & 0xFFFFFF;
+  q.d1 = __subc_cc(q.d1, nn.d1) & 0xFFFFFF;
+  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE
+  q.d3 = __subc   (q.d3, nn.d3) & 0xFFFFFF;
+#else
+  q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
+  q.d4 = __subc   (q.d4, nn.d4);
+#endif */
+  q.d0 = q.d0 - nn.d0;
+  q.d1 = q.d1 - nn.d1 - as_uint16((q.d0 > 0xFFFFFF)?1:0);
+  q.d2 = q.d2 - nn.d2 - as_uint16((q.d1 > 0xFFFFFF)?1:0);
+  q.d3 = q.d3 - nn.d3 - as_uint16((q.d2 > 0xFFFFFF)?1:0);
+  q.d0 &= 0xFFFFFF;
+  q.d1 &= 0xFFFFFF;
+  q.d2 &= 0xFFFFFF;
+  q.d3 &= 0xFFFFFF;
+
+/********** Step 4, Offset 2^0 (0*24 + 0) **********/
+
+  qf= convert_float16_rte(q.d3);
+  qf= qf * 16777216.0f + convert_float16_rte(q.d2);
+  qf= qf * 16777216.0f + convert_float16_rte(q.d1);
+  qf= qf * 16777216.0f + convert_float16_rte(q.d0);
+
+  qi=convert_uint16(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#4: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.x, nf.x, (qf*nf).x, qi.x);
+    //if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", qf, nf, qi);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+  /* nn.d0 =                                  mul24(n.d0, qi)               & 0xFFFFFF;
+  nn.d1 = __add_cc (mul_hi(n.d0, qi) >> 8, mul24(n.d1, qi) | 0xFF000000) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE
+  nn.d2 = __addc   (mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi));
+#else
+  nn.d2 = __addc_cc(mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi) | 0xFF000000) & 0xFFFFFF;
+  nn.d3 = __addc   (mul_hi(n.d2, qi) >> 8, 0);
+#endif */
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#4.0: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d0, qi);
+  nn.d1 = mad24(mul_hi(n.d0, qi), 256, tmp >> 24);
+  nn.d0 = tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#4.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d1, qi);
+  nn.d2 = mad24(mul_hi(n.d1, qi), 256, tmp >> 24);
+  nn.d1 += tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#4.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  nn.d2 = mad24(n.d2, qi, nn.d2);
+  nn.d2 += nn.d1 >> 24; nn.d1 &= 0xFFFFFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#4.3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/* q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d0 = __sub_cc (q.d0, nn.d0) & 0xFFFFFF;
+  q.d1 = __subc_cc(q.d1, nn.d1) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE  
+  q.d2 = __subc   (q.d2, nn.d2) & 0xFFFFFF;
+#else
+  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
+  q.d3 = __subc   (q.d3, nn.d3);
+#endif */
+
+  q.d0 = q.d0 - nn.d0;
+  q.d1 = q.d1 - nn.d1 - as_uint16((q.d0 > 0xFFFFFF)?1:0);
+  q.d2 = q.d2 - nn.d2 - as_uint16((q.d1 > 0xFFFFFF)?1:0);
+
+  res->d0 = q.d0 & 0xFFFFFF;
+  res->d1 = q.d1 & 0xFFFFFF;
+  res->d2 = q.d2 & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, res->d2.x, res->d1.x, res->d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+}
+
+
+__kernel void mfakto_cl_71_16(__private uint exp, __private int72_t k_base, __global uint *k_tab, __private int shiftcount, __private int144_t b_in, __global uint *RES)
+/*
+computes 2^exp mod f
+shiftcount is used for precomputing without mod
+a is precomputed on host ONCE. */
+{
+  int72_t   exp72;
+  int72_16t  k;  
+  int72_16t  a;       // result of the modulo
+  int144_16t b;       // result of the squaring;
+  int72_16t  f;       // the factor(s) to be tested
+  int       tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * 16;
+  float16    ff;
+  uint16     t;
+
+  exp72.d2=0;exp72.d1=exp>>23;exp72.d0=(exp&0x7FFFFF)<<1;	// exp72 = 2 * exp
+  k.d0 = k_base.d0; k.d1 = k_base.d1; k.d2 = k_base.d2;   // widen to vec16
+  b.d0 = b_in.d0; b.d1 = b_in.d1; b.d2 = b_in.d2;
+  b.d3 = b_in.d3; b.d4 = b_in.d4; b.d5 = b_in.d5;
+  t.s0 = k_tab[tid];
+  t.s1 = k_tab[tid+1];
+  t.s2 = k_tab[tid+2];
+  t.s3 = k_tab[tid+3];
+  t.s4 = k_tab[tid+4];
+  t.s5 = k_tab[tid+5];
+  t.s6 = k_tab[tid+6];
+  t.s7 = k_tab[tid+7];
+  t.s8 = k_tab[tid+8];
+  t.s9 = k_tab[tid+9];
+  t.sa = k_tab[tid+10];
+  t.sb = k_tab[tid+11];
+  t.sc = k_tab[tid+12];
+  t.sd = k_tab[tid+13];
+  t.se = k_tab[tid+14];
+  t.sf = k_tab[tid+15];
+
+  mul_24_48_16(&(a.d1), &(a.d0), t, 4620); // NUM_CLASSES
+  k.d0 += a.d0;
+  k.d1 += a.d1;
+  k.d1 += k.d0 >> 24; k.d0 &= 0xFFFFFF;
+  k.d2 += k.d1 >> 24; k.d1 &= 0xFFFFFF;		// k = k + k_tab[tid] * NUM_CLASSES
+
+  mul_72_16(&f, k, exp72);				// f = 2 * k * exp
+  f.d0 += 1;				      	// f = 2 * k * exp + 1
+
+/*
+ff = f as float, needed in mod_144_72().
+Precalculated here since it is the same for all steps in the following loop */
+  ff= convert_float16(f.d2);
+  ff= ff * 16777216.0f + convert_float16(f.d1);
+  ff= ff * 16777216.0f + convert_float16(f.d0);
+
+//  ff=0.9999997f/ff;
+//  ff=__int_as_float(0x3f7ffffc) / ff;	// just a little bit below 1.0f so we allways underestimate the quotient
+  ff=as_float(0x3f7ffffb) / ff;	// just a little bit below 1.0f so we allways underestimate the quotient
+ 
+#if (TRACE_KERNEL > 1)
+  if (tid==TRACE_TID) printf("mfakto_cl_71: tid=%ld: p=%x, *2 =%x:%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d, b=%x:%x:%x:%x:%x:%x\n",
+                              tid, exp, exp72.d1, exp72.d0, k.d2, k.d1, k.d0, f.d2, f.d1, f.d0, shiftcount, b.d5, b.d4, b.d3, b.d2, b.d1, b.d0);
+#endif
+
+  mod_144_72_16(&a,b,f,ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+);			// a = b mod f
+  exp<<= 32 - shiftcount;
+  while(exp)
+  {
+    if(exp&0x80000000)square_72_144_16_shl(&b,a);	// b = 2 * a^2 ("optional multiply by 2" in Prime 95 documentation)
+    else              square_72_144_16(&b,a);	// b = a^2
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mfakto_cl_71: exp=%x,  %x:%x:%x ^2 (shl:%d) = %x:%x:%x:%x:%x:%x\n",
+                              exp, a.d2, a.d1, a.d0, (exp&0x80000000?1:0), b.d5, b.d4, b.d3, b.d2, b.d1, b.d0);
+#endif
+    mod_144_72_16(&a,b,f,ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+      );			// a = b mod f
+    exp<<=1;
+  }
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf("mfakto_cl_71 result: f=%x:%x:%x, a=%x:%x:%x\n",
+                              f.d2, f.d1, f.d0, a.d2, a.d1, a.d0);
+#endif
+
+  a=sub_if_gte_72_16(a,f);
+
+/* finally check if we found a factor and write the factor to RES[] */
+  EVAL_RES(s0)
+  EVAL_RES(s1)
+  EVAL_RES(s2)
+  EVAL_RES(s3)
+  EVAL_RES(s4)
+  EVAL_RES(s5)
+  EVAL_RES(s6)
+  EVAL_RES(s7)
+  EVAL_RES(s8)
+  EVAL_RES(s9)
+  EVAL_RES(sa)
+  EVAL_RES(sb)
+  EVAL_RES(sc)
+  EVAL_RES(sd)
+  EVAL_RES(se)
+  EVAL_RES(sf)
+}
+
+
+/***********************************************
+ * 8-vector implementation of all
+ * 24-bit-stuff for the 71-bit-kernel
+ *
+ ***********************************************/
+
+/* 72bit (3x 24bit) integer
+D=d0 + d1*(2^24) + d2*(2^48) */
+typedef struct _int72_8t
+{
+  uint8 d0,d1,d2;
+}int72_8t;
+
+/* 144bit (6x 24bit) integer
+D=d0 + d1*(2^24) + d2*(2^48) + ... */
+typedef struct _int144_8t
+{
+  uint8 d0,d1,d2,d3,d4,d5;
+}int144_8t;
+
+
+void mul_24_48_8(uint8 *res_hi, uint8 *res_lo, uint8 a, uint8 b)
+/* res_hi*(2^24) + res_lo = a * b */
+{ // PERF: inline its use
+/* thats how it should be, but the mul24_hi is missing ...
+  *res_lo = mul24(a,b) & 0xFFFFFF;
+  *res_hi = mul24_hi(a,b) >> 8;       // PERF: check for mul24_hi
+  */
+  *res_lo  = mul24(a,b);
+//  *res_hi  = (mul_hi(a,b) << 8) | (*res_lo >> 24);       
+  *res_hi  = mad24(mul_hi(a,b), 256, (*res_lo >> 24));       
+  *res_lo &= 0xFFFFFF;
+}
+
+
+void copy_72_8(int72_8t *a, int72_8t b)
+/* a = b */
+{
+  a->d0 = b.d0;
+  a->d1 = b.d1;
+  a->d2 = b.d2;
+}
+
+void sub_72_8(int72_8t *res, int72_8t a, int72_8t b)
+/* a must be greater or equal b!
+res = a - b */
+{
+  /*
+  res->d0 = __sub_cc (a.d0, b.d0) & 0xFFFFFF;
+  res->d1 = __subc_cc(a.d1, b.d1) & 0xFFFFFF;
+  res->d2 = __subc   (a.d2, b.d2) & 0xFFFFFF;
+  */
+
+  res->d0 = (a.d0 - b.d0) & 0xFFFFFF;
+  res->d1 = a.d1 - b.d1 - as_uint8((b.d0 > a.d0) ? 1 : 0);
+  res->d2 = (a.d2 - b.d2 - as_uint8((res->d1 > a.d1) ? 1 : 0)) & 0xFFFFFF;
+  res->d1&= 0xFFFFFF;
+}
+
+int72_8t sub_if_gte_72_8(int72_8t a, int72_8t b)
+/* return (a>b)?a-b:a */
+{
+  int72_8t tmp;
+  /* do the subtraction and use tmp.d2 to decide if the result is valid (if a was > b) */
+
+  tmp.d0 = (a.d0 - b.d0) & 0xFFFFFF;
+  tmp.d1 = (a.d1 - b.d1 - as_uint8((b.d0 > a.d0) ? 1 : 0));
+  tmp.d2 = (a.d2 - b.d2 - as_uint8((tmp.d1 > a.d1) ? 1 : 0));
+  tmp.d1&= 0xFFFFFF;
+
+  /* tmp valid if tmp.d2 <= a.d2 (separately for each part of the vector) */
+  tmp.d0 = (tmp.d2 > a.d2) ? a.d0 : tmp.d0;
+  tmp.d1 = (tmp.d2 > a.d2) ? a.d1 : tmp.d1;
+  tmp.d2 = (tmp.d2 > a.d2) ? a.d2 : tmp.d2 & 0xFFFFFF;
+
+  return tmp;
+}
+
+void mul_72_8(int72_8t *res, int72_8t a, int72_t b)
+/* res = (a * b) mod (2^72) */
+{
+  uint8 hi,lo; // PERF: inline mul_24_48
+
+  mul_24_48_8(&hi, &lo, a.d0, b.d0);
+  res->d0 = lo;
+  res->d1 = hi;
+
+  mul_24_48_8(&hi, &lo, a.d1, b.d0);
+  res->d1 += lo;
+  res->d2 = hi;
+
+  mul_24_48_8(&hi, &lo, a.d0, b.d1);
+  res->d1 += lo;
+  res->d2 += hi;
+
+  res->d2 = mad24(a.d2,b.d0,res->d2);
+
+  res->d2 = mad24(a.d1,b.d1,res->d2);
+
+  res->d2 = mad24(a.d0,b.d2,res->d2);
+
+//  no need to carry res->d0
+
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
+
+  res->d2 &= 0xFFFFFF;
+}
+
+
+void square_72_144_8(int144_8t *res, int72_8t a)
+/* res = a^2 */
+{ // PERF: use local copy for intermediate res->...?
+  uint8 tmp;
+
+  tmp      =  mul24(a.d0, a.d0);
+//  res->d1  = (mul_hi(a.d0, a.d0) << 8) | (tmp >> 24);
+  res->d1  =  mad24(mul_hi(a.d0, a.d0), 256, (tmp >> 24));
+  res->d0  =  tmp       & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d0);
+//  res->d2  = (mul_hi(a.d1, a.d0) << 9) | (tmp >> 23);
+  res->d2  =  mad24(mul_hi(a.d1, a.d0), 512, (tmp >> 23));
+  res->d1 += (tmp << 1) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d0);
+  res->d3  =  mad24(mul_hi(a.d2, a.d0), 512, (tmp >> 23));
+  res->d2 += (tmp << 1) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d1);
+  res->d3 +=  mad24(mul_hi(a.d1, a.d1), 256, (tmp >> 24));
+  res->d2 +=  tmp       & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d2, a.d1);
+  res->d4  =  mad24(mul_hi(a.d2, a.d1), 512, (tmp >> 23));
+  res->d3 += (tmp << 1) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d2);
+  res->d5  =  mad24(mul_hi(a.d2, a.d2), 256, (tmp >> 24));
+  res->d4 +=  tmp       & 0xFFFFFF;
+
+/*  res->d0 doesn't need carry */
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
+
+  res->d3 += res->d2 >> 24;
+  res->d2 &= 0xFFFFFF;
+
+  res->d4 += res->d3 >> 24;
+  res->d3 &= 0xFFFFFF;
+
+  res->d5 += res->d4 >> 24;
+  res->d4 &= 0xFFFFFF;
+/*  res->d5 doesn't need carry */
+}
+
+
+void square_72_144_8_shl(int144_8t *res, int72_8t a)
+/* res = 2* a^2 */
+{ // PERF: use local copy for intermediate res->...?
+  uint8 tmp;
+
+  tmp      =  mul24(a.d0, a.d0);
+  res->d1  =  mad24(mul_hi(a.d0, a.d0), 512, (tmp >> 23));
+  res->d0  = (tmp << 1) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d0);
+  res->d2  =  mad24(mul_hi(a.d1, a.d0), 1024, (tmp >> 22));
+  res->d1 += (tmp << 2) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d0);
+  res->d3  =  mad24(mul_hi(a.d2, a.d0), 1024, (tmp >> 22));
+  res->d2 += (tmp << 2) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d1);
+  res->d3 +=  mad24(mul_hi(a.d1, a.d1), 512, (tmp >> 23));
+  res->d2 += (tmp << 1) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d2, a.d1);
+  res->d4  =  mad24(mul_hi(a.d2, a.d1), 1024, (tmp >> 22));
+  res->d3 += (tmp << 2) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d2);
+  res->d5  =  mad24(mul_hi(a.d2, a.d2), 512, (tmp >> 23));
+  res->d4 += (tmp << 1) & 0xFFFFFF;
+
+/*  res->d0 doesn't need carry */
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
+
+  res->d3 += res->d2 >> 24;
+  res->d2 &= 0xFFFFFF;
+
+  res->d4 += res->d3 >> 24;
+  res->d3 &= 0xFFFFFF;
+
+  res->d5 += res->d4 >> 24;
+  res->d4 &= 0xFFFFFF;
+/*  res->d5 doesn't need carry */
+}
+
+
+void mod_144_72_8(int72_8t *res, int144_8t q, int72_8t n, float8 nf
+#if (TRACE_KERNEL > 1)
+                   , __private uint tid
+#endif
+)
+/* res = q mod n */
+{
+  float8 qf;
+  uint8  qi, tmp;
+  int144_8t nn; // ={0,0,0,0};  // PERF: initialization needed?
+
+/********** Step 1, Offset 2^51 (2*24 + 3) **********/
+  qf= convert_float8_rte(q.d5);
+  qf= qf * 16777216.0f + convert_float8_rte(q.d4);
+  qf= qf * 16777216.0f + convert_float8_rte(q.d3);
+  qf*= 2097152.0f;
+
+  qi=convert_uint8(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#1: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.x, nf.x, (qf*nf).x, qi.x);
+//    if (tid==TRACE_TID) printf("g: %g, G: %G, #g %#g, #G %#G, f %f, F %F, #f %#f, #F %#F, e %e, E %E, #e %#e, #E %#E\n", qf, qf, qf, qf, qf, qf, qf, qf, qf, qf, qf, qf);
+ //   if (tid==TRACE_TID) printf("g: %g, G: %G, #g %#g, #G %#G, f %f, F %F, #f %#f, #F %#F, e %e, E %E, #e %#e, #E %#E\n", nf, nf, nf, nf, nf, nf, nf, nf, nf, nf, nf, nf);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+//  nn.d0=0;
+//  nn.d1=0;
+// nn = n * qi AND shiftleft 3 bits at once, carry is done later
+  tmp    =  mul24(n.d0, qi);
+  nn.d3  =  mad24(mul_hi(n.d0, qi), 2048, (tmp >> 21));
+//  nn.d3  = (mul_hi(n.d0, qi) << 11) | (tmp >> 21);
+  nn.d2  = (tmp << 3) & 0xFFFFFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#1.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d1, qi);
+//  nn.d4  = (mul_hi(n.d1, qi) << 11) | (tmp >> 21);
+  nn.d4  =  mad24(mul_hi(n.d1, qi), 2048, (tmp >> 21));
+  nn.d3 += (tmp << 3) & 0xFFFFFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#1.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d2, qi);
+//  nn.d5  = (mul_hi(n.d2, qi) << 11) | (tmp >> 21);
+  nn.d5  =  mad24(mul_hi(n.d2, qi), 2048, (tmp >> 21));
+  nn.d4 += (tmp << 3) & 0xFFFFFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#1.3: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+
+/* do carry */
+  nn.d4 += nn.d3 >> 24; nn.d3 &= 0xFFFFFF;
+  nn.d5 += nn.d4 >> 24; nn.d4 &= 0xFFFFFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#1: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/*  q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d2 = __sub_cc (q.d2, nn.d2) & 0xFFFFFF;
+  q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
+  q.d4 = __subc_cc(q.d4, nn.d4) & 0xFFFFFF;
+  q.d5 = __subc   (q.d5, nn.d5); */
+  q.d2 = q.d2 - nn.d2;
+  q.d3 = q.d3 - nn.d3 - as_uint8((q.d2 > 0xFFFFFF)?1:0);
+  q.d4 = q.d4 - nn.d4 - as_uint8((q.d3 > 0xFFFFFF)?1:0);
+  q.d5 = q.d5 - nn.d5 - as_uint8((q.d4 > 0xFFFFFF)?1:0);
+  q.d2 &= 0xFFFFFF;
+  q.d3 &= 0xFFFFFF;
+  q.d4 &= 0xFFFFFF;
+
+/********** Step 2, Offset 2^31 (1*24 + 7) **********/
+  qf= convert_float8_rte(q.d5);
+  qf= qf * 16777216.0f + convert_float8_rte(q.d4);
+  qf= qf * 16777216.0f + convert_float8_rte(q.d3);
+  qf= qf * 16777216.0f + convert_float8_rte(q.d2);
+  qf*= 131072.0f;
+
+  qi=convert_uint8(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#2: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.x, nf.x, (qf*nf).x, qi.x);
+    //if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", 0.0f, 1.0f, qi);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+//  nn.d0=0;
+// nn = n * qi AND shiftleft 7 bits at once, carry is done later
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.0: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d0, qi);
+//  nn.d2  = (mul_hi(n.d0, qi) << 15) | (tmp >> 17);
+  nn.d2  =  mad24(mul_hi(n.d0, qi), 32768, (tmp >> 17));
+  nn.d1  = (tmp << 7) & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d1, qi);
+//  nn.d3  = (mul_hi(n.d1, qi) << 15) | (tmp >> 17);
+  nn.d3  =  mad24(mul_hi(n.d1, qi), 32768, (tmp >> 17));
+  nn.d2 += (tmp << 7) & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d2, qi);
+//  nn.d4  = (mul_hi(n.d2, qi) << 15) | (tmp >> 17);
+  nn.d4  =  mad24(mul_hi(n.d2, qi), 32768, (tmp >> 17));
+  nn.d3 += (tmp << 7) & 0xFFFFFF;
+#if (TRACE_KERNEL > 2)
+  nn.d5=0;
+#endif
+ 
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+/* do carry */
+  nn.d3 += nn.d2 >> 24; nn.d2 &= 0xFFFFFF;
+  nn.d4 += nn.d3 >> 24; nn.d3 &= 0xFFFFFF;
+#if (TRACE_KERNEL > 2)
+  nn.d5 += nn.d4 >> 24; nn.d4 &= 0xFFFFFF;
+#endif
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#2: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/* q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d1 = __sub_cc (q.d1, nn.d1) & 0xFFFFFF;
+  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
+  q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE  
+  q.d4 = __subc   (q.d4, nn.d4) & 0xFFFFFF;
+#else
+  q.d4 = __subc_cc(q.d4, nn.d4) & 0xFFFFFF;
+  q.d5 = __subc   (q.d5, nn.d5);
+#endif */
+  q.d1 = q.d1 - nn.d1;
+  q.d2 = q.d2 - nn.d2 - as_uint8((q.d1 > 0xFFFFFF)?1:0);
+  q.d3 = q.d3 - nn.d3 - as_uint8((q.d2 > 0xFFFFFF)?1:0);
+  q.d4 = q.d4 - nn.d4 - as_uint8((q.d3 > 0xFFFFFF)?1:0);
+  q.d1 &= 0xFFFFFF;
+  q.d2 &= 0xFFFFFF;
+  q.d3 &= 0xFFFFFF;
+  q.d4 &= 0xFFFFFF;
+
+/********** Step 3, Offset 2^11 (0*24 + 11) **********/
+  qf= convert_float8_rte(q.d4);
+  qf= qf * 16777216.0f + convert_float8_rte(q.d3);
+  qf= qf * 16777216.0f + convert_float8_rte(q.d2);
+  qf= qf * 16777216.0f + convert_float8_rte(q.d1);
+  qf*= 8192.0f;
+
+  qi=convert_uint8(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#3: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf, nf, qf*nf, qi);
+    // if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", -1.0e10f, 3.2e8f, qi);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#3: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+//nn = n * qi, shiftleft is done later
+/*  nn.d0 =                                  mul24(n.d0, qi)               & 0xFFFFFF;
+  nn.d1 = __add_cc (mul_hi(n.d0, qi) >> 8, mul24(n.d1, qi) | 0xFF000000) & 0xFFFFFF;
+  nn.d2 = __addc_cc(mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi) | 0xFF000000) & 0xFFFFFF;
+  nn.d3 = __addc   (mul_hi(n.d2, qi) >> 8, 0); */
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.0: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d0, qi);
+//  nn.d1 = (mul_hi(n.d0, qi) << 8) | (tmp >> 24);
+  nn.d1 = mad24(mul_hi(n.d0, qi), 256, tmp >> 24);
+  nn.d0 = tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d1, qi);
+//  nn.d2 = (mul_hi(n.d1, qi) << 8) | (tmp >> 24);
+  nn.d2 = mad24(mul_hi(n.d1, qi), 256, tmp >> 24);
+  nn.d1 += tmp & 0xFFFFFF;
+ 
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d2, qi);
+//  nn.d3 = (mul_hi(n.d2, qi) << 8) | (tmp >> 24);
+  nn.d3 = mad24(mul_hi(n.d2, qi), 256, tmp >> 24);
+  nn.d2 += tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.3: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  /* do carry */
+  nn.d2 += nn.d1 >> 24; nn.d1 &= 0xFFFFFF;
+  nn.d3 += nn.d2 >> 24; nn.d2 &= 0xFFFFFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#3: before shl(11): nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+// shiftleft 11 bits
+#ifdef CHECKS_MODBASECASE
+  nn.d4 =                           nn.d3>>13;
+  nn.d3 = ((nn.d3 & 0x1FFF)<<11) + (nn.d2>>13);
+#else  
+//  nn.d3 = ( nn.d3          <<11) + (nn.d2>>13);	// we don't need to clear top bits here, this is done during q = q - nn
+  nn.d3 = mad24(nn.d3,          2048, nn.d2>>13);	// we don't need to clear top bits here, this is done during q = q - nn
+#endif  
+//  nn.d2 = ((nn.d2 & 0x1FFF)<<11) + (nn.d1>>13);
+//  nn.d1 = ((nn.d1 & 0x1FFF)<<11) + (nn.d0>>13);
+  nn.d2 = mad24(nn.d2 & 0x1FFF, 2048, nn.d1>>13);
+  nn.d1 = mad24(nn.d1 & 0x1FFF, 2048, nn.d0>>13);
+  nn.d0 = ((nn.d0 & 0x1FFF)<<11);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/*  q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d0 = __sub_cc (q.d0, nn.d0) & 0xFFFFFF;
+  q.d1 = __subc_cc(q.d1, nn.d1) & 0xFFFFFF;
+  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE
+  q.d3 = __subc   (q.d3, nn.d3) & 0xFFFFFF;
+#else
+  q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
+  q.d4 = __subc   (q.d4, nn.d4);
+#endif */
+  q.d0 = q.d0 - nn.d0;
+  q.d1 = q.d1 - nn.d1 - as_uint8((q.d0 > 0xFFFFFF)?1:0);
+  q.d2 = q.d2 - nn.d2 - as_uint8((q.d1 > 0xFFFFFF)?1:0);
+  q.d3 = q.d3 - nn.d3 - as_uint8((q.d2 > 0xFFFFFF)?1:0);
+  q.d0 &= 0xFFFFFF;
+  q.d1 &= 0xFFFFFF;
+  q.d2 &= 0xFFFFFF;
+  q.d3 &= 0xFFFFFF;
+
+/********** Step 4, Offset 2^0 (0*24 + 0) **********/
+
+  qf= convert_float8_rte(q.d3);
+  qf= qf * 16777216.0f + convert_float8_rte(q.d2);
+  qf= qf * 16777216.0f + convert_float8_rte(q.d1);
+  qf= qf * 16777216.0f + convert_float8_rte(q.d0);
+
+  qi=convert_uint8(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#4: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.x, nf.x, (qf*nf).x, qi.x);
+    //if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", qf, nf, qi);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+  /* nn.d0 =                                  mul24(n.d0, qi)               & 0xFFFFFF;
+  nn.d1 = __add_cc (mul_hi(n.d0, qi) >> 8, mul24(n.d1, qi) | 0xFF000000) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE
+  nn.d2 = __addc   (mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi));
+#else
+  nn.d2 = __addc_cc(mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi) | 0xFF000000) & 0xFFFFFF;
+  nn.d3 = __addc   (mul_hi(n.d2, qi) >> 8, 0);
+#endif */
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#4.0: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d0, qi);
+  nn.d1 = mad24(mul_hi(n.d0, qi), 256, tmp >> 24);
+  nn.d0 = tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#4.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d1, qi);
+  nn.d2 = mad24(mul_hi(n.d1, qi), 256, tmp >> 24);
+  nn.d1 += tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#4.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  nn.d2 = mad24(n.d2, qi, nn.d2);
+  nn.d2 += nn.d1 >> 24; nn.d1 &= 0xFFFFFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#4.3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/* q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d0 = __sub_cc (q.d0, nn.d0) & 0xFFFFFF;
+  q.d1 = __subc_cc(q.d1, nn.d1) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE  
+  q.d2 = __subc   (q.d2, nn.d2) & 0xFFFFFF;
+#else
+  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
+  q.d3 = __subc   (q.d3, nn.d3);
+#endif */
+
+  q.d0 = q.d0 - nn.d0;
+  q.d1 = q.d1 - nn.d1 - as_uint8((q.d0 > 0xFFFFFF)?1:0);
+  q.d2 = q.d2 - nn.d2 - as_uint8((q.d1 > 0xFFFFFF)?1:0);
+
+  res->d0 = q.d0 & 0xFFFFFF;
+  res->d1 = q.d1 & 0xFFFFFF;
+  res->d2 = q.d2 & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, res->d2.x, res->d1.x, res->d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+}
+
+
+__kernel void mfakto_cl_71_8(__private uint exp, __private int72_t k_base, __global uint *k_tab, __private int shiftcount, __private int144_t b_in, __global uint *RES)
+/*
+computes 2^exp mod f
+shiftcount is used for precomputing without mod
+a is precomputed on host ONCE. */
+{
+  int72_t   exp72;
+  int72_8t  k;  
+  int72_8t  a;       // result of the modulo
+  int144_8t b;       // result of the squaring;
+  int72_8t  f;       // the factor(s) to be tested
+  int       tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * 8;
+  float8    ff;
+  uint8     t;
+
+  exp72.d2=0;exp72.d1=exp>>23;exp72.d0=(exp&0x7FFFFF)<<1;	// exp72 = 2 * exp
+  k.d0 = k_base.d0; k.d1 = k_base.d1; k.d2 = k_base.d2;   // widen to vec8
+  b.d0 = b_in.d0; b.d1 = b_in.d1; b.d2 = b_in.d2;
+  b.d3 = b_in.d3; b.d4 = b_in.d4; b.d5 = b_in.d5;
+  t.s0 = k_tab[tid];
+  t.s1 = k_tab[tid+1];
+  t.s2 = k_tab[tid+2];
+  t.s3 = k_tab[tid+3];
+  t.s4 = k_tab[tid+4];
+  t.s5 = k_tab[tid+5];
+  t.s6 = k_tab[tid+6];
+  t.s7 = k_tab[tid+7];
+
+  mul_24_48_8(&(a.d1), &(a.d0), t, 4620); // NUM_CLASSES
+  k.d0 += a.d0;
+  k.d1 += a.d1;
+  k.d1 += k.d0 >> 24; k.d0 &= 0xFFFFFF;
+  k.d2 += k.d1 >> 24; k.d1 &= 0xFFFFFF;		// k = k + k_tab[tid] * NUM_CLASSES
+
+  mul_72_8(&f, k, exp72);				// f = 2 * k * exp
+  f.d0 += 1;				      	// f = 2 * k * exp + 1
+
+/*
+ff = f as float, needed in mod_144_72().
+Precalculated here since it is the same for all steps in the following loop */
+  ff= convert_float8(f.d2);
+  ff= ff * 16777216.0f + convert_float8(f.d1);
+  ff= ff * 16777216.0f + convert_float8(f.d0);
+
+//  ff=0.9999997f/ff;
+//  ff=__int_as_float(0x3f7ffffc) / ff;	// just a little bit below 1.0f so we allways underestimate the quotient
+  ff=as_float(0x3f7ffffb) / ff;	// just a little bit below 1.0f so we allways underestimate the quotient
+ 
+#if (TRACE_KERNEL > 1)
+  if (tid==TRACE_TID) printf("mfakto_cl_71: tid=%ld: p=%x, *2 =%x:%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d, b=%x:%x:%x:%x:%x:%x\n",
+                              tid, exp, exp72.d1, exp72.d0, k.d2, k.d1, k.d0, f.d2, f.d1, f.d0, shiftcount, b.d5, b.d4, b.d3, b.d2, b.d1, b.d0);
+#endif
+
+  mod_144_72_8(&a,b,f,ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+);			// a = b mod f
+  exp<<= 32 - shiftcount;
+  while(exp)
+  {
+    if(exp&0x80000000)square_72_144_8_shl(&b,a);	// b = 2 * a^2 ("optional multiply by 2" in Prime 95 documentation)
+    else              square_72_144_8(&b,a);	// b = a^2
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mfakto_cl_71: exp=%x,  %x:%x:%x ^2 (shl:%d) = %x:%x:%x:%x:%x:%x\n",
+                              exp, a.d2, a.d1, a.d0, (exp&0x80000000?1:0), b.d5, b.d4, b.d3, b.d2, b.d1, b.d0);
+#endif
+    mod_144_72_8(&a,b,f,ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+      );			// a = b mod f
+    exp<<=1;
+  }
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf("mfakto_cl_71 result: f=%x:%x:%x, a=%x:%x:%x\n",
+                              f.d2, f.d1, f.d0, a.d2, a.d1, a.d0);
+#endif
+
+  a=sub_if_gte_72_8(a,f);
+
+  EVAL_RES(s0)
+  EVAL_RES(s1)
+  EVAL_RES(s2)
+  EVAL_RES(s3)
+  EVAL_RES(s4)
+  EVAL_RES(s5)
+  EVAL_RES(s6)
+  EVAL_RES(s7)
+}
+
+
+/***********************************************
+ * 4-vector implementation of all
+ * 24-bit-stuff for the 71-bit-kernel
+ *
+ ***********************************************/
+
+/* 72bit (3x 24bit) integer
+D=d0 + d1*(2^24) + d2*(2^48) */
+typedef struct _int72_4t
+{
+  uint4 d0,d1,d2;
+}int72_4t;
+
+/* 144bit (6x 24bit) integer
+D=d0 + d1*(2^24) + d2*(2^48) + ... */
+typedef struct _int144_4t
+{
+  uint4 d0,d1,d2,d3,d4,d5;
+}int144_4t;
+
+
+void mul_24_48_4(uint4 *res_hi, uint4 *res_lo, uint4 a, uint4 b)
+/* res_hi*(2^24) + res_lo = a * b */
+{ // PERF: inline its use
+/* thats how it should be, but the mul24_hi is missing ...
+  *res_lo = mul24(a,b) & 0xFFFFFF;
+  *res_hi = mul24_hi(a,b) >> 8;       // PERF: check for mul24_hi
+  */
+  *res_lo  = mul24(a,b);
+//  *res_hi  = (mul_hi(a,b) << 8) | (*res_lo >> 24);       
+  *res_hi  = mad24(mul_hi(a,b), 256, (*res_lo >> 24));       
+  *res_lo &= 0xFFFFFF;
+}
+
+
+void copy_72_4(int72_4t *a, int72_4t b)
+/* a = b */
+{
+  a->d0 = b.d0;
+  a->d1 = b.d1;
+  a->d2 = b.d2;
+}
+
+void sub_72_4(int72_4t *res, int72_4t a, int72_4t b)
+/* a must be greater or equal b!
+res = a - b */
+{
+  /*
+  res->d0 = __sub_cc (a.d0, b.d0) & 0xFFFFFF;
+  res->d1 = __subc_cc(a.d1, b.d1) & 0xFFFFFF;
+  res->d2 = __subc   (a.d2, b.d2) & 0xFFFFFF;
+  */
+
+  res->d0 = (a.d0 - b.d0) & 0xFFFFFF;
+  res->d1 = a.d1 - b.d1 - as_uint4((b.d0 > a.d0) ? 1 : 0);
+  res->d2 = (a.d2 - b.d2 - as_uint4((res->d1 > a.d1) ? 1 : 0)) & 0xFFFFFF;
+  res->d1&= 0xFFFFFF;
+}
+
+int72_4t sub_if_gte_72_4(int72_4t a, int72_4t b)
+/* return (a>b)?a-b:a */
+{
+  int72_4t tmp;
+  /* do the subtraction and use tmp.d2 to decide if the result is valid (if a was > b) */
+
+  tmp.d0 = (a.d0 - b.d0) & 0xFFFFFF;
+  tmp.d1 = (a.d1 - b.d1 - as_uint4((b.d0 > a.d0) ? 1 : 0));
+  tmp.d2 = (a.d2 - b.d2 - as_uint4((tmp.d1 > a.d1) ? 1 : 0));
+  tmp.d1&= 0xFFFFFF;
+
+  /* tmp valid if tmp.d2 <= a.d2 (separately for each part of the vector) */
+  tmp.d0 = (tmp.d2 > a.d2) ? a.d0 : tmp.d0;
+  tmp.d1 = (tmp.d2 > a.d2) ? a.d1 : tmp.d1;
+  tmp.d2 = (tmp.d2 > a.d2) ? a.d2 : tmp.d2 & 0xFFFFFF;
+
+  return tmp;
+}
+
+void mul_72_4(int72_4t *res, int72_4t a, int72_t b)
+/* res = (a * b) mod (2^72) */
+{
+  uint4 hi,lo; // PERF: inline mul_24_48
+
+  mul_24_48_4(&hi, &lo, a.d0, b.d0);
+  res->d0 = lo;
+  res->d1 = hi;
+
+  mul_24_48_4(&hi, &lo, a.d1, b.d0);
+  res->d1 += lo;
+  res->d2 = hi;
+
+  mul_24_48_4(&hi, &lo, a.d0, b.d1);
+  res->d1 += lo;
+  res->d2 += hi;
+
+  res->d2 = mad24(a.d2,b.d0,res->d2);
+
+  res->d2 = mad24(a.d1,b.d1,res->d2);
+
+  res->d2 = mad24(a.d0,b.d2,res->d2);
+
+//  no need to carry res->d0
+
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
+
+  res->d2 &= 0xFFFFFF;
+}
+
+
+void square_72_144_4(int144_4t *res, int72_4t a)
+/* res = a^2 */
+{ // PERF: use local copy for intermediate res->...?
+  uint4 tmp;
+
+  tmp      =  mul24(a.d0, a.d0);
+//  res->d1  = (mul_hi(a.d0, a.d0) << 8) | (tmp >> 24);
+  res->d1  =  mad24(mul_hi(a.d0, a.d0), 256, (tmp >> 24));
+  res->d0  =  tmp       & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d0);
+//  res->d2  = (mul_hi(a.d1, a.d0) << 9) | (tmp >> 23);
+  res->d2  =  mad24(mul_hi(a.d1, a.d0), 512, (tmp >> 23));
+  res->d1 += (tmp << 1) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d0);
+  res->d3  =  mad24(mul_hi(a.d2, a.d0), 512, (tmp >> 23));
+  res->d2 += (tmp << 1) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d1);
+  res->d3 +=  mad24(mul_hi(a.d1, a.d1), 256, (tmp >> 24));
+  res->d2 +=  tmp       & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d2, a.d1);
+  res->d4  =  mad24(mul_hi(a.d2, a.d1), 512, (tmp >> 23));
+  res->d3 += (tmp << 1) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d2);
+  res->d5  =  mad24(mul_hi(a.d2, a.d2), 256, (tmp >> 24));
+  res->d4 +=  tmp       & 0xFFFFFF;
+
+/*  res->d0 doesn't need carry */
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
+
+  res->d3 += res->d2 >> 24;
+  res->d2 &= 0xFFFFFF;
+
+  res->d4 += res->d3 >> 24;
+  res->d3 &= 0xFFFFFF;
+
+  res->d5 += res->d4 >> 24;
+  res->d4 &= 0xFFFFFF;
+/*  res->d5 doesn't need carry */
+}
+
+
+void square_72_144_4_shl(int144_4t *res, int72_4t a)
+/* res = 2* a^2 */
+{ // PERF: use local copy for intermediate res->...?
+  uint4 tmp;
+
+  tmp      =  mul24(a.d0, a.d0);
+  res->d1  =  mad24(mul_hi(a.d0, a.d0), 512, (tmp >> 23));
+  res->d0  = (tmp << 1) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d0);
+  res->d2  =  mad24(mul_hi(a.d1, a.d0), 1024, (tmp >> 22));
+  res->d1 += (tmp << 2) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d0);
+  res->d3  =  mad24(mul_hi(a.d2, a.d0), 1024, (tmp >> 22));
+  res->d2 += (tmp << 2) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d1);
+  res->d3 +=  mad24(mul_hi(a.d1, a.d1), 512, (tmp >> 23));
+  res->d2 += (tmp << 1) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d2, a.d1);
+  res->d4  =  mad24(mul_hi(a.d2, a.d1), 1024, (tmp >> 22));
+  res->d3 += (tmp << 2) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d2);
+  res->d5  =  mad24(mul_hi(a.d2, a.d2), 512, (tmp >> 23));
+  res->d4 += (tmp << 1) & 0xFFFFFF;
+
+/*  res->d0 doesn't need carry */
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
+
+  res->d3 += res->d2 >> 24;
+  res->d2 &= 0xFFFFFF;
+
+  res->d4 += res->d3 >> 24;
+  res->d3 &= 0xFFFFFF;
+
+  res->d5 += res->d4 >> 24;
+  res->d4 &= 0xFFFFFF;
+/*  res->d5 doesn't need carry */
+}
+
+
+void mod_144_72_4(int72_4t *res, int144_4t q, int72_4t n, float4 nf
+#if (TRACE_KERNEL > 1)
+                   , __private uint tid
+#endif
+)
+/* res = q mod n */
+{
+  float4 qf;
+  uint4  qi, tmp;
+  int144_4t nn; // ={0,0,0,0};  // PERF: initialization needed?
+
+/********** Step 1, Offset 2^51 (2*24 + 3) **********/
+  qf= convert_float4_rte(q.d5);
+  qf= qf * 16777216.0f + convert_float4_rte(q.d4);
+  qf= qf * 16777216.0f + convert_float4_rte(q.d3);
+  qf*= 2097152.0f;
+
+  qi=convert_uint4(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#1: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.x, nf.x, (qf*nf).x, qi.x);
+//    if (tid==TRACE_TID) printf("g: %g, G: %G, #g %#g, #G %#G, f %f, F %F, #f %#f, #F %#F, e %e, E %E, #e %#e, #E %#E\n", qf, qf, qf, qf, qf, qf, qf, qf, qf, qf, qf, qf);
+ //   if (tid==TRACE_TID) printf("g: %g, G: %G, #g %#g, #G %#G, f %f, F %F, #f %#f, #F %#F, e %e, E %E, #e %#e, #E %#E\n", nf, nf, nf, nf, nf, nf, nf, nf, nf, nf, nf, nf);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+//  nn.d0=0;
+//  nn.d1=0;
+// nn = n * qi AND shiftleft 3 bits at once, carry is done later
+  tmp    =  mul24(n.d0, qi);
+  nn.d3  =  mad24(mul_hi(n.d0, qi), 2048, (tmp >> 21));
+//  nn.d3  = (mul_hi(n.d0, qi) << 11) | (tmp >> 21);
+  nn.d2  = (tmp << 3) & 0xFFFFFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#1.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d1, qi);
+//  nn.d4  = (mul_hi(n.d1, qi) << 11) | (tmp >> 21);
+  nn.d4  =  mad24(mul_hi(n.d1, qi), 2048, (tmp >> 21));
+  nn.d3 += (tmp << 3) & 0xFFFFFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#1.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d2, qi);
+//  nn.d5  = (mul_hi(n.d2, qi) << 11) | (tmp >> 21);
+  nn.d5  =  mad24(mul_hi(n.d2, qi), 2048, (tmp >> 21));
+  nn.d4 += (tmp << 3) & 0xFFFFFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#1.3: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+
+/* do carry */
+  nn.d4 += nn.d3 >> 24; nn.d3 &= 0xFFFFFF;
+  nn.d5 += nn.d4 >> 24; nn.d4 &= 0xFFFFFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#1: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/*  q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d2 = __sub_cc (q.d2, nn.d2) & 0xFFFFFF;
+  q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
+  q.d4 = __subc_cc(q.d4, nn.d4) & 0xFFFFFF;
+  q.d5 = __subc   (q.d5, nn.d5); */
+  q.d2 = q.d2 - nn.d2;
+  q.d3 = q.d3 - nn.d3 - as_uint4((q.d2 > 0xFFFFFF)?1:0);
+  q.d4 = q.d4 - nn.d4 - as_uint4((q.d3 > 0xFFFFFF)?1:0);
+  q.d5 = q.d5 - nn.d5 - as_uint4((q.d4 > 0xFFFFFF)?1:0);
+  q.d2 &= 0xFFFFFF;
+  q.d3 &= 0xFFFFFF;
+  q.d4 &= 0xFFFFFF;
+
+/********** Step 2, Offset 2^31 (1*24 + 7) **********/
+  qf= convert_float4_rte(q.d5);
+  qf= qf * 16777216.0f + convert_float4_rte(q.d4);
+  qf= qf * 16777216.0f + convert_float4_rte(q.d3);
+  qf= qf * 16777216.0f + convert_float4_rte(q.d2);
+  qf*= 131072.0f;
+
+  qi=convert_uint4(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#2: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.x, nf.x, (qf*nf).x, qi.x);
+    //if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", 0.0f, 1.0f, qi);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+//  nn.d0=0;
+// nn = n * qi AND shiftleft 7 bits at once, carry is done later
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.0: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d0, qi);
+//  nn.d2  = (mul_hi(n.d0, qi) << 15) | (tmp >> 17);
+  nn.d2  =  mad24(mul_hi(n.d0, qi), 32768, (tmp >> 17));
+  nn.d1  = (tmp << 7) & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d1, qi);
+//  nn.d3  = (mul_hi(n.d1, qi) << 15) | (tmp >> 17);
+  nn.d3  =  mad24(mul_hi(n.d1, qi), 32768, (tmp >> 17));
+  nn.d2 += (tmp << 7) & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d2, qi);
+//  nn.d4  = (mul_hi(n.d2, qi) << 15) | (tmp >> 17);
+  nn.d4  =  mad24(mul_hi(n.d2, qi), 32768, (tmp >> 17));
+  nn.d3 += (tmp << 7) & 0xFFFFFF;
+#if (TRACE_KERNEL > 2)
+  nn.d5=0;
+#endif
+ 
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+/* do carry */
+  nn.d3 += nn.d2 >> 24; nn.d2 &= 0xFFFFFF;
+  nn.d4 += nn.d3 >> 24; nn.d3 &= 0xFFFFFF;
+#if (TRACE_KERNEL > 2)
+  nn.d5 += nn.d4 >> 24; nn.d4 &= 0xFFFFFF;
+#endif
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#2: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/* q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d1 = __sub_cc (q.d1, nn.d1) & 0xFFFFFF;
+  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
+  q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE  
+  q.d4 = __subc   (q.d4, nn.d4) & 0xFFFFFF;
+#else
+  q.d4 = __subc_cc(q.d4, nn.d4) & 0xFFFFFF;
+  q.d5 = __subc   (q.d5, nn.d5);
+#endif */
+  q.d1 = q.d1 - nn.d1;
+  q.d2 = q.d2 - nn.d2 - as_uint4((q.d1 > 0xFFFFFF)?1:0);
+  q.d3 = q.d3 - nn.d3 - as_uint4((q.d2 > 0xFFFFFF)?1:0);
+  q.d4 = q.d4 - nn.d4 - as_uint4((q.d3 > 0xFFFFFF)?1:0);
+  q.d1 &= 0xFFFFFF;
+  q.d2 &= 0xFFFFFF;
+  q.d3 &= 0xFFFFFF;
+  q.d4 &= 0xFFFFFF;
+
+/********** Step 3, Offset 2^11 (0*24 + 11) **********/
+  qf= convert_float4_rte(q.d4);
+  qf= qf * 16777216.0f + convert_float4_rte(q.d3);
+  qf= qf * 16777216.0f + convert_float4_rte(q.d2);
+  qf= qf * 16777216.0f + convert_float4_rte(q.d1);
+  qf*= 8192.0f;
+
+  qi=convert_uint4(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#3: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf, nf, qf*nf, qi);
+    // if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", -1.0e10f, 3.2e8f, qi);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#3: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+//nn = n * qi, shiftleft is done later
+/*  nn.d0 =                                  mul24(n.d0, qi)               & 0xFFFFFF;
+  nn.d1 = __add_cc (mul_hi(n.d0, qi) >> 8, mul24(n.d1, qi) | 0xFF000000) & 0xFFFFFF;
+  nn.d2 = __addc_cc(mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi) | 0xFF000000) & 0xFFFFFF;
+  nn.d3 = __addc   (mul_hi(n.d2, qi) >> 8, 0); */
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.0: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d0, qi);
+//  nn.d1 = (mul_hi(n.d0, qi) << 8) | (tmp >> 24);
+  nn.d1 = mad24(mul_hi(n.d0, qi), 256, tmp >> 24);
+  nn.d0 = tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d1, qi);
+//  nn.d2 = (mul_hi(n.d1, qi) << 8) | (tmp >> 24);
+  nn.d2 = mad24(mul_hi(n.d1, qi), 256, tmp >> 24);
+  nn.d1 += tmp & 0xFFFFFF;
+ 
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d2, qi);
+//  nn.d3 = (mul_hi(n.d2, qi) << 8) | (tmp >> 24);
+  nn.d3 = mad24(mul_hi(n.d2, qi), 256, tmp >> 24);
+  nn.d2 += tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.3: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  /* do carry */
+  nn.d2 += nn.d1 >> 24; nn.d1 &= 0xFFFFFF;
+  nn.d3 += nn.d2 >> 24; nn.d2 &= 0xFFFFFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#3: before shl(11): nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+// shiftleft 11 bits
+#ifdef CHECKS_MODBASECASE
+  nn.d4 =                           nn.d3>>13;
+  nn.d3 = ((nn.d3 & 0x1FFF)<<11) + (nn.d2>>13);
+#else  
+//  nn.d3 = ( nn.d3          <<11) + (nn.d2>>13);	// we don't need to clear top bits here, this is done during q = q - nn
+  nn.d3 = mad24(nn.d3,          2048, nn.d2>>13);	// we don't need to clear top bits here, this is done during q = q - nn
+#endif  
+//  nn.d2 = ((nn.d2 & 0x1FFF)<<11) + (nn.d1>>13);
+//  nn.d1 = ((nn.d1 & 0x1FFF)<<11) + (nn.d0>>13);
+  nn.d2 = mad24(nn.d2 & 0x1FFF, 2048, nn.d1>>13);
+  nn.d1 = mad24(nn.d1 & 0x1FFF, 2048, nn.d0>>13);
+  nn.d0 = ((nn.d0 & 0x1FFF)<<11);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/*  q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d0 = __sub_cc (q.d0, nn.d0) & 0xFFFFFF;
+  q.d1 = __subc_cc(q.d1, nn.d1) & 0xFFFFFF;
+  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE
+  q.d3 = __subc   (q.d3, nn.d3) & 0xFFFFFF;
+#else
+  q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
+  q.d4 = __subc   (q.d4, nn.d4);
+#endif */
+  q.d0 = q.d0 - nn.d0;
+  q.d1 = q.d1 - nn.d1 - as_uint4((q.d0 > 0xFFFFFF)?1:0);
+  q.d2 = q.d2 - nn.d2 - as_uint4((q.d1 > 0xFFFFFF)?1:0);
+  q.d3 = q.d3 - nn.d3 - as_uint4((q.d2 > 0xFFFFFF)?1:0);
+  q.d0 &= 0xFFFFFF;
+  q.d1 &= 0xFFFFFF;
+  q.d2 &= 0xFFFFFF;
+  q.d3 &= 0xFFFFFF;
+
+/********** Step 4, Offset 2^0 (0*24 + 0) **********/
+
+  qf= convert_float4_rte(q.d3);
+  qf= qf * 16777216.0f + convert_float4_rte(q.d2);
+  qf= qf * 16777216.0f + convert_float4_rte(q.d1);
+  qf= qf * 16777216.0f + convert_float4_rte(q.d0);
+
+  qi=convert_uint4(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#4: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.x, nf.x, (qf*nf).x, qi.x);
+    //if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", qf, nf, qi);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+  /* nn.d0 =                                  mul24(n.d0, qi)               & 0xFFFFFF;
+  nn.d1 = __add_cc (mul_hi(n.d0, qi) >> 8, mul24(n.d1, qi) | 0xFF000000) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE
+  nn.d2 = __addc   (mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi));
+#else
+  nn.d2 = __addc_cc(mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi) | 0xFF000000) & 0xFFFFFF;
+  nn.d3 = __addc   (mul_hi(n.d2, qi) >> 8, 0);
+#endif */
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#4.0: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d0, qi);
+  nn.d1 = mad24(mul_hi(n.d0, qi), 256, tmp >> 24);
+  nn.d0 = tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#4.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d1, qi);
+  nn.d2 = mad24(mul_hi(n.d1, qi), 256, tmp >> 24);
+  nn.d1 += tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#4.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  nn.d2 = mad24(n.d2, qi, nn.d2);
+  nn.d2 += nn.d1 >> 24; nn.d1 &= 0xFFFFFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#4.3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/* q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d0 = __sub_cc (q.d0, nn.d0) & 0xFFFFFF;
+  q.d1 = __subc_cc(q.d1, nn.d1) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE  
+  q.d2 = __subc   (q.d2, nn.d2) & 0xFFFFFF;
+#else
+  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
+  q.d3 = __subc   (q.d3, nn.d3);
+#endif */
+
+  q.d0 = q.d0 - nn.d0;
+  q.d1 = q.d1 - nn.d1 - as_uint4((q.d0 > 0xFFFFFF)?1:0);
+  q.d2 = q.d2 - nn.d2 - as_uint4((q.d1 > 0xFFFFFF)?1:0);
+
+  res->d0 = q.d0 & 0xFFFFFF;
+  res->d1 = q.d1 & 0xFFFFFF;
+  res->d2 = q.d2 & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, res->d2.x, res->d1.x, res->d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+}
+
+
+__kernel void mfakto_cl_71_4(__private uint exp, __private int72_t k_base, __global uint *k_tab, __private int shiftcount, __private int144_t b_in, __global uint *RES)
+/*
+computes 2^exp mod f
+shiftcount is used for precomputing without mod
+a is precomputed on host ONCE. */
+{
+  int72_t   exp72;
+  int72_4t  k;  
+  int72_4t  a;       // result of the modulo
+  int144_4t b;       // result of the squaring;
+  int72_4t  f;       // the factor(s) to be tested
+  int       tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * 4;
+  float4    ff;
+  uint4     t;
+
+  exp72.d2=0;exp72.d1=exp>>23;exp72.d0=(exp&0x7FFFFF)<<1;	// exp72 = 2 * exp
+  k.d0 = k_base.d0; k.d1 = k_base.d1; k.d2 = k_base.d2;   // widen to vec4
+  b.d0 = b_in.d0; b.d1 = b_in.d1; b.d2 = b_in.d2;
+  b.d3 = b_in.d3; b.d4 = b_in.d4; b.d5 = b_in.d5;
+  t.x = k_tab[tid];
+  t.y = k_tab[tid+1];
+  t.z = k_tab[tid+2];
+  t.w = k_tab[tid+3];
+
+  mul_24_48_4(&(a.d1), &(a.d0), t, 4620); // NUM_CLASSES
+  k.d0 += a.d0;
+  k.d1 += a.d1;
+  k.d1 += k.d0 >> 24; k.d0 &= 0xFFFFFF;
+  k.d2 += k.d1 >> 24; k.d1 &= 0xFFFFFF;		// k = k + k_tab[tid] * NUM_CLASSES
+
+  mul_72_4(&f, k, exp72);				// f = 2 * k * exp
+  f.d0 += 1;				      	// f = 2 * k * exp + 1
+
+/*
+ff = f as float, needed in mod_144_72().
+Precalculated here since it is the same for all steps in the following loop */
+  ff= convert_float4(f.d2);
+  ff= ff * 16777216.0f + convert_float4(f.d1);
+  ff= ff * 16777216.0f + convert_float4(f.d0);
+
+//  ff=0.9999997f/ff;
+//  ff=__int_as_float(0x3f7ffffc) / ff;	// just a little bit below 1.0f so we allways underestimate the quotient
+  ff=as_float(0x3f7ffffb) / ff;	// just a little bit below 1.0f so we allways underestimate the quotient
+ 
+#if (TRACE_KERNEL > 1)
+  if (tid==TRACE_TID) printf("mfakto_cl_71: tid=%ld: p=%x, *2 =%x:%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d, b=%x:%x:%x:%x:%x:%x\n",
+                              tid, exp, exp72.d1, exp72.d0, k.d2, k.d1, k.d0, f.d2, f.d1, f.d0, shiftcount, b.d5, b.d4, b.d3, b.d2, b.d1, b.d0);
+#endif
+
+  mod_144_72_4(&a,b,f,ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+);			// a = b mod f
+  exp<<= 32 - shiftcount;
+  while(exp)
+  {
+    if(exp&0x80000000)square_72_144_4_shl(&b,a);	// b = 2 * a^2 ("optional multiply by 2" in Prime 95 documentation)
+    else              square_72_144_4(&b,a);	// b = a^2
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mfakto_cl_71: exp=%x,  %x:%x:%x ^2 (shl:%d) = %x:%x:%x:%x:%x:%x\n",
+                              exp, a.d2, a.d1, a.d0, (exp&0x80000000?1:0), b.d5, b.d4, b.d3, b.d2, b.d1, b.d0);
+#endif
+    mod_144_72_4(&a,b,f,ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+      );			// a = b mod f
+    exp<<=1;
+  }
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf("mfakto_cl_71 result: f=%x:%x:%x, a=%x:%x:%x\n",
+                              f.d2, f.d1, f.d0, a.d2, a.d1, a.d0);
+#endif
+
+  a=sub_if_gte_72_4(a,f);
+
+/* finally check if we found a factor and write the factor to RES[] */
+  EVAL_RES(x)
+  EVAL_RES(y)
+  EVAL_RES(z)
+  EVAL_RES(w)
+}
+
+/***********************************************
+ * 2-vector implementation of all
+ * 24-bit-stuff for the 71-bit-kernel
+ *
+ ***********************************************/
+
+/* 72bit (3x 24bit) integer
+D=d0 + d1*(2^24) + d2*(2^48) */
+typedef struct _int72_2t
+{
+  uint2 d0,d1,d2;
+}int72_2t;
+
+/* 144bit (6x 24bit) integer
+D=d0 + d1*(2^24) + d2*(2^48) + ... */
+typedef struct _int144_2t
+{
+  uint2 d0,d1,d2,d3,d4,d5;
+}int144_2t;
+
+
+void mul_24_48_2(uint2 *res_hi, uint2 *res_lo, uint2 a, uint2 b)
+/* res_hi*(2^24) + res_lo = a * b */
+{ // PERF: inline its use
+/* thats how it should be, but the mul24_hi is missing ...
+  *res_lo = mul24(a,b) & 0xFFFFFF;
+  *res_hi = mul24_hi(a,b) >> 8;       // PERF: check for mul24_hi
+  */
+  *res_lo  = mul24(a,b);
+//  *res_hi  = (mul_hi(a,b) << 8) | (*res_lo >> 24);       
+  *res_hi  = mad24(mul_hi(a,b), 256, (*res_lo >> 24));       
+  *res_lo &= 0xFFFFFF;
+}
+
+
+void copy_72_2(int72_2t *a, int72_2t b)
+/* a = b */
+{
+  a->d0 = b.d0;
+  a->d1 = b.d1;
+  a->d2 = b.d2;
+}
+
+void sub_72_2(int72_2t *res, int72_2t a, int72_2t b)
+/* a must be greater or equal b!
+res = a - b */
+{
+  /*
+  res->d0 = __sub_cc (a.d0, b.d0) & 0xFFFFFF;
+  res->d1 = __subc_cc(a.d1, b.d1) & 0xFFFFFF;
+  res->d2 = __subc   (a.d2, b.d2) & 0xFFFFFF;
+  */
+
+  res->d0 = (a.d0 - b.d0) & 0xFFFFFF;
+  res->d1 = a.d1 - b.d1 - as_uint2((b.d0 > a.d0) ? 1 : 0);
+  res->d2 = (a.d2 - b.d2 - as_uint2((res->d1 > a.d1) ? 1 : 0)) & 0xFFFFFF;
+  res->d1&= 0xFFFFFF;
+}
+
+int72_2t sub_if_gte_72_2(int72_2t a, int72_2t b)
+/* return (a>b)?a-b:a */
+{
+  int72_2t tmp;
+  /* do the subtraction and use tmp.d2 to decide if the result is valid (if a was > b) */
+
+  tmp.d0 = (a.d0 - b.d0) & 0xFFFFFF;
+  tmp.d1 = (a.d1 - b.d1 - as_uint2((b.d0 > a.d0) ? 1 : 0));
+  tmp.d2 = (a.d2 - b.d2 - as_uint2((tmp.d1 > a.d1) ? 1 : 0));
+  tmp.d1&= 0xFFFFFF;
+
+  /* tmp valid if tmp.d2 <= a.d2 (separately for each part of the vector) */
+  tmp.d0 = (tmp.d2 > a.d2) ? a.d0 : tmp.d0;
+  tmp.d1 = (tmp.d2 > a.d2) ? a.d1 : tmp.d1;
+  tmp.d2 = (tmp.d2 > a.d2) ? a.d2 : tmp.d2 & 0xFFFFFF;
+
+  return tmp;
+}
+
+void mul_72_2(int72_2t *res, int72_2t a, int72_t b)
+/* res = (a * b) mod (2^72) */
+{
+  uint2 hi,lo; // PERF: inline mul_24_48
+
+  mul_24_48_2(&hi, &lo, a.d0, b.d0);
+  res->d0 = lo;
+  res->d1 = hi;
+
+  mul_24_48_2(&hi, &lo, a.d1, b.d0);
+  res->d1 += lo;
+  res->d2 = hi;
+
+  mul_24_48_2(&hi, &lo, a.d0, b.d1);
+  res->d1 += lo;
+  res->d2 += hi;
+
+  res->d2 = mad24(a.d2,b.d0,res->d2);
+
+  res->d2 = mad24(a.d1,b.d1,res->d2);
+
+  res->d2 = mad24(a.d0,b.d2,res->d2);
+
+//  no need to carry res->d0
+
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
+
+  res->d2 &= 0xFFFFFF;
+}
+
+
+void square_72_144_2(int144_2t *res, int72_2t a)
+/* res = a^2 */
+{ // PERF: use local copy for intermediate res->...?
+  uint2 tmp;
+
+  tmp      =  mul24(a.d0, a.d0);
+//  res->d1  = (mul_hi(a.d0, a.d0) << 8) | (tmp >> 24);
+  res->d1  =  mad24(mul_hi(a.d0, a.d0), 256, (tmp >> 24));
+  res->d0  =  tmp       & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d0);
+//  res->d2  = (mul_hi(a.d1, a.d0) << 9) | (tmp >> 23);
+  res->d2  =  mad24(mul_hi(a.d1, a.d0), 512, (tmp >> 23));
+  res->d1 += (tmp << 1) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d0);
+  res->d3  =  mad24(mul_hi(a.d2, a.d0), 512, (tmp >> 23));
+  res->d2 += (tmp << 1) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d1);
+  res->d3 +=  mad24(mul_hi(a.d1, a.d1), 256, (tmp >> 24));
+  res->d2 +=  tmp       & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d2, a.d1);
+  res->d4  =  mad24(mul_hi(a.d2, a.d1), 512, (tmp >> 23));
+  res->d3 += (tmp << 1) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d2);
+  res->d5  =  mad24(mul_hi(a.d2, a.d2), 256, (tmp >> 24));
+  res->d4 +=  tmp       & 0xFFFFFF;
+
+/*  res->d0 doesn't need carry */
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
+
+  res->d3 += res->d2 >> 24;
+  res->d2 &= 0xFFFFFF;
+
+  res->d4 += res->d3 >> 24;
+  res->d3 &= 0xFFFFFF;
+
+  res->d5 += res->d4 >> 24;
+  res->d4 &= 0xFFFFFF;
+/*  res->d5 doesn't need carry */
+}
+
+
+void square_72_144_2_shl(int144_2t *res, int72_2t a)
+/* res = 2* a^2 */
+{ // PERF: use local copy for intermediate res->...?
+  uint2 tmp;
+
+  tmp      =  mul24(a.d0, a.d0);
+  res->d1  =  mad24(mul_hi(a.d0, a.d0), 512, (tmp >> 23));
+  res->d0  = (tmp << 1) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d0);
+  res->d2  =  mad24(mul_hi(a.d1, a.d0), 1024, (tmp >> 22));
+  res->d1 += (tmp << 2) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d0);
+  res->d3  =  mad24(mul_hi(a.d2, a.d0), 1024, (tmp >> 22));
+  res->d2 += (tmp << 2) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d1, a.d1);
+  res->d3 +=  mad24(mul_hi(a.d1, a.d1), 512, (tmp >> 23));
+  res->d2 += (tmp << 1) & 0xFFFFFF;
+  
+  tmp      =  mul24(a.d2, a.d1);
+  res->d4  =  mad24(mul_hi(a.d2, a.d1), 1024, (tmp >> 22));
+  res->d3 += (tmp << 2) & 0xFFFFFF;
+
+  tmp      =  mul24(a.d2, a.d2);
+  res->d5  =  mad24(mul_hi(a.d2, a.d2), 512, (tmp >> 23));
+  res->d4 += (tmp << 1) & 0xFFFFFF;
+
+/*  res->d0 doesn't need carry */
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
+
+  res->d3 += res->d2 >> 24;
+  res->d2 &= 0xFFFFFF;
+
+  res->d4 += res->d3 >> 24;
+  res->d3 &= 0xFFFFFF;
+
+  res->d5 += res->d4 >> 24;
+  res->d4 &= 0xFFFFFF;
+/*  res->d5 doesn't need carry */
+}
+
+
+void mod_144_72_2(int72_2t *res, int144_2t q, int72_2t n, float2 nf
+#if (TRACE_KERNEL > 1)
+                   , __private uint tid
+#endif
+)
+/* res = q mod n */
+{
+  float2 qf;
+  uint2  qi, tmp;
+  int144_2t nn; // ={0,0,0,0};  // PERF: initialization needed?
+
+/********** Step 1, Offset 2^51 (2*24 + 3) **********/
+  qf= convert_float2_rte(q.d5);
+  qf= qf * 16777216.0f + convert_float2_rte(q.d4);
+  qf= qf * 16777216.0f + convert_float2_rte(q.d3);
+  qf*= 2097152.0f;
+
+  qi=convert_uint2(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#1: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.x, nf.x, (qf*nf).x, qi.x);
+//    if (tid==TRACE_TID) printf("g: %g, G: %G, #g %#g, #G %#G, f %f, F %F, #f %#f, #F %#F, e %e, E %E, #e %#e, #E %#E\n", qf, qf, qf, qf, qf, qf, qf, qf, qf, qf, qf, qf);
+ //   if (tid==TRACE_TID) printf("g: %g, G: %G, #g %#g, #G %#G, f %f, F %F, #f %#f, #F %#F, e %e, E %E, #e %#e, #E %#E\n", nf, nf, nf, nf, nf, nf, nf, nf, nf, nf, nf, nf);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+//  nn.d0=0;
+//  nn.d1=0;
+// nn = n * qi AND shiftleft 3 bits at once, carry is done later
+  tmp    =  mul24(n.d0, qi);
+  nn.d3  =  mad24(mul_hi(n.d0, qi), 2048, (tmp >> 21));
+//  nn.d3  = (mul_hi(n.d0, qi) << 11) | (tmp >> 21);
+  nn.d2  = (tmp << 3) & 0xFFFFFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#1.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d1, qi);
+//  nn.d4  = (mul_hi(n.d1, qi) << 11) | (tmp >> 21);
+  nn.d4  =  mad24(mul_hi(n.d1, qi), 2048, (tmp >> 21));
+  nn.d3 += (tmp << 3) & 0xFFFFFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#1.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d2, qi);
+//  nn.d5  = (mul_hi(n.d2, qi) << 11) | (tmp >> 21);
+  nn.d5  =  mad24(mul_hi(n.d2, qi), 2048, (tmp >> 21));
+  nn.d4 += (tmp << 3) & 0xFFFFFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#1.3: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+
+/* do carry */
+  nn.d4 += nn.d3 >> 24; nn.d3 &= 0xFFFFFF;
+  nn.d5 += nn.d4 >> 24; nn.d4 &= 0xFFFFFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#1: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/*  q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d2 = __sub_cc (q.d2, nn.d2) & 0xFFFFFF;
+  q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
+  q.d4 = __subc_cc(q.d4, nn.d4) & 0xFFFFFF;
+  q.d5 = __subc   (q.d5, nn.d5); */
+  q.d2 = q.d2 - nn.d2;
+  q.d3 = q.d3 - nn.d3 - as_uint2((q.d2 > 0xFFFFFF)?1:0);
+  q.d4 = q.d4 - nn.d4 - as_uint2((q.d3 > 0xFFFFFF)?1:0);
+  q.d5 = q.d5 - nn.d5 - as_uint2((q.d4 > 0xFFFFFF)?1:0);
+  q.d2 &= 0xFFFFFF;
+  q.d3 &= 0xFFFFFF;
+  q.d4 &= 0xFFFFFF;
+
+/********** Step 2, Offset 2^31 (1*24 + 7) **********/
+  qf= convert_float2_rte(q.d5);
+  qf= qf * 16777216.0f + convert_float2_rte(q.d4);
+  qf= qf * 16777216.0f + convert_float2_rte(q.d3);
+  qf= qf * 16777216.0f + convert_float2_rte(q.d2);
+  qf*= 131072.0f;
+
+  qi=convert_uint2(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#2: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.x, nf.x, (qf*nf).x, qi.x);
+    //if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", 0.0f, 1.0f, qi);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+//  nn.d0=0;
+// nn = n * qi AND shiftleft 7 bits at once, carry is done later
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.0: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d0, qi);
+//  nn.d2  = (mul_hi(n.d0, qi) << 15) | (tmp >> 17);
+  nn.d2  =  mad24(mul_hi(n.d0, qi), 32768, (tmp >> 17));
+  nn.d1  = (tmp << 7) & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d1, qi);
+//  nn.d3  = (mul_hi(n.d1, qi) << 15) | (tmp >> 17);
+  nn.d3  =  mad24(mul_hi(n.d1, qi), 32768, (tmp >> 17));
+  nn.d2 += (tmp << 7) & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp    =  mul24(n.d2, qi);
+//  nn.d4  = (mul_hi(n.d2, qi) << 15) | (tmp >> 17);
+  nn.d4  =  mad24(mul_hi(n.d2, qi), 32768, (tmp >> 17));
+  nn.d3 += (tmp << 7) & 0xFFFFFF;
+#if (TRACE_KERNEL > 2)
+  nn.d5=0;
+#endif
+ 
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#2.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+/* do carry */
+  nn.d3 += nn.d2 >> 24; nn.d2 &= 0xFFFFFF;
+  nn.d4 += nn.d3 >> 24; nn.d3 &= 0xFFFFFF;
+#if (TRACE_KERNEL > 2)
+  nn.d5 += nn.d4 >> 24; nn.d4 &= 0xFFFFFF;
+#endif
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#2: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/* q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d1 = __sub_cc (q.d1, nn.d1) & 0xFFFFFF;
+  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
+  q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE  
+  q.d4 = __subc   (q.d4, nn.d4) & 0xFFFFFF;
+#else
+  q.d4 = __subc_cc(q.d4, nn.d4) & 0xFFFFFF;
+  q.d5 = __subc   (q.d5, nn.d5);
+#endif */
+  q.d1 = q.d1 - nn.d1;
+  q.d2 = q.d2 - nn.d2 - as_uint2((q.d1 > 0xFFFFFF)?1:0);
+  q.d3 = q.d3 - nn.d3 - as_uint2((q.d2 > 0xFFFFFF)?1:0);
+  q.d4 = q.d4 - nn.d4 - as_uint2((q.d3 > 0xFFFFFF)?1:0);
+  q.d1 &= 0xFFFFFF;
+  q.d2 &= 0xFFFFFF;
+  q.d3 &= 0xFFFFFF;
+  q.d4 &= 0xFFFFFF;
+
+/********** Step 3, Offset 2^11 (0*24 + 11) **********/
+  qf= convert_float2_rte(q.d4);
+  qf= qf * 16777216.0f + convert_float2_rte(q.d3);
+  qf= qf * 16777216.0f + convert_float2_rte(q.d2);
+  qf= qf * 16777216.0f + convert_float2_rte(q.d1);
+  qf*= 8192.0f;
+
+  qi=convert_uint2(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#3: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf, nf, qf*nf, qi);
+    // if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", -1.0e10f, 3.2e8f, qi);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#3: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+//nn = n * qi, shiftleft is done later
+/*  nn.d0 =                                  mul24(n.d0, qi)               & 0xFFFFFF;
+  nn.d1 = __add_cc (mul_hi(n.d0, qi) >> 8, mul24(n.d1, qi) | 0xFF000000) & 0xFFFFFF;
+  nn.d2 = __addc_cc(mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi) | 0xFF000000) & 0xFFFFFF;
+  nn.d3 = __addc   (mul_hi(n.d2, qi) >> 8, 0); */
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.0: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d0, qi);
+//  nn.d1 = (mul_hi(n.d0, qi) << 8) | (tmp >> 24);
+  nn.d1 = mad24(mul_hi(n.d0, qi), 256, tmp >> 24);
+  nn.d0 = tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d1, qi);
+//  nn.d2 = (mul_hi(n.d1, qi) << 8) | (tmp >> 24);
+  nn.d2 = mad24(mul_hi(n.d1, qi), 256, tmp >> 24);
+  nn.d1 += tmp & 0xFFFFFF;
+ 
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d2, qi);
+//  nn.d3 = (mul_hi(n.d2, qi) << 8) | (tmp >> 24);
+  nn.d3 = mad24(mul_hi(n.d2, qi), 256, tmp >> 24);
+  nn.d2 += tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#3.3: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  /* do carry */
+  nn.d2 += nn.d1 >> 24; nn.d1 &= 0xFFFFFF;
+  nn.d3 += nn.d2 >> 24; nn.d2 &= 0xFFFFFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#3: before shl(11): nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+// shiftleft 11 bits
+#ifdef CHECKS_MODBASECASE
+  nn.d4 =                           nn.d3>>13;
+  nn.d3 = ((nn.d3 & 0x1FFF)<<11) + (nn.d2>>13);
+#else  
+//  nn.d3 = ( nn.d3          <<11) + (nn.d2>>13);	// we don't need to clear top bits here, this is done during q = q - nn
+  nn.d3 = mad24(nn.d3,          2048, nn.d2>>13);	// we don't need to clear top bits here, this is done during q = q - nn
+#endif  
+//  nn.d2 = ((nn.d2 & 0x1FFF)<<11) + (nn.d1>>13);
+//  nn.d1 = ((nn.d1 & 0x1FFF)<<11) + (nn.d0>>13);
+  nn.d2 = mad24(nn.d2 & 0x1FFF, 2048, nn.d1>>13);
+  nn.d1 = mad24(nn.d1 & 0x1FFF, 2048, nn.d0>>13);
+  nn.d0 = ((nn.d0 & 0x1FFF)<<11);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/*  q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d0 = __sub_cc (q.d0, nn.d0) & 0xFFFFFF;
+  q.d1 = __subc_cc(q.d1, nn.d1) & 0xFFFFFF;
+  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE
+  q.d3 = __subc   (q.d3, nn.d3) & 0xFFFFFF;
+#else
+  q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
+  q.d4 = __subc   (q.d4, nn.d4);
+#endif */
+  q.d0 = q.d0 - nn.d0;
+  q.d1 = q.d1 - nn.d1 - as_uint2((q.d0 > 0xFFFFFF)?1:0);
+  q.d2 = q.d2 - nn.d2 - as_uint2((q.d1 > 0xFFFFFF)?1:0);
+  q.d3 = q.d3 - nn.d3 - as_uint2((q.d2 > 0xFFFFFF)?1:0);
+  q.d0 &= 0xFFFFFF;
+  q.d1 &= 0xFFFFFF;
+  q.d2 &= 0xFFFFFF;
+  q.d3 &= 0xFFFFFF;
+
+/********** Step 4, Offset 2^0 (0*24 + 0) **********/
+
+  qf= convert_float2_rte(q.d3);
+  qf= qf * 16777216.0f + convert_float2_rte(q.d2);
+  qf= qf * 16777216.0f + convert_float2_rte(q.d1);
+  qf= qf * 16777216.0f + convert_float2_rte(q.d0);
+
+  qi=convert_uint2(qf*nf);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_%d%d_%d#4: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.x, nf.x, (qf*nf).x, qi.x);
+    //if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", qf, nf, qi);
+#endif
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, q.d2.x, q.d1.x, q.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+  /* nn.d0 =                                  mul24(n.d0, qi)               & 0xFFFFFF;
+  nn.d1 = __add_cc (mul_hi(n.d0, qi) >> 8, mul24(n.d1, qi) | 0xFF000000) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE
+  nn.d2 = __addc   (mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi));
+#else
+  nn.d2 = __addc_cc(mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi) | 0xFF000000) & 0xFFFFFF;
+  nn.d3 = __addc   (mul_hi(n.d2, qi) >> 8, 0);
+#endif */
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#4.0: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d0, qi);
+  nn.d1 = mad24(mul_hi(n.d0, qi), 256, tmp >> 24);
+  nn.d0 = tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#4.1: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  tmp   = mul24(n.d1, qi);
+  nn.d2 = mad24(mul_hi(n.d1, qi), 256, tmp >> 24);
+  nn.d1 += tmp & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("mod_144_72#4.2: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x);
+#endif
+
+  nn.d2 = mad24(n.d2, qi, nn.d2);
+  nn.d2 += nn.d1 >> 24; nn.d1 &= 0xFFFFFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mod_144_72#4.3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        nn.d5.x, nn.d4.x, nn.d3.x, nn.d2.x, nn.d1.x, nn.d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+/* q = q - nn */
+/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
+  q.d0 = __sub_cc (q.d0, nn.d0) & 0xFFFFFF;
+  q.d1 = __subc_cc(q.d1, nn.d1) & 0xFFFFFF;
+#ifndef CHECKS_MODBASECASE  
+  q.d2 = __subc   (q.d2, nn.d2) & 0xFFFFFF;
+#else
+  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
+  q.d3 = __subc   (q.d3, nn.d3);
+#endif */
+
+  q.d0 = q.d0 - nn.d0;
+  q.d1 = q.d1 - nn.d1 - as_uint2((q.d0 > 0xFFFFFF)?1:0);
+  q.d2 = q.d2 - nn.d2 - as_uint2((q.d1 > 0xFFFFFF)?1:0);
+
+  res->d0 = q.d0 & 0xFFFFFF;
+  res->d1 = q.d1 & 0xFFFFFF;
+  res->d2 = q.d2 & 0xFFFFFF;
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf("mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+        q.d5.x, q.d4.x, q.d3.x, res->d2.x, res->d1.x, res->d0.x, n.d2.x, n.d1.x, n.d0.x, qi.x);
+#endif
+
+}
+
+
+__kernel void mfakto_cl_71_2(__private uint exp, __private int72_t k_base, __global uint *k_tab, __private int shiftcount, __private int144_t b_in, __global uint *RES)
+/*
+computes 2^exp mod f
+shiftcount is used for precomputing without mod
+a is precomputed on host ONCE. */
+{
+  int72_t   exp72;
+  int72_2t  k;  
+  int72_2t  a;       // result of the modulo
+  int144_2t b;       // result of the squaring;
+  int72_2t  f;       // the factor(s) to be tested
+  int       tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * 2;
+  float2    ff;
+  uint2     t;
+
+  exp72.d2=0;exp72.d1=exp>>23;exp72.d0=(exp&0x7FFFFF)<<1;	// exp72 = 2 * exp
+  k.d0 = k_base.d0; k.d1 = k_base.d1; k.d2 = k_base.d2;   // widen to vec2
+  b.d0 = b_in.d0; b.d1 = b_in.d1; b.d2 = b_in.d2;
+  b.d3 = b_in.d3; b.d4 = b_in.d4; b.d5 = b_in.d5;
+  t.x = k_tab[tid];
+  t.y = k_tab[tid+1];
+
+  mul_24_48_2(&(a.d1), &(a.d0), t, 4620); // NUM_CLASSES
+  k.d0 += a.d0;
+  k.d1 += a.d1;
+  k.d1 += k.d0 >> 24; k.d0 &= 0xFFFFFF;
+  k.d2 += k.d1 >> 24; k.d1 &= 0xFFFFFF;		// k = k + k_tab[tid] * NUM_CLASSES
+
+  mul_72_2(&f, k, exp72);				// f = 2 * k * exp
+  f.d0 += 1;				      	// f = 2 * k * exp + 1
+
+/*
+ff = f as float, needed in mod_144_72().
+Precalculated here since it is the same for all steps in the following loop */
+  ff= convert_float2(f.d2);
+  ff= ff * 16777216.0f + convert_float2(f.d1);
+  ff= ff * 16777216.0f + convert_float2(f.d0);
+
+//  ff=0.9999997f/ff;
+//  ff=__int_as_float(0x3f7ffffc) / ff;	// just a little bit below 1.0f so we allways underestimate the quotient
+  ff=as_float(0x3f7ffffb) / ff;	// just a little bit below 1.0f so we allways underestimate the quotient
+ 
+#if (TRACE_KERNEL > 1)
+  if (tid==TRACE_TID) printf("mfakto_cl_71: tid=%ld: p=%x, *2 =%x:%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d, b=%x:%x:%x:%x:%x:%x\n",
+                              tid, exp, exp72.d1, exp72.d0, k.d2, k.d1, k.d0, f.d2, f.d1, f.d0, shiftcount, b.d5, b.d4, b.d3, b.d2, b.d1, b.d0);
+#endif
+
+  mod_144_72_2(&a,b,f,ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+);			// a = b mod f
+  exp<<= 32 - shiftcount;
+  while(exp)
+  {
+    if(exp&0x80000000)square_72_144_2_shl(&b,a);	// b = 2 * a^2 ("optional multiply by 2" in Prime 95 documentation)
+    else              square_72_144_2(&b,a);	// b = a^2
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("mfakto_cl_71: exp=%x,  %x:%x:%x ^2 (shl:%d) = %x:%x:%x:%x:%x:%x\n",
+                              exp, a.d2, a.d1, a.d0, (exp&0x80000000?1:0), b.d5, b.d4, b.d3, b.d2, b.d1, b.d0);
+#endif
+    mod_144_72_2(&a,b,f,ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+      );			// a = b mod f
+    exp<<=1;
+  }
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf("mfakto_cl_71 result: f=%x:%x:%x, a=%x:%x:%x\n",
+                              f.d2, f.d1, f.d0, a.d2, a.d1, a.d0);
+#endif
+
+  a=sub_if_gte_72_2(a,f);
+
+/* finally check if we found a factor and write the factor to RES[] */
+  if((a.d2.x|a.d1.x)==0 && a.d0.x==1)
+  {
+    if ((f.d2.x|f.d1.x)!=0 || f.d0.x != 1)  // happens for k=0 and does not help us ;-)
+    {
+#if (TRACE_KERNEL > 0)  // trace this for any thread
+      printf("mfakto_cl_71: tid=%ld .x found factor: q=%x:%x:%x, k=%x:%x:%x\n",
+        tid, f.d2.x, f.d1.x, f.d0.x, k.d2.x, k.d1.x, k.d0.x);
+#endif
+      tid=atomic_inc(&RES[0]);
+      if(tid<10)				/* limit to 10 factors per class */
+      {
+        RES[tid*3 + 1]=f.d2.x;
+        RES[tid*3 + 2]=f.d1.x;
+        RES[tid*3 + 3]=f.d0.x;
+      }
+    }
+  }
+  if((a.d2.y|a.d1.y)==0 && a.d0.y==1)
+  {
+    if ((f.d2.y|f.d1.y)!=0 || f.d0.y != 1)  // happens for k=0 and does not help us ;-)
+    {
+#if (TRACE_KERNEL > 0)  // trace this for any thread
+      printf("mfakto_cl_71: tid=%ld .y found factor: q=%x:%x:%x, k=%x:%x:%x\n",
+        tid, f.d2.y, f.d1.y, f.d0.y, k.d2.y, k.d1.y, k.d0.y);
+#endif
+      tid=atomic_inc(&RES[0]);
+      if(tid<10)				/* limit to 10 factors per class */
+      {
+        RES[tid*3 + 1]=f.d2.y;
+        RES[tid*3 + 2]=f.d1.y;
+        RES[tid*3 + 3]=f.d0.y;
       }
     }
   }

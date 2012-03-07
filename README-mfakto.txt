@@ -23,8 +23,10 @@ Content
 # 0 What is mfakto #
 ####################
 
-mfakto is a program for trial factoring of mersenne numbers. The name mfakto
-is "Mersenne FAKTorisation with OpenCL". Faktorisation is a mixture of the
+mfakto is the OpenCL-port of mfactc. It aims to contain the same features
+and application use cases in time.
+mfaktc is a program for trial factoring of mersenne numbers. The name mfaktc
+is "Mersenne FAKTorisation with Cuda". Faktorisation is a mixture of the
 english word "factorisation" and the german word "Faktorisierung".
 It uses CPU and GPU resources.
 
@@ -34,53 +36,12 @@ It uses CPU and GPU resources.
 # 1 Compilation #
 #################
 
-* To be done adjusted *
-
-It is assumed that you've allready setup your compiler and AMD APP environment.
-There are some compiletime settings in the file src/params.h possible:
-- in the upper part of the file there are some settings which "advanced
-  users" can chance if they think it is beneficial. Those settings are
-  verified for reasonable values.
-- in the middle are some debug options which can be turned on. These options
-  are only usefull for debuging purposes.
-- the third part contains some defines which should _NOT_ be changed unless
-  you really know what they do. It is easily possible to screw up something.
-
-A 64bit built is prefered except for some old lowend GPUs because the
-performance critical CPU code runs ~33% faster compared to 32bit. (measured
-on a Intel Core i7)
-
+*** not yet applicable to mfakto, only precompiled Win64 available ***
 
 
 ###########################
 # 1.1 Compilation (Linux) #
 ###########################
-
-Change into the subdirectory "src/"
-
-Adjust the path to your CUDA installation in "Makefile" and run 'make'.
-The binary "mfakto.exe" is placed into the parent directory.
-
-I'm using
-- OpenSUSE 11.1 x86_64
-- gcc 4.3.2 (OpenSUSE 11.1)
-- Nvidia driver 260.24
-- Nvidia CUDA Toolkit
-  - 4.0 RC2   read below
-  - 3.2       ~1% slower than 3.0/3.1
-  - 3.1       read below
-  - 3.0       read below
-
-CUDA Toolkits 3.0, 3.1 an 4.0RC2 are only basically tested (compile, run
-selftest).
-
-I don't spent time testing mfakto on 32bit Linux because I think 64bit
-(x86_64) is adopted by most Linux users now. Anyway mfakto should work on
-32bit Linux, too. If problems are reported I'll try to fix them. So I don't
-drop Linux 32bit support totally. ;)
-
-When you compile mfakto on a 32bit system you must change the library path
-in "Makefile" (replace "lib64" with "lib").
 
 
 
@@ -88,39 +49,30 @@ in "Makefile" (replace "lib64" with "lib").
 # 1.2 Compilation (Windows) #
 #############################
 
-The following instructions have been tested on Windows 7 64bit using Visual
-Studio 2008 Professional. A GNU compatible version of make is also required
-as the Makefile is not compatible with nmake. GNU Make for Win32 can be
-downloaded from http://gnuwin32.sourceforge.net/packages/make.htm.
-
-Run the Visual Studio 2008 x64 Win64 Command Prompt and change into the
-"src/" subdirectory.
-
-Run 'make -f Makefile.win' for a 64bit built (recommended on 64bit systems)
-or 'make -f Makefile.win32' for a 32bit built. Perhaps you have to adjust
-the paths to your CUDA installation and the Microsoft Visual Studio binaries
-in the makefiles. The binaries "mfakto-win-64.exe" or "mfakto-win-32.exe"
-are placed in the parent directory.
-
 
 
 ############################
 # 2 Running mfakto (Linux) #
 ############################
 
-* Not yet available *
+*** not yet applicable to mfakto, only precompiled Win64 available ***
 
-Just run './mfakto.exe -h'. It will tell you what parameters it accepts.
-Maybe you want to tweak the parameters in mfakto.ini. A small describtion
-of those parameters is included in mfakto.ini, too.
+
+################################
+# 2.1 Running mfakto (Windows) #
+################################
+
+Open a command shell and run 'mfakto.exe -h'. It will tell you what parameters
+it accepts. Maybe you want to tweak the parameters in mfakto.ini. A short
+description of those parameters is included in mfakto.ini, too.
 Typically you want to get work from a worktodo file. You can specify the
 name in mfakto.ini. It was tested with primenet v5 worktodo files but v4
 should work, too.
 
-Please run the builtin selftest each time you've
+Please run the builtin selftest (mfakto -st) each time you've
 - recompiled the code
 - downloaded a new binary from somewhere
-- changed the Nvidia driver
+- changed the graphics driver
 - changed your hardware
 
 Example worktodo.txt
@@ -129,20 +81,10 @@ Factor=bla,66362159,64,68
 Factor=bla,3321932839,50,71
 -- cut here --
 
-Than run e.g. './mfakto.exe'. If everything is working as expected this
+Then run e.g. 'mfakto.exe'. If everything is working as expected this
 should trial factor M66362159 from 2^64 to 2^68 and after that trial factor
 M3321932839 from 2^50 to 2^71.
 
-
-
-################################
-# 2.1 Running mfakto (Windows) #
-################################
-
-Similar to Linux (read above!).
-Open a command shell and run 'mfakto.exe -h'.
-To run the selftest: 'mfakto -st'
-To get details about the OpenCL env: 'mfakto --CLtest'
 
 
 ###################################################################
@@ -164,16 +106,7 @@ Getting work:
 
 Start mfakto and stress your GPU ;)
 
-Once mfakto has finished all the work report the results to the primenet
-server:
-    Step 1) go to http://www.mersenne.org/ and login with your username and
-            password
-    Step 2) on the menu on the left click "Manual Testing" and than
-            "Results"
-    Step 3) upload the results.txt file generated by mfakto using the
-            "search" and "upload" button
-    Step 49 once you've verified that the primenet server has recognized
-            your results delete or rename the results.txt from mfakto
+DO NOT YET REPORT ANY MFAKTO RESULTS TO PRIMENET
 
 Advanced usage (extend the upper limit):
     Since mfakto works best on long running jobs you may want to extend the
@@ -200,26 +133,20 @@ Advanced usage (extend the upper limit):
 
 - The user interface isn't hardened against malformed input. There are some
   checks but when you really try you should be able to screw it up.
-- The GUI of your OS might be very laggy while running mfakto. (newer GPUs
-  with compute capabilty 2.0 or higher can handle this _MUCH_ better)
-  Comment from James Heinrich:
-    Slower/older GPUs (e.g. compute v1.1) that experience noticeable lag can
-    get a significant boost in system usability by reducing the NumStreams
-    setting from default "3" to "2", with minimal performance loss.
-    Decreasing to "1" provides much greater system responsiveness, but also
-    much lower throughput.
-    At least it did so for me. With NumStreams=3, I could only run mfakto
-    when I wasn't using the computer. Now I run it all the time (except when
-    watching a movie or playing a game...)
-  Another try worth are different settings of GridSize in mfakto.ini.
-  Smaller grids should have higher responsibility with the cost of a little
-  performance penalty. Performancewise this is not recommended on GPUs which
-  can handle >= 100M/s candidates.
-- the debug options CHECKS_MODBASECASE (and USE_DEVICE_PRINTF) might report
-  too high qi values while using the barrett kernels. They are caused by
-  factor candidates out of the specified range.
-
-
+- The GUI of your OS might be very laggy while running mfakto. In severe
+  cases, if a single kernel invocation takes too long, Windows may decide
+  the driver is faulty and reboot.
+  Try lowering GridSize in mfakto.ini. Smaller grids should have better
+  responsiveness at a little performance penalty. Performancewise this is not
+  recommended on GPUs which can handle >= 100M/s candidates.
+  If that does not help, try lowering NumStreams.
+- SievePrimesAdjust does not yet work (it will quickly bring you to the 200000
+  limit, no matter what), better leave it at 0.
+- Sometimes, when multiple instances of mfakto are running and one exits, the
+  whole machine locks up - hard reboot required. Reason unknown.
+  This did not happen when only one mfakto-instance was running.
+- There's been reports of mfakto-crashes when other GPU-bound tools or GPU-Z
+  were running.
 
 ##################################################################
 # 4.1 Stuff that looks like an issue but actually isn't an issue #
@@ -232,12 +159,12 @@ Advanced usage (extend the upper limit):
 - mfakto can find factors outside the given range.
   E.g. './mfakto.exe -tf 66362159 40 41' has a high change to report
   124246422648815633 as a factor. Actually this is a factor of M66362159 but
-  it's size is between 2^56 and 2^57! Offcourse
+  it's size is between 2^56 and 2^57! Of course
   './mfakto.exe -tf 66362159 56 57' will find this factor, too. The reason
   for this behaviour is that mfakto works on huge factor blocks. This is
   controlled by GridSize in mfakto.ini. The default value is 3 which means
   that mfakto runs up to 1048576 factor candidates at once (per class). So
-  the last block of each class is filled up with factor candidates above to
+  the last block of each class is filled up with factor candidates above the
   upper limit. While this is a huge overhead for small ranges it's save to
   ignore it on bigger ranges. If a class contains 100 blocks the overhead is
   on average 0.5%. When a class needs 1000 blocks the overhead is 0.05%...
@@ -250,4 +177,43 @@ Advanced usage (extend the upper limit):
 
 Read mfakto.ini and think before edit. ;)
 
+
+
+#########
+# 6 FAQ #
+#########
+
+Q Does mfakto support multiple GPUs?
+A Not tested yet, but using the commandline option "-d <GPU number>" you should
+  be able to specify which GPU to use for each specific mfakto instance.
+  Please read the next question, too.
+
+Q Can I run multiple instances of mfakto on the same computer?
+A Well, normally yes, but there is a bug that sometimes freezes the whole
+  computer when one of multiple instances exits.
+
+Q Which tasks should I assign to mfakto?
+A Currently, the 71-bit kernel is the only fast one (though everything up to
+  95-bit will work). Due to an internal optimization, factors > 2^64 are 5-10%
+  faster than factors up to 2^64. So best is to assign TF work between 2^64 and
+  2^71 for now. Other fast kernels will follow.
+
+###########
+# 7 .plan #
+###########
+
+0.06
+- add a barrett kernel
+- SievePrimesAdjust
+
+not planned for a specific release / ongoing
+- keep features in sync with mfactc
+- performance improvements whenever I find them ;)
+- find the reason for the occasional aborts
+- documentation and comments in code
+- find a smarter way for the vectors (not so many kernels and functions, but a
+  compile-time definition)
+- combine barrett and vectors
+- full 95-bit implementation
+- once stable, enable uploading results to primenet
 
