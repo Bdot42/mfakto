@@ -25,6 +25,8 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "params.h"
 #include "my_types.h"
 
+extern kernel_info_t       kernel_info[];
+
 int my_read_int(char *inifile, char *name, int *value)
 {
   FILE *in;
@@ -68,6 +70,8 @@ int my_read_string(char *inifile, char *name, char *string)
 int read_config(mystuff_t *mystuff)
 {
   int i;
+  char tmp[51];
+
   printf("\nRuntime options\n");
 
   if(my_read_int("mfakto.ini", "SievePrimes", &i))
@@ -291,6 +295,27 @@ int read_config(mystuff_t *mystuff)
 #endif
   printf("  VectorSize                %d\n", i);
   mystuff->vectorsize = i;
+
+/*****************************************************************************/
+
+  mystuff->preferredKernel = BARRETT79_MUL32;
+
+  if (my_read_string("mfakto.ini", "PreferKernel", tmp))
+  {
+    printf("WARNING: can't read PreferKernel from mfakto.ini, using default (mfakto_cl_barrett79)\n");
+  }
+  else if (strcmp(tmp, "mfakto_cl_71") == 0)
+  {
+    mystuff->preferredKernel = _71BIT_MUL24;
+  }
+  else if (strcmp(tmp, "mfakto_cl_barrett79") != 0)
+  {
+    printf("WARNING: Unknown setting \"%s\" for PreferKernel, using default (mfakto_cl_barrett79)\n", tmp);
+  }
+
+  printf("  PreferKernel              %s\n", kernel_info[mystuff->preferredKernel].kernelname);
+
+/*****************************************************************************/
 
   return 0;
 }

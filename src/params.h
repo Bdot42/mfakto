@@ -82,9 +82,9 @@ code path - not used by mfakto, see kernel trace */
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.07" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.08" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.07-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.08-Win" /* DO NOT CHANGE! */
 #endif
 
 
@@ -103,16 +103,10 @@ This starts to become useful on my system for e.g. TF M66xxxxxx from 2^66 to
 
 
 /*
-THREADS_PER_BLOCK has a hardware limit, 512 on GPUs with compute capability
-1.x and 1024 on GPUs with compute capability 2.0. 
-256 should be OK for most cases. Anyway there is usually no need to increase
-THREADS_PER_BLOCK above 256 because if enough resources are available
-(e.g. registers, shared memory) multiple blocks are launched at the same
-time. When it is increased too much you might run out of register space
-(especially on GPUs with compute capability 1.0 and 1.1)
+THREADS_PER_BLOCK is not needed for OpenCL - it dynamically uses the device's maximum
 */
 
-#define THREADS_PER_BLOCK 256
+//#define THREADS_PER_BLOCK 256
 
 
 

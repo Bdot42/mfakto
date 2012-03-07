@@ -73,7 +73,7 @@ kernel_info_t       kernel_info[NUM_KERNELS] = {
 /* allocate memory buffer arrays, test a small kernel */
 int init_CLstreams(void)
 {
-  int i;
+  unsigned int i;
   cl_int status;
 
   if (context==NULL)
@@ -980,7 +980,8 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
 
 int cleanup_CL(void)
 {
-  cl_int status, i;
+  cl_int status;
+  cl_uint i;
 
   for (i=0; i<NUM_KERNELS; i++)
   {
@@ -1130,8 +1131,8 @@ writes "a" into "buf" in decimal
   while((a_lo!=0 || a_mid!=0 || a_hi!=0) && digits<29)
   {
                                                     carry=a_hi%10; a_hi/=10;
-    tmp = a_mid; tmp += (long long int)carry << 32; carry=tmp%10;  a_mid=tmp/10;
-    tmp = a_lo;  tmp += (long long int)carry << 32; carry=tmp%10;  a_lo=tmp/10;
+    tmp = a_mid; tmp += (long long int)carry << 32; carry=tmp%10;  a_mid=(unsigned int) (tmp/10);
+    tmp = a_lo;  tmp += (long long int)carry << 32; carry=tmp%10;  a_lo=(unsigned int) (tmp/10);
     digit[digits++]=carry;
   }
   if(digits==0)sprintf(buf,"0");
@@ -1149,22 +1150,22 @@ writes "a" into "buf" in decimal
 int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min, unsigned long long int k_max, mystuff_t *mystuff, enum GPUKernels use_kernel)
 {
   size_t size = mystuff->threads_per_grid * sizeof(int);
-  int i, status, wait = 0;
+  int status, wait = 0;
   struct timeval timer, timer2;
   unsigned long long int twait=0, eta;
-  unsigned int cwait=0;
+  unsigned int cwait=0, i;
 // for TF_72BIT  
   int72  k_base;
   int144 b_preinit = {0};
   int192 b_192 = {0};
 
-  unsigned int factor_lo, factor_mid, factor_hi;
+  unsigned int factor_lo, factor_mid, factor_hi, factorsfound=0;
   unsigned long long int b_preinit_lo, b_preinit_mid, b_preinit_hi;
   int shiftcount,ln2b,count=1;
   unsigned long long int k_diff;
   unsigned long long int t;
   char string[50];
-  int factorsfound=0, running=0;
+  int running=0;
   FILE *resultfile;
   
   int h_ktab_index = 0;
@@ -1346,7 +1347,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
               wait = 0;
             }
             break;  // still some work to do
-            continue; // check the other streams
+            // continue; // check the other streams
           }
         case PREPARED:                   // start the calculation of a preprocessed dataset on the device
           {
@@ -1380,7 +1381,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
 #endif
             mystuff->stream_status[i] = RUNNING;
             break;
-            continue; // examine the next stream
+            // continue; // examine the next stream
           }
         case RUNNING:                    // check if it really is still running
           {
@@ -1405,7 +1406,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
                                                any error: <0 */
             {
               break;
-              continue; // examine the next stream
+              // continue; // examine the next stream
             }
             else // finished
             {
@@ -1491,7 +1492,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
               wait = 0;  // some k's left to be processed, or nothing running on GPU - not time to sleep!
             }
             break;
-            continue; // check the other streams
+            // continue; // check the other streams
           }
       }
      // break; // out of the loop as we can process another stream (shortcut: don't check the other streams now)
@@ -1662,14 +1663,14 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
   {
     twait/=count;
     if(mystuff->mode != MODE_SELFTEST_SHORT)printf(" | %7" PRIu64 "us", twait);
-    if(mystuff->sieve_primes_adjust==1 && twait>250 && mystuff->sieve_primes < mystuff->sieve_primes_max && (mystuff->mode != MODE_SELFTEST_SHORT))
+    if(mystuff->sieve_primes_adjust==1 && twait>500 && mystuff->sieve_primes < mystuff->sieve_primes_max && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
       mystuff->sieve_primes *= 9;
       mystuff->sieve_primes /= 8;
       if(mystuff->sieve_primes > mystuff->sieve_primes_max) mystuff->sieve_primes = mystuff->sieve_primes_max;
 //      printf("\navg. wait > 750us, increasing SievePrimes to %d",mystuff->sieve_primes);
     }
-    if(mystuff->sieve_primes_adjust==1 && twait<100 && mystuff->sieve_primes > SIEVE_PRIMES_MIN && (mystuff->mode != MODE_SELFTEST_SHORT))
+    if(mystuff->sieve_primes_adjust==1 && twait<150 && mystuff->sieve_primes > SIEVE_PRIMES_MIN && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
       mystuff->sieve_primes *= 7;
       mystuff->sieve_primes /= 8;

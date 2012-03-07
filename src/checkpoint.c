@@ -64,7 +64,7 @@ checkpoint_write() writes the checkpoint file.
   {
     sprintf(buffer,"%u %d %d %d %s: %d %d", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, cur_class, num_factors);
     i=checkpoint_checksum(buffer,strlen(buffer));
-    fprintf(f,"%u %d %d %d %s: %d %d %08X", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, cur_class, num_factors, i);
+    fprintf(f,"%u %d %d %d %s: %d %d %08X\n", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, cur_class, num_factors, i);
     fclose(f);
   }
 }
@@ -109,7 +109,7 @@ returns 0 otherwise
       sscanf(ptr,"%d %d", cur_class, num_factors);
       sprintf(buffer2,"%u %d %d %d %s: %d %d", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, *cur_class, *num_factors);
       chksum=checkpoint_checksum(buffer2,strlen(buffer2));
-      sprintf(buffer2,"%u %d %d %d %s: %d %d %08X", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, *cur_class, *num_factors, chksum);
+      sprintf(buffer2,"%u %d %d %d %s: %d %d %08X\n", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, *cur_class, *num_factors, chksum);
       if(*cur_class >= 0 && \
          *cur_class < NUM_CLASSES && \
          *num_factors >= 0 && \

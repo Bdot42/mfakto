@@ -1,3 +1,13 @@
+version 0.08 (2011-09-02)
+- added --help and parameter checking
+- exclude single-vectored 72-bit-mul24-kernel (not working with AMD APP SDK 2.5)
+- removed THREADS_PER_BLOCK (no longer needed, will be selected automatically
+  based on the GPU capabilities)
+- removed slow 95-bit kernel (not usable anyway)
+- added to mfakto.ini a config setting
+  PreferKernel=mfakto_cl_barrett79|mfakto_cl_71 as HD5xxx and HD6xxx
+  have their top-speed with different kernels
+
 version 0.07 (2011-08-10)
 - vectorized barrett kernels
 - re-enabled the MODBASECASE checks

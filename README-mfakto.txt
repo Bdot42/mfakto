@@ -64,7 +64,10 @@ It uses CPU and GPU resources.
 # 2 Running mfakto #
 ####################
 
+Install AMD Catalyst driver, version >= 11.7
+  http://support.amd.com/us/gpudownload/Pages/index.aspx
 Install AMD APP version >= 2.4.
+  http://developer.amd.com/sdks/AMDAPPSDK/downloads/Pages/default.aspx
 
 Open a command shell and run 'mfakto -h'. It will tell you what parameters
 it accepts. Maybe you want to tweak the parameters in mfakto.ini. A short
@@ -109,7 +112,7 @@ prime95 or mfakto -d c).
 # 2.2 Running mfakto (Linux) #
 ##############################
 
-- AMD APP 2.4 or higher is required
+- AMD APP 2.4 or higher and Catalyst driver 11.7 or higher are required
 - export LD_LIBRARY_PATH=$AMD_APP_DIR/lib/x86_64
 - run mfakto
 - precompiled version is only available for 64-bit (built on SuSE 11.4)
@@ -118,8 +121,11 @@ prime95 or mfakto -d c).
 # 2.3 Running mfakto (Windows) #
 ################################
 
-- Catalyst 11.7 or above is required, or
-- AMD APP 2.4 or above.
+- AMD APP 2.4 or higher and Catalyst driver 11.7 or higher are required
+- make sure $AMD_APP_DIR/lib/x86_64 is in the path
+- Microsoft Visual C++ 2010 Redistributable Package for your platform and
+  language, e.g.
+  http://www.microsoft.com/downloads/details.aspx?familyid=BD512D9E-43C8-4655-81BF-9350143D5867&displaylang=de
 - 32-bit and 64-bit precompiled versions available; 64-bit siever is way more
   efficient
 
@@ -179,6 +185,13 @@ Advanced usage (extend the upper limit):
   SievePrimesAdjust to 0.
 - There's been reports of mfakto-crashes when other GPU-bound tools or GPU-Z
   were running.
+- GPU is not found, fallback to CPU
+  This happened on Linux when there was no X-server running, or the X-server
+  was not accessible. So please try to run mfakto locally on the main
+  X-display. If that fails as well, then the Graphics driver may be too old.
+  Check the clinfo (part of AMD APP SDK) output for your GPU.
+  If drivers and AMD APP SDK are up to date, then maybe your AMD GPU is not
+  the first GPU. Try the -d switch to specify a different device number.
 
 ##################################################################
 # 4.1 Stuff that looks like an issue but actually isn't an issue #
@@ -235,7 +248,7 @@ A Currently, the 79-bit-barrett kernel is the fastest one, working for factors
 # 7 .plan #
 ###########
 
-not planned for a specific release / ongoing
+- GPU-sieve
 - keep features/changes in sync with mfaktc
 - performance improvements whenever I find them ;)
 - documentation and comments in code

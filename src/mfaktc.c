@@ -153,13 +153,22 @@ other return value
 
   if(use_kernel == AUTOSELECT_KERNEL)
   {
-   /* if                          (bit_max < 64)                               use_kernel = _64BIT_64_OpenCL;  // slower than _71BIT_MUL24
-    else */
-    if ((bit_min >= 64) && (bit_max <= 79))                                   use_kernel = BARRETT79_MUL32;
-    else if                     (bit_max <= 71)                               use_kernel = _71BIT_MUL24;
-    else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
-    else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
+    if (mystuff->preferredKernel == _71BIT_MUL24)  // maybe this can be bound to some version/feature/capability or be tested during selftest
+    {
+      if                          (bit_max <= 71)                               use_kernel = _71BIT_MUL24;
+      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
+      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
+//      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
+    }
     else
+    {
+      if      ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
+      else if                     (bit_max <= 71)                               use_kernel = _71BIT_MUL24;
+      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
+//      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
+    }
+
+    if(use_kernel == AUTOSELECT_KERNEL)
     {
       printf("ERROR: No suitable kernel found for bit_min=%d, bit_max=%d.\n",
                  bit_min, bit_max);
@@ -412,15 +421,18 @@ k_max and k_min are used as 64bit temporary integers here...
 
 void print_help(char *string)
 {
-  printf("mfaktc (%s) Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)\n", MFAKTO_VERSION);
+  printf("mfaktc (%s) Copyright (C) 2009-2011  Oliver Weihe (o.weihe@t-online.de),\n", MFAKTO_VERSION);
+  printf("                                                 Bertram Franz (bertramf@gmx.net)\n");
   printf("This program comes with ABSOLUTELY NO WARRANTY; for details see COPYING.\n");
   printf("This is free software, and you are welcome to redistribute it\n");
   printf("under certain conditions; see COPYING for details.\n\n\n");
 
   printf("Usage: %s [options]\n", string);
-  printf("  -h                     display this help and exit\n");
+  printf("  -h|--help              display this help and exit\n");
   printf("  -d <xy>                specify to use OpenCL platform number x and\n");
   printf("                         device number y in this program\n");
+  printf("  -d c                   force using all CPUs\n");
+  printf("  -d g                   force using the first GPU\n");
   printf("  -tf <exp> <min> <max>  trial factor M<exp> from 2^<min> to 2^<max> and exit\n");
   printf("                         instead of parsing the worktodo file\n");
   printf("  -st                    run builtin selftest and exit\n");
@@ -429,7 +441,7 @@ void print_help(char *string)
   printf("  --timertest            run test of timer functions and exit\n");
   printf("  --sleeptest            run test of sleep functions and exit\n");
   printf("  --CLtest               run test of some OpenCL functions and exit\n");
-  printf("                         specify -d <xy> before --CLtest to use device xy\n");
+  printf("                         specify -d before --CLtest to test the specified device\n");
 }
 
 
@@ -484,11 +496,11 @@ RET_ERROR we might have a serios problem
       j = 0;
       if((bit_min[ind] >= 64) && (bit_min[ind]) < 92)   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
       if((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = BARRETT79_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-      if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24;
+//      if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24;
       if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24_4;
       if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24_8;
 //      if(bit_min[ind] <  63)                            kernels[j++] = _64BIT_64_OpenCL;  // not used
-      if((bit_min[ind] >= 64) && (bit_min[ind] <= 95))  kernels[j++] = _95BIT_64_OpenCL;
+//      if((bit_min[ind] >= 64) && (bit_min[ind] <= 95))  kernels[j++] = _95BIT_64_OpenCL;
       // if((bit_min[ind] >= 64) && (bit_min[ind]) <= 91) kernels[j++] = BARRETT92_64_OpenCL;
 
 
@@ -540,17 +552,16 @@ int main(int argc, char **argv)
 #ifdef VERBOSE_TIMING  
   struct timeval timer;
 #endif
-  int i, tmp = 0;
+  int i = 1, tmp = 0;
   char *ptr;
   int use_worktodo = 1;
   
-  i = 0;
   mystuff.mode=MODE_NORMAL;
   mystuff.quit = 0;
 
   while(i<argc)
   {
-    if(!strcmp((char*)"-h", argv[i]))
+    if((!strcmp((char*)"-h", argv[i])) || (!strcmp((char*)"--help", argv[i])))
     {
       print_help(argv[0]);
       return 0;
@@ -566,6 +577,10 @@ int main(int argc, char **argv)
       {
         devicenumber = -1;
       }
+      else if (argv[i+1][0] == 'g')  // run on GPU
+      {
+        devicenumber = 10000;
+      }
       else
       {
         devicenumber = strtol(argv[i+1],&ptr,10);
@@ -573,7 +588,7 @@ int main(int argc, char **argv)
         {
           printf("ERROR: can't parse <device number> for option \"-d\"\n");
           return 1;
-	}
+	      }
       }
       i++;
     }
@@ -630,6 +645,11 @@ int main(int argc, char **argv)
       CL_test(devicenumber);
       return 0;
     }
+    else
+    {
+      fprintf(stderr, "ERROR: unknown option '%s'\n", argv[i]);
+      return 1;
+    }
     i++;
   }
 
@@ -639,7 +659,6 @@ int main(int argc, char **argv)
   
 /* print current configuration */
   printf("Compiletime options\n");
-  printf("  THREADS_PER_BLOCK         %d\n", THREADS_PER_BLOCK);
   printf("  SIEVE_SIZE_LIMIT          %dkiB\n", SIEVE_SIZE_LIMIT);
   printf("  SIEVE_SIZE                %dbits\n", SIEVE_SIZE);
   if(SIEVE_SIZE <= 0)
@@ -696,16 +715,15 @@ int main(int argc, char **argv)
   printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
   printf("  number of multiprocessors %d (%d compute elements(estimate for ATI GPUs))\n", deviceinfo.units, deviceinfo.units * 80);
   printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
-  if(THREADS_PER_BLOCK > deviceinfo.maxThreadsPerBlock)
-  {
-    printf("\nERROR: THREADS_PER_BLOCK (%d) > deviceinfo.maxThreadsPerBlock\n", THREADS_PER_BLOCK);
-    return 1;
-  }
 
   printf("\nAutomatic parameters\n");
-  i = THREADS_PER_BLOCK * deviceinfo.units * mystuff.vectorsize;
+  i = deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
   while( (i * 2) <= mystuff.threads_per_grid_max) i = i * 2;
   mystuff.threads_per_grid = i;
+  if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
+  {
+    mystuff.threads_per_grid = deviceinfo.maxThreadsPerGrid;
+  }
   printf("  threads per grid          %d\n\n", mystuff.threads_per_grid);
 
   if (init_CLstreams())
@@ -729,7 +747,7 @@ int main(int argc, char **argv)
 /* before we start real work run a small selftest */  
     mystuff.mode = MODE_SELFTEST_SHORT;
     printf("running a simple selftest...\n");
-    if(selftest(&mystuff, 1) != 0)return 1; /* selftest failed :( */
+    if (selftest(&mystuff, 1) != 0) return 1; /* selftest failed :( */
     mystuff.mode = MODE_NORMAL;
     /* allow for ^C */
     register_signal_handler(&mystuff);
@@ -754,7 +772,8 @@ int main(int argc, char **argv)
         }
         if(mystuff.stages == 1)
         {
-          while( ((calculate_k(exp,bit_max_stage) - calculate_k(exp,bit_min_stage)) > (250000000ULL * NUM_CLASSES)) && ((bit_max_stage - bit_min_stage) > 1) )bit_max_stage--;
+          while( ((calculate_k(exp,bit_max_stage) - calculate_k(exp,bit_min_stage)) > (250000000ULL * NUM_CLASSES))
+              && ((bit_max_stage - bit_min_stage) > 1) )  bit_max_stage--;
         }
         tmp = 0;
         while(bit_max_stage <= bit_max && !mystuff.quit)

@@ -68,7 +68,7 @@ along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
 #pragma  OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 #define ATOMIC_INC(x) atom_inc(&x)
 #else
-#pragma warning "No atomic operations available - using simple ++"
+//#pragma message "No atomic operations available - using simple ++"
 #define ATOMIC_INC(x) ((x)++)
 #endif
 

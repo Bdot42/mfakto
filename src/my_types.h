@@ -65,6 +65,23 @@ enum MODES
   MODE_SELFTEST_FULL
 };
 
+enum GPUKernels
+{
+  AUTOSELECT_KERNEL = 0,
+  _TEST_MOD_,
+  _64BIT_64_OpenCL,
+  _95BIT_64_OpenCL,
+  BARRETT92_64_OpenCL,
+  _71BIT_MUL24,
+  _71BIT_MUL24_4,
+  _71BIT_MUL24_8,
+  BARRETT79_MUL32,
+  BARRETT92_MUL32,
+  UNKNOWN_KERNEL, /* what comes after this one will not be loaded */
+  _95BIT_MUL32  /* not yet there */
+};
+
+
 typedef struct
 {
   cl_event copy_events[NUM_STREAMS_MAX];
@@ -74,7 +91,8 @@ typedef struct
   unsigned int *h_RES;
   cl_mem        d_RES;
   enum STREAM_STATUS stream_status[NUM_STREAMS_MAX];
-  
+  enum GPUKernels    preferredKernel;
+
   int sieve_primes, sieve_primes_adjust, sieve_primes_max;
   char workfile[51];		/* allow filenames up to 50 chars... */
   int num_streams;
@@ -102,22 +120,6 @@ typedef struct
     cl_uint max_clock, units, w_dim;
     size_t wg_size, wi_sizes[10], maxThreadsPerBlock, maxThreadsPerGrid;
 } OpenCL_deviceinfo_t;
-
-enum GPUKernels
-{
-  AUTOSELECT_KERNEL = 0,
-  _TEST_MOD_,
-  _64BIT_64_OpenCL,
-  _95BIT_64_OpenCL,
-  BARRETT92_64_OpenCL,
-  _71BIT_MUL24,
-  _71BIT_MUL24_4,
-  _71BIT_MUL24_8,
-  BARRETT79_MUL32,
-  BARRETT92_MUL32,
-  UNKNOWN_KERNEL, /* what comes after this one will not be loaded */
-  _95BIT_MUL32  /* not yet there */
-};
 
 typedef struct _kernel_info
 {
