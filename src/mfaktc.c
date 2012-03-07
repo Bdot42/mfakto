@@ -36,6 +36,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "timer.h"
 #include "checkpoint.h"
 #include "signal_handler.h"
+#include "filelocking.h"
 
 #include "mfakto.h"
 
@@ -116,7 +117,7 @@ other return value
   unsigned long long int time_run, time_est;
 
 
-  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d", exp, bit_min, bit_max);
+  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d\n", exp, bit_min, bit_max);
   timer_init(&timer);
   time(&time_last_checkpoint);
 
@@ -145,15 +146,15 @@ other return value
 
   if(mystuff->mode != MODE_SELFTEST_SHORT)
   {
-    printf(", k_min = %" PRIu64 " - ",k_min);
-    printf(" k_max = %" PRIu64 "\n",k_max);
+    printf("  k_min = %llu - k_max = %llu\n", k_min, k_max);
   }
 
   if(use_kernel == AUTOSELECT_KERNEL)
   {
     if (mystuff->preferredKernel == _71BIT_MUL24)  // maybe this can be bound to some version/feature/capability or be tested during selftest
     {
-      if      ((bit_min >= 64) && (bit_max <= 71))                              use_kernel = _71BIT_MUL24;
+      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;
+      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
       else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
@@ -161,8 +162,10 @@ other return value
     }
     else
     {
-      if      ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
-      else if ((bit_min >= 64) && (bit_max <= 71))                              use_kernel = _71BIT_MUL24;
+      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;
+      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
+//      if      ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
+      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;
       else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
@@ -197,9 +200,9 @@ other return value
             ((2 * (exp% 8) * ((k_min+i)% 8)) % 8 !=  4) &&
             ((2 * (exp% 3) * ((k_min+i)% 3)) % 3 !=  2) &&
             ((2 * (exp% 5) * ((k_min+i)% 5)) % 5 !=  4) &&
-#ifdef MORE_CLASSES        
+#ifdef MORE_CLASSES
             ((2 * (exp%11) * ((k_min+i)%11)) %11 != 10) &&
-#endif    
+#endif
             ((2 * (exp% 7) * ((k_min+i)% 7)) % 7 !=  6))
         {
           mystuff->class_counter++;
@@ -262,22 +265,18 @@ other return value
 #endif
         if(mystuff->mode != MODE_SELFTEST_SHORT && (count == 0 || (count%20 == 0 && mystuff->printmode == 0)))
         {
-          printf("    class | candidates |    time | avg. rate | SievePrimes |    ETA | CPU wait\n");
+          printf("      class |   # FCs |    time | avg. rate | SievePrimes |    ETA | CPU wait\n");
         }
         count++;
         mystuff->class_counter++;
       
         switch (use_kernel)
         {
- //       case _71BIT_MUL24:     factorsfound+=tf_class_71       (exp, bit_min, k_min+cur_class, k_max, mystuff); break;
- //       case _75BIT_MUL32:     factorsfound+=tf_class_75       (exp, bit_min, k_min+cur_class, k_max, mystuff); break;
- //       case _95BIT_MUL32:     factorsfound+=tf_class_95       (exp, bit_min, k_min+cur_class, k_max, mystuff); break;
- //       case BARRETT79_MUL32:  factorsfound+=tf_class_barrett79(exp, bit_min, k_min+cur_class, k_max, mystuff); break;
- //       case BARRETT92_MUL32:  factorsfound+=tf_class_barrett92(exp, bit_min, k_min+cur_class, k_max, mystuff); break;
           case _71BIT_MUL24:
           case _63BIT_MUL24:
           case _64BIT_64_OpenCL:
           case _95BIT_64_OpenCL:
+          case BARRETT72_MUL24:
           case BARRETT79_MUL32:
           case BARRETT92_MUL32:
           case BARRETT92_64_OpenCL: numfactors = tf_class_opencl (exp, bit_min, bit_max, k_min+cur_class, k_max, mystuff, use_kernel); break;
@@ -303,7 +302,7 @@ other return value
               checkpoint_write(exp, bit_min, bit_max, cur_class, factorsfound);
               do_checkpoint = mystuff->checkpoints;
               time(&time_last_checkpoint);
-              printf(" CP written. \r"); fflush(NULL);
+              printf("C\b"); fflush(NULL);
             }
           }
           if((mystuff->stopafterfactor >= 2) && (factorsfound > 0) && (cur_class != max_class))cur_class = max_class + 1;
@@ -313,7 +312,8 @@ other return value
     }
   }
   if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->printmode == 1)printf("\n");
-  if(mystuff->mode == MODE_NORMAL)resultfile=fopen(mystuff->resultsfile, "a");
+  if(mystuff->mode == MODE_NORMAL)resultfile=fopen_and_lock(mystuff->resultsfile, "a");
+  
   if(factorsfound)
   {
 #ifndef MORE_CLASSES
@@ -345,7 +345,7 @@ other return value
   if(mystuff->mode == MODE_NORMAL)
   {
     retval = factorsfound;
-    fclose(resultfile);
+    unlock_and_fclose(resultfile);
     if(mystuff->checkpoints > 0)checkpoint_delete(exp);
   }
   else // mystuff->mode != MODE_NORMAL
@@ -379,7 +379,7 @@ k_max and k_min are used as 64bit temporary integers here...
 
       f_hi  = (unsigned int ) (k_min + (exp * f_hi)); /* f_{hi|med|low} = 2 * k_hint * exp +1 */
       
-      if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24)) /* 71bit kernel uses only 24bit per int */
+      if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT72_MUL24)) /* 71bit kernel uses only 24bit per int */
       {
         f_hi  <<= 16;
         f_hi   += f_med >> 16;
@@ -465,9 +465,10 @@ void print_help(char *string)
   printf("  -st                    run builtin selftest (half the testcases) and exit\n");
   printf("  -st2                   run builtin selftest (all testcases) and exit\n");
   printf("\n");
-  printf("options for debuging purposes\n");
+  printf("options for debugging purposes\n");
   printf("  --timertest            run test of timer functions and exit\n");
   printf("  --sleeptest            run test of sleep functions and exit\n");
+  printf("  --perftest             run performance test of the sieve and other parts, then exit\n");
   printf("  --CLtest               run test of some OpenCL functions and exit\n");
   printf("                         specify -d before --CLtest to test the specified device\n");
 }
@@ -511,7 +512,7 @@ RET_ERROR we might have a serios problem
     {
       if (i < (sizeof(index)/sizeof(index[0])))
       {
-        printf("########## testcase %d/%d ##########\n", i+1, (int) (sizeof(index)/sizeof(index[0])));
+        printf("########## testcase %d/%d ##########\r", i+1, (int) (sizeof(index)/sizeof(index[0])));
         ind = index[i];
       }
       else
@@ -527,15 +528,13 @@ RET_ERROR we might have a serios problem
 
 /* create a list which kernels can handle this testcase */
     j = 0;
-    if ((bit_min[ind] >= 64) && (bit_min[ind] < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-    if ((bit_min[ind] >= 64) && (bit_min[ind] < 79))   kernels[j++] = BARRETT79_MUL32; 
-//      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
-    if ((bit_min[ind] >= 61) && (bit_min[ind] <= 71))  kernels[j++] = _71BIT_MUL24;
     if (bit_min[ind] <= 63)                            kernels[j++] = _63BIT_MUL24;
-//      if (bit_min[ind] <  63)                            kernels[j++] = _64BIT_64_OpenCL;  // not used
-//      if ((bit_min[ind] >= 64) && (bit_min[ind] <= 95))  kernels[j++] = _95BIT_64_OpenCL;
-    // if ((bit_min[ind] >= 64) && (bit_min[ind]) <= 91) kernels[j++] = BARRETT92_64_OpenCL;
-
+    if ((bit_min[ind] >= 61) && (bit_min[ind] < 72))   kernels[j++] = _71BIT_MUL24;
+    if ((bit_min[ind] >= 64) && (bit_min[ind] < 79))   kernels[j++] = BARRETT79_MUL32; 
+    if ((bit_min[ind] >= 64) && (bit_min[ind] < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
+    if ((bit_min[ind] >= 63) && (bit_min[ind] < 70))   kernels[j++] = BARRETT72_MUL24; 
+//
+//      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
 
     while(j>0)
     {
@@ -553,7 +552,7 @@ RET_ERROR we might have a serios problem
     }
   }
 
-  printf("Selftest statistics\n");
+  printf("Selftest statistics                          \n");
   printf("  number of tests           %d\n", num_selftests);
   printf("  successful tests          %d\n", st_success);
   if(st_nofactor > 0)   printf("  no factor found           %d\n", st_nofactor);
@@ -673,9 +672,13 @@ int main(int argc, char **argv)
     }
     else if(!strcmp((char*)"--perftest", argv[i]))
     {
-      // to be added
-
-//      perftest();  
+      read_config(&mystuff);
+      init_CL(mystuff.num_streams, devicenumber);
+      if ((i+1)<argc)
+        tmp = (int)strtol(argv[i+1],&ptr,10);
+      else
+        tmp = 0;
+      perftest(tmp);  
       return 0;
     }
     else if(!strcmp((char*)"--timertest", argv[i]))
@@ -708,13 +711,10 @@ int main(int argc, char **argv)
   
 /* print current configuration */
   printf("Compiletime options\n");
+#ifdef SIEVE_SIZE_LIMIT
   printf("  SIEVE_SIZE_LIMIT          %dkiB\n", SIEVE_SIZE_LIMIT);
   printf("  SIEVE_SIZE                %dbits\n", SIEVE_SIZE);
-  if(SIEVE_SIZE <= 0)
-  {
-    printf("ERROR: SIEVE_SIZE is <= 0, consider to increase SIEVE_SIZE_LIMIT in params.h\n");
-    return 1;
-  }
+#endif
   printf("  SIEVE_SPLIT               %d\n", SIEVE_SPLIT);
   if(SIEVE_SPLIT > SIEVE_PRIMES_MIN)
   {
@@ -784,12 +784,16 @@ int main(int argc, char **argv)
 #ifdef VERBOSE_TIMING
   timer_init(&timer);
 #endif
+#ifdef SIEVE_SIZE_LIMIT
   sieve_init();
+#else
+  sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max_global);
+#endif
 #ifdef VERBOSE_TIMING
   printf("tf(): time spent for sieve_init(): %" PRIu64 "ms\n",timer_diff(&timer)/1000);
 #endif
 
-  mystuff.sieve_primes_max = SIEVE_PRIMES_MAX;
+  mystuff.sieve_primes_max = mystuff.sieve_primes_max_global;
   if(mystuff.mode == MODE_NORMAL)
   {
 
@@ -811,7 +815,11 @@ int main(int argc, char **argv)
         bit_min_stage = bit_min;
         bit_max_stage = bit_max;
 
+#ifdef SIEVE_SIZE_LIMIT
         mystuff.sieve_primes_max = sieve_sieve_primes_max(exp);
+#else
+        mystuff.sieve_primes_max = sieve_sieve_primes_max(exp, mystuff.sieve_primes_max_global);
+#endif
         if(mystuff.sieve_primes > mystuff.sieve_primes_max)
         {
           mystuff.sieve_primes = mystuff.sieve_primes_max;

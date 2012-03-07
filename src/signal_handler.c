@@ -28,7 +28,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "my_types.h"
 #include "compatibility.h"
 
-mystuff_t *signal_handler_mystuff;
+static mystuff_t *signal_handler_mystuff;
 
 
 
@@ -40,11 +40,10 @@ invoked so we just register it again. */
   signal(signum, &my_signal_handler);
 #endif
   
-  if(signal_handler_mystuff->printmode == 1)printf("\n");
   signal_handler_mystuff->quit++;
   if(signal_handler_mystuff->quit == 1)
   {
-    printf("mfakto will exit once the current class is finished.\n");
+    printf("\nmfakto will exit once the current %s is finished.\n", signal_handler_mystuff->mode == MODE_NORMAL ? "class" : "test");
     printf("press ^C again to exit immediately\n");
   }
   if(signal_handler_mystuff->quit > 1)

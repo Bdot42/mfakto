@@ -63,7 +63,8 @@ enum MODES
   MODE_NORMAL,
   MODE_SELFTEST_SHORT,
   MODE_SELFTEST_HALF,
-  MODE_SELFTEST_FULL
+  MODE_SELFTEST_FULL,
+  MODE_PERFTEST
 };
 
 enum GPUKernels
@@ -73,6 +74,7 @@ enum GPUKernels
   _95BIT_64_OpenCL,
   _71BIT_MUL24,
   _63BIT_MUL24,
+  BARRETT72_MUL24,
   BARRETT79_MUL32,
   BARRETT92_MUL32,
   UNKNOWN_KERNEL, /* what comes after this one will not be loaded automatically*/
@@ -103,7 +105,7 @@ typedef struct
   cl_mem   d_savestate;
 
 
-  cl_uint sieve_primes, sieve_primes_adjust, sieve_primes_max, sieve_gpu;
+  cl_uint sieve_primes, sieve_primes_adjust, sieve_primes_max, sieve_primes_max_global, sieve_gpu, sieve_size;
   cl_uint num_streams;
   
   enum MODES mode;

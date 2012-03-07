@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.10p1
+Version 0.11
 */
 
 /* This file will be included TWICE by the main kernel file, once with
@@ -183,7 +183,7 @@ int72_v sub_if_gte_72(const int72_v a, const int72_v b)
 }
 
 void mul_72(int72_v * const res, const int72_v a, const int72_t b)
-/* res = (a * b) mod (2^72), a vector, b scalar*/
+/* res = (a * b) mod (2^72) */
 {
   uint_v hi,lo;
 
@@ -227,11 +227,13 @@ void square_72_144(int144_v * const res, const int72_v a)
   tmp      =  mul24(a.d1, a.d0);
 //  res->d2  = (mul_hi(a.d1, a.d0) << 9) | (tmp >> 23);
   res->d2  =  mad24(mul_hi(a.d1, a.d0), 512u, (tmp >> 23));
-  res->d1 += (tmp << 1) & 0xFFFFFF;
+//  res->d1 += (tmp << 1) & 0xFFFFFF;
+  res->d1  =  mad24(tmp & 0x7FFFFF, 2u, res->d1);
 
   tmp      =  mul24(a.d2, a.d0);
   res->d3  =  mad24(mul_hi(a.d2, a.d0), 512u, (tmp >> 23));
-  res->d2 += (tmp << 1) & 0xFFFFFF;
+//  res->d2 += (tmp << 1) & 0xFFFFFF;
+  res->d2  =  mad24(tmp & 0x7FFFFF, 2u, res->d2);
   
   tmp      =  mul24(a.d1, a.d1);
   res->d3 +=  mad24(mul_hi(a.d1, a.d1), 256u, (tmp >> 24));
@@ -239,7 +241,8 @@ void square_72_144(int144_v * const res, const int72_v a)
   
   tmp      =  mul24(a.d2, a.d1);
   res->d4  =  mad24(mul_hi(a.d2, a.d1), 512u, (tmp >> 23));
-  res->d3 += (tmp << 1) & 0xFFFFFF;
+//  res->d3 += (tmp << 1) & 0xFFFFFF;
+  res->d3  =  mad24(tmp & 0x7FFFFF, 2u, res->d3);
 
   tmp      =  mul24(a.d2, a.d2);
   res->d5  =  mad24(mul_hi(a.d2, a.d2), 256u, (tmp >> 24));
@@ -272,23 +275,28 @@ void square_72_144_shl(int144_v * const res, const int72_v a)
   
   tmp      =  mul24(a.d1, a.d0);
   res->d2  =  mad24(mul_hi(a.d1, a.d0), 1024u, (tmp >> 22));
-  res->d1 += (tmp << 2) & 0xFFFFFF;
+//  res->d1 += (tmp << 2) & 0xFFFFFF;
+  res->d1  =  mad24(tmp & 0x3FFFFF, 4u, res->d1);
 
   tmp      =  mul24(a.d2, a.d0);
   res->d3  =  mad24(mul_hi(a.d2, a.d0), 1024u, (tmp >> 22));
-  res->d2 += (tmp << 2) & 0xFFFFFF;
+//  res->d2 += (tmp << 2) & 0xFFFFFF;
+  res->d2  =  mad24(tmp & 0x3FFFFF, 4u, res->d2);
   
   tmp      =  mul24(a.d1, a.d1);
   res->d3 +=  mad24(mul_hi(a.d1, a.d1), 512u, (tmp >> 23));
-  res->d2 += (tmp << 1) & 0xFFFFFF;
+//  res->d2 += (tmp << 1) & 0xFFFFFF;
+  res->d2  =  mad24(tmp & 0x7FFFFF, 2u, res->d2);
   
   tmp      =  mul24(a.d2, a.d1);
   res->d4  =  mad24(mul_hi(a.d2, a.d1), 1024u, (tmp >> 22));
-  res->d3 += (tmp << 2) & 0xFFFFFF;
+//  res->d3 += (tmp << 2) & 0xFFFFFF;
+  res->d3  =  mad24(tmp & 0x3FFFFF, 4u, res->d3);
 
   tmp      =  mul24(a.d2, a.d2);
   res->d5  =  mad24(mul_hi(a.d2, a.d2), 512u, (tmp >> 23));
-  res->d4 += (tmp << 1) & 0xFFFFFF;
+//  res->d4 += (tmp << 1) & 0xFFFFFF;
+  res->d4  =  mad24(tmp & 0x7FFFFF, 2u, res->d4);
 
 /*  res->d0 doesn't need carry */
   res->d2 += res->d1 >> 24;
@@ -367,7 +375,8 @@ void mod_144_72
   tmp    =  mul24(n.d1, qi);
 //  nn.d4  = (mul_hi(n.d1, qi) << 11) | (tmp >> 21);
   nn.d4  =  mad24(mul_hi(n.d1, qi), 2048u, (tmp >> 21));
-  nn.d3 += (tmp << 3) & 0xFFFFFF;
+//  nn.d3 += (tmp << 3) & 0xFFFFFF;
+  nn.d3  =  mad24((tmp & 0x1FFFFF), 8u, nn.d3);
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf("mod_144_72#1.2: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
@@ -376,7 +385,8 @@ void mod_144_72
   tmp    =  mul24(n.d2, qi);
 //  nn.d5  = (mul_hi(n.d2, qi) << 11) | (tmp >> 21);
   nn.d5  =  mad24(mul_hi(n.d2, qi), 2048u, (tmp >> 21));
-  nn.d4 += (tmp << 3) & 0xFFFFFF;
+//  nn.d4 += (tmp << 3) & 0xFFFFFF;
+  nn.d4  =  mad24((tmp & 0x1FFFFF), 8u, nn.d4);
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf("mod_144_72#1.3: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
@@ -454,7 +464,8 @@ void mod_144_72
   tmp    =  mul24(n.d1, qi);
 //  nn.d3  = (mul_hi(n.d1, qi) << 15) | (tmp >> 17);
   nn.d3  =  mad24(mul_hi(n.d1, qi), 32768u, (tmp >> 17));
-  nn.d2 += (tmp << 7) & 0xFFFFFF;
+//  nn.d2 += (tmp << 7) & 0xFFFFFF;
+  nn.d2  =  mad24((tmp & 0x1FFFF), 128u, nn.d2);
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf("mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
@@ -464,7 +475,8 @@ void mod_144_72
   tmp    =  mul24(n.d2, qi);
 //  nn.d4  = (mul_hi(n.d2, qi) << 15) | (tmp >> 17);
   nn.d4  =  mad24(mul_hi(n.d2, qi), 32768u, (tmp >> 17));
-  nn.d3 += (tmp << 7) & 0xFFFFFF;
+//  nn.d3 += (tmp << 7) & 0xFFFFFF;
+  nn.d3  =  mad24((tmp & 0x1FFFF), 128u, nn.d3);
 #if (TRACE_KERNEL > 2) || defined(CHECKS_MODBASECASE)
   nn.d5=0;
 #endif
@@ -761,7 +773,7 @@ a is precomputed on host ONCE. */
   __private int72_v  a;       // result of the modulo
   __private int144_v b;       // result of the squaring;
   __private int72_v  f;       // the factor(s) to be tested
-  __private int      tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
+  __private int      tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
   __private float_v  ff;
   __private uint_v   t;
 

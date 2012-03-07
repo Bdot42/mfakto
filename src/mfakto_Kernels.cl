@@ -66,7 +66,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef cl_khr_global_int32_base_atomics 
 #pragma  OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
-#define ATOMIC_INC(x) atom_inc(&x)
+#define ATOMIC_INC(x) atomic_inc(&x)
 #else
 // No atomic operations available - using simple ++
 #define ATOMIC_INC(x) ((x)++)
@@ -135,6 +135,7 @@ typedef struct _int144_t
 #include "barrett.cl"   // one kernel file for 32-bit-barrett of different vector sizes (1, 2, 4, 8, 16)
 #define EVAL_RES(x) EVAL_RES_b(x)  // no check for f==1 if running the "big" version
 #include "mul24.cl" // one kernel file for 24-bit-kernels of different vector sizes (1, 2, 4, 8, 16)
+#include "barrett24.cl"  // mul24-based barrett 72-bit kernel (all vector sizes)
 
 #define _63BIT_MUL24_K
 #undef EVAL_RES
@@ -155,15 +156,16 @@ __kernel void mod_128_64_k(const ulong hi, const ulong lo, const ulong q,
   f++; // let the reported results start with 1
 
 //  barrier(CLK_GLOBAL_MEM_FENCE);
-#if (TRACE_KERNEL > 1)
+#if (TRACE_KERNEL > 0)
     printf("kernel tracing level %d enabled\n", TRACE_KERNEL);
 #endif
 
   if (1 == 1)
   {
     i=ATOMIC_INC(res[0]);
-
+#if (TRACE_KERNEL < 1)
 #pragma  OPENCL EXTENSION cl_amd_printf : enable
+#endif
     printf("thread %d: i=%d, res[0]=%d\n", get_global_id(0), i, res[0]);
 
     if(i<10)				/* limit to 10 results */

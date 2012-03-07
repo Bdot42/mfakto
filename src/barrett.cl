@@ -1202,8 +1202,8 @@ are "out of range".
   }
 #endif
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf("mod_simple_96: q=%x:%x:%x, n=%x:%x:%x, nf=%.9G, qf=%f, qi=%x\n",
-        q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, nf, qf, qi);
+    if (tid==TRACE_TID) printf("mod_simple_96: q=%x:%x:%x, n=%x:%x:%x, nf=%G, qf=%G, qi=%x\n",
+        q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
 #endif
 
   nn.d0  = n.d0 * qi;
@@ -1215,7 +1215,7 @@ are "out of range".
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("mod_simple_96: nn=%x:%x:%x\n",
-        nn.d2, nn.d1, nn.d0);
+        nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
   carry= AS_UINT_V((nn.d0 > q.d0) ? 1 : 0);
@@ -1259,7 +1259,8 @@ bit_max64 is bit_max - 64!
   __private int192_1t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
+	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
 
   exp96.d2=0;exp96.d1=exp>>31;exp96.d0=exp+exp;	// exp96 = 2 * exp
 
@@ -1305,13 +1306,15 @@ bit_max64 is bit_max - 64!
   t.se = k_tab[tid+14];
   t.sf = k_tab[tid+15];
 #endif
-  tmp  = t * 4620u; // NUM_CLASSES
-  k.d0 = k_base.d0 + tmp;
-  k.d1 = k_base.d1 + mul_hi(t, 4620u) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+  //tmp  = t * 4620u; // NUM_CLASSES
+  //k.d0 = k_base.d0 + tmp;
+  //k.d1 = k_base.d1 + mul_hi(t, 4620u) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+  k.d0 = mad24(t, 4620u, k_base.d0);
+  k.d1 = mad_hi(t, 4620u, k_base.d1) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
         
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf("mfakto_cl_barrett92: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x, tmp=%x\n",
-        tid, t, k.d2, k.d1, k.d0, tmp);
+    if (tid==TRACE_TID) printf("mfakto_cl_barrett92: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
+        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 //  mul_96(&f,k,exp96);				// f = 2 * k * exp
 //  f.d0 += 1;					// f = 2 * k * exp + 1
@@ -1332,7 +1335,7 @@ bit_max64 is bit_max - 64!
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett92: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
-        tid, t, k.d2, k.d1, k.d0, f.d2, f.d1, f.d0, shiftcount);
+        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 /*
 ff = f as float, needed in mod_192_96() and div_192_96().
@@ -1355,7 +1358,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett92: u=%x:%x:%x, ff=%G\n",
-        u.d2, u.d1, u.d0, ff);
+        u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
 #endif
 
   a.d0 = (bb.d2 >> bit_max64) + (bb.d3 << bit_max64_32);			// a = b / (2^bit_max)
@@ -1365,7 +1368,7 @@ Precalculated here since it is the same for all steps in the following loop */
   mul_96_192_no_low2(&tmp192, a, u);					// tmp192 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett92: a=%x:%x:%x * u = %x:%x:%x:%x...\n",
-        a.d2, a.d1, a.d0, tmp192.d5, tmp192.d4, tmp192.d3, tmp192.d2);
+        a.d2.s0, a.d1.s0, a.d0.s0, tmp192.d5.s0, tmp192.d4.s0, tmp192.d3.s0, tmp192.d2.s0);
 #endif
 
   a.d0 = (tmp192.d2 >> bit_max64) + (tmp192.d3 << bit_max64_32);	// a = ((b / (2^bit_max)) * u) / (2^bit_max)
@@ -1376,7 +1379,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett92: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
-        a.d2, a.d1, a.d0, tmp96.d2, tmp96.d1, tmp96.d0);
+        a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
   carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
   tmp96.d0 = bb.d0 - tmp96.d0;
@@ -1389,7 +1392,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett92: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
-        bb.d2, bb.d1, bb.d0, tmp96.d2, tmp96.d1, tmp96.d0);
+        bb.d2, bb.d1, bb.d0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
 #ifndef CHECKS_MODBASECASE
   mod_simple_96(&a, tmp96, f, ff
@@ -1410,7 +1413,7 @@ Precalculated here since it is the same for all steps in the following loop */
   
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett92: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
-        tmp96.d2, tmp96.d1, tmp96.d0, f.d2, f.d1, f.d0, a.d2, a.d1, a.d0 );
+        tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
   exp<<= 32 - shiftcount;
   while(exp)
@@ -1419,7 +1422,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf("loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x (b)\n",
-        exp, a.d2, a.d1, a.d0, b.d5, b.d4, b.d3, b.d2, b.d1, b.d0 );
+        exp, a.d2.s0, a.d1.s0, a.d0.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
     a.d0 = (b.d2 >> bit_max64) + (b.d3 << bit_max64_32);		// a = b / (2^bit_max)
     a.d1 = (b.d3 >> bit_max64) + (b.d4 << bit_max64_32);
@@ -1429,7 +1432,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x * u = %x:%x:%x:%x...\n",
-        a.d2, a.d1, a.d0, tmp192.d5, tmp192.d4, tmp192.d3, tmp192.d2);
+        a.d2.s0, a.d1.s0, a.d0.s0, tmp192.d5.s0, tmp192.d4.s0, tmp192.d3.s0, tmp192.d2.s0);
 #endif
     a.d0 = (tmp192.d2 >> bit_max64) + (tmp192.d3 << bit_max64_32);	// a = ((b / (2^bit_max)) * u) / (2^bit_max)
     a.d1 = (tmp192.d3 >> bit_max64) + (tmp192.d4 << bit_max64_32);
@@ -1439,7 +1442,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
-        a.d2, a.d1, a.d0, tmp96.d2, tmp96.d1, tmp96.d0);
+        a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
     carry= AS_UINT_V((tmp96.d0 > b.d0) ? 1 : 0);
     tmp96.d0 = b.d0 - tmp96.d0;
@@ -1452,7 +1455,7 @@ Precalculated here since it is the same for all steps in the following loop */
     
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
-        b.d2, b.d1, b.d0, tmp96.d2, tmp96.d1, tmp96.d0);
+        b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
     if(exp&0x80000000)shl_96(&tmp96);					// "optional multiply by 2" in Prime 95 documentation
 
@@ -1476,7 +1479,7 @@ Precalculated here since it is the same for all steps in the following loop */
     exp+=exp;
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("loopend: exp=%d, tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
-        exp, tmp96.d2, tmp96.d1, tmp96.d0, f.d2, f.d1, f.d0, a.d2, a.d1, a.d0 );
+        exp, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
   }
 
@@ -1494,7 +1497,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("after sub: a = %x:%x:%x \n",
-         a.d2, a.d1, a.d0 );
+         a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
   
 
@@ -1503,7 +1506,7 @@ Precalculated here since it is the same for all steps in the following loop */
   if( ((a.d2|a.d1)==0 && a.d0==1) )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-    printf("mfakto_cl_barrett92: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2, f.d1, f.d0, k.d2, k.d1, k.d0);
+    printf("mfakto_cl_barrett92: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
     tid=ATOMIC_INC(RES[0]);
@@ -1580,13 +1583,14 @@ a is precomputed on host ONCE.
   __private int192_1t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
+	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
 
   exp96.d2=0;exp96.d1=exp>>31;exp96.d0=exp+exp;	// exp96 = 2 * exp
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf("mfakto_cl_barrett79: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x\n",
-        exp, exp96.d1, exp96.d0, b.d5, b.d4, b.d3, b.d2, b.d1, b.d0, k.d2, k.d1, k.d0);
+        exp, exp96.d1, exp96.d0, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0);
 #endif
 
 #if (BARRETT_VECTOR_SIZE == 1)
@@ -1627,16 +1631,12 @@ a is precomputed on host ONCE.
   t.sf = k_tab[tid+15];
 #endif
 //MAD only available for float
-  tmp  = t * 4620u; // NUM_CLASSES
-  k.d0 = k_base.d0 + tmp;
-//MAD  k.d1 = k_base.d1 + mul_hi(t, 4620u) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
-
-//  k.d0 = mad(t, (uint4)4620u, (uint4)k_base.d0);
-  k.d1 = mad_hi(t, (4620u), (k_base.d1)) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
-
+  k.d0 = mad24(t, 4620u, k_base.d0);
+  k.d1 = mad_hi(t, 4620u, k_base.d1) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+        
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf("mfakto_cl_barrett79: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x, tmp=%x\n",
-        tid, t, k.d2, k.d1, k.d0, tmp);
+    if (tid==TRACE_TID) printf("mfakto_cl_barrett92: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
+        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 
 //  mul_96(&f,k,exp96);				// f = 2 * k * exp
@@ -1660,7 +1660,7 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett79: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
-        tid, t, k.d2, k.d1, k.d0, f.d2, f.d1, f.d0, shiftcount);
+        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
 /*
@@ -1684,7 +1684,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett79: u=%x:%x:%x, ff=%G\n",
-        u.d2, u.d1, u.d0, ff);
+        u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
 #endif
 
 // bb is still the preprocessed scalar passed in to the kernel - it is widened here to the required vector size automatically
@@ -1696,7 +1696,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett79: a=%x:%x:%x * u = %x:%x:%x:...\n",
-        a.d2, a.d1, a.d0, tmp192.d5, tmp192.d4, tmp192.d3);
+        a.d2.s0, a.d1.s0, a.d0.s0, tmp192.d5.s0, tmp192.d4.s0, tmp192.d3.s0);
 #endif
 
   a.d0 = tmp192.d3;							// a = ((b / (2^80)) * u) / (2^80)
@@ -1707,7 +1707,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett79: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
-        a.d2, a.d1, a.d0, tmp96.d2, tmp96.d1, tmp96.d0);
+        a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
 
   carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
@@ -1721,7 +1721,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("mfakto_cl_barrett79: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
-        b.d2, b.d1, b.d0, tmp96.d2, tmp96.d1, tmp96.d0);
+        bb.d2, bb.d1, bb.d0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
 
 #ifndef CHECKS_MODBASECASE
@@ -1742,7 +1742,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett79: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
-        tmp96.d2, tmp96.d1, tmp96.d0, f.d2, f.d1, f.d0, a.d2, a.d1, a.d0 );
+        tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
  
   exp<<= 32 - shiftcount;
@@ -1752,7 +1752,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf("loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x (b)\n",
-        exp, a.d2, a.d1, a.d0, b.d5, b.d4, b.d3, b.d2, b.d1, b.d0 );
+        exp, a.d2.s0, a.d1.s0, a.d0.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
 
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
@@ -1763,7 +1763,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x * u = %x:%x:%x:...\n",
-        a.d2, a.d1, a.d0, tmp192.d5, tmp192.d4, tmp192.d3);
+        a.d2.s0, a.d1.s0, a.d0.s0, tmp192.d5.s0, tmp192.d4.s0, tmp192.d3.s0);
 #endif
 
     a.d0 = tmp192.d3;							// a = ((b / (2^80)) * u) / (2^80)
@@ -1774,7 +1774,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
-        a.d2, a.d1, a.d0, tmp96.d2, tmp96.d1, tmp96.d0);
+        a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
 
     carry= AS_UINT_V((tmp96.d0 > b.d0) ? 1 : 0);
@@ -1788,7 +1788,7 @@ Precalculated here since it is the same for all steps in the following loop */
     
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
-        b.d2, b.d1, b.d0, tmp96.d2, tmp96.d1, tmp96.d0);
+        b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
 
     if(exp&0x80000000)shl_96(&tmp96);					// "optional multiply by 2" in Prime 95 documentation
@@ -1811,7 +1811,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf("loop: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
-        tmp96.d2, tmp96.d1, tmp96.d0, f.d2, f.d1, f.d0, a.d2, a.d1, a.d0 );
+        tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
 
     exp+=exp;
@@ -1820,7 +1820,7 @@ Precalculated here since it is the same for all steps in the following loop */
   a = sub_if_gte_96(a,f);	// final adjustment in case a >= f
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("after sub: a = %x:%x:%x \n",
-         a.d2, a.d1, a.d0 );
+         a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
 
   
@@ -1829,7 +1829,7 @@ Precalculated here since it is the same for all steps in the following loop */
   if( ((a.d2|a.d1)==0 && a.d0==1) )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-    printf("mfakto_cl_barrett92: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2, f.d1, f.d0, k.d2, k.d1, k.d0);
+    printf("mfakto_cl_barrett92: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
     tid=ATOMIC_INC(RES[0]);
@@ -1907,13 +1907,13 @@ a is precomputed on host ONCE.
   __private int192_1t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
 
   exp96.d2=0;exp96.d1=exp>>31;exp96.d0=exp+exp;	// exp96 = 2 * exp
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf("mfakto_cl_barrett79-ns: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x\n",
-        exp, exp96.d1, exp96.d0, b.d5, b.d4, b.d3, b.d2, b.d1, b.d0, k.d2, k.d1, k.d0);
+        exp, exp96.d1, exp96.d0, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0);
 #endif
 
 #if (BARRETT_VECTOR_SIZE == 1)
@@ -1953,13 +1953,12 @@ a is precomputed on host ONCE.
   t.se = tid+14;
   t.sf = tid+15;
 #endif
-  tmp  = t * 4620u; // NUM_CLASSES
-  k.d0 = k_base.d0 + tmp;
-  k.d1 = k_base.d1 + mul_hi(t, 4620u) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+  k.d0 = mad24(t, 4620u, k_base.d0);
+  k.d1 = mad_hi(t, 4620u, k_base.d1) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf("mfakto_cl_barrett79: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x, tmp=%x\n",
-        tid, t, k.d2, k.d1, k.d0, tmp);
+    if (tid==TRACE_TID) printf("mfakto_cl_barrett79: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
+        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 
 //  mul_96(&f,k,exp96);				// f = 2 * k * exp
@@ -1981,7 +1980,7 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett79: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
-        tid, t, k.d2, k.d1, k.d0, f.d2, f.d1, f.d0, shiftcount);
+        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
 /*
@@ -2005,7 +2004,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett79: u=%x:%x:%x, ff=%G\n",
-        u.d2, u.d1, u.d0, ff);
+        u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
 #endif
 
 // bb is still the preprocessed scalar passed in to the kernel - it is widened here to the required vector size automatically
@@ -2017,7 +2016,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett79: a=%x:%x:%x * u = %x:%x:%x:...\n",
-        a.d2, a.d1, a.d0, tmp192.d5, tmp192.d4, tmp192.d3);
+        a.d2.s0, a.d1.s0, a.d0.s0, tmp192.d5.s0, tmp192.d4.s0, tmp192.d3.s0);
 #endif
 
   a.d0 = tmp192.d3;							// a = ((b / (2^80)) * u) / (2^80)
@@ -2028,7 +2027,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett79: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
-        a.d2, a.d1, a.d0, tmp96.d2, tmp96.d1, tmp96.d0);
+        a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
 
   carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
@@ -2042,7 +2041,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("mfakto_cl_barrett79: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
-        b.d2, b.d1, b.d0, tmp96.d2, tmp96.d1, tmp96.d0);
+        bb.d2, bb.d1, bb.d0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
 
 #ifndef CHECKS_MODBASECASE
@@ -2063,7 +2062,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf("mfakto_cl_barrett79: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
-        tmp96.d2, tmp96.d1, tmp96.d0, f.d2, f.d1, f.d0, a.d2, a.d1, a.d0 );
+        tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
  
   exp<<= 32 - shiftcount;
@@ -2073,7 +2072,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf("loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x (b)\n",
-        exp, a.d2, a.d1, a.d0, b.d5, b.d4, b.d3, b.d2, b.d1, b.d0 );
+        exp, a.d2.s0, a.d1.s0, a.d0.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
 
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
@@ -2084,7 +2083,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x * u = %x:%x:%x:...\n",
-        a.d2, a.d1, a.d0, tmp192.d5, tmp192.d4, tmp192.d3);
+        a.d2.s0, a.d1.s0, a.d0.s0, tmp192.d5.s0, tmp192.d4.s0, tmp192.d3.s0);
 #endif
 
     a.d0 = tmp192.d3;							// a = ((b / (2^80)) * u) / (2^80)
@@ -2095,7 +2094,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
-        a.d2, a.d1, a.d0, tmp96.d2, tmp96.d1, tmp96.d0);
+        a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
 
     carry= AS_UINT_V((tmp96.d0 > b.d0) ? 1 : 0);
@@ -2109,7 +2108,7 @@ Precalculated here since it is the same for all steps in the following loop */
     
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
-        b.d2, b.d1, b.d0, tmp96.d2, tmp96.d1, tmp96.d0);
+        b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
 
     if(exp&0x80000000)shl_96(&tmp96);					// "optional multiply by 2" in Prime 95 documentation
@@ -2132,7 +2131,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf("loop: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
-        tmp96.d2, tmp96.d1, tmp96.d0, f.d2, f.d1, f.d0, a.d2, a.d1, a.d0 );
+        tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
 
     exp+=exp;
@@ -2141,7 +2140,7 @@ Precalculated here since it is the same for all steps in the following loop */
   a = sub_if_gte_96(a,f);	// final adjustment in case a >= f
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("after sub: a = %x:%x:%x \n",
-         a.d2, a.d1, a.d0 );
+         a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
 
   
@@ -2150,7 +2149,7 @@ Precalculated here since it is the same for all steps in the following loop */
   if( ((a.d2|a.d1)==0 && a.d0==1) )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-    printf("mfakto_cl_barrett92: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2, f.d1, f.d0, k.d2, k.d1, k.d0);
+    printf("mfakto_cl_barrett92: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
     tid=ATOMIC_INC(RES[0]);

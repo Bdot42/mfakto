@@ -31,9 +31,14 @@ The size given here is in kiB (1024 bytes). A good starting point is the size
 of your CPUs L1-Data cache.
 This is just the upper LIMIT of the SIEVE_SIZE, the actual sieve size depends
 on some other factors as well, but you don't have to worry about.
+
+If this define is not set, an ini-file key SieveSizeLimit will be evaluated to
+set it. This allows for adjusting the SieveSize, but may be up to 3% slower
+than an equal SIEVE_SIZE_LIMIT define.
+
 */
 
-#define SIEVE_SIZE_LIMIT 32
+#define SIEVE_SIZE_LIMIT 36
 
 
 /******************
@@ -77,7 +82,7 @@ code path - not used by mfakto, see kernel trace */
 
 
 /* Tell the OpenCL compiler to create debuggable code for the Kernels */
-//#define CL_DEBUG
+// #define CL_DEBUG
 
 /******************************************************************************
 *******************************************************************************
@@ -88,9 +93,9 @@ code path - not used by mfakto, see kernel trace */
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.10" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11-pre2" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.10-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11-pre2-Win" /* DO NOT CHANGE! */
 #endif
 
 
@@ -127,7 +132,7 @@ The following lines define the min, default and max value.
 
 #define SIEVE_PRIMES_MIN      5000 /* DO NOT CHANGE! */
 #define SIEVE_PRIMES_DEFAULT 25000 /* DO NOT CHANGE! */
-#define SIEVE_PRIMES_MAX    200000 /* DO NOT CHANGE! */
+#define SIEVE_PRIMES_MAX    1000000 /* DO NOT CHANGE! */
 
 /*
 primes[1000]=7927      k_tab(2M)=6976698

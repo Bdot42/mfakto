@@ -21,6 +21,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <io.h>
 #include "string.h"
 #include "CL/cl.h"
 #include "params.h"
@@ -31,6 +32,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "sieve.h"
 #include "timer.h"
 #include "checkpoint.h"
+#include "filelocking.h"
 #include "mfakto.h"
 
 /* Global variables */
@@ -46,6 +48,7 @@ extern "C"
 {
 #endif
 
+#include "signal_handler.h"
 extern mystuff_t    mystuff;
 OpenCL_deviceinfo_t deviceinfo={{0}};
 kernel_info_t       kernel_info[NUM_KERNELS] = {
@@ -53,8 +56,9 @@ kernel_info_t       kernel_info[NUM_KERNELS] = {
      {   AUTOSELECT_KERNEL,   "auto",                  0,      0,         NULL},
      {   _TEST_MOD_,          "mod_128_64_k",          0,      0,         NULL}, // used for various tests
      {   _95BIT_64_OpenCL,    "mfakto_cl_barrett79_ns",         64,     79,         NULL}, // no sieved input (test all FC's)
-     {   _71BIT_MUL24,        "mfakto_cl_71",          0,     71,         NULL},
-     {   _63BIT_MUL24,        "mfakto_cl_63",          0,     71,         NULL},
+     {   _71BIT_MUL24,        "mfakto_cl_71",         61,     72,         NULL},
+     {   _63BIT_MUL24,        "mfakto_cl_63",          0,     64,         NULL},
+     {   BARRETT72_MUL24,     "mfakto_cl_barrett72",  64,     72,         NULL}, // one kernel for all vector sizes
      {   BARRETT79_MUL32,     "mfakto_cl_barrett79",  64,     79,         NULL}, // one kernel for all vector sizes
      {   BARRETT92_MUL32,     "mfakto_cl_barrett92",  64,     92,         NULL}, // one kernel for all vector sizes
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         NULL},
@@ -69,6 +73,7 @@ kernel_info_t       kernel_info[NUM_KERNELS] = {
          BARRETT72_MUL24
          _95BIT_MUL32,        "95bit_mul32",         0, 95, NULL,
          */
+
 
 void printArray(const char * Name, const cl_uint * Data, const cl_uint len)
 {
@@ -389,7 +394,7 @@ int init_CL(int num_streams, cl_int devnumber)
       }
       else
       {
-        fprintf(stderr, "Error: Only %d platforms found. Cannot use platform %d (bad parameter to option -d).\n", numplatforms, i);
+        fprintf(stderr, "Error: Only %d platforms found. Cannot use platform %d (bad parameter to option -d).\n", numplatforms, i+1);
         return 1;
       }
     }
@@ -664,7 +669,7 @@ int init_CL(int num_streams, cl_int devnumber)
   char program_options[150];
   sprintf(program_options, "-I. -DBARRETT_VECTOR_SIZE=%d -DVECTOR_SIZE=%d ", mystuff.vectorsize, mystuff.vectorsize);
 #ifdef CL_DEBUG
-  strcat(program_options, "-g -O0");
+  strcat(program_options, "-g");
 #else
   strcat(program_options, "-O3");
 #endif
@@ -1226,16 +1231,30 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
 
 }
 
-int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int144 b_preinit, cl_mem res, cl_int shiftcount)
+int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int144 b_preinit, cl_mem res, cl_int shiftcount, cl_int bin_min63)
 /*
   run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount);
 */
 {
-  cl_int   status;
+  cl_int   status, argnum;
   /*
   __kernel void mfakto_cl_71(__private uint exp, __private int72_t k_base,
                              __global uint *k_tab, __private int shiftcount,
                              __private int144_t b, __global uint *RES)
+   *
+
+   __kernel void mfakto_cl_barrett72(__private uint exp, const int72_t k_base, const __global uint * restrict k_tab, const int shiftcount,
+#ifdef WA_FOR_CATALYST11_10_BUG
+                           const uint8 b_in,
+#else
+                           __private int144_t bb,
+#endif
+                           __global uint * restrict RES, const int bit_max64
+#ifdef CHECKS_MODBASECASE
+         , __global uint * restrict modbasecase_debug
+#endif
+         )
+
 */
   //////// test test test ...
   // {k_min_grid[i] = 1777608657747ULL; mystuff->h_ktab[i][0]=0;}
@@ -1276,11 +1295,25 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
   		std::cerr<< "Error " << status << ": Setting kernel argument. (b_preinit)\n";
   		return 1;
   	}
+    argnum=6;
+    if ((kernel_info[BARRETT72_MUL24].kernel == l_kernel))
+    {
+      /* the bit_max-64 for the barrett kernels (the others ignore it) */
+      status = clSetKernelArg(l_kernel, 
+                      6, 
+                      sizeof(cl_int), 
+                      (void *)&bin_min63);
+      if(status != CL_SUCCESS) 
+      { 
+        std::cerr<<"Warning " << status << ": Setting kernel argument. (bit_min)\n";
+      }
+      argnum=7;
+  	}
 #ifdef CHECKS_MODBASECASE
-    if ((kernel_info[_71BIT_MUL24].kernel == l_kernel) || (kernel_info[_63BIT_MUL24].kernel == l_kernel))
+    if ((kernel_info[_71BIT_MUL24].kernel == l_kernel) || (kernel_info[_63BIT_MUL24].kernel == l_kernel) || (kernel_info[BARRETT72_MUL24].kernel == l_kernel))
     {
       status = clSetKernelArg(l_kernel, 
-                    6, 
+                    argnum, 
                     sizeof(cl_mem), 
                     (void *)&mystuff.d_modbasecase_debug);
       if(status != CL_SUCCESS) 
@@ -1717,8 +1750,10 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   printf("tf_class_opencl(%u, %d, %" PRIu64 ", %" PRIu64 ", ...)\n",exp, bit_min, k_min, k_max);
 #endif
 
+  //  exp=51152869; k_min=20582854459640ULL; k_max=20582854459641ULL;  // test test test
+
   new_class=1; // tell run_kernel to re-submit the one-time kernel arguments
-  if ( k_max < k_min) k_max = k_min + 1;  // otherwise it would skip small bit ranges
+  if ( k_max <= k_min) k_max = k_min + 1;  // otherwise it would skip small bit ranges
 
   /* set result array to 0 */ 
   memset(mystuff->h_RES,0,32 * sizeof(int));
@@ -1782,7 +1817,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 #endif
   b_preinit_hi=0;b_preinit_mid=0;b_preinit_lo=0;
   count=0;
-  if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24)) 
+  if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT72_MUL24)) 
   {
     if     (ln2b<24 )b_preinit.d0=1<< ln2b;       // must not happen; d0 will not be evaluated in the kernel
     else if(ln2b<48 )b_preinit.d1=1<<(ln2b-24);   // should not happen
@@ -1900,12 +1935,12 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
           }
         case PREPARED:                   // start the calculation of a preprocessed dataset on the device
           {
-            if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24))
+            if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT72_MUL24))
             {
               k_base.d0 =  k_min_grid[i] & 0xFFFFFF;
               k_base.d1 = (k_min_grid[i] >> 24) & 0xFFFFFF;
               k_base.d2 =  k_min_grid[i] >> 48;
-              status = run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount);
+              status = run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount, bit_min-63);
             }
             else if ((use_kernel == BARRETT79_MUL32) || (use_kernel == BARRETT92_MUL32) || (use_kernel == _95BIT_64_OpenCL))
             {
@@ -1986,8 +2021,8 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
                 return RET_ERROR;
               }
               }
-              std::cout<< mystuff->threads_per_grid << " candidates copied in " << (endTime - startTime)/1e3 << " us ("
-                       << size * 1e3 / (endTime - startTime) << "MB/s), " ;
+              printf("%d FCs copied in %2.2f ms (%4.2f MB/s), ", mystuff->threads_per_grid, (endTime - startTime)/1e6,
+                       size * 1e3 / (endTime - startTime) );
               status = clGetEventProfilingInfo(mystuff->exec_events[i],
                                 CL_PROFILING_COMMAND_START,
                                 sizeof(cl_ulong),
@@ -2008,7 +2043,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
                 return RET_ERROR;
               }
-              std::cout<< "processed in " << (endTime - startTime)/1e6 << " ms (" << double(mystuff->threads_per_grid) *1e3/ (endTime - startTime) << " M/s)\n";
+              printf("proc'd in %2.2f ms (%3.2f M/s)\n", (endTime - startTime)/1e6, double(mystuff->threads_per_grid) *1e3/ (endTime - startTime));
 #endif
               status = clReleaseEvent(mystuff->exec_events[i]);
               if(status != CL_SUCCESS) 
@@ -2176,12 +2211,12 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 
   if(mystuff->mode != MODE_SELFTEST_SHORT)
   {
-    printf("%4" PRIu64 "/%4d", k_min%NUM_CLASSES, (int)NUM_CLASSES);
+    printf("%6" PRIu64 "/%4d", k_min%NUM_CLASSES, (int)NUM_CLASSES);
 
     if(((unsigned long long int)mystuff->threads_per_grid * (unsigned long long int)count) < 1000000000ULL)
-      printf(" | %9.2fM", (double)mystuff->threads_per_grid * (double)count / 1000000.0);
+      printf(" | %6.2fM", (double)mystuff->threads_per_grid * (double)count / 1000000.0);
     else
-      printf(" | %9.2fG", (double)mystuff->threads_per_grid * (double)count / 1000000000.0);
+      printf(" | %6.2fG", (double)mystuff->threads_per_grid * (double)count / 1000000000.0);
 
          if(t < 100000ULL  )printf(" | %6.3fs", (double)t/1000.0);
     else if(t < 1000000ULL )printf(" | %6.2fs", (double)t/1000.0);
@@ -2214,7 +2249,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   if(count>0)
   {
     twait/=count;
-    if(mystuff->mode != MODE_SELFTEST_SHORT)printf(" | %7" PRIu64 "us", twait);
+    if(mystuff->mode != MODE_SELFTEST_SHORT)printf(" | %6" PRIu64 "us", twait);
     if(mystuff->sieve_primes_adjust==1 && twait>500 && mystuff->sieve_primes < mystuff->sieve_primes_max && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
       mystuff->sieve_primes *= 9;
@@ -2249,7 +2284,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     factor_hi  = mystuff->h_RES[i*3 + 1];
     factor_mid = mystuff->h_RES[i*3 + 2];
     factor_lo  = mystuff->h_RES[i*3 + 3];
-    if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24))
+    if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT72_MUL24))
     {
       int72 factor={factor_lo, factor_mid, factor_hi};
       print_dez72(factor,string);
@@ -2265,13 +2300,15 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     }
     if(mystuff->mode == MODE_NORMAL)
     {
-      resultfile = fopen(mystuff->resultsfile, "a");
+      resultfile = fopen_and_lock(mystuff->resultsfile, "a");
 #ifndef MORE_CLASSES      
-      fprintf(resultfile,"M%u has a factor: %s [TF:%d:%d%s:%s %s]\n", exp, string, bit_min, bit_max, ((mystuff->stopafterfactor == 2) && (mystuff->class_counter <  96)) ? "*" : "" , MFAKTO_VERSION, kernel_info[use_kernel].kernelname);
+      fprintf(resultfile,"M%u has a factor: %s [TF:%d:%d%s:%s %s]\n", exp, string, bit_min, bit_max,
+        ((mystuff->stopafterfactor == 2) && (mystuff->class_counter <  96)) ? "*" : "" , MFAKTO_VERSION, kernel_info[use_kernel].kernelname);
 #else      
-      fprintf(resultfile,"M%u has a factor: %s [TF:%d:%d%s:%s %s]\n", exp, string, bit_min, bit_max, ((mystuff->stopafterfactor == 2) && (mystuff->class_counter < 960)) ? "*" : "" , MFAKTO_VERSION, kernel_info[use_kernel].kernelname);
+      fprintf(resultfile,"M%u has a factor: %s [TF:%d:%d%s:%s %s]\n", exp, string, bit_min, bit_max,
+        ((mystuff->stopafterfactor == 2) && (mystuff->class_counter < 960)) ? "*" : "" , MFAKTO_VERSION, kernel_info[use_kernel].kernelname);
 #endif
-      fclose(resultfile);
+      unlock_and_fclose(resultfile);
     }
   }
   if(factorsfound>=10)
@@ -2279,9 +2316,9 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     if(mystuff->mode != MODE_SELFTEST_SHORT)printf("M%u: %d additional factors not shown\n", exp, factorsfound - 10);
     if(mystuff->mode == MODE_NORMAL)
     {
-      resultfile=fopen(mystuff->resultsfile, "a");
+      resultfile = fopen_and_lock(mystuff->resultsfile, "a");
       fprintf(resultfile,"M%u: %d additional factors not shown\n",exp,factorsfound-10);
-      fclose(resultfile);
+      unlock_and_fclose(resultfile);
     }
   }
   return factorsfound;
@@ -2872,4 +2909,181 @@ void CL_test(cl_int devnumber)
     printArray("RES", mystuff.h_RES, 32);
 
   }
+}
+
+int perftest(int par)
+{
+  struct timeval timer;
+  int i, tmp;
+  unsigned int exp=66362159;
+  unsigned long long int k=0, time1, time2, time3;
+  float it;
+
+  printf("\n\nPerftest\n\n");
+
+  mystuff.mode = MODE_PERFTEST;
+  if (par == 0) par=10;
+  it = (float)par;
+      i = (int) deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
+      while( (i * 2) <= (int)mystuff.threads_per_grid_max) i = i * 2;
+      mystuff.threads_per_grid = i;
+      if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
+      {
+        mystuff.threads_per_grid = (cl_uint)deviceinfo.maxThreadsPerGrid;
+      }
+  init_CLstreams();
+
+  register_signal_handler(&mystuff);
+
+  mystuff.sieve_primes_max_global = 1000000;
+  printf("Generate list of the first 10^6 primes: ");
+
+  timer_init(&timer);
+//  sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max_global);
+  sieve_init();
+  time1 = timer_diff(&timer);
+  printf("%.2f ms\n\n", (float)time1/1000.0);
+  if (mystuff.quit) exit(1);
+
+  printf("1. Sieve-Init (once per class, 960 times per test, avg. for %d iterations)\n", par);
+  timer_init(&timer);
+  for (i=0; i<par; i++)
+  {
+    sieve_init_class(exp, k++, 5000);
+  }
+  time1 = timer_diff(&timer);
+  printf("\tInit_class(sieveprimes=5000):    %6.2f ms\n", time1/it/1000);
+
+  for (i=0; i<par; i++)
+  {
+    sieve_init_class(exp, k++, 20000);
+  }
+  time2 = timer_diff(&timer) - time1;
+  printf("\tInit_class(sieveprimes=20000):   %6.2f ms\n", time2/it/1000);
+
+  for (i=0; i<par; i++)
+  {
+    sieve_init_class(exp, k++, 80000);
+  }
+  time3 = timer_diff(&timer) - time2;
+
+  printf("\tInit_class(sieveprimes=80000):   %6.2f ms\n", time3/it/1000);
+  timer_init(&timer);
+  for (i=0; i<par; i++)
+  {
+    sieve_init_class(exp, k++, 200000);
+  }
+  time1 = timer_diff(&timer);
+  printf("\tInit_class(sieveprimes=200000):  %6.2f ms\n", time1/it/1000);
+
+  for (i=0; i<par; i++)
+  {
+    sieve_init_class(exp, k++, 500000);
+  }
+  time2 = timer_diff(&timer) - time1;
+  printf("\tInit_class(sieveprimes=500000):  %6.2f ms\n", time2/it/1000);
+
+  for (i=0; i<par; i++)
+  {
+    sieve_init_class(exp, k++, 1000000);
+  }
+  time3 = timer_diff(&timer) - time2;
+
+  printf("\tInit_class(sieveprimes=1000000): %6.2f ms\n", time3/it/1000);
+
+
+  if (mystuff.quit) exit(1);
+
+  printf("\n2. Sieve (M/s)\n");
+#define MAX_NUM_SPS 20
+  int m=13*17*19*23;
+  int ssizes[]={1,2,3,4,5,6,7,8,10,11,13,16,19,20,21,22,25,30,36,43,50,60,72,86,88,170};
+  int nss=sizeof(ssizes)/sizeof(ssizes[0]);
+  int sprimes[]={256, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 40000, 60000, 80000, 100000, 200000, 500000, 1000000}; // max. MAX_NUM_SPS, 8 fit on an 80 chars line
+  int nsp=sizeof(sprimes)/sizeof(sprimes[0]);
+  int ii,j;
+
+  if (nsp>MAX_NUM_SPS) nsp=MAX_NUM_SPS;
+  float peak[MAX_NUM_SPS]={0.0}, Mps;
+  int peak_index[MAX_NUM_SPS]={0};
+  double last_elem[MAX_NUM_SPS]={0.0};
+
+  printf("SievePrimes:");
+  for(ii=0; ii<nsp; ii++)
+  {
+    printf(" %7u", sprimes[ii]);
+  }
+  printf("\nSieveSizeLimit");
+  for (j=0;j<nss; j++)
+  {
+    tmp=m*ssizes[j];
+    sieve_free();
+//    sieve_init(tmp, 1000000);
+    sieve_init();
+    sieve_init_class(exp, k++, 1000000);
+    printf("\n%6d kiB  ", tmp/8192+1);
+
+    for(ii=0; ii<nsp; ii++)
+    {
+      timer_init(&timer);
+      for (i=0; i<(par*(nsp-ii)); i++)
+      {
+        sieve_candidates(mystuff.threads_per_grid, mystuff.h_ktab[0], sprimes[ii]);
+      }
+      time1 = timer_diff(&timer);
+      last_elem[ii] += mystuff.h_ktab[0][mystuff.threads_per_grid-1]; // summ the last elements to get an average
+      Mps =  it*(mystuff.threads_per_grid *(nsp-ii))/time1;
+      if (Mps > peak[ii])
+      {
+        peak[ii]=Mps;
+        peak_index[ii]=j;
+      }
+      printf(" %7.1f", Mps);
+      if (mystuff.quit) break;
+    }
+    if (mystuff.quit) break;
+  }
+  printf("\nBest SieveSizeLimit for\nSievePrimes:");
+  for(ii=0; ii<nsp; ii++)
+  {
+    printf(" %7u", sprimes[ii]);
+  }
+
+  printf("\nat kiB:     ");
+  for(ii=0; ii<nsp; ii++)
+  {
+    printf(" %7u", m*ssizes[peak_index[ii]]/8192+1);
+  }
+  printf("\nmax M/s:    ");
+  for(ii=0; ii<nsp; ii++)
+  {
+    printf(" %7.1f", peak[ii]);
+  }
+  if (!mystuff.quit)  // sum is not valid if ^C was pressed
+  {
+    printf("\nSieved out: ");
+    for(ii=0; ii<nsp; ii++)
+    {
+      // last_elem/nss  is the average end of the sieved block, consisting of threads_per_grid entries
+      printf(" %6.2f%%", (last_elem[ii]/nss - (double)mystuff.threads_per_grid)*100.0*nss/last_elem[ii]);
+    }
+  }
+  else
+  {
+    exit(1);
+  }
+
+  printf("\n\n");
+
+  printf("3. memory copy (MB/s)\n  soon\n");
+
+  printf("4. mfakto_cl_63 kernel\n  soon\n");
+
+  printf("5. mfakto_cl_71 kernel\n  soon\n");
+
+  printf("6. barrett_79 kernel\n  soon\n");
+
+  printf("7. barrett_92 kernel\n  soon\n");
+
+  return 0;
 }

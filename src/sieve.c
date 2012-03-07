@@ -143,7 +143,7 @@ j, n, r  <=  primes[200000] = 2750161 (22 bits) */
   
   if(r==0)return 0;	/* trivially! */
   if(j==1)return r;	/* easy, isn't it? */
-  if(j+1 == n) return (n-r);
+//  if(j+1 == n) return (n-r);
 
   nn_old=n;
   jj=j;

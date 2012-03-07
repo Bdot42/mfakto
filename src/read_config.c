@@ -76,6 +76,22 @@ int read_config(mystuff_t *mystuff)
   printf("\nRuntime options\n");
   printf("  Inifile                   %s\n",mystuff->inifile);
 
+/*****************************************************************************/  
+
+  if(my_read_int(mystuff->inifile, "SievePrimesMax", &i))
+  {
+    printf("WARNING: Cannot read SievePrimesMax from inifile, using default value (%d)\n", SIEVE_PRIMES_MAX);
+    i=SIEVE_PRIMES_MAX;
+  }
+  else if((i < 5000) || (i > 1000000))
+  {
+    printf("WARNING: SievePrimesMax must be between 5000 and 1000000, using default value (%d)\n", SIEVE_PRIMES_MAX);
+    i=SIEVE_PRIMES_MAX;
+  }
+  printf("  SievePrimesMax            %d\n",i);
+  mystuff->sieve_primes_max_global = i;
+
+/*****************************************************************************/
   if(my_read_int(mystuff->inifile, "SievePrimes", &i))
   {
     printf("WARNING: Cannot read SievePrimes from inifile, using default value (%d)\n",SIEVE_PRIMES_DEFAULT);
@@ -83,10 +99,10 @@ int read_config(mystuff_t *mystuff)
   }
   else
   {
-    if(i>SIEVE_PRIMES_MAX)
+    if((cl_uint)i>mystuff->sieve_primes_max_global)
     {
-      printf("WARNING: Read SievePrimes=%d from inifile, using max value (%d)\n",i,SIEVE_PRIMES_MAX);
-      i=SIEVE_PRIMES_MAX;
+      printf("WARNING: Read SievePrimes=%d from inifile, using max value (%d)\n",i,mystuff->sieve_primes_max_global);
+      i=mystuff->sieve_primes_max_global;
     }
     else if(i<SIEVE_PRIMES_MIN)
     {
@@ -111,7 +127,27 @@ int read_config(mystuff_t *mystuff)
   }
   printf("  SievePrimesAdjust         %d\n",i);
   mystuff->sieve_primes_adjust = i;
+  if (mystuff->sieve_primes_adjust == 0)
+    mystuff->sieve_primes_max_global = mystuff->sieve_primes;  // no chance to use higher primes
 
+/*****************************************************************************/  
+#ifdef SIEVE_SIZE_LIMIT
+  mystuff->sieve_size = SIEVE_SIZE;
+#else
+  if(my_read_int(mystuff->inifile, "SieveSizeLimit", &i))
+  {
+    printf("WARNING: Cannot read SieveSizeLimit from inifile, using default value (32)\n");
+    i=32;
+  }
+  else if(i <= 13*17*19*23/8192)
+  {
+    printf("WARNING: SieveSizeLimit must be > %d, using default value (32)\n", 13*17*19*23/8192);
+    i=32;
+  }
+  printf("  SieveSizeLimit            %d kiB\n", i);
+  mystuff->sieve_size = ((i<<13) - (i<<13) % (13*17*19*23));
+  printf("  SieveSize                 %d bits\n", mystuff->sieve_size);
+#endif
 /*****************************************************************************/
 
   if(my_read_int(mystuff->inifile, "NumStreams", &i))
@@ -191,7 +227,7 @@ int read_config(mystuff_t *mystuff)
   if(my_read_string(mystuff->inifile, "WorkFile", mystuff->workfile))
   {
     sprintf(mystuff->workfile, "worktodo.txt");
-    printf("WARNING: can't read WorkFile from inifile, using default (%s)\n", mystuff->workfile);
+    printf("WARNING: Cannot read WorkFile from inifile, using default (%s)\n", mystuff->workfile);
   }
   printf("  WorkFile                  %s\n", mystuff->workfile);
 
@@ -199,7 +235,7 @@ int read_config(mystuff_t *mystuff)
 
   if(my_read_string(mystuff->inifile, "ResultsFile", mystuff->resultsfile))
   {
-    printf("WARNING: can't read ResultsFile from inifile, using default (results.txt)\n");
+    printf("WARNING: Cannot read ResultsFile from inifile, using default (results.txt)\n");
     sprintf(mystuff->resultsfile, "results.txt");
   }
   printf("  ResultsFile               %s\n", mystuff->resultsfile);
@@ -341,7 +377,7 @@ int read_config(mystuff_t *mystuff)
 
   if (my_read_string(mystuff->inifile, "PreferKernel", tmp))
   {
-    printf("WARNING: can't read PreferKernel from inifile, using default (mfakto_cl_barrett79)\n");
+    printf("WARNING: Cannot read PreferKernel from inifile, using default (mfakto_cl_barrett79)\n");
   }
   else if (strcmp(tmp, "mfakto_cl_71") == 0)
   {

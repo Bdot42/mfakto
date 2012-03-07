@@ -27,6 +27,7 @@
     <ClCompile Include="src/sieve.c" />
     <ClCompile Include="src/signal_handler.c" />
     <ClCompile Include="src/timer.c" />
+    <ClCompile Include="src/filelocking.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/checkpoint.h" />
@@ -41,10 +42,14 @@
     <ClInclude Include="src/signal_handler.h" />
     <ClInclude Include="src/timer.h" />
     <ClInclude Include="src/timeval.h" />
+    <ClInclude Include="src\tf_debug.h" />
+    <ClInclude Include="src\filelocking.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src/mfakto_Kernels.cl" />
     <None Include="src\barrett.cl" />
+    <None Include="src\barrett15.cl" />
+    <None Include="src\barrett24.cl" />
     <None Include="src\mul24.cl" />
     <None Include="src\sieve.cl" />
     <None Include="todo.txt" />
@@ -125,7 +130,7 @@
       <AdditionalDependencies>OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl</Command>
+      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\barrett15.cl "$(OUTDIR)"\barrett15.cl &amp; copy src\barrett24.cl "$(OUTDIR)"\barrett24.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\sieve.cl "$(OUTDIR)"\sieve.cl</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -146,7 +151,7 @@
       <AdditionalDependencies>OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl</Command>
+      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\barrett15.cl "$(OUTDIR)"\barrett15.cl &amp; copy src\barrett24.cl "$(OUTDIR)"\barrett24.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\sieve.cl "$(OUTDIR)"\sieve.cl</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -170,7 +175,7 @@
       <AdditionalDependencies>OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl</Command>
+      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\barrett15.cl "$(OUTDIR)"\barrett15.cl &amp; copy src\barrett24.cl "$(OUTDIR)"\barrett24.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\sieve.cl "$(OUTDIR)"\sieve.cl</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -190,6 +195,8 @@
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <CreateHotpatchableImage>false</CreateHotpatchableImage>
+      <OmitFramePointers>true</OmitFramePointers>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -201,7 +208,7 @@
       <AdditionalDependencies>OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\sieve.cl "$(OUTDIR)"\sieve.cl</Command>
+      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\barrett15.cl "$(OUTDIR)"\barrett15.cl &amp; copy src\barrett24.cl "$(OUTDIR)"\barrett24.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\sieve.cl "$(OUTDIR)"\sieve.cl</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

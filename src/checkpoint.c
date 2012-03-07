@@ -20,6 +20,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 
 #include "params.h"
+#include "timer.h"
 
 unsigned int checkpoint_checksum(char *string, int chars)
 /* generates a CRC-32 like checksum of the string */
@@ -65,13 +66,21 @@ checkpoint_write() writes the checkpoint file.
   }
   else
   {
+    /*struct timeval cptimer;
+              unsigned long long c1, c2, c3, c4, c5;
+              timer_init(&cptimer); */
+
     sprintf(buffer,"%u %d %d %d %s: %d %d", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, cur_class, num_factors);
     i=checkpoint_checksum(buffer,(int)strlen(buffer));
+//              c1 = timer_diff(&cptimer);
     i=fprintf(f,"%u %d %d %d %s: %d %d %08X\n", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, cur_class, num_factors, i);
+//              c2 = timer_diff(&cptimer);
     res=fclose(f);
+//              c3 = timer_diff(&cptimer);
     if ((i>34) && (res==0))
     {
       remove(filename_save); // dont care if failed, it may not have existed
+//               c4 = timer_diff(&cptimer);
       rename(filename, filename_save); // dito
       rename(filename_write, filename);
     }
@@ -79,6 +88,8 @@ checkpoint_write() writes the checkpoint file.
     {
       printf("WARNING, could not write checkpoint file \"%s\", %u chars written.\n", filename_write, i);
     }
+/*               c5 = timer_diff(&cptimer);
+    printf("\nCP in %lld us, %lld us, %lld us, %lld us, %lld us\n", c1, c2, c3, c4, c5); */
   }
 }
 
@@ -130,12 +141,12 @@ returns 0 otherwise
       sscanf(ptr,": %d %d", cur_class, num_factors);
       sprintf(buffer2,"%u %d %d %d %s: %d %d", exp, bit_min, bit_max, NUM_CLASSES, version, *cur_class, *num_factors);
       chksum=checkpoint_checksum(buffer2,(int)strlen(buffer2));
-      sprintf(buffer2,"%u %d %d %d %s: %d %d %08X\n", exp, bit_min, bit_max, NUM_CLASSES, version, *cur_class, *num_factors, chksum);
+      // no trainling '\n' for the compare buffer to allow interchanging \n\r and \n files 
+      i=sprintf(buffer2,"%u %d %d %d %s: %d %d %08X", exp, bit_min, bit_max, NUM_CLASSES, version, *cur_class, *num_factors, chksum);
       if(*cur_class >= 0 && \
          *cur_class < NUM_CLASSES && \
          *num_factors >= 0 && \
-         strlen(buffer) == strlen(buffer2) && \
-         strstr(buffer, buffer2) == buffer)
+         strncmp(buffer, buffer2, i) == 0)
       {
         ret=1;
       }
@@ -173,11 +184,7 @@ tries to delete the checkpoint file
 {
   char filename[32];
   sprintf(filename, "M%u.ckp", exp);
-  
-  if(remove(filename))
-  {
-    printf("WARNING: can't delete the checkpoint file \"%s\"\n", filename);
-  }
+  remove(filename);
   sprintf(filename, "M%u.ckp.bu", exp);
   remove(filename);
   sprintf(filename, "M%u.ckp.write", exp);

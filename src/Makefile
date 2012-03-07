@@ -23,14 +23,18 @@ AMD_APP_INCLUDE = -I$(AMD_APP_DIR)/include
 AMD_APP_LIB = -L$(AMD_APP_DIR)/lib/x86_64
 
 # optimize or debug
-OPTIMIZE_FLAG = -O3 -funroll-loops  -ffast-math -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las -flto
+#OPTIMIZE_FLAG = -O3
+OPTIMIZE_FLAG = -O3 -funroll-loops  -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las 
+#OPTIMIZE_FLAG = -O3 -funroll-loops  -ffast-math -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las -flto
 #OPTIMIZE_FLAG = -g
 
 # Compiler settings for .c files (CPU)
 CC = gcc
 CFLAGS = -Wall $(OPTIMIZE_FLAG) $(AMD_APP_INCLUDE) -DBUILD_OPENCL
-CFLAGS_EXTRA_SIEVE = -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -floop-parallelize-all -fvariable-expansion-in-unroller -fno-align-labels 
-#CFLAGS_EXTRA_SIEVE =
+#CFLAGS_EXTRA_SIEVE = -funroll-all-loops 
+#CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -floop-parallelize-all -fvariable-expansion-in-unroller -fno-align-labels 
+CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -fno-align-labels 
+
 
 # Linker
 LD = g++
@@ -40,13 +44,13 @@ LDFLAGS = $(OPTIMIZE_FLAG) $(AMD_APP_LIB) -lOpenCL
 
 CSRC  = sieve.c timer.c parse.c read_config.c mfaktc.c checkpoint.c \
 	signal_handler.c 
-CLSRC = mfakto_Kernels.cl barrett.cl mul24.cl sieve.cl
+CLSRC = mfakto_Kernels.cl barrett.cl barrett15.cl barrett24.cl mul24.cl sieve.cl
 
 COBJS  = $(CSRC:.c=.o) mfakto.o
 
 ##############################################################################
 
-all: ../mfakto ../barrett.cl ../mfakto_Kernels.cl ../mul24.cl ../sieve.cl
+all: ../mfakto ../barrett.cl ../mfakto_Kernels.cl ../mul24.cl ../sieve.cl ../barrett24.cl ../barrett15.cl
 
 ../mfakto : $(COBJS)
 	$(LD) $^ $(LDFLAGS) -o $@

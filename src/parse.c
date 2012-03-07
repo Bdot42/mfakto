@@ -46,7 +46,7 @@ mfaktc 0.07-0.14 to see Luigis code.
 #include <stdlib.h>
 #include <math.h>
 #include "compatibility.h"
-
+#include "filelocking.h"
 
 int isprime(unsigned int n)
 /*
@@ -111,7 +111,7 @@ int get_next_assignment(char *filename, unsigned int *exponent, int *bit_min, in
   int ret = 2, i,j, count = 0, reason = 0;
   FILE *f_in;
   
-  f_in = fopen(filename, "r");
+  f_in = fopen_and_lock(filename, "r");
   if(f_in != NULL)
   {
     while(fgets(line, 101, f_in) != NULL)
@@ -172,7 +172,7 @@ int get_next_assignment(char *filename, unsigned int *exponent, int *bit_min, in
       else if(reason == 3) printf("invalid format\n");
       else if(reason == 4) printf("invalid data\n");
     }
-    fclose(f_in);
+    unlock_and_fclose(f_in);
   }
   else // f_in == NULL
   {
@@ -209,10 +209,10 @@ int clear_assignment(char *filename, unsigned int exponent, int bit_min, int bit
   FILE *f_in, *f_out;
   char line[101], *ptr, buf[50];
   
-  f_in = fopen(filename, "r");
+  f_in = fopen_and_lock(filename, "r");
   if(f_in != NULL)
   {
-    f_out = fopen("__worktodo__.tmp", "w");
+    f_out = fopen_and_lock("__worktodo__.tmp", "w");
     if(f_out != NULL)
     {
       while(fgets(line, 101, f_in) != NULL)
@@ -255,8 +255,8 @@ int clear_assignment(char *filename, unsigned int exponent, int bit_min, int bit
           }
         }
       }
-      fclose(f_in);
-      fclose(f_out);
+      unlock_and_fclose(f_out);
+      unlock_and_fclose(f_in);
       if(remove(filename) != 0) ret = 6;
       else
       {
@@ -265,7 +265,7 @@ int clear_assignment(char *filename, unsigned int exponent, int bit_min, int bit
     }
     else // f_out == NULL
     {
-      fclose(f_in);
+      unlock_and_fclose(f_in);
       ret = 4;
     }
   }

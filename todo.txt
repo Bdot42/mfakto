@@ -53,21 +53,50 @@ TODO
 +DONE+ - optimize 72-bit kernel for small vs. large factors (skip some converts depending on the size)
 +DONE+ - result format changes
 +DONE+ - versioning for txt files
-- make/allow for small exps/bit-levels
-- verify factors using the modulo-kernels and clEnqueueTask 
-- http://mersenneforum.org/showpost.php?p=258140&postcount=7 trialfactor_72.cl
++DONE+ - bugfix for "Only 1 platforms found, cannot use platform 1 ..."
+- display GHz-days/day: 0.016968 * pow(2, $bitlevel - 48) * 1680 / $exponent
+
+  // example using M50,000,000 from 2^69-2^70:
+  = 0.016968 * pow(2, 70 - 48) * 1680 / 50000000
+  = 2.3912767291392 GHz-days
+
+  // magic constant is 0.016968 for TF to 65-bit and above
+  // magic constant is 0.017832 for 63-and 64-bit
+  // magic constant is 0.01116 for 62-bit and below
+
+  Then all you need is: 86400 / (time_per_class * classes_per_exponent) * ghz_days_assignment
+- dynamic sieve size, adjusting as SievePrimes changes
+- bugfix for total runtime calculation if a factor was found
+- lock results file (necessary?)
+- worktodo.add
+- AllowSleep
+- test optimisation options on Linux
+- test if fix SieveSizeLimit is faster
+- run all tests with SievePrimes 256 and 1000
+- perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
+- retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
+- two optional fields in mfaktc.ini for username and computerid, so that if the user fills them out then it puts
+  the Primenet-style "UID: username/computername, " at the beginning of results lines
+- output datestamp lines in results.txt [Sat Dec 31 21:29:40 2011]
+- serialize memory access for vector kernels
 - div/mul-modulo for 96 bits
+- fast 64-bit kernel (barrett)
+- enhanced barrett for >64bit, based on mul24
+- 5/6x15bit based on mul24
+- mu = 2^(bitlevel+1) / FC on host?
 - kernel trace more specific (bitmask)
-- 4 threads - 4 classes at once - also in host code to maximize GPU-utilization in a single program
 - error handling: RES[0] -= 100; save up to 3 ints in RES; only in single-vec
 - MODBASECASE_NN_BIG_ERROR in mod_144_72
 - clGetKernelWorkGroupInfo in load kernels: preferred size, local mem
 - evaluate max mem alloc (device info)
-- serialize memory access for vector kernels
-- AllowSleep
-- perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
-- test optimisation options on Linux
-- retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
 - GPU-sieve: classes on CPU. k-min, k-max, p  ==> GPU ==> last-k, RES
   issues: sieve-init without div/mod
           memory access pattern during sieving ... workgroup size 64: p6-p70 in one group, after that diminishing differences in loop time.
+- make/allow for small exps/bit-levels
+- verify factors using the modulo-kernels and clEnqueueTask 
+- 4 threads - 4 classes at once - also in host code to maximize GPU-utilization in a single program
+- Llano: zero-copy-path (BeaverCreek)
+- decode GPU-names
+- better estimate of compute cores (CPU!)
+- repunit
+- SDK 2.6: __attribute__((always_inline)), set environment variable GPU_ASYNC_MEM_COPY=2, Profiler
