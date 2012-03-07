@@ -1,0 +1,34 @@
+version 0.06 (2011-07-09)
+- ported barrett kernels for 79 and 92 bit factor sizes
+- added support for GPUs without atomics (HD4xxx)
+- dropped 2- and 16-wide vectors
+- optimization in the 24-bit kernels: +3%
+- added a few testcases to the short selftest
+- SievePrimes auto-adjust now working (still not optimal)
+- slightly faster sieve-initialization per class
+
+version 0.05 (2011-06-19)
+- fixed 72-bit subtraction (in various places) as per TheJudger's comment
+  on www.mersenneforum.org - Thanks for the hint!
+- fixed boundaries for 95-bit kernel (-st failures)
+- added vectorized versions of the 72-bit kernel (2, 4, 8, 16 wide)
+- added VectorSize config item to select one of the vectorized kernels
+- added GridSize=4 (up to 2M threads per grid)
+- combined the "if (a>b) sub(a,b)" to a "sub_if_gt" without any "if"s
+  (only conditional moves - prerequisite for the vector approach)
+- moved the new DETAILED_INFO and CL_PERFORMANCE_INFO debug defines to
+  params.h
+- added GPLv3 headers everywhere
+
+version 0.04 (2011-06-09)
+- first version to go out to some people
+- cleanup of
+  - unused code
+	- cuda-references and workarounds
+  - removed OpenCL-example-code
+- merged in the signal handler from mfaktc 0.18-pre2
+- 71-bit-mul24-kernel working for all tests:
+  - fixed bit-shifting offset in square_72_144_shl
+	- fixed carry in sub72
+- unrolled the modulo loop in the 95-bit kernel: 10% faster
+
