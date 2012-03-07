@@ -30,8 +30,6 @@ on some other factors as well, but you don't have to worry about.
 #define SIEVE_SIZE_LIMIT 64
 
 
-
-
 /******************
 ** DEBUG options **
 ******************/
@@ -41,11 +39,11 @@ on some other factors as well, but you don't have to worry about.
 
 
 /* enable for printf's from device (GPU) code. Only used in sm_20 or newer
-code path - not used by mfakto */
+code path - not used by mfakto, see kernel trace */
 //#define USE_DEVICE_PRINTF
 
 
-/* do some checks on the mod routine - not yet used by mfakto */
+/* do some checks on the mod/div routines */
 //#define CHECKS_MODBASECASE
 
 
@@ -62,8 +60,7 @@ code path - not used by mfakto */
 
 /* issue lots of additional trace output from the C-part of the program
    (see mfakto_kernels.cl - TRACE_KERNEL and TRACE_TID for how to trace the
-   kernel execution */
-
+   kernel execution, kernel trace does not require a rebuild) */
 //#define DETAILED_INFO
 
 
@@ -72,6 +69,9 @@ code path - not used by mfakto */
    (pure run time per kernel invokation) */
 //#define CL_PERFORMANCE_INFO 
 
+
+/* Tell the OpenCL compiler to create debuggable code for the Kernels */
+//#define CL_DEBUG
 
 /******************************************************************************
 *******************************************************************************
@@ -82,9 +82,9 @@ code path - not used by mfakto */
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.06" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.07" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.06-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.07-Win" /* DO NOT CHANGE! */
 #endif
 
 

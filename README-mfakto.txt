@@ -8,8 +8,10 @@ Content
 1   Compilation
 1.1 Compilation (Linux)
 1.2 Compilation (Windows)
-2   Running mfakto (Linux)
-2.1 Running mfakto (Windows)
+2   Running mfakto
+2.1 Supported GPUs
+2.2 Running mfakto (Linux)
+2.3 Running mfakto (Windows)
 3   Howto get work and report results from/to the primenet server
 4   Known issues
 4.1 Stuff that looks like an issue but actually isn't an issue
@@ -27,7 +29,7 @@ mfakto is the OpenCL-port of mfaktc. It aims to contain the same features
 and application use cases in time.
 mfaktc is a program for trial factoring of mersenne numbers. The name mfaktc
 is "Mersenne FAKTorisation with Cuda". Faktorisation is a mixture of the
-english word "factorisation" and the german word "Faktorisierung".
+English word "factorisation" and the German word "Faktorisierung".
 It uses CPU and GPU resources.
 
 
@@ -36,33 +38,35 @@ It uses CPU and GPU resources.
 # 1 Compilation #
 #################
 
-*** not yet applicable to mfakto, only precompiled Win64 available ***
+ AMD APP 2.4 or above is required, version 2.5 recommended.
 
 
 ###########################
 # 1.1 Compilation (Linux) #
 ###########################
 
+- Install AMD APP >= 2.4
+- cd src
+- edit Makefile, set the AMD_APP_DIR location
+- make
 
 
 #############################
 # 1.2 Compilation (Windows) #
 #############################
 
+- Install AMD APP >= 2.4
+- Use the VS2010 solution to build the 32-bit or 64-bit binary, or
+- use the Makefile.win as above (not yet included - will come soon)
 
 
-############################
-# 2 Running mfakto (Linux) #
-############################
+####################
+# 2 Running mfakto #
+####################
 
-*** not yet applicable to mfakto, only precompiled Win64 available ***
+Install AMD APP version >= 2.4.
 
-
-################################
-# 2.1 Running mfakto (Windows) #
-################################
-
-Open a command shell and run 'mfakto.exe -h'. It will tell you what parameters
+Open a command shell and run 'mfakto -h'. It will tell you what parameters
 it accepts. Maybe you want to tweak the parameters in mfakto.ini. A short
 description of those parameters is included in mfakto.ini, too.
 Typically you want to get work from a worktodo file. You can specify the
@@ -81,15 +85,47 @@ Factor=bla,66362159,64,68
 Factor=bla,3321932839,50,71
 -- cut here --
 
-Then run e.g. 'mfakto.exe'. If everything is working as expected this
-should trial factor M66362159 from 2^64 to 2^68 and after that trial factor
+Then run 'mfakto'. If everything is working as expected this should trial
+factor M66362159 from 2^64 to 2^68 and after that trial factor
 M3321932839 from 2^50 to 2^71.
 
+######################
+# 2.1 Supported GPUs #
+######################
 
+- HD5xxx, HD6xxx
+- HD4xxx, FireStream 92xx (no atomic operations available *)
+- not supported (kernel compilation fails): HD2xxx, HD3xxx, FireStream 91xx
 
-###################################################################
-# 3 Howto get work and report results from/to the primenet server #
-###################################################################
+*) without atomics, reporting multiple factors found in the same block/grid
+will not work. Tests showed that only one of the factors will be reported, 
+but theoretically it could happen that even the reported factor is incorrect
+(due to consisting of a mix of bytes of multiple factors). In cases when
+mfakto reports a factor but the factor is incorrect (rejected by primenet),
+please rerun the test of the exponent and the bitlevel on the CPU (e.g.
+prime95 or mfakto -d c).
+
+##############################
+# 2.2 Running mfakto (Linux) #
+##############################
+
+- AMD APP 2.4 or higher is required
+- export LD_LIBRARY_PATH=$AMD_APP_DIR/lib/x86_64
+- run mfakto
+- precompiled version is only available for 64-bit (built on SuSE 11.4)
+
+################################
+# 2.3 Running mfakto (Windows) #
+################################
+
+- Catalyst 11.7 or above is required, or
+- AMD APP 2.4 or above.
+- 32-bit and 64-bit precompiled versions available; 64-bit siever is way more
+  efficient
+
+####################################################################
+# 3 How to get work and report results from/to the primenet server #
+####################################################################
 
 Getting work:
     Step 1) go to http://www.mersenne.org/ and login with your username and
@@ -106,8 +142,6 @@ Getting work:
 
 Start mfakto and stress your GPU ;)
 
-DO NOT YET REPORT ANY MFAKTO RESULTS TO PRIMENET
-
 Advanced usage (extend the upper limit):
     Since mfakto works best on long running jobs you may want to extend the
     upper TF limit of your assignments a little bit. Take a look how much TF
@@ -121,7 +155,7 @@ Advanced usage (extend the upper limit):
     TF up to 2^71 or even 2^72 directly. Just replace the 66 at the end of
     the line with e.g. 72 before you start mfakto:
         e.g. Factor=<some hex key>,78467119,65,72
-    When you increase the upper limit of your assignments it is import to
+    When you increase the upper limit of your assignments it is important to
     report the results once you've finished up to the desired level. (Do not
     report partially results before!)
 
@@ -131,20 +165,18 @@ Advanced usage (extend the upper limit):
 # 4 Known issues #
 ##################
 
-- The user interface isn't hardened against malformed input. There are some
+- The user interface is not hardened against malformed input. There are some
   checks but when you really try you should be able to screw it up.
 - The GUI of your OS might be very laggy while running mfakto. In severe
   cases, if a single kernel invocation takes too long, Windows may decide
   the driver is faulty and reboot.
   Try lowering GridSize in mfakto.ini. Smaller grids should have better
   responsiveness at a little performance penalty. Performancewise this is not
-  recommended on GPUs which can handle >= 100M/s candidates.
-  If that does not help, try lowering NumStreams.
-- SievePrimesAdjust does not yet work (it will quickly bring you to the 200000
-  limit, no matter what), better leave it at 0.
-- Sometimes, when multiple instances of mfakto are running and one exits, the
-  whole machine locks up - hard reboot required. Reason unknown.
-  This did not happen when only one mfakto-instance was running.
+  recommended on GPUs which can handle well over 100M/s candidates.
+  If that does not help, try lowering NumStreams to 2 or even 1.
+- SievePrimesAdjust works now, but is not always optimal. Test it out and
+  see what the best SievePrimes is, set it and fix it by setting
+  SievePrimesAdjust to 0.
 - There's been reports of mfakto-crashes when other GPU-bound tools or GPU-Z
   were running.
 
@@ -154,7 +186,7 @@ Advanced usage (extend the upper limit):
 
 - mfakto runs slower on small ranges. Usually it doesn't make much sense to
   run mfakto with an upper limit smaller than 2^64. It is designed for trial
-  factoring above 2^64 up to 2^95 (factor sizes). ==> mfakto needs
+  factoring above 2^64 up to 2^92 (factor sizes). ==> mfakto needs
   "long runs"!
 - mfakto can find factors outside the given range.
   E.g. './mfakto.exe -tf 66362159 40 41' has a high change to report
@@ -189,31 +221,25 @@ A Not tested yet, but using the commandline option "-d <GPU number>" you should
   Please read the next question, too.
 
 Q Can I run multiple instances of mfakto on the same computer?
-A Well, normally yes, but there is a bug that sometimes freezes the whole
-  computer when one of multiple instances exits.
+A Yes, and in most cases this is necessary to make full use of the GPU(s).
+  A single instance can only run on a single GPU (no difference how the GPU's
+  are configured).
 
 Q Which tasks should I assign to mfakto?
-A Currently, the 71-bit kernel is the only fast one (though everything up to
-  95-bit will work). Due to an internal optimization, factors > 2^64 are 5-10%
-  faster than factors up to 2^64. So best is to assign TF work between 2^64 and
-  2^71 for now. Other fast kernels will follow.
+A Currently, the 79-bit-barrett kernel is the fastest one, working for factors
+  from 64 bits to 79 bits. Selecting tasks for this kernel will give best
+  results. The 92-bit-barrett kernel is quite fast too, but avoid factors
+  between 92 bits and 95 bits - they will work but terribly slow.
 
 ###########
 # 7 .plan #
 ###########
 
-0.06
-- add a barrett kernel
-- SievePrimesAdjust
-
 not planned for a specific release / ongoing
-- keep features in sync with mfaktc
+- keep features/changes in sync with mfaktc
 - performance improvements whenever I find them ;)
-- find the reason for the occasional aborts
 - documentation and comments in code
 - find a smarter way for the vectors (not so many kernels and functions, but a
   compile-time definition)
-- combine barrett and vectors
 - full 95-bit implementation
-- once stable, enable uploading results to primenet
-
+- Makefile.win

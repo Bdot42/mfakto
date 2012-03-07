@@ -84,7 +84,7 @@ typedef struct
   int threads_per_grid_max, threads_per_grid;
 
 #ifdef CHECKS_MODBASECASE
-  unsigned int *d_modbasecase_debug;
+  cl_mem        d_modbasecase_debug;
   unsigned int *h_modbasecase_debug;
 #endif  
 

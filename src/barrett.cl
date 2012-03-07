@@ -1,15 +1,34 @@
+/*
+This file is part of mfaktc (mfakto).
+Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
+                                Bertram Franz (bertramf@gmx.net)
+
+mfaktc (mfakto) is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+mfaktc (mfakto) is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+                                
+You should have received a copy of the GNU General Public License
+along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 /****************************************
  ****************************************
- * 32-bit-stuff for the 92/96-bit-kernel
- *
+ * 32-bit-stuff for the 92/76-bit-barrett-kernel
+ * included by main kernel file
  ****************************************
  ****************************************/
 
 
-#define EVAL_RES(comp) \
+#define EVAL_RES_b(comp) \
   if((a.d2.comp|a.d1.comp)==0 && a.d0.comp==1) \
   { \
-      tid=atomic_inc(&RES[0]); \
+      tid=ATOMIC_INC(RES[0]); \
       if(tid<10) \
       { \
         RES[tid*3 + 1]=f.d2.comp; \
@@ -18,21 +37,27 @@
       } \
   }
 
-/* 96bit (3x 32bit) integer
-D= d0 + d1*(2^32) + d2*(2^64) */
-typedef struct _int96_1t
-{
-  uint d0,d1,d2;
-}int96_1t;
+#ifdef CHECKS_MODBASECASE
+// this check only works for single vector (i.e. no vector)
+#if (BARRETT_VECTOR_SIZE != 1)
+#pragma error "CHECKS_MODBASECASE only works with BARRETT_VECTOR_SIZE = 1"
+#endif
 
-/* 192bit (6x 32bit) integer
-D=d0 + d1*(2^32) + d2*(2^64) + ... */
-typedef struct _int192_1t
-{
-  uint d0,d1,d2,d3,d4,d5;
-}int192_1t;
+// to make tf_debug.h happy:
+#define USE_DEVICE_PRINTF
+#define __CUDA_ARCH__ 200
 
-#if (VECTOR_SIZE == 1)
+#include "tf_debug.h"
+
+#else
+
+#define MODBASECASE_QI_ERROR(A, B, C, D)
+#define MODBASECASE_NONZERO_ERROR(A, B, C, D)
+#define MODBASECASE_NN_BIG_ERROR(A, B, C, D)
+
+#endif
+
+#if (BARRETT_VECTOR_SIZE == 1)
 
 typedef struct _int96_t
 {
@@ -51,7 +76,7 @@ typedef struct _int192_t
 #define CONVERT_UINT_V convert_uint
 #define AS_UINT_V as_uint
 
-#elif (VECTOR_SIZE == 2)
+#elif (BARRETT_VECTOR_SIZE == 2)
 typedef struct _int96_t
 {
   uint2 d0,d1,d2;
@@ -69,7 +94,7 @@ typedef struct _int192_t
 #define CONVERT_UINT_V convert_uint2
 #define AS_UINT_V as_uint2
 
-#elif (VECTOR_SIZE == 4)
+#elif (BARRETT_VECTOR_SIZE == 4)
 
 typedef struct _int96_t
 {
@@ -88,7 +113,7 @@ typedef struct _int192_t
 #define CONVERT_UINT_V convert_uint4
 #define AS_UINT_V as_uint4
 
-#elif (VECTOR_SIZE == 8)
+#elif (BARRETT_VECTOR_SIZE == 8)
 typedef struct _int96_t
 {
   uint8 d0,d1,d2;
@@ -106,7 +131,8 @@ typedef struct _int192_t
 #define CONVERT_UINT_V convert_uint8
 #define AS_UINT_V as_uint8
 
-#elif (VECTOR_SIZE == 16)
+#elif (BARRETT_VECTOR_SIZE == 16)
+#pragma error "Vector size 16 is so slow, don't use it. If you really want to, remove this pragma."
 typedef struct _int96_t
 {
   uint16 d0,d1,d2;
@@ -124,10 +150,17 @@ typedef struct _int192_t
 #define CONVERT_UINT_V convert_uint16
 #define AS_UINT_V as_uint16
 
+#else
+#pragma error "invalid BARRETT_VECTOR_SIZE"
 #endif
 
+#ifndef CHECKS_MODBASECASE
 void div_192_96(int96_t *res, int192_t q, int96_t n, float_v nf);
 void div_160_96(int96_t *res, int192_t q, int96_t n, float_v nf);
+#else
+void div_192_96(int96_t *res, int192_t q, int96_t n, float_v nf, __global uint* modcasebase_debug);
+void div_160_96(int96_t *res, int192_t q, int96_t n, float_v nf, __global uint* modcasebase_debug);
+#endif
 void mul_96(int96_t *res, int96_t a, int96_t b);
 void mul_96_192_no_low2(int192_t *res, int96_t a, int96_t b);
 void mul_96_192_no_low3(int192_t *res, int96_t a, int96_t b);
@@ -139,9 +172,6 @@ void mul_96_192_no_low3(int192_t *res, int96_t a, int96_t b);
  *
  ****************************************
  ****************************************/
-#define MODBASECASE_QI_ERROR(a,b,c,d)
-#define MODBASECASE_NONZERO_ERROR(a,b,c,d)
-
 
 int96_t sub_if_gte_96(int96_t a, int96_t b)
 /* return (a>b)?a-b:a */
@@ -180,25 +210,7 @@ void inc_if_ge_96(int96_t *res, int96_t a, int96_t b)
 void mul_96(int96_t *res, int96_t a, int96_t b)
 /* res = a * b */
 {
-  /*
-  res->d0 = __umul32  (a.d0, b.d0);
-
-  res->d1 = __add_cc(__umul32hi(a.d0, b.d0), __umul32  (a.d1, b.d0));
-  res->d2 = __addc  (__umul32  (a.d2, b.d0), __umul32hi(a.d1, b.d0));
-  
-  res->d1 = __add_cc(res->d1,                __umul32  (a.d0, b.d1));
-  res->d2 = __addc  (res->d2,                __umul32hi(a.d0, b.d1));
-
-  res->d2+= __umul32  (a.d0, b.d2);
-
-  res->d2+= __umul32  (a.d1, b.d1);
-  */
   uint_v tmp;
-#ifdef OpenCL_CRASH_BUG_WA
-  uint_v carry;  /* FIX: not needed when OpenCL drivers are fixed.
-                  until then, the other code below crashes.
-                  The Workaround is a lot slower ... */
-#endif
 
   res->d0  = a.d0 * b.d0;
   res->d1  = mul_hi(a.d0, b.d0);
@@ -207,22 +219,13 @@ void mul_96(int96_t *res, int96_t a, int96_t b)
 
   tmp = a.d1 * b.d0;
   res->d1 += tmp;
-#ifdef OpenCL_CRASH_BUG_WA
-  carry    = (tmp > res->d1)? 1 : 0;
-#else
   res->d2 += AS_UINT_V((tmp > res->d1)? 1 : 0);
-#endif
 
   res->d2 += mul_hi(a.d0, b.d1);
 
   tmp = a.d0 * b.d1;
   res->d1 += tmp;
-#ifdef OpenCL_CRASH_BUG_WA
-  carry   += (tmp > res->d1)? 1 : 0;
-  for (tmp=0; tmp<carry; tmp++, res->d2++);
-#else
   res->d2 += AS_UINT_V((tmp > res->d1)? 1 : 0);
-#endif
 
   res->d2 += a.d0 * b.d2 + a.d1 * b.d1 + a.d2 * b.d0;
 }
@@ -523,7 +526,7 @@ void shl_96(int96_t *a)
 #ifndef CHECKS_MODBASECASE
 void div_192_96(int96_t *res, int192_t q, int96_t n, float_v nf)
 #else
-void div_192_96(int96_t *res, int192_t q, int96_t n, float_v nf, uint *modbasecase_debug)
+void div_192_96(int96_t *res, int192_t q, int96_t n, float_v nf, __global uint *modbasecase_debug)
 #endif
 /* res = q / n (integer division) */
 {
@@ -839,7 +842,7 @@ one. Sometimes the result is a little bit bigger than n
 #ifndef CHECKS_MODBASECASE
 void div_160_96(int96_t *res, int192_t q, int96_t n, float_v nf)
 #else
-void div_160_96(int96_t *res, int192_t q, int96_t n, float_v nf, uint *modbasecase_debug)
+void div_160_96(int96_t *res, int192_t q, int96_t n, float_v nf, __global uint *modbasecase_debug)
 #endif
 /* res = q / n (integer division) */
 /* the code of div_160_96() is an EXACT COPY of div_192_96(), the only
@@ -1159,15 +1162,14 @@ one. Sometimes the result is a little bit bigger than n
 
 
 
-#ifndef CHECKS_MODBASECASE
 void mod_simple_96(int96_t *res, int96_t q, int96_t n, float_v nf
 #if (TRACE_KERNEL > 1)
                   , __private uint tid
 #endif
-)
-#else
-void mod_simple_96(int96_t *res, int96_t q, int96_t n, float_v nf, int bit_max64, unsigned int limit, unsigned int *modbasecase_debug)
+#ifdef CHECKS_MODBASECASE
+                  , int bit_max64, unsigned int limit, __global uint *modbasecase_debug
 #endif
+)
 /*
 res = q mod n
 used for refinement in barrett modular multiplication
@@ -1258,26 +1260,26 @@ bit_max64 is bit_max - 64!
   __private uint tid;
   __private uint_v t, tmp, carry;
 
-	tid = get_global_id(0)+get_global_size(0)*get_global_id(1);
+	tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
 
-    exp96.d2=0;exp96.d1=exp>>31;exp96.d0=exp<<1;	// exp96 = 2 * exp
+  exp96.d2=0;exp96.d1=exp>>31;exp96.d0=exp<<1;	// exp96 = 2 * exp
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf("mfakto_cl_barrett92: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x\n",
-        exp, exp96.d1, exp96.d0, b.d5, b.d4, b.d3, b.d2, b.d1, b.d0, k.d2, k.d1, k.d0);
+        exp, exp96.d1, exp96.d0, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0);
 #endif
 
-#if (VECTOR_SIZE == 1)
+#if (BARRETT_VECTOR_SIZE == 1)
   t    = k_tab[tid];
-#elif (VECTOR_SIZE == 2)
+#elif (BARRETT_VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
-#elif (VECTOR_SIZE == 4)
+#elif (BARRETT_VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
   t.w  = k_tab[tid+3];
-#elif (VECTOR_SIZE == 8)
+#elif (BARRETT_VECTOR_SIZE == 8)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -1286,7 +1288,7 @@ bit_max64 is bit_max - 64!
   t.s5 = k_tab[tid+5];
   t.s6 = k_tab[tid+6];
   t.s7 = k_tab[tid+7];
-#elif (VECTOR_SIZE == 16)
+#elif (BARRETT_VECTOR_SIZE == 16)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -1341,8 +1343,10 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
         
-  tmp192.d5 = 0x40000000 >> (62 - (bit_max64 << 1));			// tmp192 = 2^(2*bit_max)
-  tmp192.d4 = 1 << (bit_max64 << 1);
+        
+  // OpenCL shifts 32-bit values by 31 at most
+  tmp192.d5 = (0x40000000 >> (31 - bit_max64)) >> (31 - bit_max64);	// tmp192 = 2^(2*bit_max)
+  tmp192.d4 = (1 << bit_max64) << bit_max64;   // 1 << (b << 1) = (1 << b) << b
   tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
 
 #ifndef CHECKS_MODBASECASE
@@ -1393,12 +1397,16 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
-);					// adjustment, plain barrett returns N = AB mod M where N < 3M!
+               );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
 #else
   int limit = 6;
   if(bit_max64 == 1) limit = 8;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
   if(bit_max64 == 2) limit = 7;						// bit_max == 66, ...
-  mod_simple_96(&a, tmp96, f, ff, bit_max64, limit, modbasecase_debug);
+  mod_simple_96(&a, tmp96, f, ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+                   , bit_max64, limit, modbasecase_debug);
 #endif
   
 #if (TRACE_KERNEL > 2)
@@ -1454,12 +1462,16 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
-);					// adjustment, plain barrett returns N = AB mod M where N < 3M!
+                 );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
 #else
     int limit = 6;
     if(bit_max64 == 1) limit = 8;					// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
     if(bit_max64 == 2) limit = 7;					// bit_max == 66, ...
-    mod_simple_96(&a, tmp96, f, ff, bit_max64, limit, modbasecase_debug);
+    mod_simple_96(&a, tmp96, f, ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+                   , bit_max64, limit, modbasecase_debug);
 #endif
 
     exp<<=1;
@@ -1468,8 +1480,19 @@ Precalculated here since it is the same for all steps in the following loop */
         exp, tmp96.d2, tmp96.d1, tmp96.d0, f.d2, f.d1, f.d0, a.d2, a.d1, a.d0 );
 #endif
   }
-  
+
+
+#ifndef CHECKS_MODBASECASE
   a = sub_if_gte_96(a,f);	// final adjustment in case a >= f
+#else
+  tmp96 = sub_if_gte_96(a,f);
+  a = sub_if_gte_96(tmp96,f);
+  if( (tmp96.d2 != a.d2) || (tmp96.d1 != a.d1) || (tmp96.d0 != a.d0))
+  {
+    printf("EEEEEK, final a was >= f\n");
+  }
+#endif
+
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("after sub: a = %x:%x:%x \n",
          a.d2, a.d1, a.d0 );
@@ -1477,14 +1500,14 @@ Precalculated here since it is the same for all steps in the following loop */
   
 
 /* finally check if we found a factor and write the factor to RES[] */
-#if (VECTOR_SIZE == 1)
+#if (BARRETT_VECTOR_SIZE == 1)
   if( ((a.d2|a.d1)==0 && a.d0==1) )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf("mfakto_cl_barrett92: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2, f.d1, f.d0, k.d2, k.d1, k.d0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
-      tid=atomic_inc(&RES[0]);
+    tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
       RES[tid*3 + 1]=f.d2;
@@ -1492,40 +1515,40 @@ Precalculated here since it is the same for all steps in the following loop */
       RES[tid*3 + 3]=f.d0;
     }
   }
-#elif (VECTOR_SIZE == 2)
-  EVAL_RES(x)
-  EVAL_RES(y)
-#elif (VECTOR_SIZE == 4)
-  EVAL_RES(x)
-  EVAL_RES(y)
-  EVAL_RES(z)
-  EVAL_RES(w)
-#elif (VECTOR_SIZE == 8)
-  EVAL_RES(s0)
-  EVAL_RES(s1)
-  EVAL_RES(s2)
-  EVAL_RES(s3)
-  EVAL_RES(s4)
-  EVAL_RES(s5)
-  EVAL_RES(s6)
-  EVAL_RES(s7)
-#elif (VECTOR_SIZE == 16)
-  EVAL_RES(s0)
-  EVAL_RES(s1)
-  EVAL_RES(s2)
-  EVAL_RES(s3)
-  EVAL_RES(s4)
-  EVAL_RES(s5)
-  EVAL_RES(s6)
-  EVAL_RES(s7)
-  EVAL_RES(s8)
-  EVAL_RES(s9)
-  EVAL_RES(sa)
-  EVAL_RES(sb)
-  EVAL_RES(sc)
-  EVAL_RES(sd)
-  EVAL_RES(se)
-  EVAL_RES(sf)
+#elif (BARRETT_VECTOR_SIZE == 2)
+  EVAL_RES_b(x)
+  EVAL_RES_b(y)
+#elif (BARRETT_VECTOR_SIZE == 4)
+  EVAL_RES_b(x)
+  EVAL_RES_b(y)
+  EVAL_RES_b(z)
+  EVAL_RES_b(w)
+#elif (BARRETT_VECTOR_SIZE == 8)
+  EVAL_RES_b(s0)
+  EVAL_RES_b(s1)
+  EVAL_RES_b(s2)
+  EVAL_RES_b(s3)
+  EVAL_RES_b(s4)
+  EVAL_RES_b(s5)
+  EVAL_RES_b(s6)
+  EVAL_RES_b(s7)
+#elif (BARRETT_VECTOR_SIZE == 16)
+  EVAL_RES_b(s0)
+  EVAL_RES_b(s1)
+  EVAL_RES_b(s2)
+  EVAL_RES_b(s3)
+  EVAL_RES_b(s4)
+  EVAL_RES_b(s5)
+  EVAL_RES_b(s6)
+  EVAL_RES_b(s7)
+  EVAL_RES_b(s8)
+  EVAL_RES_b(s9)
+  EVAL_RES_b(sa)
+  EVAL_RES_b(sb)
+  EVAL_RES_b(sc)
+  EVAL_RES_b(sd)
+  EVAL_RES_b(se)
+  EVAL_RES_b(sf)
 #endif
  
 }
@@ -1550,26 +1573,26 @@ a is precomputed on host ONCE.
   __private uint tid;
   __private uint_v t, tmp, carry;
 
-	tid = get_global_id(0)+get_global_size(0)*get_global_id(1);
+	tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
 
-    exp96.d2=0;exp96.d1=exp>>31;exp96.d0=exp<<1;	// exp96 = 2 * exp
+  exp96.d2=0;exp96.d1=exp>>31;exp96.d0=exp<<1;	// exp96 = 2 * exp
 
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf("mfakto_cl_barrett79: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x\n",
+  if (tid==TRACE_TID) printf("mfakto_cl_barrett79: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x\n",
         exp, exp96.d1, exp96.d0, b.d5, b.d4, b.d3, b.d2, b.d1, b.d0, k.d2, k.d1, k.d0);
 #endif
 
-#if (VECTOR_SIZE == 1)
+#if (BARRETT_VECTOR_SIZE == 1)
   t    = k_tab[tid];
-#elif (VECTOR_SIZE == 2)
+#elif (BARRETT_VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
-#elif (VECTOR_SIZE == 4)
+#elif (BARRETT_VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
   t.w  = k_tab[tid+3];
-#elif (VECTOR_SIZE == 8)
+#elif (BARRETT_VECTOR_SIZE == 8)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -1578,7 +1601,7 @@ a is precomputed on host ONCE.
   t.s5 = k_tab[tid+5];
   t.s6 = k_tab[tid+6];
   t.s7 = k_tab[tid+7];
-#elif (VECTOR_SIZE == 16)
+#elif (BARRETT_VECTOR_SIZE == 16)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -1651,6 +1674,7 @@ Precalculated here since it is the same for all steps in the following loop */
         u.d2, u.d1, u.d0, ff);
 #endif
 
+// bb is still the preprocessed scalar passed in to the kernel - it is widened here to the required vector size automatically
   a.d0 = bb.d2;// & 0xFFFF8000;						// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
   a.d1 = bb.d3;
   a.d2 = bb.d4;
@@ -1683,7 +1707,7 @@ Precalculated here since it is the same for all steps in the following loop */
   tmp96.d2 = bb.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf("mfakto_cl_barrett79: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
+  if (tid==TRACE_TID) printf("mfakto_cl_barrett79: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2, b.d1, b.d0, tmp96.d2, tmp96.d1, tmp96.d0);
 #endif
 
@@ -1692,11 +1716,15 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
-);					// adjustment, plain barrett returns N = AB mod M where N < 3M!
+               );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
 #else
   int limit = 6;
   if(bit_max64 == 15) limit = 9;					// bit_max == 79, due to decreased accuracy of mul_96_192_no_low3() above we need a higher threshold
-  mod_simple_96(&a, tmp96, f, ff, 79 - 64, limit << (15 - bit_max64), modbasecase_debug);	// limit is 6 * 2^(79 - bit_max)
+  mod_simple_96(&a, tmp96, f, ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+                   , 79 - 64, limit << (15 - bit_max64), modbasecase_debug);	// limit is 6 * 2^(79 - bit_max)
 #endif
 
 #if (TRACE_KERNEL > 2)
@@ -1761,7 +1789,11 @@ Precalculated here since it is the same for all steps in the following loop */
 #else
     int limit = 6;
     if(bit_max64 == 15) limit = 9;					// bit_max == 79, due to decreased accuracy of mul_96_192_no_low3() above we need a higher threshold
-    mod_simple_96(&a, tmp96, f, ff, 79 - 64, limit << (15 - bit_max64), modbasecase_debug);	// limit is 6 * 2^(79 - bit_max)
+    mod_simple_96(&a, tmp96, f, ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+                   , 79 - 64, limit << (15 - bit_max64), modbasecase_debug);	// limit is 6 * 2^(79 - bit_max)
 #endif
 
 #if (TRACE_KERNEL > 2)
@@ -1780,14 +1812,14 @@ Precalculated here since it is the same for all steps in the following loop */
 
   
 /* finally check if we found a factor and write the factor to RES[] */
-#if (VECTOR_SIZE == 1)
+#if (BARRETT_VECTOR_SIZE == 1)
   if( ((a.d2|a.d1)==0 && a.d0==1) )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf("mfakto_cl_barrett92: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2, f.d1, f.d0, k.d2, k.d1, k.d0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
-      tid=atomic_inc(&RES[0]);
+    tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
       RES[tid*3 + 1]=f.d2;
@@ -1795,41 +1827,40 @@ Precalculated here since it is the same for all steps in the following loop */
       RES[tid*3 + 3]=f.d0;
     }
   }
-#elif (VECTOR_SIZE == 2)
-  EVAL_RES(x)
-  EVAL_RES(y)
-#elif (VECTOR_SIZE == 4)
-  EVAL_RES(x)
-  EVAL_RES(y)
-  EVAL_RES(z)
-  EVAL_RES(w)
-#elif (VECTOR_SIZE == 8)
-  EVAL_RES(s0)
-  EVAL_RES(s1)
-  EVAL_RES(s2)
-  EVAL_RES(s3)
-  EVAL_RES(s4)
-  EVAL_RES(s5)
-  EVAL_RES(s6)
-  EVAL_RES(s7)
-#elif (VECTOR_SIZE == 16)
-  EVAL_RES(s0)
-  EVAL_RES(s1)
-  EVAL_RES(s2)
-  EVAL_RES(s3)
-  EVAL_RES(s4)
-  EVAL_RES(s5)
-  EVAL_RES(s6)
-  EVAL_RES(s7)
-  EVAL_RES(s8)
-  EVAL_RES(s9)
-  EVAL_RES(sa)
-  EVAL_RES(sb)
-  EVAL_RES(sc)
-  EVAL_RES(sd)
-  EVAL_RES(se)
-  EVAL_RES(sf)
+#elif (BARRETT_VECTOR_SIZE == 2)
+  EVAL_RES_b(x)
+  EVAL_RES_b(y)
+#elif (BARRETT_VECTOR_SIZE == 4)
+  EVAL_RES_b(x)
+  EVAL_RES_b(y)
+  EVAL_RES_b(z)
+  EVAL_RES_b(w)
+#elif (BARRETT_VECTOR_SIZE == 8)
+  EVAL_RES_b(s0)
+  EVAL_RES_b(s1)
+  EVAL_RES_b(s2)
+  EVAL_RES_b(s3)
+  EVAL_RES_b(s4)
+  EVAL_RES_b(s5)
+  EVAL_RES_b(s6)
+  EVAL_RES_b(s7)
+#elif (BARRETT_VECTOR_SIZE == 16)
+  EVAL_RES_b(s0)
+  EVAL_RES_b(s1)
+  EVAL_RES_b(s2)
+  EVAL_RES_b(s3)
+  EVAL_RES_b(s4)
+  EVAL_RES_b(s5)
+  EVAL_RES_b(s6)
+  EVAL_RES_b(s7)
+  EVAL_RES_b(s8)
+  EVAL_RES_b(s9)
+  EVAL_RES_b(sa)
+  EVAL_RES_b(sb)
+  EVAL_RES_b(sc)
+  EVAL_RES_b(sd)
+  EVAL_RES_b(se)
+  EVAL_RES_b(sf)
 #endif
 }
-
 

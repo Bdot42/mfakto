@@ -20,9 +20,9 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstdlib>
 #include <iostream>
-#include <string>
 #include <fstream>
-#include <CL/cl.h>
+#include "string.h"
+#include "CL/cl.h"
 #include "params.h"
 #include "my_types.h"
 #include "compatibility.h"
@@ -47,27 +47,26 @@ extern "C"
 #endif
 
 extern mystuff_t    mystuff;
-OpenCL_deviceinfo_t deviceinfo={0};
+OpenCL_deviceinfo_t deviceinfo={{0}};
 kernel_info_t       kernel_info[NUM_KERNELS] = {
   /*   kernel (in sequence) | kernel function name | bit_min | bit_max | loaded kernel pointer */
-         AUTOSELECT_KERNEL,   "auto",                  0,      0,         NULL,
-         _TEST_MOD_,          "mod_128_64_k",          0,      0,         NULL,
-         _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         NULL,
-         _95BIT_64_OpenCL,    "mfakto_cl_95",         63,     95,         NULL,
-         BARRETT92_64_OpenCL, "mfakto_cl_barrett92",  64,     92,         NULL,
-         _71BIT_MUL24,        "mfakto_cl_71",          0,     71,         NULL,
-         _71BIT_MUL24_4,      "mfakto_cl_71_4",        0,     71,         NULL,
-         _71BIT_MUL24_8,      "mfakto_cl_71_8",        0,     71,         NULL,
-         BARRETT79_MUL32,     "mfakto_cl_barrett79",  64,     79,         NULL,
-         BARRETT92_MUL32,     "mfakto_cl_barrett92",  64,     79,         NULL,
-         UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         NULL
+     {   AUTOSELECT_KERNEL,   "auto",                  0,      0,         NULL},
+     {   _TEST_MOD_,          "mod_128_64_k",          0,      0,         NULL}, // used for various tests
+     {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         NULL}, // slow shift-cmp-sub kernel
+     {   _95BIT_64_OpenCL,    "mfakto_cl_95",         63,     95,         NULL}, // terribly slow shift-cmp-sub kernel
+     {   BARRETT92_64_OpenCL, "mfakto_cl_barrett92",  64,     92,         NULL}, // mapped to 32-bit barrett so far
+     {   _71BIT_MUL24,        "mfakto_cl_71",          0,     71,         NULL},
+     // removed _2 and _16 versions as they were consistently slower than _4 and _8
+     {   _71BIT_MUL24_4,      "mfakto_cl_71_4",        0,     71,         NULL}, // vector of 4 FC's per thread
+     {   _71BIT_MUL24_8,      "mfakto_cl_71_8",        0,     71,         NULL}, // vector of 8
+     {   BARRETT79_MUL32,     "mfakto_cl_barrett79",  64,     79,         NULL}, // one kernel for all vector sizes
+     {   BARRETT92_MUL32,     "mfakto_cl_barrett92",  64,     92,         NULL}, // one kernel for all vector sizes
+     {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         NULL}
 };
 
 /* not implemented (yet):
          BARRETT72_MUL24
          _95BIT_MUL32,        "95bit_mul32",         0, 95, NULL,
-         BARRETT79_MUL32,     "barrett79_mul32",    64, 79, NULL,
-         BARRETT92_MUL32,     "barrett92_mul32",    64, 92, NULL,
          */
 
 
@@ -117,6 +116,23 @@ int init_CLstreams(void)
 		std::cout<<"Error " << status << ": clCreateBuffer (d_RES)\n";
 		return 1;
 	}
+#ifdef CHECKS_MODBASECASE
+  if( (mystuff.h_modbasecase_debug = (unsigned int *) malloc(32 * sizeof(int))) == NULL )
+  {
+    printf("ERROR: malloc(h_modbasecase_debug) failed\n");
+    return 1;
+  }
+  mystuff.d_modbasecase_debug = clCreateBuffer(context, 
+                    CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                    32 * sizeof(int),
+                    mystuff.h_modbasecase_debug, 
+                    &status);
+  if(status != CL_SUCCESS) 
+  { 
+		std::cout<<"Error " << status << ": clCreateBuffer (d_modbasecase_debug)\n";
+		return 1;
+	}
+#endif
 	return 0;
 }
 
@@ -126,15 +142,16 @@ int init_CLstreams(void)
  *   create context, devicelist, command queue, 
  *   load kernel file, compile, link CL source, build program and kernels
  */
-int init_CL(int num_streams, cl_uint devnumber)
+int init_CL(int num_streams, cl_int devnumber)
 {
   cl_int status;
   size_t dev_s;
   cl_uint numplatforms, i;
   cl_platform_id platform = NULL;
   cl_platform_id* platformlist = NULL;
+  cl_device_type devtype = CL_DEVICE_TYPE_GPU;
 
-  printf("Select device - ");
+  printf("Select device - "); fflush(NULL);
   status = clGetPlatformIDs(0, NULL, &numplatforms);
   if(status != CL_SUCCESS)
   {
@@ -142,7 +159,14 @@ int init_CL(int num_streams, cl_uint devnumber)
     return 1;
   }
 
-  if(numplatforms > 0)
+  if (devnumber < 0)
+  {
+    devtype = CL_DEVICE_TYPE_CPU;
+    devnumber = 0;
+    printf("(CPU) - "); fflush(NULL);
+  }
+
+  if (numplatforms > 0)
   {
     platformlist = new cl_platform_id[numplatforms];
     status = clGetPlatformIDs(numplatforms, platformlist, NULL);
@@ -195,7 +219,7 @@ int init_CL(int num_streams, cl_uint devnumber)
         std::cerr << "Error " << status << ": clGetPlatformInfo(VENDOR)\n";
         return 1;
       }
-      if(strncmp(buf, "Advanced Micro Devices, Inc.", sizeof(buf)) == 0)
+      if(strcmp(buf, "Advanced Micro Devices, Inc.") == 0)
       {
         platform = platformlist[i];
       }
@@ -223,7 +247,7 @@ int init_CL(int num_streams, cl_uint devnumber)
   }
 
   cl_context_properties cps[3] = { CL_CONTEXT_PLATFORM, (cl_context_properties)platform, 0 };
-  context = clCreateContextFromType(cps, CL_DEVICE_TYPE_GPU, NULL, NULL, &status);
+  context = clCreateContextFromType(cps, devtype, NULL, NULL, &status);
   if (status == CL_DEVICE_NOT_FOUND)
   {
     clReleaseContext(context);
@@ -281,7 +305,7 @@ int init_CL(int num_streams, cl_uint devnumber)
   cl_uint dev_from=0, dev_to=num_devices;
   if (devnumber > 0)
   {
-    if (devnumber > num_devices)
+    if ((cl_uint)devnumber > num_devices)
     {
       fprintf(stderr, "Error: Only %d devices found. Cannot use device %d (bad parameter to option -d).\n", num_devices, devnumber);
       return 1;
@@ -292,7 +316,7 @@ int init_CL(int num_streams, cl_uint devnumber)
       dev_from  = --devnumber;  // index from 0
     }
   }
-  printf("Get device info - ");
+  printf("Get device info - "); fflush(NULL);
    
   for (i=dev_from; i<dev_to; i++)
   {
@@ -386,6 +410,15 @@ int init_CL(int num_streams, cl_uint devnumber)
 #endif // DETAILED_INFO
   }
 
+  if (strstr(deviceinfo.exts, "global_int32_base_atomics") == NULL)
+  {
+    printf("\nWARNING: Device does not support atomic operations. This may lead to errors\n"
+           "         when multiple factors are found in the same block. Possible errors\n"
+           "         include reporting just one of the factors, or (less likely) scrambled\n"
+           "         factors. If the reported factor(s) are not accepted by primenet,\n"
+           "         please re-run this test on the CPU, or on a GPU with atomics.\n");
+  }
+
   deviceinfo.maxThreadsPerBlock = deviceinfo.wi_sizes[0];
   deviceinfo.maxThreadsPerGrid  = deviceinfo.wi_sizes[0];
   for (i=1; i<deviceinfo.w_dim && i<5; i++)
@@ -394,8 +427,9 @@ int init_CL(int num_streams, cl_uint devnumber)
       deviceinfo.maxThreadsPerGrid *= deviceinfo.wi_sizes[i];
   }
 
-//  cl_command_queue_properties props = 0;
+//  cl_command_queue_properties props = 0;  // serialize data transfer and kernel execution (i.e. no overlapping transfer while some kernel is still running)
   cl_command_queue_properties props = CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;  // kernels and copy-jobs are queued with event dependencies, so this should work ...
+                                                                               // but so far the GPU driver does not support that anyway (as of Catalyst 11.7)
 #ifdef CL_PERFORMANCE_INFO
   props |= CL_QUEUE_PROFILING_ENABLE;
 #endif
@@ -443,9 +477,26 @@ int init_CL(int num_streams, cl_uint devnumber)
 	  return 1;
 	}
 
-  printf("Compiling kernels.");
+  char program_options[64];
+  sprintf(program_options, "-I. -DBARRETT_VECTOR_SIZE=%d ", mystuff.vectorsize);
+#ifdef CL_DEBUG
+  strcat(program_options, "-g -O0");
+#else
+  strcat(program_options, "-O3");
+#endif
 
-  status = clBuildProgram(program, 1, &devices[devnumber], "-O3", NULL, NULL);
+#ifdef CHECKS_MODBASECASE
+  strcat(program_options, " -DCHECKS_MODBASECASE");
+#endif
+
+#ifdef DETAILED_INFO
+  printf("Compiling kernels (build options: \"%s\").", program_options);
+#else
+  printf("Compiling kernels.");
+#endif
+  fflush(NULL);
+
+  status = clBuildProgram(program, 1, &devices[devnumber], program_options, NULL, NULL);
   if(status != CL_SUCCESS) 
   { 
     if(status == CL_BUILD_PROGRAM_FAILURE)
@@ -489,7 +540,7 @@ int init_CL(int num_streams, cl_uint devnumber)
   /* get kernels by name */
   for (i=_TEST_MOD_; i<UNKNOWN_KERNEL; i++)
   {
-    printf(".");
+    printf("."); fflush(NULL);
     kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
     if(status != CL_SUCCESS) 
   	{  
@@ -497,7 +548,7 @@ int init_CL(int num_streams, cl_uint devnumber)
 	  	return 1;
   	}
   }
-  printf("\n");
+  printf("\n"); fflush(NULL);
   return 0;
 }
 
@@ -660,7 +711,9 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
 {
   cl_int   status;
   /*
-  __kernel void mfakto_cl_71(__private uint exp, __private int72_t k_base, __global uint *k_tab, __private int shiftcount, __private int144_t b, __global uint *RES)
+  __kernel void mfakto_cl_71(__private uint exp, __private int72_t k_base,
+                             __global uint *k_tab, __private int shiftcount,
+                             __private int144_t b, __global uint *RES)
 */
   //////// test test test ...
   // {k_min_grid[i] = 1777608657747ULL; mystuff->h_ktab[i][0]=0;}
@@ -691,6 +744,20 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
   		std::cerr<< "Error " << status << ": Setting kernel argument. (b_preinit)\n";
   		return 1;
   	}
+#ifdef CHECKS_MODBASECASE
+    if (kernel_info[_71BIT_MUL24].kernel == l_kernel)
+    {
+      status = clSetKernelArg(l_kernel, 
+                    6, 
+                    sizeof(cl_mem), 
+                    (void *)&mystuff.d_modbasecase_debug);
+      if(status != CL_SUCCESS) 
+  	  { 
+	  	  std::cerr<<"Error " << status << ": Setting kernel argument. (d_modbasecase_debug)\n";
+  		  return 1;
+  	  }
+    }
+#endif
 #ifdef DETAILED_INFO
     printf("run_kernel24: b=%x:%x:%x:%x:%x:%x, shift=%d\n", b_preinit.d5, b_preinit.d4, b_preinit.d3, b_preinit.d2, b_preinit.d1, b_preinit.d0, shiftcount);
 #endif
@@ -745,7 +812,7 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
   		
   	}
 #ifdef DETAILED_INFO
-    printf("run_kernel64: b=%llx:%llx:%llx, shift=%lld\n", b_preinit.s[0], b_preinit.s[1], b_preinit.s[2], b_preinit.s[3]);
+    printf("run_kernel64: b=%llx:%llx:%llx, shift=%lld\n", b_preinit.s[2], b_preinit.s[1], b_preinit.s[0], b_preinit.s[3]);
 #endif
   }
   // now the params that change everytime
@@ -803,6 +870,18 @@ int run_barrett_kernel32(cl_kernel l_kernel, cl_uint exp, int96 k_base, int stre
 	  	std::cerr<<"Warning " << status << ": Setting kernel argument. (bit_min)\n";
   		
   	}
+#ifdef CHECKS_MODBASECASE
+    status = clSetKernelArg(l_kernel, 
+                    7, 
+                    sizeof(cl_mem), 
+                    (void *)&mystuff.d_modbasecase_debug);
+    if(status != CL_SUCCESS) 
+	  { 
+   	  std::cerr<<"Error " << status << ": Setting kernel argument. (d_modbasecase_debug)\n";
+		  return 1;
+	  }
+#endif
+
 #ifdef DETAILED_INFO
     printf("run_barrett_kernel32: b=%x:%x:%x:%x:%x:%x, shift=%d\n", b_preinit.d5, b_preinit.d4,
         b_preinit.d3, b_preinit.d2, b_preinit.d1, b_preinit.d0, shiftcount);
@@ -835,7 +914,10 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
   // adjust for vector kernels: each thread processes 2-16 FC's, use accordingly less threads
   if (kernel_info[_71BIT_MUL24_4].kernel == l_kernel) total_threads >>=2;
   if (kernel_info[_71BIT_MUL24_8].kernel == l_kernel) total_threads >>=3;
-    
+  // barretts introduce a different method of vectoring
+  if ((kernel_info[BARRETT79_MUL32].kernel == l_kernel) ||
+      (kernel_info[BARRETT92_MUL32].kernel == l_kernel)) total_threads /= mystuff.vectorsize;
+
   globalThreads[0] = (total_threads > deviceinfo.maxThreadsPerBlock) ? deviceinfo.maxThreadsPerBlock : total_threads;
   globalThreads[1] = (total_threads > deviceinfo.maxThreadsPerBlock) ? total_threads/deviceinfo.maxThreadsPerBlock : 1;
   localThreads[0] = globalThreads[0];
@@ -932,10 +1014,19 @@ int cleanup_CL(void)
 	status = clReleaseMemObject(mystuff.d_RES);
   if(status != CL_SUCCESS)
 	{
-		std::cerr<<"Error" << status << ": clReleaseMemObject (dRES)\n";
+		std::cerr<<"Error" << status << ": clReleaseMemObject (d_RES)\n";
 		return 1; 
 	}
   free(mystuff.h_RES);
+#ifdef CHECKS_MODBASECASE
+	status = clReleaseMemObject(mystuff.d_modbasecase_debug);
+  if(status != CL_SUCCESS)
+	{
+		std::cerr<<"Error" << status << ": clReleaseMemObject (d_modbasecase_debug)\n";
+		return 1; 
+	}
+  free(mystuff.h_modbasecase_debug);
+#endif
   status = clReleaseCommandQueue(commandQueue);
   if(status != CL_SUCCESS)
 	{
@@ -965,7 +1056,7 @@ void printArray(const char * Name, const unsigned int * Data, const unsigned int
     {
         o += printf("%d ", Data[i]);
     }
-    printf("... %d %d\n", Data[len-2], Data[len-1]);
+    if (i<len) printf("... %d %d\n", Data[len-2], Data[len-1]); else printf("\n");
 }
 
 void print_dez72(int72 a, char *buf)
@@ -1058,7 +1149,7 @@ writes "a" into "buf" in decimal
 int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min, unsigned long long int k_max, mystuff_t *mystuff, enum GPUKernels use_kernel)
 {
   size_t size = mystuff->threads_per_grid * sizeof(int);
-  int i, stream = 0, status, wait = 0;
+  int i, status, wait = 0;
   struct timeval timer, timer2;
   unsigned long long int twait=0, eta;
   unsigned int cwait=0;
@@ -1103,6 +1194,24 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
 		std::cout<<"Error " << status << ": Copying h_RES(clEnqueueWriteBuffer)\n";
 		return RET_ERROR; // # factors found ;-)
 	}
+#ifdef CHECKS_MODBASECASE
+  /* set modbasecase_debug array to 0 */ 
+  memset(mystuff->h_modbasecase_debug,0,32 * sizeof(int));
+  status = clEnqueueWriteBuffer(commandQueue,
+                mystuff->d_modbasecase_debug,
+                CL_TRUE,
+                0,
+                32 * sizeof(int),
+                mystuff->h_modbasecase_debug,
+                0,
+                NULL,
+                NULL);
+  if(status != CL_SUCCESS) 
+	{  
+		std::cout<<"Error " << status << ": Copying h_modbasecase_debug(clEnqueueWriteBuffer)\n";
+		return RET_ERROR; // # factors found ;-)
+	}
+#endif
 
   for(i=0; i<mystuff->num_streams; i++)
   {
@@ -1116,15 +1225,16 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
   printf("bits in exp %u: %u, ", exp, shiftcount);
 #endif
   shiftcount--;ln2b=1;
-  if(bit_min < 64) count=2; // allow for lesser preprocessing if factors are small
-
+  count = kernel_info[use_kernel].bit_max;  // used to limit the preprocessing
+  if(bit_min <= 64) count/=2; // allow for lesser preprocessing if factors are small
+  if(use_kernel == BARRETT92_MUL32) count = (bit_min + 95) / 2; // this one can handle preprocessing depending on the tf size
   do
   {
     shiftcount--;
     ln2b<<=1;
     if(exp&(1<<(shiftcount)))ln2b++;
   }
-  while (count*ln2b < kernel_info[use_kernel].bit_max);
+  while (ln2b < count);
 #ifdef DETAILED_INFO
   printf("remaining shiftcount = %d, ln2b = %d\n", shiftcount, ln2b);
 #endif
@@ -1156,7 +1266,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
   }
 
   // combine for more efficient passing of parameters
-  cl_ulong4 b_preinit4 = {b_preinit_lo, b_preinit_mid, b_preinit_hi, shiftcount-1};
+  cl_ulong4 b_preinit4 = {{b_preinit_lo, b_preinit_mid, b_preinit_hi, shiftcount-1}};
 
 #ifdef VERBOSE_TIMING
   printf("mfakt(%u,...) init:     %" PRIu64 "msec\n",exp,timer_diff(&timer)/1000);
@@ -1266,7 +1376,7 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
             }
 
 #ifdef DEBUG_STREAM_SCHEDULE
-            printf(" STREAM_SCHEDULE: started GPU kernel using h_ktab[%d] (%s, %u, %u, ...)\n", i, kernel_info[use_kernel].kernelname, exp, k_min_grid[i]);
+            printf(" STREAM_SCHEDULE: started GPU kernel using h_ktab[%d] (%s, %u, %llu, ...)\n", i, kernel_info[use_kernel].kernelname, exp, k_min_grid[i]);
 #endif
             mystuff->stream_status[i] = RUNNING;
             break;
@@ -1430,7 +1540,15 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
 #endif
         running = 0; /* if nothing is running, correct this if necessary */
       }
-      twait+=timer_diff(&timer2);
+
+#ifdef DEBUG_STREAM_SCHEDULE
+      unsigned long long twait1 = timer_diff(&timer2);
+      printf(" STREAM_SCHEDULE: Waited %" PRIu64 "us.\n", twait1);
+      twait += twait1;
+#else
+      twait += timer_diff(&timer2);
+#endif
+
       cwait++;
       // technically the stream we've waited for is finished, but
       // leave the stream in status RUNNING to let the case-loop above check for errors and do cleanup
@@ -1465,12 +1583,35 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
     
   if(status != CL_SUCCESS) 
 	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer RES failed. (clEnqueueReadBuffer)\n";
+    std::cout << "Error " << status << ": clEnqueueReadBuffer RES failed.\n";
 		return 1;
   }
 
 #ifdef DETAILED_INFO
   printArray("RES", mystuff->h_RES, 32);
+#endif
+
+#ifdef CHECKS_MODBASECASE
+  status = clEnqueueReadBuffer(commandQueue,
+                mystuff->d_modbasecase_debug,
+                CL_TRUE,
+                0,
+                32 * sizeof(int),
+                mystuff->h_modbasecase_debug,
+                0,
+                NULL,
+                NULL);
+    
+  if(status != CL_SUCCESS) 
+	{ 
+    std::cout << "Error " << status << ": clEnqueueReadBuffer modbasecase_debug failed.\n";
+		return 1;
+  }
+
+#ifdef DETAILED_INFO
+  printArray("modbasecase_debug", mystuff->h_modbasecase_debug, 32);
+#endif
+  for(i=0;i<32;i++)if(mystuff->h_modbasecase_debug[i] != 0)printf("h_modbasecase_debug[%2d] = %u\n", i, mystuff->h_modbasecase_debug[i]);
 #endif
 
 #ifdef VERBOSE_TIMING
@@ -1521,14 +1662,14 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
   {
     twait/=count;
     if(mystuff->mode != MODE_SELFTEST_SHORT)printf(" | %7" PRIu64 "us", twait);
-    if(mystuff->sieve_primes_adjust==1 && twait>3600 && mystuff->sieve_primes < mystuff->sieve_primes_max && (mystuff->mode != MODE_SELFTEST_SHORT))
+    if(mystuff->sieve_primes_adjust==1 && twait>250 && mystuff->sieve_primes < mystuff->sieve_primes_max && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
       mystuff->sieve_primes *= 9;
       mystuff->sieve_primes /= 8;
       if(mystuff->sieve_primes > mystuff->sieve_primes_max) mystuff->sieve_primes = mystuff->sieve_primes_max;
 //      printf("\navg. wait > 750us, increasing SievePrimes to %d",mystuff->sieve_primes);
     }
-    if(mystuff->sieve_primes_adjust==1 && twait<1800 && mystuff->sieve_primes > SIEVE_PRIMES_MIN && (mystuff->mode != MODE_SELFTEST_SHORT))
+    if(mystuff->sieve_primes_adjust==1 && twait<100 && mystuff->sieve_primes > SIEVE_PRIMES_MIN && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
       mystuff->sieve_primes *= 7;
       mystuff->sieve_primes /= 8;
@@ -1592,13 +1733,21 @@ int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
 
 /* copy of the init and test functions for troubleshooting and playing around */
 
-void CL_test(cl_uint devnumber)
+void CL_test(cl_int devnumber)
 {
   cl_int status;
   size_t dev_s;
   cl_uint numplatforms, i;
   cl_platform_id platform = NULL;
   cl_platform_id* platformlist = NULL;
+  cl_device_type devtype = CL_DEVICE_TYPE_GPU;
+
+  if (devnumber < 0)
+  {
+    devtype = CL_DEVICE_TYPE_CPU;
+    devnumber = 0;
+  }
+
 
   status = clGetPlatformIDs(0, NULL, &numplatforms);
   if(status != CL_SUCCESS)
@@ -1652,7 +1801,7 @@ void CL_test(cl_uint devnumber)
       {
         std::cerr << "Error " << status << ": clGetPlatformInfo(VENDOR)\n";
       }
-      if(strncmp(buf, "Advanced Micro Devices, Inc.", sizeof(buf)) == 0)
+      if(strcmp(buf, "Advanced Micro Devices, Inc.") == 0)
       {
         platform = platformlist[i];
       }
@@ -1676,7 +1825,7 @@ void CL_test(cl_uint devnumber)
   }
 
   cl_context_properties cps[3] = { CL_CONTEXT_PLATFORM, (cl_context_properties)platform, 0 };
-  context = clCreateContextFromType(cps, CL_DEVICE_TYPE_GPU, NULL, NULL, &status);
+  context = clCreateContextFromType(cps, devtype, NULL, NULL, &status);
   if (status == CL_DEVICE_NOT_FOUND)
   {
     clReleaseContext(context);
@@ -1727,7 +1876,7 @@ void CL_test(cl_uint devnumber)
   cl_uint dev_from=0, dev_to=num_devices;
   if (devnumber > 0)
   {
-    if (devnumber > num_devices)
+    if ((cl_uint)devnumber > num_devices)
     {
       fprintf(stderr, "Error: Only %d devices found. Cannot use device %d (bad parameter to option -d).\n", num_devices, devnumber);
     }
@@ -1866,7 +2015,7 @@ void CL_test(cl_uint devnumber)
 	  std::cerr << "Error " << status << ": clCreateProgramWithSource\n";
 	}
 
-  status = clBuildProgram(program, 1, &devices[devnumber], "-Werror -O3", NULL, NULL);
+  status = clBuildProgram(program, 1, &devices[devnumber], "-Werror -O3 -I. -DBARRETT_VECTOR_SIZE=4", NULL, NULL);
   if(status != CL_SUCCESS) 
   { 
     if(status == CL_BUILD_PROGRAM_FAILURE)
@@ -1972,14 +2121,14 @@ void CL_test(cl_uint devnumber)
 
   // Now, quickly test one kernel ...
   // (10 * 2^64+25) mod 3 * 2^23
-  cl_ulong hi=10;
-  cl_ulong lo=25;
-  cl_ulong q=3<<23;
+  long long unsigned int hi=10;
+  long long unsigned int lo=25;
+  long long unsigned int q=3<<23;
   cl_float qr=0.9998f/(cl_float)q;
-  cl_ulong res_hi;
-  cl_ulong res_lo;
+  long long unsigned int res_hi;
+  long long unsigned int res_lo;
 
-  cl_event mod_evt;
+  cl_event in_evt, mod_evt, res_evt;
 
   res_hi = res_lo = 0;
 
@@ -2031,21 +2180,58 @@ void CL_test(cl_uint devnumber)
 
   struct timeval timer;
   cl_ulong startTime, endTime;
+  size_t g_size[2];
 
   timer_init(&timer);
-#define TEST_LOOPS 1
+#define TEST_LOOPS 10
 
-  for (i=0; i<TEST_LOOPS; i++)
+  for (i=0; i<=TEST_LOOPS; i++)
   {
-    status = clEnqueueTask(commandQueue,
+    printf("loop %d: \n", i);fflush(NULL);
+
+    /* set result array to 0 */ 
+    memset(mystuff.h_RES,0,32 * sizeof(int));
+    status = clEnqueueWriteBuffer(commandQueue,
+                  mystuff.d_RES,
+                  CL_FALSE,          // Don't wait for completion; it's fast to copy 128 bytes ;-)
+                  0,
+                  32 * sizeof(int),
+                  mystuff.h_RES,
+                  0,
+                  NULL,
+                  &in_evt);
+    if(status != CL_SUCCESS) 
+    {  
+      std::cout<<"Error " << status << ": Copying h_RES(clEnqueueWriteBuffer)\n";
+    }
+
+
+    if (i<256)
+    {
+      g_size[0] = (i%256);
+      g_size[1] = (i/256)+1;
+    }
+    else
+    {
+      g_size[0] = 256;
+      g_size[1] = i-255;
+    }
+
+    status = clEnqueueNDRangeKernel(commandQueue,
                  kernel_info[_TEST_MOD_].kernel,
-                 0,
+                 2,
                  NULL,
+                 g_size,
+                 NULL,
+                 1,
+                 &in_evt,
                  &mod_evt);
     if(status != CL_SUCCESS) 
-  	{ 
-  		std::cerr<< "Error " << status << ": Enqueueing kernel(clEnqueueTask)\n";
-  	}
+	  { 
+	  	std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)\n";
+	  }
+
+    /*
     try {
 
     status = clWaitForEvents(1, &mod_evt); 
@@ -2055,6 +2241,36 @@ void CL_test(cl_uint devnumber)
     if(status != CL_SUCCESS) 
     { 
   	  std::cerr<< "Error " << status << ": Waiting for mod call to finish. (clWaitForEvents)\n";
+    }
+    */
+
+    status = clEnqueueReadBuffer(commandQueue,
+                mystuff.d_RES,
+                CL_FALSE,
+                0,
+                32 * sizeof(int),
+                mystuff.h_RES,
+                1,
+                &mod_evt,
+                &res_evt);
+    
+    if(status != CL_SUCCESS) 
+    { 
+      std::cerr << "Error " << status << ": clEnqueueReadBuffer RES failed. (clEnqueueReadBuffer)\n";
+    }
+
+    try
+    {
+      status = clFinish(commandQueue);
+    }
+    catch(...)
+    {
+	  	std::cerr<< "Exception in clFinish\n";
+    }
+
+    if(status != CL_SUCCESS) 
+    { 
+	  	std::cerr<< "Error " << status << ": clFinish\n";
     }
 
     /* Get kernel profiling info */
@@ -2076,34 +2292,32 @@ void CL_test(cl_uint devnumber)
  	            { 
 		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
               }
-              std::cout<< "mod_kernel finished in " << (endTime - startTime)/1e3 << " us.\n" ;
+ //             std::cout<< "mod_kernel finished in " << (endTime - startTime)/1e3 << " us.\n" ;
+
+    status = clReleaseEvent(in_evt);
+    if(status != CL_SUCCESS) 
+    { 
+	  	std::cerr<< "Error " << status << ": Release in event object. (clReleaseEvent)\n";
+    }
 
     status = clReleaseEvent(mod_evt);
     if(status != CL_SUCCESS) 
     { 
 	  	std::cerr<< "Error " << status << ": Release mod event object. (clReleaseEvent)\n";
     }
+
+    status = clReleaseEvent(res_evt);
+    if(status != CL_SUCCESS) 
+    { 
+	  	std::cerr<< "Error " << status << ": Release res event object. (clReleaseEvent)\n";
+    }
+
+
+//    std::cout << "Avg. test kernel runtime (incl. overhead): " << timer_diff(&timer)/TEST_LOOPS << " us.\n";
+
+
+    printf("%d threads: ", (int)(g_size[0]*g_size[1]));
+    printArray("RES", mystuff.h_RES, 32);
+
   }
-
-  std::cout << "Avg. test kernel runtime (incl. overhead): " << timer_diff(&timer)/TEST_LOOPS << " us.\n";
-
-  status = clEnqueueReadBuffer(commandQueue,
-                mystuff.d_RES,
-                CL_TRUE,
-                0,
-                32 * sizeof(int),
-                mystuff.h_RES,
-                0,
-                NULL,
-                NULL);
-    
-  if(status != CL_SUCCESS) 
-	{ 
-    std::cerr << "Error " << status << ": clEnqueueReadBuffer RES failed. (clEnqueueReadBuffer)\n";
-  }
-
-  res_hi = mystuff.h_RES[0];
-  res_lo = mystuff.h_RES[1];
-
-  printf("res-mod: %llx:%llx mod %llx = %llx:%llx\n", hi, lo, q, res_hi, res_lo);
 }

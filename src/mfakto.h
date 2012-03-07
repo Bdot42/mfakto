@@ -28,10 +28,10 @@ extern "C"
 {
 #endif
 
-int init_CL(int num_streams, cl_uint devicenumber);
+int init_CL(int num_streams, cl_int devicenumber);
 int init_CLstreams(void);
 int cleanup_CL(void);
-void CL_test(cl_uint devicenumber);
+void CL_test(cl_int devicenumber);
 int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
    unsigned long long int k_max, mystuff_t *mystuff, enum GPUKernels use_kernel);
 

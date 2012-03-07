@@ -1,3 +1,17 @@
+version 0.07 (2011-08-10)
+- vectorized barrett kernels
+- re-enabled the MODBASECASE checks
+- removed crash-workaround from barrett kernels
+  (no longer needed since Catalyst 11.7): +3%
+- fixed index-evaluation in barrett kernels
+- fix for bitshifts of >31 bits in barrett kernels
+- fixed a few compiler warnings
+- improved error handling for bad config
+- added "-d c" switch to force running on CPU
+- added warning when no atomics are available
+- added option for debuggable kernel code
+- fixed/optimized limits for preprocessing on CPU
+
 version 0.06 (2011-07-09)
 - ported barrett kernels for 79 and 92 bit factor sizes
 - added support for GPUs without atomics (HD4xxx)

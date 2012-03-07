@@ -153,26 +153,18 @@ other return value
 
   if(use_kernel == AUTOSELECT_KERNEL)
   {
-    if                          (bit_max <= 64)                               use_kernel = _64BIT_64_OpenCL;
+   /* if                          (bit_max < 64)                               use_kernel = _64BIT_64_OpenCL;  // slower than _71BIT_MUL24
+    else */
+    if ((bit_min >= 64) && (bit_max <= 79))                                   use_kernel = BARRETT79_MUL32;
     else if                     (bit_max <= 71)                               use_kernel = _71BIT_MUL24;
-    else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
     else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
-    else                                                                      use_kernel = _95BIT_64_OpenCL;
-/* select the GPU kernel (fastest GPU kernel has highest priority)
-    if(mystuff->compcapa_major == 1)
+    else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
+    else
     {
-      else if((bit_min >= 64) && (bit_max <= 79))                             use_kernel = BARRETT79_MUL32;
-      else if                    (bit_max <= 75)                              use_kernel = _75BIT_MUL32;
-      else if((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1)) use_kernel = BARRETT92_MUL32;
-      else                                                                    use_kernel = _95BIT_MUL32;
+      printf("ERROR: No suitable kernel found for bit_min=%d, bit_max=%d.\n",
+                 bit_min, bit_max);
+      return RET_ERROR;
     }
-    else // mystuff->compcapa_major != 1
-    {
-           if((bit_min >= 64) && (bit_max <= 79))                             use_kernel = BARRETT79_MUL32;
-      else if((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1)) use_kernel = BARRETT92_MUL32;
-      else if                    (bit_max <= 75)                              use_kernel = _75BIT_MUL32;
-      else                                                                    use_kernel = _95BIT_MUL32;
-    } */
   }
 
   kernelname=kernel_info[use_kernel].kernelname;
@@ -262,12 +254,14 @@ other return value
  //       case _95BIT_MUL32:     factorsfound+=tf_class_95       (exp, bit_min, k_min+cur_class, k_max, mystuff); break;
  //       case BARRETT79_MUL32:  factorsfound+=tf_class_barrett79(exp, bit_min, k_min+cur_class, k_max, mystuff); break;
  //       case BARRETT92_MUL32:  factorsfound+=tf_class_barrett92(exp, bit_min, k_min+cur_class, k_max, mystuff); break;
-          case _71BIT_MUL24:  if(mystuff->mode == MODE_NORMAL) switch (mystuff->vectorsize)
-                              { // disregard vectorsize for the selftest
-                                case 4:  use_kernel = _71BIT_MUL24_4;  break;
-                                case 8:  use_kernel = _71BIT_MUL24_8;  break;
-                                default: use_kernel = _71BIT_MUL24_4;  break;
-                              }
+          case _71BIT_MUL24:  if(mystuff->mode == MODE_NORMAL) // disregard vectorsize for the selftest
+                                switch (mystuff->vectorsize)
+                                { 
+                                  case 1:  break; // use the no-vector-kernel if really wanted.
+                                  case 4:  use_kernel = _71BIT_MUL24_4;  break;
+                                  case 8:  use_kernel = _71BIT_MUL24_8;  break;
+                                  default: use_kernel = _71BIT_MUL24_4;  break;  // 2 and 16 are dropped - map them to 4
+                                }
           case _71BIT_MUL24_4:
           case _71BIT_MUL24_8:
           case _64BIT_64_OpenCL:
@@ -370,7 +364,7 @@ k_max and k_min are used as 64bit temporary integers here...
       }
       if(k_min != 1) /* the factor should appear ONCE */
       {
-        printf("ERROR: selftest failed for M%u!\n", exp);
+        printf("ERROR: selftest failed for M%u (%s)\n", exp, kernel_info[use_kernel].kernelname);
         printf("  expected result: %08X %08X %08X\n", f_hi, f_med, f_low);
         for(i=0; (i<mystuff->h_RES[0]) && (i<10); i++)
         {
@@ -380,7 +374,7 @@ k_max and k_min are used as 64bit temporary integers here...
       }
       else
       {
-        if(mystuff->mode != MODE_SELFTEST_SHORT)printf("selftest for M%u passed!\n", exp);
+        if(mystuff->mode != MODE_SELFTEST_SHORT)printf("selftest for M%u passed (%s)!\n", exp, kernel_info[use_kernel].kernelname);
       }
     }
   }
@@ -458,10 +452,10 @@ RET_ERROR we might have a serios problem
   unsigned long long int k[NUM_SELFTESTS];
   int retval=1, ind;
   enum GPUKernels kernels[9];
-  unsigned int index[] = {  2 , 25,  57,    /* some factors below 2^71 (test the 71/75 bit kernel depending on compute capability) */
-                            70 , 72,  73,  88,  106,    /* some factors below 2^75 (test 75 bit kernel) */
-                            355, 358,    /* some very small factors */
-                           1547, 1552, 1556 }; /* some factors below 2^95 (test 95 bit kernel) */
+  unsigned int index[] = {  2 , 25,  57,    // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+                            70 , 72,  73,  88,  106,    // some factors below 2^75 (test 75 bit kernel)
+                            355, 358, 666,   // some very small factors
+                           1547, 1552, 1556 }; // some factors below 2^95 (test 95 bit kernel)
 
 #include "selftest-data.h"
 
@@ -471,7 +465,7 @@ RET_ERROR we might have a serios problem
     {
       if (i < (sizeof(index)/sizeof(index[0])))
       {
-        printf("########## testcase %d/%d ##########\n", i+1, sizeof(index)/sizeof(index[0]));
+        printf("########## testcase %d/%d ##########\n", i+1, (int) (sizeof(index)/sizeof(index[0])));
         ind = index[i];
         f_class = (int)(k[ind] % NUM_CLASSES);
       }
@@ -490,10 +484,10 @@ RET_ERROR we might have a serios problem
       j = 0;
       if((bit_min[ind] >= 64) && (bit_min[ind]) < 92)   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
       if((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = BARRETT79_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-//      if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24;
+      if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24;
       if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24_4;
       if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24_8;
-      if(bit_min[ind]+1 <= 63)                          kernels[j++] = _64BIT_64_OpenCL;
+//      if(bit_min[ind] <  63)                            kernels[j++] = _64BIT_64_OpenCL;  // not used
       if((bit_min[ind] >= 64) && (bit_min[ind] <= 95))  kernels[j++] = _95BIT_64_OpenCL;
       // if((bit_min[ind] >= 64) && (bit_min[ind]) <= 91) kernels[j++] = BARRETT92_64_OpenCL;
 
@@ -542,7 +536,7 @@ int main(int argc, char **argv)
   unsigned int exp = 0;
   int bit_min = -1, bit_max = -1, bit_min_stage, bit_max_stage;
   int parse_ret = -1;
-  unsigned int devicenumber = 0;
+  int devicenumber = 0;
 #ifdef VERBOSE_TIMING  
   struct timeval timer;
 #endif
@@ -568,11 +562,18 @@ int main(int argc, char **argv)
         printf("ERROR: no device number specified for option \"-d\"\n");
         return 1;
       }
-      devicenumber=(int)strtol(argv[i+1],&ptr,10);
-      if(*ptr || errno || devicenumber != strtol(argv[i+1],&ptr,10) )
+      if (argv[i+1][0] == 'c')  // run on CPU
       {
-        printf("ERROR: can't parse <device number> for option \"-d\"\n");
-        return 1;
+        devicenumber = -1;
+      }
+      else
+      {
+        devicenumber = strtol(argv[i+1],&ptr,10);
+        if(*ptr || errno || devicenumber != strtol(argv[i+1],&ptr,10) )
+        {
+          printf("ERROR: can't parse <device number> for option \"-d\"\n");
+          return 1;
+	}
       }
       i++;
     }
@@ -689,10 +690,10 @@ int main(int argc, char **argv)
     return 1;
   }
   printf("\nOpenCL device info\n");
-  printf("  name                      %s (%s)\n",deviceinfo.d_name, deviceinfo.v_name);
-  printf("  device (driver) version   %s (%s)\n",deviceinfo.d_ver, deviceinfo.dr_version);
-  printf("  maximum threads per block %d\n",deviceinfo.maxThreadsPerBlock);
-  printf("  maximum threads per grid  %d\n",deviceinfo.maxThreadsPerGrid);
+  printf("  name                      %s (%s)\n", deviceinfo.d_name, deviceinfo.v_name);
+  printf("  device (driver) version   %s (%s)\n", deviceinfo.d_ver, deviceinfo.dr_version);
+  printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
+  printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
   printf("  number of multiprocessors %d (%d compute elements(estimate for ATI GPUs))\n", deviceinfo.units, deviceinfo.units * 80);
   printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
   if(THREADS_PER_BLOCK > deviceinfo.maxThreadsPerBlock)

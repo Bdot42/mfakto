@@ -44,7 +44,7 @@ unsigned int checkpoint_checksum(char *string, int chars)
   return chksum;
 }
 
-void checkpoint_write(unsigned int exp, int bit_min, int bit_max, int cur_class, int num_factors)
+void checkpoint_write(unsigned int exp, int bit_min, int bit_max, unsigned int cur_class, int num_factors)
 /*
 checkpoint_write() writes the checkpoint file.
 */
@@ -70,7 +70,7 @@ checkpoint_write() writes the checkpoint file.
 }
 
 
-int checkpoint_read(unsigned int exp, int bit_min, int bit_max, int *cur_class, int *num_factors)
+int checkpoint_read(unsigned int exp, int bit_min, int bit_max, unsigned int *cur_class, int *num_factors)
 /*
 checkpoint_read() reads the checkpoint file and compares values for exp,
 bit_min, bit_max, NUM_CLASSES read from file with current values.

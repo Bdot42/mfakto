@@ -282,6 +282,13 @@ int read_config(mystuff_t *mystuff)
     printf("WARNING: VectorSize must be one of 1, 2, 4, or 8, set to 4 by default\n");
     i=4;
   }
+#ifdef CHECKS_MODBASECASE
+  if (i>1)
+  {
+    printf("WARNING: Reducing vector size from %d to 1 due to CHECKS_MODBASECASE.\n", i);
+    i=1;
+  }
+#endif
   printf("  VectorSize                %d\n", i);
   mystuff->vectorsize = i;
 

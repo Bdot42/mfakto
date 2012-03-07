@@ -24,8 +24,9 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "compatibility.h"
 
 /* yeah, I like global variables :) */
-static unsigned int *sieve,*sieve_base,mask0[32],mask1[32];
-static int primes[SIEVE_PRIMES_MAX],k_init[SIEVE_PRIMES_MAX],last_sieve;
+static unsigned int *sieve,*sieve_base;
+static unsigned int  mask0[32], mask1[32], primes[SIEVE_PRIMES_MAX];
+static int k_init[SIEVE_PRIMES_MAX],last_sieve;
 
 
 /* the sieve_table contains the number of bits set in n (sieve_table[n][8]) and
@@ -70,7 +71,7 @@ unsigned int* sieve_malloc(unsigned int size)
 
 void sieve_init()
 {
-  int i,j,k;
+  unsigned int i,j,k;
   for(i=0;i<32;i++)
   {
     mask1[i]=1<<i;
@@ -179,10 +180,10 @@ smaller ints */
   return (int)tmp;
 }
 
-void sieve_init_class(unsigned int exp, unsigned long long int k_start, int sieve_limit)
+void sieve_init_class(unsigned int exp, unsigned long long int k_start, unsigned int sieve_limit)
 {
-  int i,j,k,p;
-  int ii,jj;
+  unsigned int i,j,k,p;
+  unsigned int ii,jj;
 
 #ifdef MORE_CLASSES  
   for(i=4;i<sieve_limit;i++)
@@ -190,7 +191,7 @@ void sieve_init_class(unsigned int exp, unsigned long long int k_start, int siev
   for(i=3;i<sieve_limit;i++)
 #endif  
   {
-    unsigned long long int check;
+    //unsigned long long int check;
 
     p=primes[i];  
     k=0;
@@ -264,7 +265,7 @@ still a brute force trail&error method */
 }
 
 
-void sieve_candidates(int ktab_size, unsigned int *ktab, int sieve_limit)
+void sieve_candidates(int ktab_size, unsigned int *ktab, unsigned int sieve_limit)
 {
   int i=-1,ii,j,k=0,p,c=0,ic;
   unsigned int s,sieve_table_8,*sieve_table_;

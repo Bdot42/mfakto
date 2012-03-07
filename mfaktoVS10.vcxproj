@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="src/mfakto_Kernels.cl" />
+    <None Include="src\barrett.cl" />
     <None Include="todo.txt" />
     <None Include="trialfactor_72.cl" />
   </ItemGroup>
@@ -198,7 +199,7 @@
       <AdditionalDependencies>OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl</Command>
+      <Command>copy  src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl  "$(OUTDIR)"\barrett.cl</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
