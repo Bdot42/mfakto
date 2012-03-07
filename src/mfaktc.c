@@ -1,7 +1,7 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
-                                Bertram Franz (bertramf@gmx.net)
+Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+                           Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,7 +23,8 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #endif
 #include <string.h>
-#include <errno.h> 
+#include <errno.h>
+#include <time.h>
 #include <CL/cl.h>
 
 #include "params.h"
@@ -49,7 +50,7 @@ unsigned long long int calculate_k(unsigned int exp, int bits)
 {
   unsigned long long int k = 0, tmp_low, tmp_hi;
   
-  if((bits > 65) && exp < (unsigned int)(1 << (bits - 65))) k = 0; // k would be >= 2^64...
+  if((bits > 65) && exp < (unsigned int)(1U << (bits - 65))) k = 0; // k would be >= 2^64...
   else if(bits <= 64)
   {
     tmp_low = 1ULL << (bits - 1);
@@ -88,8 +89,8 @@ RET_QUIT if early exit was requested by SIGINT
 
  
 
-return value (mystuff->mode = MODE_SELFTEST_SHORT or MODE_SELFTEST_FULL):
-0 for a successfull selftest (known factor was found)
+return value (mystuff->mode > MODE_NORMAL), i.e. selftest:
+0 for a successful selftest (known factor was found)
 1 no factor found
 2 wrong factor returned
 RET_ERROR any CL function returned an error
@@ -102,10 +103,11 @@ other return value
   unsigned long long int k_min, k_max, k_range, tmp;
   unsigned int f_hi, f_med, f_low;
   struct timeval timer;
+  time_t time_last_checkpoint;
 #ifdef VERBOSE_TIMING  
   struct timeval timer2;
 #endif  
-  int factorsfound = 0, restart = 0;
+  int factorsfound = 0, numfactors = 0, restart = 0, do_checkpoint = mystuff->checkpoints;
   FILE *resultfile=NULL;
 
   const char *kernelname;
@@ -114,20 +116,16 @@ other return value
   unsigned long long int time_run, time_est;
 
 
-  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("tf(%u, %d, %d, ...);\n",exp,bit_min,bit_max);
-  if((mystuff->mode != MODE_NORMAL) && (mystuff->mode != MODE_SELFTEST_SHORT) && (mystuff->mode != MODE_SELFTEST_FULL))
-  {
-    printf("ERROR, invalid mode for tf(): %d\n", mystuff->mode);
-    return -1;
-  }
+  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d", exp, bit_min, bit_max);
   timer_init(&timer);
-  
+  time(&time_last_checkpoint);
+
   mystuff->class_counter = 0;
   
   k_min=calculate_k(exp,bit_min);
   k_max=calculate_k(exp,bit_max);
   
-  if((mystuff->mode == MODE_SELFTEST_FULL) || (mystuff->mode == MODE_SELFTEST_SHORT))
+  if(mystuff->mode > MODE_NORMAL) // any selftest mode
   {
 /* a shortcut for the selftest, bring k_min and k_max "close" to the known factor */
     if(NUM_CLASSES == 420)k_range = 10000000000ULL;
@@ -147,7 +145,7 @@ other return value
 
   if(mystuff->mode != MODE_SELFTEST_SHORT)
   {
-    printf(" k_min = %" PRIu64 " - ",k_min);
+    printf(", k_min = %" PRIu64 " - ",k_min);
     printf(" k_max = %" PRIu64 "\n",k_max);
   }
 
@@ -155,7 +153,8 @@ other return value
   {
     if (mystuff->preferredKernel == _71BIT_MUL24)  // maybe this can be bound to some version/feature/capability or be tested during selftest
     {
-      if                          (bit_max <= 71)                               use_kernel = _71BIT_MUL24;
+      if      ((bit_min >= 64) && (bit_max <= 71))                              use_kernel = _71BIT_MUL24;
+      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
       else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
@@ -163,7 +162,8 @@ other return value
     else
     {
       if      ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
-      else if                     (bit_max <= 71)                               use_kernel = _71BIT_MUL24;
+      else if ((bit_min >= 64) && (bit_max <= 71))                              use_kernel = _71BIT_MUL24;
+      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;
       else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
     }
@@ -182,11 +182,11 @@ other return value
 
   if(mystuff->mode == MODE_NORMAL)
   {
-    if((mystuff->checkpoints == 1) && (checkpoint_read(exp, bit_min, bit_max, &cur_class, &factorsfound) == 1))
+    if((mystuff->checkpoints > 0) && (checkpoint_read(exp, bit_min, bit_max, &cur_class, &factorsfound) == 1))
     {
       printf("\nfound a valid checkpoint file!\n");
       printf("  last finished class was: %d\n", cur_class);
-      printf("  found %d factor(s) already\n\n", factorsfound);
+      printf("  found %d factor%s already\n\n", factorsfound, factorsfound == 1 ? "" : "s");
       cur_class++; // the checkpoint contains the last completely processed class!
 
 /* calculate the number of classes which are already processed. This value is needed to estimate ETA */
@@ -245,13 +245,24 @@ other return value
 #ifdef VERBOSE_TIMING
         timer_init(&timer2);
 #endif    
-        sieve_init_class(exp, k_min+cur_class, mystuff->sieve_primes);
+        if (mystuff->sieve_gpu == 1)
+        {
+          cl_ulong new_k_min=k_min+cur_class;
+          run_cl_sieve_init(exp, k_min+cur_class, 256);
+//          run_cl_sieve_init(exp, k_min+cur_class, mystuff->sieve_primes);
+          run_cl_sieve(exp, &new_k_min, 256);
+//          run_cl_sieve(exp, &new_k_min, mystuff->sieve_primes);
+        }
+        else
+        {
+          sieve_init_class(exp, k_min+cur_class, mystuff->sieve_primes);
+        }
 #ifdef VERBOSE_TIMING      
         printf("tf(): time spent for sieve_init_class(exp, k_min+cur_class, mystuff->sieve_primes): %" PRIu64 "ms\n",timer_diff(&timer2)/1000);
 #endif
         if(mystuff->mode != MODE_SELFTEST_SHORT && (count == 0 || (count%20 == 0 && mystuff->printmode == 0)))
         {
-          printf("    class | candidates |    time | avg. rate | SievePrimes |    ETA | avg. wait\n");
+          printf("    class | candidates |    time | avg. rate | SievePrimes |    ETA | CPU wait\n");
         }
         count++;
         mystuff->class_counter++;
@@ -263,33 +274,38 @@ other return value
  //       case _95BIT_MUL32:     factorsfound+=tf_class_95       (exp, bit_min, k_min+cur_class, k_max, mystuff); break;
  //       case BARRETT79_MUL32:  factorsfound+=tf_class_barrett79(exp, bit_min, k_min+cur_class, k_max, mystuff); break;
  //       case BARRETT92_MUL32:  factorsfound+=tf_class_barrett92(exp, bit_min, k_min+cur_class, k_max, mystuff); break;
-          case _71BIT_MUL24:  if(mystuff->mode == MODE_NORMAL) // disregard vectorsize for the selftest
-                                switch (mystuff->vectorsize)
-                                { 
-                                  case 1:  break; // use the no-vector-kernel if really wanted.
-                                  case 4:  use_kernel = _71BIT_MUL24_4;  break;
-                                  case 8:  use_kernel = _71BIT_MUL24_8;  break;
-                                  default: use_kernel = _71BIT_MUL24_4;  break;  // 2 and 16 are dropped - map them to 4
-                                }
-          case _71BIT_MUL24_4:
-          case _71BIT_MUL24_8:
+          case _71BIT_MUL24:
+          case _63BIT_MUL24:
           case _64BIT_64_OpenCL:
           case _95BIT_64_OpenCL:
           case BARRETT79_MUL32:
           case BARRETT92_MUL32:
-          case BARRETT92_64_OpenCL: factorsfound+=tf_class_opencl (exp, bit_min, k_min+cur_class, k_max, mystuff, use_kernel); break;
+          case BARRETT92_64_OpenCL: numfactors = tf_class_opencl (exp, bit_min, bit_max, k_min+cur_class, k_max, mystuff, use_kernel); break;
           default:  printf("ERROR: Unknown kernel selected (%d)!\n", use_kernel);  return RET_ERROR;
         }
 
-        if (factorsfound == RET_ERROR)
+        if (numfactors == RET_ERROR)
         {
           printf("ERROR from tf_class.\n");
           return RET_ERROR;
         }
+        factorsfound+=numfactors;
 
         if(mystuff->mode == MODE_NORMAL)
         {
-          if(mystuff->checkpoints == 1)checkpoint_write(exp, bit_min, bit_max, cur_class, factorsfound);
+          if (mystuff->checkpoints > 0)
+          {
+            if ( ((mystuff->checkpoints > 1) && (--do_checkpoint == 0)) ||
+                 ((mystuff->checkpoints == 1) && (time(NULL) - time_last_checkpoint > (time_t) mystuff->checkpointdelay)) ||
+                   mystuff->quit ||
+                  (numfactors > 0) )
+            {
+              checkpoint_write(exp, bit_min, bit_max, cur_class, factorsfound);
+              do_checkpoint = mystuff->checkpoints;
+              time(&time_last_checkpoint);
+              printf(" CP written. \r"); fflush(NULL);
+            }
+          }
           if((mystuff->stopafterfactor >= 2) && (factorsfound > 0) && (cur_class != max_class))cur_class = max_class + 1;
         }
       }
@@ -297,30 +313,40 @@ other return value
     }
   }
   if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->printmode == 1)printf("\n");
-  if(mystuff->mode == MODE_NORMAL)resultfile=fopen("results.txt", "a");
+  if(mystuff->mode == MODE_NORMAL)resultfile=fopen(mystuff->resultsfile, "a");
   if(factorsfound)
   {
-    if((mystuff->mode == MODE_NORMAL) && (mystuff->stopafterfactor >= 2))
+#ifndef MORE_CLASSES
+    if((mystuff->mode == MODE_NORMAL) && (mystuff->class_counter < 96))
+#else
+    if((mystuff->mode == MODE_NORMAL) && (mystuff->class_counter < 960))
+#endif
     {
-      fprintf(resultfile, "found %d factor(s) for M%u from 2^%2d to 2^%2d (partially tested) [%s %s]\n", factorsfound, exp, bit_min, bit_max, MFAKTO_VERSION, kernelname);
-      printf(             "found %d factor(s) for M%u from 2^%2d to 2^%2d (partially tested) [%s %s]\n", factorsfound, exp, bit_min, bit_max, MFAKTO_VERSION, kernelname);
+      fprintf(resultfile, "found %d factor%s for M%u from 2^%2d to 2^%2d (partially tested) [%s %s_%d]\n",
+        factorsfound, (factorsfound > 1) ? "s" : "", exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
+      printf(             "found %d factor%s for M%u from 2^%2d to 2^%2d (partially tested) [%s %s_%d]\n",
+        factorsfound, (factorsfound > 1) ? "s" : "", exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
     }
     else
     {
-      if(mystuff->mode == MODE_NORMAL)        fprintf(resultfile, "found %d factor(s) for M%u from 2^%2d to 2^%2d [%s %s]\n", factorsfound, exp, bit_min, bit_max, MFAKTO_VERSION, kernelname);
-      if(mystuff->mode != MODE_SELFTEST_SHORT)printf(             "found %d factor(s) for M%u from 2^%2d to 2^%2d [%s %s]\n", factorsfound, exp, bit_min, bit_max, MFAKTO_VERSION, kernelname);
+      if(mystuff->mode == MODE_NORMAL)        fprintf(resultfile, "found %d factor%s for M%u from 2^%2d to 2^%2d [%s %s_%d]\n",
+        factorsfound, (factorsfound > 1) ? "s" : "", exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
+      if(mystuff->mode != MODE_SELFTEST_SHORT)printf(             "found %d factor%s for M%u from 2^%2d to 2^%2d [%s %s_%d]\n",
+        factorsfound, (factorsfound > 1) ? "s" : "", exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
     }
   }
   else
   {
-    if(mystuff->mode == MODE_NORMAL)        fprintf(resultfile, "no factor for M%u from 2^%d to 2^%d [%s %s]\n", exp, bit_min, bit_max, MFAKTO_VERSION, kernelname);
-    if(mystuff->mode != MODE_SELFTEST_SHORT)printf(             "no factor for M%u from 2^%d to 2^%d [%s %s]\n", exp, bit_min, bit_max, MFAKTO_VERSION, kernelname);
+    if(mystuff->mode == MODE_NORMAL)        fprintf(resultfile, "no factor for M%u from 2^%d to 2^%d [%s %s_%d]\n",
+      exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
+    if(mystuff->mode != MODE_SELFTEST_SHORT)printf(             "no factor for M%u from 2^%d to 2^%d [%s %s_%d]\n",
+      exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
   }
   if(mystuff->mode == MODE_NORMAL)
   {
     retval = factorsfound;
     fclose(resultfile);
-    if(mystuff->checkpoints == 1)checkpoint_delete(exp);
+    if(mystuff->checkpoints > 0)checkpoint_delete(exp);
   }
   else // mystuff->mode != MODE_NORMAL
   {
@@ -351,9 +377,9 @@ k_max and k_min are used as 64bit temporary integers here...
       k_min >>= 32;
       k_min  += (k_max >> 32);
 
-      f_hi  = k_min + (exp * f_hi); /* f_{hi|med|low} = 2 * k_hint * exp +1 */
+      f_hi  = (unsigned int ) (k_min + (exp * f_hi)); /* f_{hi|med|low} = 2 * k_hint * exp +1 */
       
-      if((use_kernel >= _71BIT_MUL24) && (use_kernel <= _71BIT_MUL24_8)) /* 71bit kernel uses only 24bit per int */
+      if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24)) /* 71bit kernel uses only 24bit per int */
       {
         f_hi  <<= 16;
         f_hi   += f_med >> 16;
@@ -364,7 +390,7 @@ k_max and k_min are used as 64bit temporary integers here...
         
         f_low  &= 0x00FFFFFF;
       }
-      k_min=0;
+      k_min=0; /* using k_min for counting the number of matches here */
       for(i=0; (i<mystuff->h_RES[0]) && (i<10); i++)
       {
         if(mystuff->h_RES[i*3 + 1] == f_hi  && \
@@ -435,7 +461,9 @@ void print_help(char *string)
   printf("  -d g                   force using the first GPU\n");
   printf("  -tf <exp> <min> <max>  trial factor M<exp> from 2^<min> to 2^<max> and exit\n");
   printf("                         instead of parsing the worktodo file\n");
-  printf("  -st                    run builtin selftest and exit\n");
+  printf("  -i|--inifile <file>    load <file> as inifile (default: mfakto.ini)\n");
+  printf("  -st                    run builtin selftest (half the testcases) and exit\n");
+  printf("  -st2                   run builtin selftest (all testcases) and exit\n");
   printf("\n");
   printf("options for debuging purposes\n");
   printf("  --timertest            run test of timer functions and exit\n");
@@ -445,10 +473,11 @@ void print_help(char *string)
 }
 
 
-int selftest(mystuff_t *mystuff, int type)
+int selftest(mystuff_t *mystuff, enum MODES type)
 /*
-type = 0: full selftest
 type = 1: small selftest (this is executed EACH time mfakto is started)
+type = 2: half selftest
+type = 3: full selftest
 
 return value
 0 selftest passed
@@ -458,9 +487,9 @@ RET_ERROR we might have a serios problem
 {
   int i, j, tf_res, st_success=0, st_nofactor=0, st_wrongfactor=0, st_unknown=0;
 
-#define NUM_SELFTESTS 1558
+#define NUM_SELFTESTS 2597
   unsigned int exp[NUM_SELFTESTS], num_selftests=0;
-  int bit_min[NUM_SELFTESTS], f_class;
+  int bit_min[NUM_SELFTESTS], f_class, selftests_to_run;
   unsigned long long int k[NUM_SELFTESTS];
   int retval=1, ind;
   enum GPUKernels kernels[9];
@@ -468,68 +497,69 @@ RET_ERROR we might have a serios problem
                             70 , 72,  73,  88,  106,    // some factors below 2^75 (test 75 bit kernel)
                             355, 358, 666,   // some very small factors
                            1547, 1552, 1556, // some factors below 2^95 (test 95 bit kernel)
-                           1557 };           // mfakto special case
+                           1557 };           // mfakto special case (25-bit factor)
+  if (type == MODE_SELFTEST_FULL)
+    selftests_to_run = NUM_SELFTESTS;
+  else
+    selftests_to_run = 1559;
+
 #include "selftest-data.h"
 
-  for(i=0; i<NUM_SELFTESTS; i++)
+  for(i=0; i<selftests_to_run; i++)
   {
-    if(type == 1)
+    if(type == MODE_SELFTEST_SHORT)
     {
       if (i < (sizeof(index)/sizeof(index[0])))
       {
         printf("########## testcase %d/%d ##########\n", i+1, (int) (sizeof(index)/sizeof(index[0])));
         ind = index[i];
-        f_class = (int)(k[ind] % NUM_CLASSES);
       }
       else
         break; // short test done
     }
     else // treat type <> 1 as full test
     {
-      printf("########## testcase %d/%d ##########\n", i+1, NUM_SELFTESTS);
+      printf("########## testcase %d/%d ##########\n", i+1, selftests_to_run);
       ind = i;
-      f_class = (int)(k[i] % NUM_CLASSES);
     }
+    f_class = (int)(k[ind] % NUM_CLASSES);
 
 
 /* create a list which kernels can handle this testcase */
-      j = 0;
-      if((bit_min[ind] >= 64) && (bit_min[ind]) < 92)   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-      if((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = BARRETT79_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-//      if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24;
-      if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24_4;
-      if(bit_min[ind] <= 71)                            kernels[j++] = _71BIT_MUL24_8;
-//      if(bit_min[ind] <  63)                            kernels[j++] = _64BIT_64_OpenCL;  // not used
-//      if((bit_min[ind] >= 64) && (bit_min[ind] <= 95))  kernels[j++] = _95BIT_64_OpenCL;
-      // if((bit_min[ind] >= 64) && (bit_min[ind]) <= 91) kernels[j++] = BARRETT92_64_OpenCL;
+    j = 0;
+    if ((bit_min[ind] >= 64) && (bit_min[ind] < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
+    if ((bit_min[ind] >= 64) && (bit_min[ind] < 79))   kernels[j++] = BARRETT79_MUL32; 
+//      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
+    if ((bit_min[ind] >= 61) && (bit_min[ind] <= 71))  kernels[j++] = _71BIT_MUL24;
+    if (bit_min[ind] <= 63)                            kernels[j++] = _63BIT_MUL24;
+//      if (bit_min[ind] <  63)                            kernels[j++] = _64BIT_64_OpenCL;  // not used
+//      if ((bit_min[ind] >= 64) && (bit_min[ind] <= 95))  kernels[j++] = _95BIT_64_OpenCL;
+    // if ((bit_min[ind] >= 64) && (bit_min[ind]) <= 91) kernels[j++] = BARRETT92_64_OpenCL;
 
 
-      while(j>0)
-      {
-        num_selftests++;
-        tf_res=tf(exp[ind], bit_min[ind], bit_min[ind]+1, mystuff, f_class, k[ind], kernels[--j]);
-             if(tf_res == 0)st_success++;
-        else if(tf_res == 1)st_nofactor++;
-        else if(tf_res == 2)st_wrongfactor++;
-        else if(tf_res == RET_ERROR)return RET_ERROR; /* bail out, we might have a serios problem */
-        else           st_unknown++;
+    while(j>0)
+    {
+      num_selftests++;
+      tf_res=tf(exp[ind], bit_min[ind], bit_min[ind]+1, mystuff, f_class, k[ind], kernels[--j]);
+            if(tf_res == 0)st_success++;
+      else if(tf_res == 1)st_nofactor++;
+      else if(tf_res == 2)st_wrongfactor++;
+      else if(tf_res == RET_ERROR) return RET_ERROR; /* bail out, we might have a serios problem */
+      else           st_unknown++;
 #ifdef DETAILED_INFO
-        printf("Test %d finished, so far suc: %d, no: %d, wr: %d, unk: %d\n", num_selftests, st_success, st_nofactor, st_wrongfactor, st_unknown);
-        fflush(NULL);
+      printf("Test %d finished, so far suc: %d, no: %d, wr: %d, unk: %d\n", num_selftests, st_success, st_nofactor, st_wrongfactor, st_unknown);
+      fflush(NULL);
 #endif
-     }
+    }
   }
 
-//  if((type == 0) || (st_success != num_selftests))
-  {
-    printf("Selftest statistics\n");
-    printf("  number of tests           %d\n", num_selftests);
-    printf("  successfull tests         %d\n", st_success);
-    if(st_nofactor > 0)   printf("  no factor found           %d\n", st_nofactor);
-    if(st_wrongfactor > 0)printf("  wrong factor reported     %d\n", st_wrongfactor);
-    if(st_unknown > 0)    printf("  unknown return value      %d\n", st_unknown);
-    printf("\n");
-  }
+  printf("Selftest statistics\n");
+  printf("  number of tests           %d\n", num_selftests);
+  printf("  successful tests          %d\n", st_success);
+  if(st_nofactor > 0)   printf("  no factor found           %d\n", st_nofactor);
+  if(st_wrongfactor > 0)printf("  wrong factor reported     %d\n", st_wrongfactor);
+  if(st_unknown > 0)    printf("  unknown return value      %d\n", st_unknown);
+  printf("\n");
 
   if(st_success == num_selftests)
   {
@@ -540,6 +570,7 @@ RET_ERROR we might have a serios problem
   {
     printf("selftest FAILED!\n\n");
   }
+
   return retval;
 }
 
@@ -558,6 +589,7 @@ int main(int argc, char **argv)
   
   mystuff.mode=MODE_NORMAL;
   mystuff.quit = 0;
+  strcpy(mystuff.inifile, "mfakto.ini");
 
   while(i<argc)
   {
@@ -627,7 +659,24 @@ int main(int argc, char **argv)
     }
     else if(!strcmp((char*)"-st", argv[i]))
     {
+      mystuff.mode = MODE_SELFTEST_HALF;
+    }
+    else if(!strcmp((char*)"-st2", argv[i]))
+    {
       mystuff.mode = MODE_SELFTEST_FULL;
+    }
+    else if(!strcmp((char*)"-i", argv[i]) || !strcmp((char*)"--inifile", argv[i]))
+    {
+      i++;
+      strncpy(mystuff.inifile, argv[i], 50);
+      mystuff.inifile[50]='\0';
+    }
+    else if(!strcmp((char*)"--perftest", argv[i]))
+    {
+      // to be added
+
+//      perftest();  
+      return 0;
     }
     else if(!strcmp((char*)"--timertest", argv[i]))
     {
@@ -713,16 +762,16 @@ int main(int argc, char **argv)
   printf("  device (driver) version   %s (%s)\n", deviceinfo.d_ver, deviceinfo.dr_version);
   printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
   printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
-  printf("  number of multiprocessors %d (%d compute elements(estimate for ATI GPUs))\n", deviceinfo.units, deviceinfo.units * 80);
+  printf("  number of multiprocessors %d (%d compute elements (estimate for ATI GPUs))\n", deviceinfo.units, deviceinfo.units * 80);
   printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
 
   printf("\nAutomatic parameters\n");
-  i = deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
-  while( (i * 2) <= mystuff.threads_per_grid_max) i = i * 2;
+  i = (int) deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
+  while( (i * 2) <= (int)mystuff.threads_per_grid_max) i = i * 2;
   mystuff.threads_per_grid = i;
   if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
   {
-    mystuff.threads_per_grid = deviceinfo.maxThreadsPerGrid;
+    mystuff.threads_per_grid = (cl_uint)deviceinfo.maxThreadsPerGrid;
   }
   printf("  threads per grid          %d\n\n", mystuff.threads_per_grid);
 
@@ -746,8 +795,8 @@ int main(int argc, char **argv)
 
 /* before we start real work run a small selftest */  
     mystuff.mode = MODE_SELFTEST_SHORT;
-    printf("running a simple selftest...\n");
-    if (selftest(&mystuff, 1) != 0) return 1; /* selftest failed :( */
+    printf("running a simple selftest ...\n");
+    if (selftest(&mystuff, MODE_SELFTEST_SHORT) != 0) return 1; /* selftest failed :( */
     mystuff.mode = MODE_NORMAL;
     /* allow for ^C */
     register_signal_handler(&mystuff);
@@ -814,7 +863,13 @@ int main(int argc, char **argv)
   }
   else // mystuff.mode != MODE_NORMAL
   {
-    selftest(&mystuff, 0);
+    if (0 != selftest(&mystuff, mystuff.mode))
+    {
+      printf ("Error exit as selftest failed\n");
+      cleanup_CL();
+      sieve_free();
+      return 1;
+    }
   }
 
   cleanup_CL();

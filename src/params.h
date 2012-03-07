@@ -1,7 +1,7 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
-                                Bertram Franz (bertramf@gmx.net)
+Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+                           Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,6 +17,12 @@ You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
+// In Catalyst 11.10, 11.11 and 11.12, not all parameters were passed to the kernel
+// -> replace user-defined struct with uint8
+#define WA_FOR_CATALYST11_10_BUG
+
+
 /*
 SIEVE_SIZE_LIMIT is the maximum segment size of the sieve.
 too small => to much overhead
@@ -27,7 +33,7 @@ This is just the upper LIMIT of the SIEVE_SIZE, the actual sieve size depends
 on some other factors as well, but you don't have to worry about.
 */
 
-#define SIEVE_SIZE_LIMIT 64
+#define SIEVE_SIZE_LIMIT 32
 
 
 /******************
@@ -67,7 +73,7 @@ code path - not used by mfakto, see kernel trace */
 /* enable the OpenCL built-in performance measurement. This will print the
    pure times needed to copy the data over, and to test the FC's of the chunk
    (pure run time per kernel invokation) */
-//#define CL_PERFORMANCE_INFO 
+//#define CL_PERFORMANCE_INFO
 
 
 /* Tell the OpenCL compiler to create debuggable code for the Kernels */
@@ -82,9 +88,9 @@ code path - not used by mfakto, see kernel trace */
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.09" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.10" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.09-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.10-Win" /* DO NOT CHANGE! */
 #endif
 
 
@@ -123,6 +129,17 @@ The following lines define the min, default and max value.
 #define SIEVE_PRIMES_DEFAULT 25000 /* DO NOT CHANGE! */
 #define SIEVE_PRIMES_MAX    200000 /* DO NOT CHANGE! */
 
+/*
+primes[1000]=7927      k_tab(2M)=6976698
+primes[3511]=32749     largest prime in 15 bits, k_tab(2M)=8073831
+primes[6541]=65521     largest prime in 16 bits, k_tab(2M)=8610744
+primes[25000]=287137   k_tab(2M)=9765293
+primes[100000]=1299721 k_tab(2M)=10940976
+primes[200000]=2750161 (22 bits) largest prime sieved here, k_tab(2M)=11506233
+primes[300000]=4256249 (23) k_tab(2M) = 11827037
+primes[500000]=7368791 (23) k_tab(2M) = 12207668
+primes[1000000]=15485867 (24) k_tab(2M) = 12733916
+*/
 
 
 /* the first SIEVE_SPLIT primes have a special code in sieve.c. This defines
@@ -150,5 +167,5 @@ The following lines define the min, default and max value.
   #define NUM_CLASSES 4620 /* 2 * 2 * 3 * 5 * 7 * 11 */
   #define SIEVE_SIZE ((SIEVE_SIZE_LIMIT<<13) - (SIEVE_SIZE_LIMIT<<13) % (13*17*19*23))
 #else
-#pragma error "mfakto requires MORE_CLASSES be defined."
+# error "mfakto requires MORE_CLASSES be defined."
 #endif

@@ -1,3 +1,32 @@
+version 0.10 (2011-12-19)
+- added workaround for compatibility with Catalyst 11.10 and above
+- MODBASECASE for barrett kernels enabled
+- Checkpoints now keep a backup (.bu) that is automatically read if the
+  .cpt file is corrupt
+- mfakto now allows reading checkpoints from any version of mfaktc and mfakto
+  as long as the other parameters and the checksum are OK
+- When Checkpoint files cannot be used, there are some diagnostic messages
+- added some optimization options to the Linux Makefile
+- split mul24 kernel in two bitranges 0-64 and 61-72 allowing for some
+  optimizations: +10-20% for 70-bit assignments using the mul24 kernel
+- merged mfaktc 0.18 features:
+  + inifile parameter CheckpointDelay (see below)
+	+ extended selftest (-st2)
+	+ minor bugfix reporting a bitlevel as incompletely tested if a factor was
+	  found in the last class
+	+ Changes to the factor found result line as discussed in the mersenne forum
+	+ Linux: the signal handler now also catches SIGTERM
+- Writing checkpoints can now be limited:
+  + set CheckpointDelay <s> to write a checkpoint only if at least s seconds
+	  have passed since the last checkpoint
+	+ set Checkpoint <n>, n>1 to write a checkpoint only after n classes have
+	  been tested (set to n=1 to enable CheckpointDelay)
+- added commandline parameter  -i|--inifile <file>
+  to load <file> as inifile (default: mfakto.ini), allowing multiple instances
+	of mfakto in the same directory
+- added ResultsFile parameter to inifile
+- added program support for GPU-sieving (siever kernel not yet functional!)
+
 version 0.09 (2011-10-01)
 - fixed bug in 72-bit kernel that might miss small factors (<48 bit)
   unfortunately, the fix slows this kernel by ~3-5%

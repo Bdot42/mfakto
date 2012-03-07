@@ -38,14 +38,14 @@ It uses CPU and GPU resources.
 # 1 Compilation #
 #################
 
- AMD APP 2.4 or above is required, version 2.5 recommended.
+ AMD APP 2.5 or above is required
 
 
 ###########################
 # 1.1 Compilation (Linux) #
 ###########################
 
-- Install AMD APP >= 2.4
+- Install AMD APP >= 2.5
 - cd src
 - edit Makefile, set the AMD_APP_DIR location
 - make
@@ -55,17 +55,17 @@ It uses CPU and GPU resources.
 # 1.2 Compilation (Windows) #
 #############################
 
-- Install AMD APP >= 2.4
+- Install AMD APP >= 2.5
 - Use the VS2010 solution to build the 32-bit or 64-bit binary, or
-- use the Makefile.win as above (not yet included - will come soon)
+- use the Linux Makefile as an example how to build your own Windows Makefile
 
 
 ####################
 # 2 Running mfakto #
 ####################
 
-Install AMD APP version >= 2.4.
-Install Catalyst driver, version >= 11.7
+Install Catalyst driver, version >= 11.4
+Install AMD APP version >= 2.5 (not required for Catalyst 11.10 or above)
 
 Catalyst driver 11.9 uses up to one CPU core less than its predecessors:
 11.9 strongly recommended.
@@ -86,18 +86,18 @@ Please run the builtin selftest (mfakto -st) each time you've
 Example worktodo.txt
 -- cut here --
 Factor=bla,66362159,64,68
-Factor=bla,3321932839,50,71
+Factor=bla,3321932839,50,61
 -- cut here --
 
 Then run 'mfakto'. If everything is working as expected this should trial
 factor M66362159 from 2^64 to 2^68 and after that trial factor
-M3321932839 from 2^50 to 2^71.
+M3321932839 from 2^50 to 2^61.
 
 ######################
 # 2.1 Supported GPUs #
 ######################
 
-- HD5xxx, HD6xxx
+- HD5xxx, HD6xxx, including the builtin HD6xxx on AMD APUs
 - HD4xxx, FireStream 92xx (no atomic operations available *)
 - not supported (kernel compilation fails): HD2xxx, HD3xxx, FireStream 91xx
 
@@ -113,8 +113,7 @@ prime95 or mfakto -d c).
 # 2.2 Running mfakto (Linux) #
 ##############################
 
-- AMD APP 2.4 or higher and Catalyst driver 11.7 or higher are required
-- export LD_LIBRARY_PATH=$AMD_APP_DIR/lib/x86_64
+- AMD APP 2.5 or higher and Catalyst driver 11.4 or higher are required
 - run mfakto
 - precompiled version is only available for 64-bit (built on SuSE 11.4)
 
@@ -122,8 +121,9 @@ prime95 or mfakto -d c).
 # 2.3 Running mfakto (Windows) #
 ################################
 
-- AMD APP 2.4 or higher and Catalyst driver 11.7 or higher are required
-- make sure $AMD_APP_DIR/lib/x86_64 is in the path
+- Catalyst driver 11.4 or higher are required
+- if driver < 11.10, install AMD APP SDK 2.5 and make sure
+  $AMD_APP_DIR/lib/x86_64 is in the path
 - Microsoft Visual C++ 2010 Redistributable Package for your platform and
   language, e.g.
   http://www.microsoft.com/downloads/details.aspx?familyid=BD512D9E-43C8-4655-81BF-9350143D5867&displaylang=de
@@ -172,6 +172,10 @@ Advanced usage (extend the upper limit):
 # 4 Known issues #
 ##################
 
+- ATTENTION: Both Windows and Linux crashed / hanged as long as the previous
+  version of the AMD APP SDK was installed. Be sure to remove AMD APP SDK 2.4!
+  AMD APP SDK 2.5 can be installed, but should not be needed on Windows with
+  Catalyst drivers since 11.7, and on Linux since 11.11.
 - The user interface is not hardened against malformed input. There are some
   checks but when you really try you should be able to screw it up.
 - The GUI of your OS might be very laggy while running mfakto. In severe
@@ -242,8 +246,7 @@ A Yes, and in most cases this is necessary to make full use of the GPU(s).
 Q Which tasks should I assign to mfakto?
 A Currently, the 79-bit-barrett kernel is the fastest one, working for factors
   from 64 bits to 79 bits. Selecting tasks for this kernel will give best
-  results. The 92-bit-barrett kernel is quite fast too, but avoid factors
-  between 92 bits and 95 bits - they will work but terribly slow.
+  results. The 92-bit-barrett kernel is quite fast too.
 
 
 ###########
@@ -254,9 +257,10 @@ A Currently, the 79-bit-barrett kernel is the fastest one, working for factors
 - keep features/changes in sync with mfaktc
 - performance improvements whenever I find them ;)
 - documentation and comments in code
-- find a smarter way for the vectors (not so many kernels and functions, but a
-  compile-time definition)
 - full 95-bit implementation
-- Makefile.win
-- improve the 72-bit kernel to be as fast as before the fix of version 0.09
+- Makefile.win  --  any volunteers?
+- perftest modes for sieving, data copy and kernel speed.
+- test optimisation options on Linux
+- retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
+- Implement&test AllowSleep
 

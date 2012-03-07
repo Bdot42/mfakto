@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -50,22 +50,35 @@ checkpoint_write() writes the checkpoint file.
 */
 {
   FILE *f;
-  char buffer[100], filename[20];
-  unsigned int i;
-  
+  char buffer[100], filename[32], filename_save[32], filename_write[32];
+  unsigned int i, res;
+
   sprintf(filename, "M%u.ckp", exp);
+  sprintf(filename_save, "M%u.ckp.bu", exp);
+  sprintf(filename_write, "M%u.ckp.write", exp);
   
-  f=fopen(filename, "w");
+  f=fopen(filename_write, "w");
   if(f==NULL)
   {
-    printf("WARNING, could not write checkpoint file \"%s\"\n", filename);
+    printf("WARNING, could not create checkpoint file \"%s\"\n", filename_write);
+    return;
   }
   else
   {
     sprintf(buffer,"%u %d %d %d %s: %d %d", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, cur_class, num_factors);
-    i=checkpoint_checksum(buffer,strlen(buffer));
-    fprintf(f,"%u %d %d %d %s: %d %d %08X\n", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, cur_class, num_factors, i);
-    fclose(f);
+    i=checkpoint_checksum(buffer,(int)strlen(buffer));
+    i=fprintf(f,"%u %d %d %d %s: %d %d %08X\n", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, cur_class, num_factors, i);
+    res=fclose(f);
+    if ((i>34) && (res==0))
+    {
+      remove(filename_save); // dont care if failed, it may not have existed
+      rename(filename, filename_save); // dito
+      rename(filename_write, filename);
+    }
+    else
+    {
+      printf("WARNING, could not write checkpoint file \"%s\", %u chars written.\n", filename_write, i);
+    }
   }
 }
 
@@ -83,7 +96,7 @@ returns 0 otherwise
 {
   FILE *f;
   int ret=0,i,chksum;
-  char buffer[100], buffer2[100], *ptr, filename[20];
+  char buffer[100], buffer2[100], *ptr, *ptr2, filename[20], filename_save[32], version[81];
   
   for(i=0;i<100;i++)buffer[i]=0;
 
@@ -95,21 +108,29 @@ returns 0 otherwise
   f=fopen(filename, "r");
   if(f==NULL)
   {
+    printf("No checkpoint file \"%s\" found.\n", filename);
     return 0;
   }
-  i=fread(buffer,sizeof(char),99,f);
-  sprintf(buffer2,"%u %d %d %d %s: ", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION);
+  i=(int)fread(buffer,sizeof(char),99,f);
+  sprintf(buffer2,"%u %d %d %d ", exp, bit_min, bit_max, NUM_CLASSES);
   ptr=strstr(buffer, buffer2);
   if(ptr==buffer)
   {
-    i=strlen(buffer2);
+    i=(int)strlen(buffer2);
     if(i<70)
     {
-      ptr=&(buffer[i]);
-      sscanf(ptr,"%d %d", cur_class, num_factors);
-      sprintf(buffer2,"%u %d %d %d %s: %d %d", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, *cur_class, *num_factors);
-      chksum=checkpoint_checksum(buffer2,strlen(buffer2));
-      sprintf(buffer2,"%u %d %d %d %s: %d %d %08X\n", exp, bit_min, bit_max, NUM_CLASSES, MFAKTO_VERSION, *cur_class, *num_factors, chksum);
+      ptr2=&(buffer[i]);
+      ptr=strstr(ptr2, ": ");
+      if (ptr > ptr2)
+      {
+        strncpy(version, ptr2, ptr-ptr2);
+        version[ptr-ptr2]='\0';
+      }
+      else sprintf(version, "%s", MFAKTO_VERSION);
+      sscanf(ptr,": %d %d", cur_class, num_factors);
+      sprintf(buffer2,"%u %d %d %d %s: %d %d", exp, bit_min, bit_max, NUM_CLASSES, version, *cur_class, *num_factors);
+      chksum=checkpoint_checksum(buffer2,(int)strlen(buffer2));
+      sprintf(buffer2,"%u %d %d %d %s: %d %d %08X\n", exp, bit_min, bit_max, NUM_CLASSES, version, *cur_class, *num_factors, chksum);
       if(*cur_class >= 0 && \
          *cur_class < NUM_CLASSES && \
          *num_factors >= 0 && \
@@ -118,9 +139,29 @@ returns 0 otherwise
       {
         ret=1;
       }
+      else
+      {
+        printf("Cannot use checkpoint file \"%s\": Bad content \"%s\".\n", filename, buffer);
+//        printf("Cannot use checkpoint file \"%s\": Bad content \"%s\".\n%s\n", filename, buffer, buffer2);
+      }
     }
   }
+  else
+  {
+    printf("Cannot use checkpoint file \"%s\": Content \"%s\" does not match expected \"%s\".\n", filename, buffer, buffer2);
+  }
   fclose(f);
+  if (ret==0)
+  {
+    sprintf(filename_save, "M%u.ckp.bu", exp);
+    remove(filename);
+    i=rename(filename_save, filename);
+    if (i==0)
+    {
+      printf("Renamed \"%s\" to \"%s\", trying to load it.\n", filename_save, filename);
+      return checkpoint_read(exp, bit_min, bit_max, cur_class, num_factors);
+    }
+  }
   return ret;
 }
 
@@ -130,11 +171,15 @@ void checkpoint_delete(unsigned int exp)
 tries to delete the checkpoint file
 */
 {
-  char filename[20];
+  char filename[32];
   sprintf(filename, "M%u.ckp", exp);
   
   if(remove(filename))
   {
     printf("WARNING: can't delete the checkpoint file \"%s\"\n", filename);
   }
+  sprintf(filename, "M%u.ckp.bu", exp);
+  remove(filename);
+  sprintf(filename, "M%u.ckp.write", exp);
+  remove(filename);
 }

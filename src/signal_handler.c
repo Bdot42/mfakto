@@ -1,6 +1,7 @@
 /*
 This file is part of mfaktc (mfakto).
 Copyright (C) 2011  Oliver Weihe (o.weihe@t-online.de)
+                    Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -59,4 +60,5 @@ void register_signal_handler(mystuff_t *mystuff)
 {
   signal_handler_mystuff = mystuff;
   signal(SIGINT, &my_signal_handler);
+  signal(SIGTERM, &my_signal_handler);
 }

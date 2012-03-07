@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
 This file has been written by Luigi Morelli (L.Morelli@mclink.it) *1
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -68,7 +68,6 @@ returns
   }
   return 1;
 }
-
 
 int valid_assignment(unsigned int exp, int bit_min, int bit_max)
 /*

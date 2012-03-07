@@ -1,7 +1,7 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
-                                Bertram Franz (bertramf@gmx.net)
+Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+                           Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,14 +21,14 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 D=d0 + d1*(2^24) + d2*(2^48) */
 typedef struct
 {
-  unsigned int d0,d1,d2;
+  cl_uint d0,d1,d2;
 }int72;
 
 /* 144bit (6x 24bit) integer
 D=d0 + d1*(2^24) + d2*(2^48) + ... */
 typedef struct
 {
-  unsigned int d0,d1,d2,d3,d4,d5;
+  cl_uint d0,d1,d2,d3,d4,d5;
 }int144;
 
 
@@ -40,14 +40,14 @@ The applies to int144 and int192, too. */
 D= d0 + d1*(2^32) + d2*(2^64) */
 typedef struct
 {
-  unsigned int d0,d1,d2;
+  cl_uint d0,d1,d2;
 }int96;
 
 /* 192bit (6x 32bit) integer
 D=d0 + d1*(2^32) + d2*(2^64) + ... */
 typedef struct
 {
-  unsigned int d0,d1,d2,d3,d4,d5;
+  cl_uint d0,d1,d2,d3,d4,d5;
 }int192;
 
 enum STREAM_STATUS
@@ -62,6 +62,7 @@ enum MODES
 {
   MODE_NORMAL,
   MODE_SELFTEST_SHORT,
+  MODE_SELFTEST_HALF,
   MODE_SELFTEST_FULL
 };
 
@@ -69,15 +70,16 @@ enum GPUKernels
 {
   AUTOSELECT_KERNEL = 0,
   _TEST_MOD_,
-  _64BIT_64_OpenCL,
   _95BIT_64_OpenCL,
-  BARRETT92_64_OpenCL,
   _71BIT_MUL24,
-  _71BIT_MUL24_4,
-  _71BIT_MUL24_8,
+  _63BIT_MUL24,
   BARRETT79_MUL32,
   BARRETT92_MUL32,
-  UNKNOWN_KERNEL, /* what comes after this one will not be loaded */
+  UNKNOWN_KERNEL, /* what comes after this one will not be loaded automatically*/
+  _64BIT_64_OpenCL,
+  BARRETT92_64_OpenCL,
+  CL_SIEVE_INIT,
+  CL_SIEVE,
   _95BIT_MUL32  /* not yet there */
 };
 
@@ -86,31 +88,41 @@ typedef struct
 {
   cl_event copy_events[NUM_STREAMS_MAX];
   cl_event exec_events[NUM_STREAMS_MAX];
-  unsigned int *h_ktab[NUM_STREAMS_MAX];
-  cl_mem        d_ktab[NUM_STREAMS_MAX];
-  unsigned int *h_RES;
-  cl_mem        d_RES;
+  cl_uint *h_ktab[NUM_STREAMS_MAX];
+  cl_mem   d_ktab[NUM_STREAMS_MAX];
+  cl_uint *h_RES;
+  cl_mem   d_RES;
   enum STREAM_STATUS stream_status[NUM_STREAMS_MAX];
   enum GPUKernels    preferredKernel;
+  /* for GPU sieving: */
+  cl_uint *h_primes;
+  cl_mem   d_primes;
+  cl_uint *h_k_mult;
+  cl_mem   d_k_mult;
+  cl_uint *h_savestate;
+  cl_mem   d_savestate;
 
-  int sieve_primes, sieve_primes_adjust, sieve_primes_max;
-  char workfile[51];		/* allow filenames up to 50 chars... */
-  int num_streams;
+
+  cl_uint sieve_primes, sieve_primes_adjust, sieve_primes_max, sieve_gpu;
+  cl_uint num_streams;
   
   enum MODES mode;
-  int checkpoints, stages, stopafterfactor;
-  int threads_per_grid_max, threads_per_grid;
+  cl_uint checkpoints, checkpointdelay, stages, stopafterfactor;
+  cl_uint threads_per_grid_max, threads_per_grid;
 
 #ifdef CHECKS_MODBASECASE
-  cl_mem        d_modbasecase_debug;
-  unsigned int *h_modbasecase_debug;
+  cl_mem   d_modbasecase_debug;
+  cl_uint *h_modbasecase_debug;
 #endif  
 
-  int vectorsize;
-  int printmode;
-  int class_counter;		/* needed for ETA calculation */
-  int allowsleep;
-  int quit; 
+  cl_uint vectorsize;
+  cl_uint printmode;
+  cl_uint class_counter;		/* needed for ETA calculation */
+  cl_uint allowsleep;
+  cl_uint quit; 
+  char workfile[51];		/* allow filenames up to 50 chars... */
+  char inifile[51];		/* allow filenames up to 50 chars... */
+  char resultsfile[51];
 }mystuff_t;			/* FIXME: proper name needed */
 
 typedef struct
@@ -125,7 +137,7 @@ typedef struct _kernel_info
 {
   enum GPUKernels kernel_id;
   char            kernelname[32];
-  int             bit_min, bit_max;
+  cl_uint         bit_min, bit_max;
   cl_kernel       kernel;
 } kernel_info_t;
 

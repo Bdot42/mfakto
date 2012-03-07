@@ -1,6 +1,7 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+                           Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -73,22 +74,23 @@ int read_config(mystuff_t *mystuff)
   char tmp[51];
 
   printf("\nRuntime options\n");
+  printf("  Inifile                   %s\n",mystuff->inifile);
 
-  if(my_read_int("mfakto.ini", "SievePrimes", &i))
+  if(my_read_int(mystuff->inifile, "SievePrimes", &i))
   {
-    printf("WARNING: Cannot read SievePrimes from mfakto.ini, using default value (%d)\n",SIEVE_PRIMES_DEFAULT);
+    printf("WARNING: Cannot read SievePrimes from inifile, using default value (%d)\n",SIEVE_PRIMES_DEFAULT);
     i=SIEVE_PRIMES_DEFAULT;
   }
   else
   {
     if(i>SIEVE_PRIMES_MAX)
     {
-      printf("WARNING: Read SievePrimes=%d from mfakto.ini, using max value (%d)\n",i,SIEVE_PRIMES_MAX);
+      printf("WARNING: Read SievePrimes=%d from inifile, using max value (%d)\n",i,SIEVE_PRIMES_MAX);
       i=SIEVE_PRIMES_MAX;
     }
     else if(i<SIEVE_PRIMES_MIN)
     {
-      printf("WARNING: Read SievePrimes=%d from mfakto.ini, using min value (%d)\n",i,SIEVE_PRIMES_MIN);
+      printf("WARNING: Read SievePrimes=%d from inifile, using min value (%d)\n",i,SIEVE_PRIMES_MIN);
       i=SIEVE_PRIMES_MIN;
     }
   }
@@ -97,9 +99,9 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/  
 
-  if(my_read_int("mfakto.ini", "SievePrimesAdjust", &i))
+  if(my_read_int(mystuff->inifile, "SievePrimesAdjust", &i))
   {
-    printf("WARNING: Cannot read SievePrimesAdjust from mfakto.ini, using default value (0)\n");
+    printf("WARNING: Cannot read SievePrimesAdjust from inifile, using default value (0)\n");
     i=0;
   }
   else if(i != 0 && i != 1)
@@ -112,21 +114,21 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_int("mfakto.ini", "NumStreams", &i))
+  if(my_read_int(mystuff->inifile, "NumStreams", &i))
   {
-    printf("WARNING: Cannot read NumStreams from mfakto.ini, using default value (%d)\n",NUM_STREAMS_DEFAULT);
+    printf("WARNING: Cannot read NumStreams from inifile, using default value (%d)\n",NUM_STREAMS_DEFAULT);
     i=NUM_STREAMS_DEFAULT;
   }
   else
   {
     if(i>NUM_STREAMS_MAX)
     {
-      printf("WARNING: Read NumStreams=%d from mfakto.ini, using max value (%d)\n",i,NUM_STREAMS_MAX);
+      printf("WARNING: Read NumStreams=%d from inifile, using max value (%d)\n",i,NUM_STREAMS_MAX);
       i=NUM_STREAMS_MAX;
     }
     else if(i<NUM_STREAMS_MIN)
     {
-      printf("WARNING: Read NumStreams=%d from mfakto.ini, using min value (%d)\n",i,NUM_STREAMS_MIN);
+      printf("WARNING: Read NumStreams=%d from inifile, using min value (%d)\n",i,NUM_STREAMS_MIN);
       i=NUM_STREAMS_MIN;
     }
   }
@@ -136,21 +138,21 @@ int read_config(mystuff_t *mystuff)
 /*****************************************************************************/
 
 /* CPU streams not used by mfakto
-  if(my_read_int("mfakto.ini", "CPUStreams", &i))
+  if(my_read_int(mystuff->inifile, "CPUStreams", &i))
   {
-    printf("WARNING: Cannot read CPUStreams from mfakto.ini, using default value (%d)\n",CPU_STREAMS_DEFAULT);
+    printf("WARNING: Cannot read CPUStreams from inifile, using default value (%d)\n",CPU_STREAMS_DEFAULT);
     i=CPU_STREAMS_DEFAULT;
   }
   else
   {
     if(i>CPU_STREAMS_MAX)
     {
-      printf("WARNING: Read CPUStreams=%d from mfakto.ini, using max value (%d)\n",i,CPU_STREAMS_MAX);
+      printf("WARNING: Read CPUStreams=%d from inifile, using max value (%d)\n",i,CPU_STREAMS_MAX);
       i=CPU_STREAMS_MAX;
     }
     else if(i<CPU_STREAMS_MIN)
     {
-      printf("WARNING: Read CPUStreams=%d from mfakto.ini, using min value (%d)\n",i,CPU_STREAMS_MIN);
+      printf("WARNING: Read CPUStreams=%d from inifile, using min value (%d)\n",i,CPU_STREAMS_MIN);
       i=CPU_STREAMS_MIN;
     }
   }
@@ -159,21 +161,21 @@ int read_config(mystuff_t *mystuff)
   */
 /*****************************************************************************/
 
-  if(my_read_int("mfakto.ini", "GridSize", &i))
+  if(my_read_int(mystuff->inifile, "GridSize", &i))
   {
-    printf("WARNING: Cannot read GridSize from mfakto.ini, using default value (3)\n");
+    printf("WARNING: Cannot read GridSize from inifile, using default value (3)\n");
     i = 3;
   }
   else
   {
     if(i > 4)
     {
-      printf("WARNING: Read GridSize=%d from mfakto.ini, using max value (4)\n", i);
+      printf("WARNING: Read GridSize=%d from inifile, using max value (4)\n", i);
       i = 4;
     }
     else if(i < 0)
     {
-      printf("WARNING: Read GridSize=%d from mfakto.ini, using min value (0)\n", i);
+      printf("WARNING: Read GridSize=%d from inifile, using min value (0)\n", i);
       i = 0;
     }
   }
@@ -186,34 +188,71 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_string("mfakto.ini", "WorkFile", mystuff->workfile))
+  if(my_read_string(mystuff->inifile, "WorkFile", mystuff->workfile))
   {
-    printf("WARNING: can't read WorkFile from mfakto.ini, using default (worktodo.ini)\n");
-    sprintf(mystuff->workfile, "worktodo.ini");
+    sprintf(mystuff->workfile, "worktodo.txt");
+    printf("WARNING: can't read WorkFile from inifile, using default (%s)\n", mystuff->workfile);
   }
   printf("  WorkFile                  %s\n", mystuff->workfile);
 
 /*****************************************************************************/
 
-  if(my_read_int("mfakto.ini", "Checkpoints", &i))
+  if(my_read_string(mystuff->inifile, "ResultsFile", mystuff->resultsfile))
   {
-    printf("WARNING: Cannot read Checkpoints from mfakto.ini, enabled by default\n");
-    i=1;
+    printf("WARNING: can't read ResultsFile from inifile, using default (results.txt)\n");
+    sprintf(mystuff->resultsfile, "results.txt");
   }
-  else if(i != 0 && i != 1)
-  {
-    printf("WARNING: Checkpoints must be 0 or 1, enabled by default\n");
-    i=1;
-  }
-  if(i==0)printf("  Checkpoints               disabled\n");
-  else    printf("  Checkpoints               enabled\n");
-  mystuff->checkpoints = i;
+  printf("  ResultsFile               %s\n", mystuff->resultsfile);
 
 /*****************************************************************************/
 
-  if(my_read_int("mfakto.ini", "Stages", &i))
+  if(my_read_int(mystuff->inifile, "Checkpoints", &i))
   {
-    printf("WARNING: Cannot read Stages from mfakto.ini, enabled by default\n");
+    printf("WARNING: Cannot read Checkpoints from inifile, enabled by default\n");
+    i=1;
+  }
+  else if(i < 0)
+  {
+    printf("WARNING: Checkpoints must be 0 (disabled) or greater, enabled by default\n");
+    i=1;
+  }
+  if(i==0)printf("  Checkpoints               disabled\n");
+  else if (i==1) printf("  Checkpoints               enabled\n");
+  else           printf("  Checkpoints               every %d classes\n", i);
+  mystuff->checkpoints = i;
+
+/*****************************************************************************/
+  if (mystuff->checkpoints > 1)
+  {
+    printf("  CheckpointDelay           ignored as Checkpoints > 1\n");
+    mystuff->checkpointdelay = 300;
+  }
+  else
+  {
+    if(my_read_int(mystuff->inifile, "CheckpointDelay", &i))
+    {
+      printf("WARNING: Cannot read CheckpointDelay from inifile, set to 300s by default\n");
+      i = 300;
+    }
+    if(i > 3600)
+    {
+      printf("WARNING: Maximum value for CheckpointDelay is 3600s\n");
+      i = 3600;
+    }
+    if(i < 0)
+    {
+      printf("WARNING: Minimum value for CheckpointDelay is 0s\n");
+      i = 0;
+    }
+    printf("  CheckpointDelay           %ds\n", i);
+    mystuff->checkpointdelay = i;
+  }
+
+/*****************************************************************************/
+  
+  if(my_read_int(mystuff->inifile, "Stages", &i))
+  {
+    printf("WARNING: Cannot read Stages from inifile, enabled by default\n");
     i=1;
   }
   else if(i != 0 && i != 1)
@@ -227,9 +266,9 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_int("mfakto.ini", "StopAfterFactor", &i))
+  if(my_read_int(mystuff->inifile, "StopAfterFactor", &i))
   {
-    printf("WARNING: Cannot read StopAfterFactor from mfakto.ini, set to 1 by default\n");
+    printf("WARNING: Cannot read StopAfterFactor from inifile, set to 1 by default\n");
     i=1;
   }
   else if( (i < 0) || (i > 2) )
@@ -244,9 +283,9 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_int("mfakto.ini", "PrintMode", &i))
+  if(my_read_int(mystuff->inifile, "PrintMode", &i))
   {
-    printf("WARNING: Cannot read PrintMode from mfakto.ini, set to 0 by default\n");
+    printf("WARNING: Cannot read PrintMode from inifile, set to 0 by default\n");
     i=0;
   }
   else if(i != 0 && i != 1)
@@ -260,9 +299,9 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_int("mfakto.ini", "AllowSleep", &i))
+  if(my_read_int(mystuff->inifile, "AllowSleep", &i))
   {
-    printf("WARNING: Cannot read AllowSleep from mfakto.ini, set to 0 by default\n");
+    printf("WARNING: Cannot read AllowSleep from inifile, set to 0 by default\n");
     i=0;
   }
   else if(i != 0 && i != 1)
@@ -276,12 +315,12 @@ int read_config(mystuff_t *mystuff)
 
   /*****************************************************************************/
 
-  if(my_read_int("mfakto.ini", "VectorSize", &i))
+  if(my_read_int(mystuff->inifile, "VectorSize", &i))
   {
-    printf("WARNING: Cannot read VectorSize from mfakto.ini, set to 4 by default\n");
+    printf("WARNING: Cannot read VectorSize from inifile, set to 4 by default\n");
     i=4;
   }
-  else if(i != 1 && i != 2 && i != 4 && i != 8 )
+  else if(i != 1 && i != 2 && i != 4 && i != 8 && i != 16 )
   {
     printf("WARNING: VectorSize must be one of 1, 2, 4, or 8, set to 4 by default\n");
     i=4;
@@ -300,9 +339,9 @@ int read_config(mystuff_t *mystuff)
 
   mystuff->preferredKernel = BARRETT79_MUL32;
 
-  if (my_read_string("mfakto.ini", "PreferKernel", tmp))
+  if (my_read_string(mystuff->inifile, "PreferKernel", tmp))
   {
-    printf("WARNING: can't read PreferKernel from mfakto.ini, using default (mfakto_cl_barrett79)\n");
+    printf("WARNING: can't read PreferKernel from inifile, using default (mfakto_cl_barrett79)\n");
   }
   else if (strcmp(tmp, "mfakto_cl_71") == 0)
   {
@@ -316,6 +355,22 @@ int read_config(mystuff_t *mystuff)
   printf("  PreferKernel              %s\n", kernel_info[mystuff->preferredKernel].kernelname);
 
 /*****************************************************************************/
+
+  if(my_read_int(mystuff->inifile, "SieveOnGPU", &i))
+  {
+    printf("WARNING: Cannot read SieveOnGPU from inifile, set to 0 by default\n");
+    i=0;
+  }
+  else if(i != 0 && i != 1)
+  {
+    printf("WARNING: SieveOnGPU must be 0 or 1, set to 0 by default\n");
+    i=0;
+  }
+  if(i == 0)printf("  SieveOnGPU                no\n");
+  else      printf("  SieveOnGPU                yes\n");
+  mystuff->sieve_gpu = i;
+
+  /*****************************************************************************/
 
   return 0;
 }

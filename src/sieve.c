@@ -1,6 +1,7 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+                           Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,6 +23,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 #include "params.h"
 #include "compatibility.h"
+void printArray(const char * Name, const unsigned int * Data, const unsigned int len);
 
 /* yeah, I like global variables :) */
 static unsigned int *sieve,*sieve_base;
@@ -61,13 +63,17 @@ static __inline void sieve_clear_bit(unsigned int *array,unsigned int bit)
 //#define sieve_clear_bit(ARRAY,BIT) asm("btrl  %0, %1" : /* no output */ : "r" (BIT), "m" (*ARRAY) : "memory", "cc" )
 //#define sieve_clear_bit(ARRAY,BIT) ARRAY[BIT>>5]&=mask0[BIT&0x1F]
 
-unsigned int* sieve_malloc(unsigned int size)
+static unsigned int* sieve_malloc(unsigned int size)
 {
   unsigned int *array;
   if(size==0)return NULL;
   array=(unsigned int*)malloc((((size-1)>>5)+1)*4);
   return array;
 }
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void sieve_init()
 {
@@ -101,6 +107,9 @@ void sieve_init()
     i++;    
     j+=2;
   }
+  #ifdef DETAILED_INFO
+    printArray("primes", primes, SIEVE_PRIMES_MAX);
+  #endif
 
   for(i=0;i<256;i++)
   {
@@ -128,15 +137,17 @@ calculates and returns k
 */
 {
 /* using long long int because I'm too lazy to figure out where I can live with
-smaller ints */
+smaller ints
+j, n, r  <=  primes[200000] = 2750161 (22 bits) */
   long long int nn,nn_old,jj,pi0,pi1,pi2,qi0,qi1,qi2,tmp;
-  
-  nn_old=n;
-  jj=j;
   
   if(r==0)return 0;	/* trivially! */
   if(j==1)return r;	/* easy, isn't it? */
+  if(j+1 == n) return (n-r);
 
+  nn_old=n;
+  jj=j;
+  
 /*** step 0 ***/
   qi0=nn_old/jj;
   nn=nn_old%jj;
@@ -144,7 +155,7 @@ smaller ints */
   nn_old=jj;
   jj=nn;
 
-  if(jj==1)		/* qi0 * j = -1 mod n     FIXME, is the description correct?*/
+  if(jj==1)		/* qi0 * j = -1 mod n */
   {
     tmp=((-r*qi0) % n) + n;
     return (int)tmp;
@@ -200,7 +211,7 @@ void sieve_init_class(unsigned int exp, unsigned long long int k_start, unsigned
 
 
 /* second version, expensive mod is avoided as much as possible, but it is
-still a brute force trail&error method */
+still a brute force trial&error method */
 /*    ii=(2 * (exp%p) * (k_start%p))%p;
     jj=(2 * (exp%p) * (NUM_CLASSES%p))%p;
     while(ii != (p-1))
@@ -341,7 +352,7 @@ this behaviour and precompute them. :)
       k_init[i] = j % p;
     }
 
-    for(i=SIEVE_SPLIT;i<sieve_limit;i++)
+    for(i=SIEVE_SPLIT;i<(int)sieve_limit;i++)
     {
       j=k_init[i];
       p=primes[i];
@@ -495,3 +506,8 @@ unsigned int sieve_sieve_primes_max(unsigned int exp)
   
   return ret;
 }
+
+#ifdef __cplusplus
+}
+#endif
+

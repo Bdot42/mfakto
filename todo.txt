@@ -40,20 +40,34 @@ TODO
 +DONE+ - --help
 +DONE+ - complain about bad args
 +DONE+ - calibrate auto-adjust
-- -d g
-- merge mfaktc 0.18
++DONE+ - cleanup unused kernels and kernel functions
++DONE+ - make it run on 11.10 / 11.11
++DONE+ - save copy of cpt file
++DONE+ - use old copy of cpt file if necessary
++DONE+ - allow running multiple instances in the same dir (all parameters as options)
++DONE+ - allow cpts only after some classes
++DONE+ - -d g
++DONE+ - "restrict" "const" wherever possible
++DONE+ - merge mfaktc 0.18
++DONE+ - allow reading ckp's of other versions (now even mfaktc)
++DONE+ - optimize 72-bit kernel for small vs. large factors (skip some converts depending on the size)
++DONE+ - result format changes
++DONE+ - versioning for txt files
 - make/allow for small exps/bit-levels
 - verify factors using the modulo-kernels and clEnqueueTask 
 - http://mersenneforum.org/showpost.php?p=258140&postcount=7 trialfactor_72.cl
 - div/mul-modulo for 96 bits
 - kernel trace more specific (bitmask)
-- "restrict" "const" wherever possible
 - 4 threads - 4 classes at once - also in host code to maximize GPU-utilization in a single program
 - error handling: RES[0] -= 100; save up to 3 ints in RES; only in single-vec
 - MODBASECASE_NN_BIG_ERROR in mod_144_72
-- GPU sieve
 - clGetKernelWorkGroupInfo in load kernels: preferred size, local mem
 - evaluate max mem alloc (device info)
-- optimize 72-bit kernel for small vs. large factors (skip some converts depending on the size)
-
-
+- serialize memory access for vector kernels
+- AllowSleep
+- perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
+- test optimisation options on Linux
+- retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
+- GPU-sieve: classes on CPU. k-min, k-max, p  ==> GPU ==> last-k, RES
+  issues: sieve-init without div/mod
+          memory access pattern during sieving ... workgroup size 64: p6-p70 in one group, after that diminishing differences in loop time.

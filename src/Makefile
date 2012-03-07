@@ -1,32 +1,52 @@
+# This file is part of mfaktc (mfakto).
+# Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+#                            Bertram Franz (bertramf@gmx.net)
+# 
+# mfaktc (mfakto) is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# mfaktc (mfakto) is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#                                 
+# You should have received a copy of the GNU General Public License
+# along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
+# 
+#  Version 0.10
+# 
 # where is the AMD_APP Toolkit installed?
-AMD_APP_DIR = ../../../AMD-APP-SDK-v2.4-lnx64
+AMD_APP_DIR = /opt/AMDAPP
 AMD_APP_INCLUDE = -I$(AMD_APP_DIR)/include
 AMD_APP_LIB = -L$(AMD_APP_DIR)/lib/x86_64
 
 # optimize or debug
-OPTIMIZE_FLAG = -O2
-# OPTIMIZE_FLAG = -g
+OPTIMIZE_FLAG = -O3 -funroll-loops  -ffast-math -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las -flto
+#OPTIMIZE_FLAG = -g
 
 # Compiler settings for .c files (CPU)
 CC = gcc
 CFLAGS = -Wall $(OPTIMIZE_FLAG) $(AMD_APP_INCLUDE) -DBUILD_OPENCL
-CFLAGS_EXTRA_SIEVE = -funroll-all-loops
+CFLAGS_EXTRA_SIEVE = -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -floop-parallelize-all -fvariable-expansion-in-unroller -fno-align-labels 
+#CFLAGS_EXTRA_SIEVE =
 
 # Linker
 LD = g++
-LDFLAGS = $(AMD_APP_LIB) -lOpenCL
+LDFLAGS = $(OPTIMIZE_FLAG) $(AMD_APP_LIB) -lOpenCL
 
 ##############################################################################
 
 CSRC  = sieve.c timer.c parse.c read_config.c mfaktc.c checkpoint.c \
 	signal_handler.c 
-CLSRC = mfakto_Kernels.cl barrett.cl
+CLSRC = mfakto_Kernels.cl barrett.cl mul24.cl sieve.cl
 
 COBJS  = $(CSRC:.c=.o) mfakto.o
 
 ##############################################################################
 
-all: ../mfakto ../barrett.cl ../mfakto_Kernels.cl
+all: ../mfakto ../barrett.cl ../mfakto_Kernels.cl ../mul24.cl ../sieve.cl
 
 ../mfakto : $(COBJS)
 	$(LD) $^ $(LDFLAGS) -o $@

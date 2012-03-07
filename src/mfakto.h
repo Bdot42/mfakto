@@ -1,7 +1,7 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009, 2010, 2011  Oliver Weihe (o.weihe@t-online.de)
-                                Bertram Franz (bertramf@gmx.net)
+Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+                           Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,8 +32,11 @@ int init_CL(int num_streams, cl_int devicenumber);
 int init_CLstreams(void);
 int cleanup_CL(void);
 void CL_test(cl_int devicenumber);
-int tf_class_opencl(unsigned int exp, int bit_min, unsigned long long int k_min,
-   unsigned long long int k_max, mystuff_t *mystuff, enum GPUKernels use_kernel);
+int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min,
+   cl_ulong k_max, mystuff_t *mystuff, enum GPUKernels use_kernel);
+void printArray(const char * Name, const cl_uint * Data, const cl_uint len);
+int run_cl_sieve_init(cl_uint exp, cl_ulong k_min, cl_ulong num_threads);
+int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads);
 
 #ifdef __cplusplus
 }
