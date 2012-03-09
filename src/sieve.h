@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -21,11 +21,17 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 extern "C" {
 #endif
 
+#ifdef SIEVE_SIZE_LIMIT
 void sieve_init();
+#else
+void sieve_init(unsigned int ssize, unsigned int max_global);
+#endif
+
 void sieve_free();
 void sieve_init_class(unsigned int exp, unsigned long long int k_start, unsigned int sieve_limit);
 void sieve_candidates(int ktab_size, unsigned int *ktab, unsigned int sieve_limit);
-unsigned int sieve_sieve_primes_max(unsigned int exp);
+unsigned int sieve_sieve_primes_max(unsigned int exp, unsigned int max_global);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -26,9 +26,9 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 void printArray(const char * Name, const unsigned int * Data, const unsigned int len);
 
 /* yeah, I like global variables :) */
-static unsigned int *sieve,*sieve_base;
-static unsigned int  mask0[32], mask1[32], primes[SIEVE_PRIMES_MAX];
-static int k_init[SIEVE_PRIMES_MAX],last_sieve;
+static unsigned int *sieve, *sieve_base, sieve_size, *primes;
+static unsigned int  mask0[32], mask1[32];
+static int *k_init, last_sieve;
 
 
 /* the sieve_table contains the number of bits set in n (sieve_table[n][8]) and
@@ -67,7 +67,7 @@ static unsigned int* sieve_malloc(unsigned int size)
 {
   unsigned int *array;
   if(size==0)return NULL;
-  array=(unsigned int*)malloc((((size-1)>>5)+1)*4);
+  array=(unsigned int*)malloc(1+(size>>3));  // one byte wasted if size is divisible by 32, but it's easier to see: 8 bits per byte.
   return array;
 }
 
@@ -75,9 +75,20 @@ static unsigned int* sieve_malloc(unsigned int size)
 extern "C" {
 #endif
 
+#ifdef SIEVE_SIZE_LIMIT
 void sieve_init()
+#else
+void sieve_init(unsigned int ssize, unsigned int max_global)
+#endif
 {
   unsigned int i,j,k;
+#ifdef SIEVE_SIZE_LIMIT
+  const unsigned int max_global = SIEVE_PRIMES_MAX;
+#else
+  sieve_size = ssize;
+#define SIEVE_SIZE sieve_size
+#endif
+
   for(i=0;i<32;i++)
   {
     mask1[i]=1<<i;
@@ -85,10 +96,18 @@ void sieve_init()
   }
   sieve=sieve_malloc(SIEVE_SIZE);
   sieve_base=sieve_malloc(SIEVE_SIZE);
+  primes=malloc(max_global * sizeof(unsigned int));
+  k_init=malloc(max_global * sizeof(int));
+
+  if ((sieve == NULL) || (sieve_base == NULL) || (primes == NULL) || (k_init == NULL))
+  {
+    fprintf(stderr, "ERROR: out of memory\n");
+    exit(1); // TODO: add and evaluate return value for this function
+  }
 
   primes[0]=3;
   i=0;j=3;
-  while(i<SIEVE_PRIMES_MAX)
+  while(i<max_global)
   {
     k=0;
     while(primes[k]*primes[k]<=j)
@@ -108,7 +127,7 @@ void sieve_init()
     j+=2;
   }
   #ifdef DETAILED_INFO
-    printArray("primes", primes, SIEVE_PRIMES_MAX);
+    printArray("primes", primes, max_global);
   #endif
 
   for(i=0;i<256;i++)
@@ -128,6 +147,8 @@ void sieve_free()
 {
   free(sieve);
   free(sieve_base);
+  free(primes);
+  free(k_init);
 }
 
 int sieve_euclid_modified(int j, int n, int r)
@@ -143,7 +164,7 @@ j, n, r  <=  primes[200000] = 2750161 (22 bits) */
   
   if(r==0)return 0;	/* trivially! */
   if(j==1)return r;	/* easy, isn't it? */
-//  if(j+1 == n) return (n-r);
+//  if(j+1 == n) return (n-r); // TODO: PERF: would this help?
 
   nn_old=n;
   jj=j;
@@ -252,7 +273,8 @@ still a brute force trial&error method */
     } */
   }
   
-  for(i=0;i<SIEVE_SIZE;i++)sieve_set_bit(sieve_base,i);
+  // set all bits
+  for(i=0;i<=(sieve_size>>5);i++) sieve_base[i] = 0xFFFFFFFF;
 
 #ifdef MORE_CLASSES
 /* presieve 13, 17, 19 and 23 in sieve_base */
@@ -299,7 +321,7 @@ void sieve_candidates(int ktab_size, unsigned int *ktab, unsigned int sieve_limi
   while(k<ktab_size)
   {
 //printf("sieve_candidates(): main loop start\n");
-    memcpy(sieve, sieve_base, ((SIEVE_SIZE-1)>>3)+1);
+    memcpy(sieve, sieve_base, (SIEVE_SIZE>>3)+1);
 
 /*
 The first few primes in the sieve have their own code. Since they are small
@@ -339,7 +361,7 @@ this behaviour and precompute them. :)
 
         ptr = &(sieve[j>>5]);
         ptr_max = &(sieve[SIEVE_SIZE >> 5]);
-        if( (j & 0x1F) < (SIEVE_SIZE & 0x1F))ptr_max++;
+        if( ((unsigned int)j & 0x1F) < (SIEVE_SIZE & 0x1F))ptr_max++;
         while(ptr < ptr_max) /* inner loop, lets kick out some bits! */
         {
           *ptr &= mask;
@@ -357,7 +379,7 @@ this behaviour and precompute them. :)
       j=k_init[i];
       p=primes[i];
 //printf("sieve: %d\n",p);
-      while(j<SIEVE_SIZE)
+      while((unsigned int)j<SIEVE_SIZE)
       {
         sieve_clear_bit(sieve,j);
         j+=p;
@@ -373,7 +395,7 @@ the sieve to the correspondic k_tab offsets
 /* part one of the loop:
 Get the bits out of the sieve until i is a multiple of 32
 this is going to fail if ktab has less than 32 elements! */
-    for(i=0;(i<SIEVE_SIZE) && (i&0x1F);i++)
+    for(i=0;((unsigned int)i<SIEVE_SIZE) && (i&0x1F);i++)
     {
 _ugly_goto_in_siever:
       if(sieve_get_bit(sieve,i))
@@ -391,7 +413,7 @@ Get the bits out of the sieve until
 a) we're close the end of the sieve
 or
 b) ktab is nearly filled up */
-    for(;i<(SIEVE_SIZE&0xFFFFFFE0) && k<(ktab_size-33);i+=32)	// thirty-three!!!
+    for(;(unsigned int)i<(SIEVE_SIZE&0xFFFFFFE0) && k<(ktab_size-33);i+=32)	// thirty-three!!!
     {
       ic=i+c;
       s=sieve[i>>5];
@@ -479,7 +501,7 @@ Get the bits out of the sieve until
 a) sieve ends
 or
 b) ktab is full */    
-    for(;i<SIEVE_SIZE;i++)
+    for(;(unsigned int)i<SIEVE_SIZE;i++)
     {
       if(sieve_get_bit(sieve,i))
       {
@@ -497,13 +519,12 @@ b) ktab is full */
 }
 
 
-unsigned int sieve_sieve_primes_max(unsigned int exp)
-/* returns min(SIEVE_PRIMES_MAX, number of primes below exp) */
+unsigned int sieve_sieve_primes_max(unsigned int exp, unsigned int max_global)
+/* returns min(max_global, number of primes below exp) */
 {
-  int ret = 0;
-  if(exp > (unsigned int)primes[SIEVE_PRIMES_MAX - 1]) ret = SIEVE_PRIMES_MAX;
-  else while((unsigned int)primes[ret] < exp)ret++;
-  
+  unsigned int ret = max_global;
+  while((primes[ret-1] >= exp) && (ret > 0)) ret--;
+
   return ret;
 }
 

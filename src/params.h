@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-// In Catalyst 11.10, 11.11 and 11.12, not all parameters were passed to the kernel
+// In Catalyst 11.x, x>=10 and 12.y, not all parameters were passed to the kernel
 // -> replace user-defined struct with uint8
 #define WA_FOR_CATALYST11_10_BUG
 
@@ -170,7 +170,9 @@ The following lines define the min, default and max value.
    MORE_CLASSES is required for mfakto now */
 #ifdef MORE_CLASSES
   #define NUM_CLASSES 4620 /* 2 * 2 * 3 * 5 * 7 * 11 */
+#ifdef SIEVE_SIZE_LIMIT
   #define SIEVE_SIZE ((SIEVE_SIZE_LIMIT<<13) - (SIEVE_SIZE_LIMIT<<13) % (13*17*19*23))
+#endif
 #else
 # error "mfakto requires MORE_CLASSES be defined."
 #endif

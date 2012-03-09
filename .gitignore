@@ -1,0 +1,16 @@
+*.o
+*~
+mfakto
+*.obj
+*.cl
+*.suo
+*.sdf
+*.opensdf
+*.vcxproj.user
+!src/*.cl
+*.ini
+!src/*.ini
+ipch/
+Release/
+Debug/
+x64/

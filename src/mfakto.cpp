@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -21,7 +21,6 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
-#include <io.h>
 #include "string.h"
 #include "CL/cl.h"
 #include "params.h"
@@ -2939,8 +2938,11 @@ int perftest(int par)
   printf("Generate list of the first 10^6 primes: ");
 
   timer_init(&timer);
-//  sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max_global);
+#ifdef SIEVE_SIZE_LIMIT
   sieve_init();
+#else
+  sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max_global);
+#endif
   time1 = timer_diff(&timer);
   printf("%.2f ms\n\n", (float)time1/1000.0);
   if (mystuff.quit) exit(1);

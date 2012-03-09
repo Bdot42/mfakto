@@ -43,7 +43,7 @@ LDFLAGS = $(OPTIMIZE_FLAG) $(AMD_APP_LIB) -lOpenCL
 ##############################################################################
 
 CSRC  = sieve.c timer.c parse.c read_config.c mfaktc.c checkpoint.c \
-	signal_handler.c 
+	signal_handler.c filelocking.c
 CLSRC = mfakto_Kernels.cl barrett.cl barrett15.cl barrett24.cl mul24.cl sieve.cl
 
 COBJS  = $(CSRC:.c=.o) mfakto.o

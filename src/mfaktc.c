@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -815,11 +815,8 @@ int main(int argc, char **argv)
         bit_min_stage = bit_min;
         bit_max_stage = bit_max;
 
-#ifdef SIEVE_SIZE_LIMIT
-        mystuff.sieve_primes_max = sieve_sieve_primes_max(exp);
-#else
         mystuff.sieve_primes_max = sieve_sieve_primes_max(exp, mystuff.sieve_primes_max_global);
-#endif
+
         if(mystuff.sieve_primes > mystuff.sieve_primes_max)
         {
           mystuff.sieve_primes = mystuff.sieve_primes_max;

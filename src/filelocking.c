@@ -17,8 +17,8 @@ You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <io.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -33,15 +33,18 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #define open _open
   #define close _close
   #define sched_yield SwitchToThread
+  #define MODE _S_IREAD | _S_IWRITE
 #else
-#include <sched.h>
-static void Sleep(unsigned int ms)
-{
-  struct timespec ts;
-  ts.tv_sec  = (time_t) ms/1000;
-  ts.tv_nsec = (ms % 1000) * 1000000;
-  nanosleep(&ts, NULL);
-}
+  #include <unistd.h>
+  #include <sched.h>
+  #define MODE S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH
+  static void Sleep(unsigned int ms)
+  {
+    struct timespec ts;
+    ts.tv_sec  = (time_t) ms/1000;
+    ts.tv_nsec = (ms % 1000) * 1000000;
+    nanosleep(&ts, NULL);
+  }
 #endif
 
 #define MAX_LOCKED_FILES 5
@@ -78,7 +81,7 @@ FILE *fopen_and_lock(const char *path, const char *mode)
 
   for(i=0;;)
   {
-    if ((lockfd = open(locked_files[num_locked_files].lock_filename, O_EXCL | O_CREAT, _S_IREAD | _S_IWRITE)) < 0)
+    if ((lockfd = open(locked_files[num_locked_files].lock_filename, O_EXCL | O_CREAT, MODE)) < 0)
     {
       if (errno == EEXIST)
       {
