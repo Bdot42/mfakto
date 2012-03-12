@@ -3020,8 +3020,12 @@ int perftest(int par)
   {
     tmp=m*ssizes[j];
     sieve_free();
-//    sieve_init(tmp, 1000000);
+#ifdef SIEVE_SIZE_LIMIT
     sieve_init();
+    if (j>3) break; // quit after 3 equal loops if we can't dynamically set the sieve size anyway
+#else
+    sieve_init(tmp, 1000000);
+#endif
     sieve_init_class(exp, k++, 1000000);
     printf("\n%6d kiB  ", tmp/8192+1);
 
