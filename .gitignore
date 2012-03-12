@@ -3,11 +3,13 @@
 mfakto
 *.obj
 *.cl
+!src/*.cl
+*.h
+!src/*.h
 *.suo
 *.sdf
 *.opensdf
 *.vcxproj.user
-!src/*.cl
 *.ini
 !src/*.ini
 ipch/
