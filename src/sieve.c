@@ -26,10 +26,14 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 void printArray(const char * Name, const unsigned int * Data, const unsigned int len);
 
 /* yeah, I like global variables :) */
-static unsigned int *sieve, *sieve_base, sieve_size, *primes;
+static unsigned int *sieve, *sieve_base, *primes;
 static unsigned int  mask0[32], mask1[32];
 static int *k_init, last_sieve;
 
+#ifndef SIEVE_SIZE_LIMIT
+  static unsigned int sieve_size;
+#define SIEVE_SIZE sieve_size
+#endif
 
 /* the sieve_table contains the number of bits set in n (sieve_table[n][8]) and
 the position of the set bits
@@ -87,7 +91,6 @@ void sieve_init(unsigned int ssize, unsigned int max_global)
   const unsigned int max_global = SIEVE_PRIMES_MAX;
 #else
   sieve_size = ssize;
-#define SIEVE_SIZE sieve_size
 #endif
 
   for(i=0;i<32;i++)
@@ -275,7 +278,7 @@ still a brute force trial&error method */
   }
   
   // set all bits
-  for(i=0;i<=(sieve_size>>5);i++) sieve_base[i] = 0xFFFFFFFF;
+  for(i=0;i<=(SIEVE_SIZE>>5);i++) sieve_base[i] = 0xFFFFFFFF;
 
 #ifdef MORE_CLASSES
 /* presieve 13, 17, 19 and 23 in sieve_base */

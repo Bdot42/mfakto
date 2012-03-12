@@ -24,9 +24,9 @@ AMD_APP_LIB = -L$(AMD_APP_DIR)/lib/x86_64
 
 # optimize or debug
 #OPTIMIZE_FLAG = -O3
-OPTIMIZE_FLAG = -O3 -funroll-loops  -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las 
+#OPTIMIZE_FLAG = -O3 -funroll-loops  -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las 
 #OPTIMIZE_FLAG = -O3 -funroll-loops  -ffast-math -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las -flto
-#OPTIMIZE_FLAG = -g
+OPTIMIZE_FLAG = -g
 
 # Compiler settings for .c files (CPU)
 CC = gcc
