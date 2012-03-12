@@ -28,6 +28,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef _MSC_VER
   #include <Windows.h>
+  #include <io.h>
   #undef open
   #undef close
   #define open _open

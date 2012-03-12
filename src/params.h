@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT define.
 
 */
 
-#define SIEVE_SIZE_LIMIT 36
+// #define SIEVE_SIZE_LIMIT 36
 
 
 /******************
@@ -82,7 +82,7 @@ code path - not used by mfakto, see kernel trace */
 
 
 /* Tell the OpenCL compiler to create debuggable code for the Kernels */
-// #define CL_DEBUG
+//#define CL_DEBUG
 
 /******************************************************************************
 *******************************************************************************

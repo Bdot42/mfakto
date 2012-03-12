@@ -67,7 +67,8 @@ static unsigned int* sieve_malloc(unsigned int size)
 {
   unsigned int *array;
   if(size==0)return NULL;
-  array=(unsigned int*)malloc(1+(size>>3));  // one byte wasted if size is divisible by 32, but it's easier to see: 8 bits per byte.
+  array=(unsigned int*)malloc(4+(size>>3));  // a few bytes wasted, but it's easier to see: 8 bits per byte,
+                                             // making sure we have a full int to access it
   return array;
 }
 
@@ -311,7 +312,7 @@ void sieve_candidates(int ktab_size, unsigned int *ktab, unsigned int sieve_limi
   return;
 #endif  
 
-  if(last_sieve < SIEVE_SIZE)
+  if(last_sieve < (int)SIEVE_SIZE)
   {
     i=last_sieve;
     c=-i;
