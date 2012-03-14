@@ -3045,9 +3045,12 @@ int perftest(int par)
         peak_index[ii]=j;
       }
       printf(" %7.1f", Mps);
-      if (mystuff.quit) break;
     }
-    if (mystuff.quit) break;
+    if (mystuff.quit)
+    {
+      break;
+      j++;
+    }
   }
   printf("\nBest SieveSizeLimit for\nSievePrimes:");
   for(ii=0; ii<nsp; ii++)
@@ -3065,18 +3068,11 @@ int perftest(int par)
   {
     printf(" %7.1f", peak[ii]);
   }
-  if (!mystuff.quit)  // sum is not valid if ^C was pressed
+  printf("\nSieved out: ");
+  for(ii=0; ii<nsp; ii++)
   {
-    printf("\nSieved out: ");
-    for(ii=0; ii<nsp; ii++)
-    {
-      // last_elem/nss  is the average end of the sieved block, consisting of threads_per_grid entries
-      printf(" %6.2f%%", (last_elem[ii]/nss - (double)mystuff.threads_per_grid)*100.0*nss/last_elem[ii]);
-    }
-  }
-  else
-  {
-    exit(1);
+    // last_elem/nss  is the average end of the sieved block, consisting of threads_per_grid entries
+    printf(" %6.2f%%", (last_elem[ii]/j - (double)mystuff.threads_per_grid)*100.0*j/last_elem[ii]);
   }
 
   printf("\n\n");

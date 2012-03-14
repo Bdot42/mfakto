@@ -22,6 +22,9 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 
 #include "params.h"
+#ifdef VERBOSE_TIMING
+#include "timer.h"
+#endif
 #include "compatibility.h"
 void printArray(const char * Name, const unsigned int * Data, const unsigned int len);
 
@@ -30,9 +33,16 @@ static unsigned int *sieve, *sieve_base, *primes;
 static unsigned int  mask0[32], mask1[32];
 static int *k_init, last_sieve;
 
-#ifndef SIEVE_SIZE_LIMIT
-  static unsigned int sieve_size;
+#ifdef SIEVE_SIZE_LIMIT
+#define SIEVE_BYTES (4+((SIEVE_SIZE) >> 3))
+#define SIEVE_WORDS (SIEVE_BYTES >> 2)
+#define SIEVE_SIZE_FF (SIEVE_SIZE&0xFFFFFFE0)
+#else
+  static unsigned int sieve_size, sieve_bytes, sieve_words, sieve_size_ff;
 #define SIEVE_SIZE sieve_size
+#define SIEVE_BYTES sieve_bytes
+#define SIEVE_WORDS sieve_words
+#define SIEVE_SIZE_FF sieve_size_ff
 #endif
 
 /* the sieve_table contains the number of bits set in n (sieve_table[n][8]) and
@@ -67,15 +77,6 @@ static __inline void sieve_clear_bit(unsigned int *array,unsigned int bit)
 //#define sieve_clear_bit(ARRAY,BIT) asm("btrl  %0, %1" : /* no output */ : "r" (BIT), "m" (*ARRAY) : "memory", "cc" )
 //#define sieve_clear_bit(ARRAY,BIT) ARRAY[BIT>>5]&=mask0[BIT&0x1F]
 
-static unsigned int* sieve_malloc(unsigned int size)
-{
-  unsigned int *array;
-  if(size==0)return NULL;
-  array=(unsigned int*)malloc(4+(size>>3));  // a few bytes wasted, but it's easier to see: 8 bits per byte,
-                                             // making sure we have a full int to access it
-  return array;
-}
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -91,6 +92,9 @@ void sieve_init(unsigned int ssize, unsigned int max_global)
   const unsigned int max_global = SIEVE_PRIMES_MAX;
 #else
   sieve_size = ssize;
+  sieve_bytes = 4 + (ssize >> 3);
+  sieve_words = sieve_bytes >> 2;
+  sieve_size_ff = ssize & 0xFFFFFFE0;
 #endif
 
   for(i=0;i<32;i++)
@@ -98,10 +102,10 @@ void sieve_init(unsigned int ssize, unsigned int max_global)
     mask1[i]=1<<i;
     mask0[i]=0xFFFFFFFF-mask1[i];
   }
-  sieve=sieve_malloc(SIEVE_SIZE);
-  sieve_base=sieve_malloc(SIEVE_SIZE);
-  primes=malloc(max_global * sizeof(unsigned int));
-  k_init=malloc(max_global * sizeof(int));
+  sieve      = malloc(SIEVE_BYTES);
+  sieve_base = malloc(SIEVE_BYTES);
+  primes     = malloc(max_global * sizeof(unsigned int));
+  k_init     = malloc(max_global * sizeof(int));
 
   if ((sieve == NULL) || (sieve_base == NULL) || (primes == NULL) || (k_init == NULL))
   {
@@ -278,7 +282,7 @@ still a brute force trial&error method */
   }
   
   // set all bits
-  for(i=0;i<=(SIEVE_SIZE>>5);i++) sieve_base[i] = 0xFFFFFFFF;
+  for(i=0;i<SIEVE_WORDS;i++) sieve_base[i] = 0xFFFFFFFF;
 
 #ifdef MORE_CLASSES
 /* presieve 13, 17, 19 and 23 in sieve_base */
@@ -308,6 +312,12 @@ void sieve_candidates(int ktab_size, unsigned int *ktab, unsigned int sieve_limi
   unsigned int s,sieve_table_8,*sieve_table_;
   unsigned int mask; //, index, index_max;
   unsigned int *ptr, *ptr_max;
+  unsigned int ktab_size33 = ktab_size - 33;
+#ifdef VERBOSE_TIMING
+  struct timeval timer;
+  unsigned long long int time1, time2, time3, time4;
+  timer_init(&timer);
+#endif
 
 #ifdef RAW_GPU_BENCH
 //  quick hack to "speed up the siever", used for GPU-code benchmarks  
@@ -322,10 +332,14 @@ void sieve_candidates(int ktab_size, unsigned int *ktab, unsigned int sieve_limi
     goto _ugly_goto_in_siever;
   }
 
+#ifdef VERBOSE_TIMING
+  printf("Sieve start: %llu\n", timer_diff(&timer));
+#endif
+
   while(k<ktab_size)
   {
 //printf("sieve_candidates(): main loop start\n");
-    memcpy(sieve, sieve_base, (SIEVE_SIZE>>3)+1);
+    memcpy(sieve, sieve_base, SIEVE_BYTES);
 
 /*
 The first few primes in the sieve have their own code. Since they are small
@@ -335,6 +349,10 @@ chunk and bit position in chunk on each call.
 Every 32 iterations they hit the same bit position so we can make use of
 this behaviour and precompute them. :)
 */
+#ifdef VERBOSE_TIMING
+  printf("Sieve base copied: %llu\n", timer_diff(&timer));
+#endif
+
 #ifdef MORE_CLASSES
     for(i=7;i<SIEVE_SPLIT;i++)
 #else
@@ -347,25 +365,10 @@ this behaviour and precompute them. :)
       for(ii=0; ii<32; ii++)
       {
         mask = mask0[j & 0x1F];
-/*
-        index = j >> 5;
-        index_max = SIEVE_SIZE >> 5;
-        if(index_max + (j & 0x1F) < SIEVE_SIZE)index_max++;
-        while(index < index_max)
-        {
-          sieve[index] &= mask;
-          index += p;
-        }
-        j+=p;
-      }
-      j = (index<<5) + ((j-p) & 0x1F);
-      while(j>=SIEVE_SIZE)j-=p;
-      j+=p;
-      k_init[i]=j-SIEVE_SIZE;*/
 
         ptr = &(sieve[j>>5]);
-        ptr_max = &(sieve[SIEVE_SIZE >> 5]);
-        if( ((unsigned int)j & 0x1F) < (SIEVE_SIZE & 0x1F))ptr_max++;
+        ptr_max = &(sieve[SIEVE_WORDS]);
+//        if( ((unsigned int)j & 0x1F) < (SIEVE_SIZE & 0x1F))ptr_max++;
         while(ptr < ptr_max) /* inner loop, lets kick out some bits! */
         {
           *ptr &= mask;
@@ -377,6 +380,10 @@ this behaviour and precompute them. :)
       j -= SIEVE_SIZE;
       k_init[i] = j % p;
     }
+
+#ifdef VERBOSE_TIMING
+  printf("Sieve split: %llu\n", timer_diff(&timer));
+#endif
 
     for(i=SIEVE_SPLIT;i<(int)sieve_limit;i++)
     {
@@ -391,6 +398,10 @@ this behaviour and precompute them. :)
       k_init[i]=j-SIEVE_SIZE;
     }
     
+#ifdef VERBOSE_TIMING
+  printf("Sieve done: %llu\n", timer_diff(&timer));
+#endif
+
 /*
 we have finished sieving and now we need to translate the remaining bits in
 the sieve to the correspondic k_tab offsets
@@ -408,16 +419,24 @@ _ugly_goto_in_siever:
         if(k >= ktab_size)
         {
           last_sieve=i+1;
+#ifdef VERBOSE_TIMING
+          printf("Return 1   : %llu\n", timer_diff(&timer));
+#endif
+
           return;
         }
       }
     }
+#ifdef VERBOSE_TIMING
+  printf("Extract 1  : %llu\n", timer_diff(&timer));
+#endif
+
 /* part two of the loop:
 Get the bits out of the sieve until
 a) we're close the end of the sieve
 or
 b) ktab is nearly filled up */
-    for(;(unsigned int)i<(SIEVE_SIZE&0xFFFFFFE0) && k<(ktab_size-33);i+=32)	// thirty-three!!!
+    for(;(unsigned int)i<SIEVE_SIZE_FF && k<ktab_size33;i+=32)	// thirty-three!!!
     {
       ic=i+c;
       s=sieve[i>>5];
@@ -500,6 +519,10 @@ b) ktab is nearly filled up */
       k+=sieve_table_8;
 #endif      
     }
+#ifdef VERBOSE_TIMING
+  printf("Extract 2  : %llu\n", timer_diff(&timer));
+#endif
+
 /* part three of the loop:
 Get the bits out of the sieve until
 a) sieve ends
@@ -513,13 +536,25 @@ b) ktab is full */
         if(k >= ktab_size)
         {
           last_sieve=i+1;
+#ifdef VERBOSE_TIMING
+          printf("Return 2   : %llu\n", timer_diff(&timer));
+#endif
+
           return;
         }
       }
     }
     c+=SIEVE_SIZE;
+#ifdef VERBOSE_TIMING
+  printf("Extract 3  : %llu\n", timer_diff(&timer));
+#endif
+
   }
   last_sieve=i;
+#ifdef VERBOSE_TIMING
+  printf("All done   : %llu\n", timer_diff(&timer));
+#endif
+
 }
 
 
