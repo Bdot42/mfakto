@@ -112,6 +112,11 @@ FILE *fopen_and_lock(const char *path, const char *mode)
   {
     locked_files[num_locked_files++].open_file = f;
   }
+  else
+  {
+    if (close(locked_files[num_locked_files].lockfd) != 0) perror("Failed to close lockfile");
+    if (remove(locked_files[num_locked_files].lock_filename)!= 0) perror("Failed to delete lockfile");
+  }
 
   return f;
 }

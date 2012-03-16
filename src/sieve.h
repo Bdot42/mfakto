@@ -29,7 +29,7 @@ void sieve_init(unsigned int ssize, unsigned int max_global);
 
 void sieve_free();
 void sieve_init_class(unsigned int exp, unsigned long long int k_start, unsigned int sieve_limit);
-void sieve_candidates(int ktab_size, unsigned int *ktab, unsigned int sieve_limit);
+void sieve_candidates(unsigned int ktab_size, unsigned int *ktab, unsigned int sieve_limit);
 unsigned int sieve_sieve_primes_max(unsigned int exp, unsigned int max_global);
 
 #ifdef __cplusplus

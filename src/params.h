@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT define.
 
 */
 
-//#define SIEVE_SIZE_LIMIT 84
+#define SIEVE_SIZE_LIMIT 64
 
 
 /******************
@@ -46,7 +46,11 @@ than an equal SIEVE_SIZE_LIMIT define.
 ******************/
 
 /* print some more timing information */
-#define VERBOSE_TIMING
+//#define VERBOSE_TIMING
+
+
+/* print detailed timing information of the sieve*/
+//#define VERBOSE_SIEVE_TIMING
 
 
 /* enable for printf's from device (GPU) code. Only used in sm_20 or newer
@@ -77,7 +81,8 @@ code path - not used by mfakto, see kernel trace */
 
 /* enable the OpenCL built-in performance measurement. This will print the
    pure times needed to copy the data over, and to test the FC's of the chunk
-   (pure run time per kernel invokation) */
+   (pure run time per kernel invokation) - best measure to compare changes in
+   the kernels, or drivers. */
 //#define CL_PERFORMANCE_INFO
 
 
