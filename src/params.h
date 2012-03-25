@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT define.
 
 */
 
-//#define SIEVE_SIZE_LIMIT 84
+#define SIEVE_SIZE_LIMIT 36
 
 
 /******************
@@ -46,7 +46,7 @@ than an equal SIEVE_SIZE_LIMIT define.
 ******************/
 
 /* print some more timing information */
-#define VERBOSE_TIMING
+//#define VERBOSE_TIMING
 
 
 /* enable for printf's from device (GPU) code. Only used in sm_20 or newer

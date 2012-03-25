@@ -224,10 +224,10 @@ other return value
   for(; cur_class <= max_class; cur_class++)
   {
 /* check if class is NOT "3 or 5 mod 8", "0 mod 3", "0 mod 5", "0 mod 7" (or "0 mod 11") */
-    if( ((2 * (exp% 8) * ((k_min+cur_class)% 8)) % 8 !=  2) &&
-        ((2 * (exp% 8) * ((k_min+cur_class)% 8)) % 8 !=  4) &&
-        ((2 * (exp% 3) * ((k_min+cur_class)% 3)) % 3 !=  2) &&
+    if( ((2 * (exp% 3) * ((k_min+cur_class)% 3)) % 3 !=  2) &&
         ((2 * (exp% 5) * ((k_min+cur_class)% 5)) % 5 !=  4) &&
+        ((2 * (exp% 8) * ((k_min+cur_class)% 8)) % 8 !=  2) &&
+        ((2 * (exp% 8) * ((k_min+cur_class)% 8)) % 8 !=  4) &&
 #ifdef MORE_CLASSES        
         ((2 * (exp%11) * ((k_min+cur_class)%11)) %11 != 10) &&
 #endif    
@@ -421,18 +421,14 @@ k_max and k_min are used as 64bit temporary integers here...
     else            printf("tf(): time spent since restart:   ");
 
 /*  restart == 0 ==> time_est = time_run */
-#ifndef MORE_CLASSES
-    time_est = (time_run * 96ULL  ) / (unsigned long long int)(96 -restart);
-#else
-    time_est = (time_run * 960ULL ) / (unsigned long long int)(960-restart);
-#endif
 
-    if(time_est > 86400000ULL)printf("%" PRIu64 "d ",   time_run / 86400000ULL);
-    if(time_est > 3600000ULL) printf("%2" PRIu64 "h ", (time_run /  3600000ULL) % 24ULL);
-    if(time_est > 60000ULL)   printf("%2" PRIu64 "m ", (time_run /    60000ULL) % 60ULL);
+    if(time_run > 86400000ULL)printf("%" PRIu64 "d ",   time_run / 86400000ULL);
+    if(time_run > 3600000ULL) printf("%2" PRIu64 "h ", (time_run /  3600000ULL) % 24ULL);
+    if(time_run > 60000ULL)   printf("%2" PRIu64 "m ", (time_run /    60000ULL) % 60ULL);
                               printf("%2" PRIu64 ".%03" PRIu64 "s\n", (time_run / 1000ULL) % 60ULL, time_run % 1000ULL);
     if(restart != 0)
     {
+      time_est = (time_run * mystuff->class_counter ) / (unsigned long long int)(mystuff->class_counter-restart);
       printf("      estimated total time spent: ");
       if(time_est > 86400000ULL)printf("%" PRIu64 "d ",   time_est / 86400000ULL);
       if(time_est > 3600000ULL) printf("%2" PRIu64 "h ", (time_est /  3600000ULL) % 24ULL);
