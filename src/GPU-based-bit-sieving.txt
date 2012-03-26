@@ -1,0 +1,347 @@
+﻿From:  Rocke Verser
+
+Date:  March 8, 2012
+
+Subject:  Technical Disclosure Bulletin  – Description of prototype 
+sieving code
+
+Copyright:  Copyright © 2012 by Rocke Verser.  Permission is granted 
+to copy this document, unchanged, with any distribution of GPUsieve, 
+which is separately released under the GPLv3 license.  You are not 
+required to redistribute this document.   In fact, redistribution of 
+this document should probably be avoided if it is to accompany code 
+which has changed significantly from what is described herein.
+
+
+The sieving program, GPUsieve, as released on March 8, 2012, is not a 
+polished, complete, professional piece of software.  It is prototype 
+code, written to help ascertain whether sieving can be performed fast 
+and efficiently on a GPU-style architecture.  It's not optimized.  It 
+has no significant user interface.  It is not well tested at the 
+limits.  While it is prototype status, I think it's not too far from 
+reaching a releasable status.  It was written and is being released 
+with the possible intent of integrating with mfaktc and/or mfakto, 
+which are existing trial factoring programs, specifically for the GIMPS 
+project, and which use GPU.
+
+This document describes the basic operation of GPUsieve, including some 
+of the algorithms and techniques it employs.
+
+Timings and examples in this document were performed on an EVGA GTX 560 
+Ti card, model 01G-P3-1561-AR, running at stock speed.  The card, of 
+course, uses the corresponding NVIDIA 560 Ti GPU.  The code was 
+configured (via #define statements, primarily) to find potential prime 
+factors of M(53785969) in the range 2^71 to 2^72.  (All such factors 
+are known to be of the form q=2kp+1, where p=53785969, and k has been 
+sieved such that q contains no factors less than or equal to 12601 and 
+q mod 8 = 1 or 7.)  The job of this software, for this release and 
+these timings was to find values of k for which q met the specified 
+conditions.  We perform this job in multiple steps, each of which 
+sieves class-by-class through pools of (typically) 3*1024*1024 
+candidates.  [Classes are a mechanism by which multiples of 3, 5, 7, 
+and 11 and values of q for which q mod 8 does not meet the above 
+condition are inherently removed from consideration.  Further details 
+are not relevant to the rest of this document.]
+
+
+One time only:  The host computes the small primes, which will be used 
+for sieving.  These primes are copied to the GPU device.  (For our 
+timings, we computed a table of the 1500 prime numbers, ranging from 13 
+to 12601, inclusive.)
+
+One time only:  A tiny kernel, rcv_build_prime_tree, is launched to 
+build a binary tree of these primes.  The tree contains one leaf per 
+prime.  The contents of that leaf are the maximum number of times that 
+prime will occur in a batch of bits being sieved.  [i.e., 
+ceil[#bits-in-sieve/p].  For example, if there are 3*1024*1024 bits in 
+the batch being sieved, the leaf for p=13 will contain the value 
+241980.  The leaf for p=17 will contain the value 185043.  The leaf for 
+p=4099 will contain the value 768.  And the leaf for p=48611 would 
+contain 65, if SievePrimes is set that high.  Each parent contains the 
+sum of the two children.  All the way to the root, which contains the 
+sum of all of the leaves.  At SievePrimes=1500, the tree will contain 
+3000 nodes.  Node 0 is empty.  Node 1 is the root.  Nodes 2n and 2n+1 
+are the children of node n.  Nodes 1500 through 2999 are the leaves.  I 
+won't bore you with more details at this point.
+
+The idea behind this is that I would launch one kernel with n threads, 
+where n was the total in the root.  The first 241980 threads would each 
+clear one bit corresponding to a multiple of 13.  The next 185043 
+threads would each clear one bit corresponding to a multiple of 17.  
+For p=48611, we would launch 65 threads, each of which would clear a 
+single bit corresponding to a multiple of 48611.  By navigating the 
+tree, each thread can relatively easily determine which prime and which 
+instance of which prime it is to clear.
+
+That kernel and that logic still exists.  It's very general and it 
+works.  It is too slow for the smaller primes, but the method is used 
+and works surprisingly well for the larger primes.  [More on this 
+kernel, later.]
+
+
+Once per class or more often if a single block of sieve bits 
+(3*1024*1024, for example) isn't sufficient, a series of kernels are 
+launched that run sequentially on the device, but don't require any 
+feedback or control from the host.
+
+rcv_init_class.  One thread per distinct prime.  [I.e., 1500 threads if 
+SievePrimes=1500.]  The primary job of this kernel is to establish the 
+offset from the start of the bitsieve block for the first multiple of 
+each prime.  With 1500 distinct primes, the duration of this kernel is 
+~9.3 us.  For a wide range of values, this kernel's time is 
+approximately proportional to the value of SievePrimes.
+
+rcv_set_sieve_bits.  One thread per 32-bit word in the bitsieve block.  
+This merely turns all of the bits on.  With 3*1024*1024 bits, there are 
+98304 threads, and the duration of this kernel is ~5.2 us.  Note that 
+this kernel could be completely eliminated if this logic were placed in 
+the next kernel.
+
+Now we get to the fun stuff...
+
+rcv_sieve_small_13_61.  One thread per 32-bit word in the bitsieve 
+block.  Each thread owns one 32-bit word of the bitsieve block.  In one 
+32-bit register, it turns off all the multiples of 13, then all the 
+multiples of 17, then all the multiples of 19, ..., and finally all the 
+multiples of 61 that are represented by bits in that 32-bit word.  This 
+kernel was originally intended to handle the six primes between 13 and 
+32, since each of these primes is guaranteed to have at least one bit 
+in every 32-bit word.  However, this kernel is so efficient, primes 
+between 32 and 64 were moved to this kernel.  [Exactly which kernel, 
+higher or lower in the following list, to use to sieve a given prime 
+hasn't been optimized.]  Finally, the word is written back to global 
+memory.  With 98304 threads, this kernel takes 37.3 us, and clears 
+1153651 (average, of course) of the 3145728 bits we started with.  One 
+of the keys to good performance are that every thread does the same 
+thing.  (Low branch divergence.)  Another key to good performance is 
+that every thread does something useful on almost every step.  Here, 
+the average thread actually clears 11.74 bits.
+
+rcv_sieve_small_67_127.  One thread per 64-bit word in the bitsieve 
+block.  This kernel assumes a block-size of 256 threads, and allocates 
+512 32-bit words of shared memory to hold this block's sieving results. 
+ In the first phase, each thread turns off any multiple of 67, then 71, 
+then 73, ..., then 127, in its own pair of 32-bit shared memory words.  
+Each thread is guaranteed to touch zero or one bit for each of the 13 
+primes this kernel handles.  In the second phase, the threads change 
+their roles to write each other's words from shared memory to the 
+global memory bitsieve block.  [CUDA  permits shared memory to be 
+accessed more randomly and faster than global memory.  The second-phase 
+global memory writes are aligned optimally and occur only once per 
+kernel.  Due to the very high global memory latency and strict 
+alignment requirements, this is helpful for good performance.]  With 
+49152 threads, this kernel takes 41.1 us, and actually clears 268275 
+more of the remaining 1992077 bits.  As before, every thread does the 
+same thing, so there is low branch divergence.  Here, the average 
+thread attempts to clear 9.20 bits, and actually clears 5.46 bits.  
+(Some bits were cleared by the previous kernel.)
+
+rcv_sieve_small_131_251.  One thread per 128-bit word in the bitsieve 
+block.  This kernel assumes a block-size of 256 threads, and allocates 
+1024 32-bit words of shared memory.  It runs two phases, like the 
+previous kernel, with phase 1 sieving multiples of 131, 137, 139, …, 
+251.  As before, each thread is guaranteed to touch zero or one bit for 
+each of the 23 primes this kernel handles.  And as before, in the 
+second phase, the threads change their roles to write each-other's 
+words from shared memory to the global memory bitsieve block.  With 
+24576 threads, this kernel takes 35.6 us, and actually clears 204571 
+more of the remaining 1723802 bits.
+
+rcv_sieve_small_257_509.  One thread per 256-bit word in the bitsieve 
+block.  Up 'til now, the sieving kernels have achieved 100% occupancy 
+and extremely high efficiency on my 560Ti.  But some tradeoffs are 
+required, here.  This kernel assumes a block-size of 128 threads (which 
+limits occupancy to 67% on my 560Ti), and allocates 1024 32-bit words 
+of shared memory.  The two-phase algorithm proceeds just as before.  
+With 12288 threads, this kernel takes 38.2 us, and clears yet another 
+168002 of the remaining bits.
+
+rcv_sieve_small_521_1021.  One thread per 512-bit word in the bitsieve 
+block.  This kernel assumes a block-size of 128 threads, and allocates 
+2048 32-bit words of shared memory (which further limits occupancy).  
+Same two-phase algorithm.  With 6144 threads, this kernel takes 57.2 
+us, and clears 130331 of the remaining bits.
+
+rcv_sieve_small_1031_2039.  One thread per 1024-bit word in the 
+bitsieve block.  This kernel uses a block-size of 32 threads, and 
+allocates 1024 32-bit words of shared memory.  Same two-phase 
+algorithm.  With 3072 threads, this kernel takes 99.6 us, and clears 
+108903 of the remaining bits.
+
+At this point, I think we're at the equivalent of SievePrimes=304, and 
+35.35% of our original bits remain on.  The timings quoted here, by the 
+way, were just run tonight and may differ slightly from what I quoted 
+on the Forum, which were from a more detailed analysis from a couple of 
+weeks ago.
+
+Also note the time required of the above rcv_sieve_small... kernels are 
+completely independent of SievePrimes (as long as SievePrimes is at 
+least 304.)
+
+I have some further ideas to squeeze some better performance out of the 
+previous kernels, and I would seriously entertain a few more 
+special-purpose kernels to handle increasing powers of 2 in the size of 
+the primes.  I think this is a rich area for more ideas!
+
+rcv_sieve_primes:  This is the general-purpose siever I mentioned back 
+when discussing the building of the prime tree.  This kernel can be 
+called once to handle all the remaining primes you want sieved, or it 
+can be called piecewise to handle separate parts of the tree.  Each 
+thread simply finds its bit and turns it off via Atomic-And.  [Note 
+that previous kernels did not interfere with each other whatsoever.  
+Each thread “owned” its own multi-bit word, and no other thread 
+touched it.  No atomic operations were required.  This kernel is a 
+free-for-all, so atomic access to the sieve bits is required for 
+repeatability.]  To finish out the remaining primes,to SievePrimes=1500 
+(sieving p=2053 to p=12601), this kernel was launched with 2610 blocks 
+of 256 threads each (668160 total threads), and took a whopping 625 us, 
+but cleared another 212651 of the remaining bits.
+
+In Mathematica, 667940 = 
+Apply[Plus,Ceiling[3*1024*1024/Prime[5+304+Range[1500-304]]], so the 
+total thread count is right where I expected.
+
+Performance notes:  Until the size of the primes gets near the number 
+of bits in the bitsieve block, each additional thread has the prospect 
+of clearing one bit from the bitsieve block.  And the probability that 
+it *actually* clears a bit is simply proportional to the number of bits 
+that are still set.  Above, each thread had a 212641/667940 = 31.84% 
+chance of actually clearing a bit.  (A pretty fair average between the 
+proportion of bits we started with (35.35%) and what we ended with 
+(28.59%).)  Using the numbers, above, this kernel is running at about 
+0.935 ns per thread.  (625us/668160.)  Derate that by the probability 
+of clearing a bit (28.59%), we find that (towards the end), this kernel 
+was actually clearing one bit about every 3.27 ns.  [The trial factoror 
+on this hardware can test a candidate in about 3.85 ns (260M/s).]  
+We're near the crossover point for SievePrimes.  But, remember there's 
+other overhead.
+
+Nvvp reports theoretical occupancy at 100% and achieved occupancy at 
+92.2%.  Perhaps surprisingly, the branch divergence of this kernel is 
+reported as 0%.  I think the only divergence is navigating the tree, 
+where divergence only occurs when we cross from one prime to another, 
+and that only occurred 1500-304-1=1195 times in the entire kernel.  As 
+the size of the primes approaches the number of warps 
+(3*1024*1024/32=96K), I would expect the incremental branch divergence 
+to grow rapidly.
+
+As with other kernels, one of the keys to performance is to ensure that 
+every thread does something useful.  Of all the threads we launch for 
+this kernel, an average of 1/2 of 1 thread per prime has nothing to do, 
+because that thread's prime is beyond the bitsieve block.  For these 
+examples, that was about 1196/2=598 threads.  We also had to round up 
+to the block size, so we wasted another 200 threads.  Overall we wasted 
+about 800 of 668160 threads.
+
+Ideas for improvement:  The depth of the binary tree is about 11.55 
+(log2(1500)).  A binary search may be simpler.  A Huffman-coded binary 
+tree would put the smaller primes on shorter branches and the larger 
+primes on longer branches.  Would another structure work better?  
+Another simple change would be to ask each thread of this kernel to 
+clear two bits (or four bits or eight).  [The expensive tree traversal 
+is amortized among multiple bits.  But we can't clear too many bits per 
+thread as the “waste” mentioned in the previous paragraph would 
+grow significantly.]
+
+Assembly!  I think this kernel would especially benefit from a 
+hand-coded traversal of the tree.
+
+Doubling the performance of this kernel may let us take the sieving a 
+lot higher!  [On first glance, you might think doubling the performance 
+of this kernel would let us get the probability of clearing a bit down 
+to 14.30%.  But, that is a fallacy.  Still, I think we may be able to 
+go a lot higher, and doubling the performance is a reasonable goal.]
+
+rcv_reset_atomic_indexes:  This trivial 1-thread kernel resets an index 
+that will be used by the next kernel.  Nvvp shows this as consuming 1.8 
+us.
+
+rcv_linearize_sieve:  This kernel runs one thread per 32-bit word of 
+the bitsieve block.  Its purpose is to convert the bitsieve block into 
+a linear list of candidates that can be passed to the trial factor 
+kernel.  The algorithm is actually fairly sophisticated and original.  
+Each thread counts the number of candidates that survived in its word.  
+Then the threads within a block work cooperatively and in parallel to 
+obtain the total number of candidates in the block that survived the 
+sieve.  Concurrently, each thread learns the number of candidates in 
+all higher numbered threads.  One thread in the block performs an 
+atomic allocation of space in the linear output array.  (Since only one 
+thread per block performs this atomic allocation, there is little 
+contention on the atomic resource.)  The threads switch back to working 
+independently.  Each thread now knows which indexes it owns in the 
+output array.  So, each thread writes its linear list of candidates (as 
+a short integer) to shared memory.  As with many previous kernels, the 
+threads now change their roles to one which allows efficient access to 
+global memory, and every thread copies some candidates (not necessarily 
+their own) to global memory, expanding the short form used in shared 
+memory to the long (unsigned int) form expected by the trial factor 
+kernel.  (The linear array we create is intended to be compatible with 
+what the CPU-based siever computes and uploads to the GPU.  Candidates 
+are not necessarily listed in ascending order, since blocks run 
+independently, and allocate space from the linear array independently.) 
+ Nvvp shows this as taking 128.2 us.  In tests using many different 
+values of SievePrimes, I find this kernel's performance is almost flat, 
+with just slightly better performance with higher SievePrimes (because 
+there are fewer candidates to transfer to the output).
+
+NVVP also shows Theoretical Occupancy at 100%, Achieved Occupancy at 
+94.1%, Global Load Efficiency at 101.8%, and Global Store Efficiency at 
+99.7%.
+
+Due to shared memory limits, I assumed no more than 37% of the 
+candidates of any warp will need to be transferred to shared memory.  
+The law of large numbers means it won't occur, unless somebody twiddles 
+with the parameters.  But, if they do, there is a possibility there 
+isn't enough shared memory to contain the short form list of surviving 
+candidates.  The kernel includes a separate section of code 
+(inefficient as heck) that writes the candidates directly to the linear 
+output array in global memory.    I have run extensively at 
+SievePrimes=304 (35.35% candidate survival), with no need to use the 
+slow code.  For other architectures than my 560Ti, these tradeoffs 
+should be reviewed for maximum performance.
+
+HERE is where a call to the trial factoring kernel should be placed.  A 
+compatible linear list of candidates is already in place in the GPU's 
+global memory.  With the size numbers we are dealing with, the law of 
+large numbers allows us to know, typically, to within 0.1% to 1% how 
+many numbers will need to be trial factored from the original set of 
+3*1024*1024 candidates.  A slight excess of threads could be launched, 
+with the threads checking whether or not they actually have a candidate 
+to be tested.  (And with as vanishingly small a probability as desired 
+that we didn't launch enough threads.)  Or we could synchronize after 
+rcv_linearize_sieve has completely allocated its linear array, and then 
+the trial factoring kernel could be launched with a precise count of 
+threads.
+
+If there are more candidates for the current class, the siever loops 
+back, starting with rcv_init_class to catch the next block.
+
+If there are more valid classes (960 valid classes per 4620 class 
+numbers), the siever loops back, also starting with rcv_init_class to 
+catch the first bitsieve block of (3*1024*1024) candidates for the next 
+class.
+
+There is hardly any requirement for synchronization, feedback, or 
+memcpy between device and host until the world ends.  In theory, we 
+could queue up a few million kernels and come back next month to see if 
+the trial factoring kernel left us any goodies in its output buffer.  
+In practice, however, feedback, at least between classes is useful for 
+saving state.  Also, in practice, the NVIDIA Linux drivers go into a 
+spin loop if you queue too many kernels, and although I can't find it 
+documented, the depth is pretty shallow.  Also, in practice, your video 
+performance goes to heck if too much is queued.
+
+To alleviate the practical problems, my prototype code throws in an 
+EventRecord at the end of each cycle.  It also allocates multiple 
+buffers, so a few cycles can be in the pipeline at any given time.  
+And, of course, it *waits* (not spins) for the oldest event once the 
+pipeline is full.  My prototype code also puts the different buffers in 
+different streams, although on my 560Ti, under Linux, there is no 
+evidence the streams ever run concurrently or out of order.  I suppose 
+the tradeoffs are similar to the number of buffers you can give 
+mfaktc/o, now.  But the CPU has almost nothing to do, once 
+initialization is complete, except pass a few parameters to kernels, 
+and my prototype code attempts to never spin.  [Although NVIDIA's 
+drivers are rather badly behaved in that regard.]
+
+-- End of document --
