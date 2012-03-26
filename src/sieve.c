@@ -22,7 +22,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 
 #include "params.h"
-#ifdef VERBOSE_TIMING
+#ifdef VERBOSE_SIEVE_TIMING
 #include "timer.h"
 #endif
 #include "compatibility.h"
@@ -306,16 +306,15 @@ still a brute force trial&error method */
 }
 
 
-void sieve_candidates(int ktab_size, unsigned int *ktab, unsigned int sieve_limit)
+void sieve_candidates(unsigned int ktab_size, unsigned int *ktab, unsigned int sieve_limit)
 {
-  int i=-1,ii,j,k=0,p,c=0,ic;
-  unsigned int s,sieve_table_8,*sieve_table_;
+  int i=-1,ii,j,p,c=0,ic;
+  unsigned int s,sieve_table_8,*sieve_table_,k=0;
   unsigned int mask; //, index, index_max;
   unsigned int *ptr, *ptr_max;
   unsigned int ktab_size33 = ktab_size - 33;
-#ifdef VERBOSE_TIMING
+#ifdef VERBOSE_SIEVE_TIMING
   struct timeval timer;
-  unsigned long long int time1, time2, time3, time4;
   timer_init(&timer);
 #endif
 
@@ -332,7 +331,7 @@ void sieve_candidates(int ktab_size, unsigned int *ktab, unsigned int sieve_limi
     goto _ugly_goto_in_siever;
   }
 
-#ifdef VERBOSE_TIMING
+#ifdef VERBOSE_SIEVE_TIMING
   printf("Sieve start: %llu\n", timer_diff(&timer));
 #endif
 
@@ -349,7 +348,7 @@ chunk and bit position in chunk on each call.
 Every 32 iterations they hit the same bit position so we can make use of
 this behaviour and precompute them. :)
 */
-#ifdef VERBOSE_TIMING
+#ifdef VERBOSE_SIEVE_TIMING
   printf("Sieve base copied: %llu\n", timer_diff(&timer));
 #endif
 
@@ -368,6 +367,9 @@ this behaviour and precompute them. :)
 
         ptr = &(sieve[j>>5]);
         ptr_max = &(sieve[SIEVE_WORDS]);
+//        ptr_max is now always &(sieve[SIEVE_SIZE>>5])+1
+//        this may result in one more loop than necessary. Advancing ptr by one more p
+//        does not matter as k_init is calculated %p
 //        if( ((unsigned int)j & 0x1F) < (SIEVE_SIZE & 0x1F))ptr_max++;
         while(ptr < ptr_max) /* inner loop, lets kick out some bits! */
         {
@@ -381,7 +383,7 @@ this behaviour and precompute them. :)
       k_init[i] = j % p;
     }
 
-#ifdef VERBOSE_TIMING
+#ifdef VERBOSE_SIEVE_TIMING
   printf("Sieve split: %llu\n", timer_diff(&timer));
 #endif
 
@@ -398,7 +400,7 @@ this behaviour and precompute them. :)
       k_init[i]=j-SIEVE_SIZE;
     }
     
-#ifdef VERBOSE_TIMING
+#ifdef VERBOSE_SIEVE_TIMING
   printf("Sieve done: %llu\n", timer_diff(&timer));
 #endif
 
@@ -419,7 +421,7 @@ _ugly_goto_in_siever:
         if(k >= ktab_size)
         {
           last_sieve=i+1;
-#ifdef VERBOSE_TIMING
+#ifdef VERBOSE_SIEVE_TIMING
           printf("Return 1   : %llu\n", timer_diff(&timer));
 #endif
 
@@ -427,7 +429,7 @@ _ugly_goto_in_siever:
         }
       }
     }
-#ifdef VERBOSE_TIMING
+#ifdef VERBOSE_SIEVE_TIMING
   printf("Extract 1  : %llu\n", timer_diff(&timer));
 #endif
 
@@ -519,7 +521,7 @@ b) ktab is nearly filled up */
       k+=sieve_table_8;
 #endif      
     }
-#ifdef VERBOSE_TIMING
+#ifdef VERBOSE_SIEVE_TIMING
   printf("Extract 2  : %llu\n", timer_diff(&timer));
 #endif
 
@@ -536,7 +538,7 @@ b) ktab is full */
         if(k >= ktab_size)
         {
           last_sieve=i+1;
-#ifdef VERBOSE_TIMING
+#ifdef VERBOSE_SIEVE_TIMING
           printf("Return 2   : %llu\n", timer_diff(&timer));
 #endif
 
@@ -545,13 +547,13 @@ b) ktab is full */
       }
     }
     c+=SIEVE_SIZE;
-#ifdef VERBOSE_TIMING
+#ifdef VERBOSE_SIEVE_TIMING
   printf("Extract 3  : %llu\n", timer_diff(&timer));
 #endif
 
   }
   last_sieve=i;
-#ifdef VERBOSE_TIMING
+#ifdef VERBOSE_SIEVE_TIMING
   printf("All done   : %llu\n", timer_diff(&timer));
 #endif
 
