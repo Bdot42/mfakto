@@ -60,6 +60,8 @@ kernel_info_t       kernel_info[NUM_KERNELS] = {
      {   BARRETT72_MUL24,     "mfakto_cl_barrett72",  64,     72,         NULL}, // one kernel for all vector sizes
      {   BARRETT79_MUL32,     "mfakto_cl_barrett79",  64,     79,         NULL}, // one kernel for all vector sizes
      {   BARRETT92_MUL32,     "mfakto_cl_barrett92",  64,     92,         NULL}, // one kernel for all vector sizes
+     {   BARRETT58_MUL15,     "barrett15_60",         45,     58,         NULL}, // one kernel for all vector sizes
+     {   BARRETT73_MUL15,     "barrett15_75",         60,     73,         NULL}, // one kernel for all vector sizes
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         NULL},
      {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         NULL}, // slow shift-cmp-sub kernel: removed
      {   BARRETT92_64_OpenCL, "mfakto_cl_barrett92",  64,     92,         NULL}, // mapped to 32-bit barrett so far
@@ -1230,6 +1232,86 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
 
 }
 
+int run_kernel15(cl_kernel l_kernel, cl_uint exp, int75 k_base, int stream, cl_uint8 b_in, cl_mem res, cl_int shiftcount, cl_int bin_max)
+/*
+  run_kernel15(kernel_info[use_kernel].kernel, exp, k_base, i, b_in, mystuff->d_RES, shiftcount, bit_max);
+*/
+{
+  cl_int   status;
+  /*
+__kernel void barrett15_75(__private uint exp, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
+                           const uint8 b_in, __global uint * restrict RES, const int bit_max
+#ifdef CHECKS_MODBASECASE
+         , __global uint * restrict modbasecase_debug
+#endif
+         )
+*/
+
+  // first set the specific params that don't change per block: b_preinit, shiftcount, RES
+  if (new_class)
+  {
+    status = clSetKernelArg(l_kernel, 
+                    3, 
+                    sizeof(cl_int), 
+                    (void *)&shiftcount);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (shiftcount)\n";
+  		return 1;
+  	}
+
+    status = clSetKernelArg(l_kernel, 
+                    4, 
+                    sizeof(cl_uint8),
+                    (void *)&b_in);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (b_in)\n";
+  		return 1;
+  	}
+      /* the bit_max for the barrett kernels (the others ignore it) */
+      status = clSetKernelArg(l_kernel, 
+                      6, 
+                      sizeof(cl_int), 
+                      (void *)&bin_max);
+      if(status != CL_SUCCESS) 
+      { 
+        std::cerr<<"Warning " << status << ": Setting kernel argument. (bit_max)\n";
+      }
+#ifdef CHECKS_MODBASECASE
+      status = clSetKernelArg(l_kernel, 
+                    7, 
+                    sizeof(cl_mem), 
+                    (void *)&mystuff.d_modbasecase_debug);
+      if(status != CL_SUCCESS) 
+  	  { 
+	  	  std::cerr<<"Error " << status << ": Setting kernel argument. (d_modbasecase_debug)\n";
+  		  return 1;
+  	  }
+#endif
+#ifdef DETAILED_INFO
+    printf("run_kernel15: b=%x:%x:%x:%x:%x:%x:%x:%x:0:0, shift=%d\n",
+      b_in.s[7], b_in.s[6], b_in.s[5], b_in.s[4], b_in.s[3], b_in.s[2], b_in.s[1], b_in.s[0], shiftcount);
+#endif
+
+  }
+  // now the params that change everytime
+  status = clSetKernelArg(l_kernel, 
+                    1, 
+                    sizeof(int75), 
+                    (void *)&k_base);
+  if(status != CL_SUCCESS) 
+	{ 
+		std::cerr<<"Error " << status << ": Setting kernel argument. (k_base)\n";
+		return 1;
+	}
+#ifdef DETAILED_INFO
+  printf("run_kernel15: k_base=%x:%x:%x:%x:%x\n", k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0);
+#endif
+    
+  return run_kernel(l_kernel, exp, stream, res); // set params 0,2,5 and start the kernel
+}
+
 int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int144 b_preinit, cl_mem res, cl_int shiftcount, cl_int bin_min63)
 /*
   run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount);
@@ -1731,6 +1813,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   int72  k_base;
   int144 b_preinit = {0};
   int192 b_192 = {0};
+  cl_uint8 b_in = {0};
 
   cl_uint factor_lo, factor_mid, factor_hi, factorsfound=0;
   unsigned long long int b_preinit_lo, b_preinit_mid, b_preinit_hi;
@@ -1746,7 +1829,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   
   timer_init(&timer);
 #ifdef DETAILED_INFO
-  printf("tf_class_opencl(%u, %d, %" PRIu64 ", %" PRIu64 ", ...)\n",exp, bit_min, k_min, k_max);
+  printf("tf_class_opencl(%u, %d, %llu, %llu, ...)\n",exp, bit_min, k_min, k_max);
 #endif
 
   //  exp=51152869; k_min=20582854459640ULL; k_max=20582854459641ULL;  // test test test
@@ -1825,6 +1908,18 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     else if(ln2b<120)b_preinit.d4=1<<(ln2b-96);
     else             b_preinit.d5=1<<(ln2b-120);	// b_preinit = 2^ln2b
   }
+  else if ((use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15) )
+  { // skip the "lowest" levels, so that uint8 is sufficient for 10 components of int150
+    if     (ln2b<30 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
+    else if(ln2b<45 )b_in.s[0]=1<<(ln2b-30);   
+    else if(ln2b<60 )b_in.s[1]=1<<(ln2b-45);   // should not happen
+    else if(ln2b<75 )b_in.s[2]=1<<(ln2b-60);
+    else if(ln2b<90 )b_in.s[3]=1<<(ln2b-75);
+    else if(ln2b<105)b_in.s[4]=1<<(ln2b-90);
+    else if(ln2b<120)b_in.s[5]=1<<(ln2b-105);
+    else if(ln2b<135)b_in.s[6]=1<<(ln2b-120);
+    else             b_in.s[7]=1<<(ln2b-135);
+  }
   else if ((use_kernel == BARRETT79_MUL32) || (use_kernel == BARRETT92_MUL32) || (use_kernel == _95BIT_64_OpenCL) )
   {
     if     (ln2b<32 )b_192.d0=1<< ln2b;       // should not happen
@@ -1854,6 +1949,12 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 	  std::cerr<< "Error " << status << ": Waiting for copy RES call to finish. (clWaitForEvents)\n";
 	  return RET_ERROR;
   }
+  status = clReleaseEvent(mystuff->copy_events[0]);
+  if(status != CL_SUCCESS) 
+  { 
+		std::cerr<< "Error " << status << ": Release copy RES object. (clReleaseEvent)\n";
+		return RET_ERROR;
+  }
 
   while((k_min <= k_max) || (running > 0))
   {
@@ -1870,7 +1971,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
       printf(" STREAM_SCHEDULE: preprocessing on h_ktab[%d]\n", h_ktab_index);
 #endif
     
-      if (use_kernel == _95BIT_64_OpenCL)
+      if (use_kernel == _95BIT_64_OpenCL) // no sieving for this kernel
       {
         k_min_grid[h_ktab_index] = k_min;
         k_diff = NUM_CLASSES * (unsigned long long int) mystuff->threads_per_grid;
@@ -1940,6 +2041,16 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
               k_base.d1 = (k_min_grid[i] >> 24) & 0xFFFFFF;
               k_base.d2 =  k_min_grid[i] >> 48;
               status = run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount, bit_min-63);
+            }
+            else if ((use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
+            {
+              int75 k_base;
+              k_base.d0 =  k_min_grid[i] & 0x7FFF;
+              k_base.d1 = (k_min_grid[i] >> 15) & 0x7FFF;
+              k_base.d2 = (k_min_grid[i] >> 30) & 0x7FFF;
+              k_base.d3 = (k_min_grid[i] >> 45) & 0x7FFF;
+              k_base.d4 =  k_min_grid[i] >> 60;
+              status = run_kernel15(kernel_info[use_kernel].kernel, exp, k_base, i, b_in, mystuff->d_RES, shiftcount, bit_max);
             }
             else if ((use_kernel == BARRETT79_MUL32) || (use_kernel == BARRETT92_MUL32) || (use_kernel == _95BIT_64_OpenCL))
             {

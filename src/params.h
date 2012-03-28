@@ -32,9 +32,9 @@ of your CPUs L1-Data cache.
 This is just the upper LIMIT of the SIEVE_SIZE, the actual sieve size depends
 on some other factors as well, but you don't have to worry about.
 
-If this define is not set, an ini-file key SieveSizeLimit will be evaluated to
+If this #define is not set, an ini-file key SieveSizeLimit will be evaluated to
 set it. This allows for adjusting the SieveSize, but may be up to 3% slower
-than an equal SIEVE_SIZE_LIMIT define.
+than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
@@ -76,14 +76,14 @@ code path - not used by mfakto, see kernel trace */
 /* issue lots of additional trace output from the C-part of the program
    (see mfakto_kernels.cl - TRACE_KERNEL and TRACE_TID for how to trace the
    kernel execution, kernel trace does not require a rebuild) */
-//#define DETAILED_INFO
+#define DETAILED_INFO
 
 
 /* enable the OpenCL built-in performance measurement. This will print the
    pure times needed to copy the data over, and to test the FC's of the chunk
    (pure run time per kernel invokation) - best measure to compare changes in
    the kernels, or drivers. */
-//#define CL_PERFORMANCE_INFO
+#define CL_PERFORMANCE_INFO
 
 
 /* Tell the OpenCL compiler to create debuggable code for the Kernels */

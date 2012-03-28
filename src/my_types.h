@@ -17,6 +17,34 @@ You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* 60bit (4x 15bit) integer
+D=d0 + d1*(2^15) + d2*(2^30) ... */
+typedef struct
+{
+  cl_uint d0,d1,d2,d3;
+}int60;
+
+/* 120bit (8x 15bit) integer
+D=d0 + d1*(2^15) + d2*(2^30) + ... */
+typedef struct
+{
+  cl_uint d0,d1,d2,d3,d4,d5,d6,d7;
+}int120;
+
+/* 75bit (5x 15bit) integer
+D=d0 + d1*(2^15) + d2*(2^30) ... */
+typedef struct
+{
+  cl_uint d0,d1,d2,d3,d4;
+}int75;
+
+/* 150bit (10x 15bit) integer
+D=d0 + d1*(2^15) + d2*(2^30) + ... */
+typedef struct
+{
+  cl_uint d0,d1,d2,d3,d4,d5,d6,d7,d8,d9;
+}int150;
+
 /* 72bit (3x 24bit) integer
 D=d0 + d1*(2^24) + d2*(2^48) */
 typedef struct
@@ -77,6 +105,8 @@ enum GPUKernels
   BARRETT72_MUL24,
   BARRETT79_MUL32,
   BARRETT92_MUL32,
+  BARRETT58_MUL15,
+  BARRETT73_MUL15,
   UNKNOWN_KERNEL, /* what comes after this one will not be loaded automatically*/
   _64BIT_64_OpenCL,
   BARRETT92_64_OpenCL,

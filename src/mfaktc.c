@@ -153,8 +153,8 @@ other return value
   {
     if (mystuff->preferredKernel == _71BIT_MUL24)  // maybe this can be bound to some version/feature/capability or be tested during selftest
     {
-      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;
+      if      ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
       else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
@@ -162,7 +162,8 @@ other return value
     }
     else
     {
-      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;
+      if      ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
 //      if      ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
       else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;
@@ -276,6 +277,8 @@ other return value
           case _63BIT_MUL24:
           case _64BIT_64_OpenCL:
           case _95BIT_64_OpenCL:
+          case BARRETT58_MUL15:
+          case BARRETT73_MUL15:
           case BARRETT72_MUL24:
           case BARRETT79_MUL32:
           case BARRETT92_MUL32:
@@ -528,7 +531,8 @@ RET_ERROR we might have a serios problem
     if ((bit_min[ind] >= 61) && (bit_min[ind] < 72))   kernels[j++] = _71BIT_MUL24;
     if ((bit_min[ind] >= 64) && (bit_min[ind] < 79))   kernels[j++] = BARRETT79_MUL32; 
     if ((bit_min[ind] >= 64) && (bit_min[ind] < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-    if ((bit_min[ind] >= 63) && (bit_min[ind] < 70))   kernels[j++] = BARRETT72_MUL24; 
+    if ((bit_min[ind] >= 63) && (bit_min[ind] < 70))   kernels[j++] = BARRETT72_MUL24;
+    if ((bit_min[ind] >= 60) && (bit_min[ind] < 73))   kernels[j++] = BARRETT73_MUL15;
 //
 //      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
 
