@@ -765,9 +765,9 @@ bit_max64 is bit_max - 64! (1 .. 8)
   __private int144_v b, tmp144;
   __private int72_v tmp72;
   __private float_v ff;
-  __private uint bit_max48 = 16 + bit_max64; /* used for bit shifting... */
-  __private uint bit_max48_24 = 24 - bit_max48; /* used for bit shifting... */
-  __private uint bit_max48_24_mult = 1 << bit_max48_24; /* used for bit shifting... */
+  __private uint bit_max48 = 16 + bit_max64; /* = bit_max - 48, used for bit shifting... */
+  __private uint bit_max48_24 = 24 - bit_max48; /* = 72 - bit_max, used for bit shifting... */
+  __private uint bit_max48_24_mult = 1 << bit_max48_24; /* = 2 ^ (72 - bit_max), used for bit shifting... */
   __private uint tid;
   __private uint_v t;
 

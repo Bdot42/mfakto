@@ -61,7 +61,7 @@ int72_v sub_if_gte_72(const int72_v a, const int72_v b)
   /* tmp valid if tmp.d2 <= a.d2 (separately for each part of the vector) */
   tmp.d0 = (tmp.d2 > a.d2) ? a.d0 : tmp.d0;
   tmp.d1 = (tmp.d2 > a.d2) ? a.d1 : tmp.d1;
-  tmp.d2 = (tmp.d2 > a.d2) ? a.d2 : tmp.d2 & 0xFFFFFF;
+  tmp.d2 = (tmp.d2 > a.d2) ? a.d2 : tmp.d2;  //  & 0xFFFFFF not necessary as tmp.d4 is <= a.d4
 
   return tmp;
 }

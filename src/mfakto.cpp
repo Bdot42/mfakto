@@ -1246,6 +1246,15 @@ __kernel void barrett15_75(__private uint exp, const int75_t k_base, const __glo
 #endif
          )
 */
+  //////// test test test ...
+  // {k_min_grid[i] = 2822192209735ULL; mystuff.h_ktab[i][0]=0;}
+  k_base.d4=0;
+  k_base.d3=0;
+  k_base.d2=0xa44;
+  k_base.d1=0x2f86;
+  k_base.d0=0x7b2f;  // together with ktab[0]=2 this will run the proper factor in thread 0
+  new_class=1;
+  ///////
 
   // first set the specific params that don't change per block: b_preinit, shiftcount, RES
   if (new_class)
