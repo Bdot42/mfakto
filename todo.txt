@@ -99,5 +99,6 @@ TODO
 - Llano: zero-copy-path (BeaverCreek)
 - decode GPU-names
 - better estimate of compute cores (CPU!)
+- set affinity for main thread
 - repunit
 - SDK 2.6: __attribute__((always_inline)), set environment variable GPU_ASYNC_MEM_COPY=2, Profiler

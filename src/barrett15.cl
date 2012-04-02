@@ -1588,7 +1588,7 @@ void square_75_150(int150_v * const res, const int75_v a)
 void shl_75(int75_v * const a)
 /* shiftleft a one bit */
 {
-  a->d4 = mad24(a->d4, 2, a->d3 >> 14); // leave the extra top bit
+  a->d4 = mad24(a->d4, 2, a->d3 >> 14); // keep the extra top bit
   a->d3 = mad24(a->d3, 2, a->d2 >> 14) & 0x7FFF;
   a->d2 = mad24(a->d2, 2, a->d1 >> 14) & 0x7FFF;
   a->d1 = mad24(a->d1, 2, a->d0 >> 14) & 0x7FFF;
@@ -2285,6 +2285,7 @@ Precalculated here since it is the same for all steps in the following loop */
     if (tid==TRACE_TID) printf("barrett15_75: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
+    // PERF: shouldn't all those bb's be 0, thus always require a borrow?
   tmp75.d0 = (bb.d0 - tmp75.d0) & 0x7FFF;
   tmp75.d1 = (bb.d1 - tmp75.d1 - AS_UINT_V((tmp75.d0 > bb.d0) ? 1 : 0 ));
   tmp75.d2 = (bb.d2 - tmp75.d2 - AS_UINT_V((tmp75.d1 > bb.d1) ? 1 : 0 ));
@@ -2331,7 +2332,7 @@ Precalculated here since it is the same for all steps in the following loop */
         exp, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
         b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
-#if (TRACE_KERNEL > 4)
+#if (TRACE_KERNEL > 14)
     // verify squaring by dividing again.
     __private float_v f1 = CONVERT_FLOAT_V(mad24(a.d4, 32768, a.d3));
     f1= f1 * 32768.0f + CONVERT_FLOAT_V(a.d2);   // f.d1 needed?
@@ -2372,10 +2373,10 @@ Precalculated here since it is the same for all steps in the following loop */
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
     tmp75.d0 = (b.d0 - tmp75.d0) & 0x7FFF;
-    tmp75.d1 = (b.d1 - tmp75.d1 - AS_UINT_V((tmp75.d0 > bb.d0) ? 1 : 0 ));
-    tmp75.d2 = (b.d2 - tmp75.d2 - AS_UINT_V((tmp75.d1 > bb.d1) ? 1 : 0 ));
-    tmp75.d3 = (b.d3 - tmp75.d3 - AS_UINT_V((tmp75.d2 > bb.d2) ? 1 : 0 ));
-    tmp75.d4 = (b.d4 - tmp75.d4 - AS_UINT_V((tmp75.d3 > bb.d3) ? 1 : 0 ));
+    tmp75.d1 = (b.d1 - tmp75.d1 - AS_UINT_V((tmp75.d0 > b.d0) ? 1 : 0 ));
+    tmp75.d2 = (b.d2 - tmp75.d2 - AS_UINT_V((tmp75.d1 > b.d1) ? 1 : 0 ));
+    tmp75.d3 = (b.d3 - tmp75.d3 - AS_UINT_V((tmp75.d2 > b.d2) ? 1 : 0 ));
+    tmp75.d4 = (b.d4 - tmp75.d4 - AS_UINT_V((tmp75.d3 > b.d3) ? 1 : 0 ));
     tmp75.d1 &= 0x7FFF;
     tmp75.d2 &= 0x7FFF;
     tmp75.d3 &= 0x7FFF;
