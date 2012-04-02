@@ -1246,6 +1246,15 @@ __kernel void barrett15_75(__private uint exp, const int75_t k_base, const __glo
 #endif
          )
 */
+  //////// test test test ...
+  // {k_min_grid[i] = 2822192209735ULL; mystuff.h_ktab[i][0]=0;}
+  // k_base.d4=0;
+  // k_base.d3=0;
+  // k_base.d2=0xa44;
+  // k_base.d1=0x2f86;
+  // k_base.d0=0x7b2f;  // together with ktab[0]=2 this will run the proper factor in thread 0
+  //new_class=1;
+  ///////
 
   // first set the specific params that don't change per block: b_preinit, shiftcount, RES
   if (new_class)
@@ -1788,6 +1797,35 @@ writes "a" into "buf" in decimal
                                                     carry=a_hi%10; a_hi/=10;
     tmp = a_mid; tmp += (long long int)carry << 32; carry=tmp%10;  a_mid=(cl_uint) (tmp/10);
     tmp = a_lo;  tmp += (long long int)carry << 32; carry=tmp%10;  a_lo =(cl_uint) (tmp/10);
+    digit[digits++]=carry;
+  }
+  if(digits==0)sprintf(buf,"0");
+  else
+  {
+    digits--;
+    while(digits >= 0)
+    {
+      sprintf(&(buf[i++]),"%1d",digit[digits--]);
+    }
+  }
+}
+
+void print_dez90(cl_uint a_hi, cl_uint a_mid, cl_uint a_lo, char *buf)
+/*
+assumes 30 bits per component
+writes "a" into "buf" in decimal
+"buf" must be at least 30 bytes
+*/
+{
+  char digit[29];
+  int  digits=0,carry,i=0;
+  long long int tmp;
+  
+  while((a_lo!=0 || a_mid!=0 || a_hi!=0) && digits<29)
+  {
+                                                    carry=a_hi%10; a_hi/=10;
+    tmp = a_mid; tmp += (long long int)carry << 30; carry=tmp%10;  a_mid=(cl_uint) (tmp/10);
+    tmp = a_lo;  tmp += (long long int)carry << 30; carry=tmp%10;  a_lo =(cl_uint) (tmp/10);
     digit[digits++]=carry;
   }
   if(digits==0)sprintf(buf,"0");
@@ -2398,6 +2436,10 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     {
       int72 factor={factor_lo, factor_mid, factor_hi};
       print_dez72(factor,string);
+    }
+    else if ((use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
+    {
+      print_dez90(factor_hi, factor_mid, factor_lo, string);
     }
     else
     {

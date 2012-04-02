@@ -42,7 +42,7 @@ Version 0.11
 
 // 75-bit
 #define EVAL_RES_d(comp) \
-  if((a.d3.comp|a.d2.comp|a.d1.comp)==0 && a.d0.comp==1) \
+  if((a.d4.comp|a.d3.comp|a.d2.comp|a.d1.comp)==0 && a.d0.comp==1) \
   { \
       tid=ATOMIC_INC(RES[0]); \
       if(tid<10) \
@@ -55,7 +55,7 @@ Version 0.11
 
 // 90-bit
 #define EVAL_RES_e(comp) \
-  if((a.d3.comp|a.d2.comp|a.d1.comp)==0 && a.d0.comp==1) \
+  if((a.d5.comp|a.d4.comp|a.d3.comp|a.d2.comp|a.d1.comp)==0 && a.d0.comp==1) \
   { \
       tid=ATOMIC_INC(RES[0]); \
       if(tid<10) \
@@ -1316,7 +1316,7 @@ int75_v sub_if_gte_75(const int75_v a, const int75_v b)
   tmp.d1 = (a.d1 - b.d1 - AS_UINT_V((b.d0 > a.d0) ? 1 : 0));
   tmp.d2 = (a.d2 - b.d2 - AS_UINT_V((tmp.d1 > a.d1) ? 1 : 0));
   tmp.d3 = (a.d3 - b.d3 - AS_UINT_V((tmp.d2 > a.d2) ? 1 : 0));
-  tmp.d3 = (a.d4 - b.d4 - AS_UINT_V((tmp.d3 > a.d3) ? 1 : 0));
+  tmp.d4 = (a.d4 - b.d4 - AS_UINT_V((tmp.d3 > a.d3) ? 1 : 0));
   tmp.d1&= 0x7FFF;
   tmp.d2&= 0x7FFF;
   tmp.d3&= 0x7FFF;
@@ -1325,7 +1325,7 @@ int75_v sub_if_gte_75(const int75_v a, const int75_v b)
   tmp.d1 = (tmp.d4 > a.d4) ? a.d1 : tmp.d1;
   tmp.d2 = (tmp.d4 > a.d4) ? a.d2 : tmp.d2;
   tmp.d3 = (tmp.d4 > a.d4) ? a.d3 : tmp.d3;
-  tmp.d4 = (tmp.d4 > a.d4) ? a.d4 : tmp.d4 & 0x7FFF;
+  tmp.d4 = (tmp.d4 > a.d4) ? a.d4 : tmp.d4; //  & 0x7FFF not necessary as tmp.d4 is <= a.d4
 
   return tmp;
 }
@@ -1588,7 +1588,7 @@ void square_75_150(int150_v * const res, const int75_v a)
 void shl_75(int75_v * const a)
 /* shiftleft a one bit */
 {
-  a->d4 = mad24(a->d4, 2, a->d3 >> 14); // leave the extra top bit
+  a->d4 = mad24(a->d4, 2, a->d3 >> 14); // keep the extra top bit
   a->d3 = mad24(a->d3, 2, a->d2 >> 14) & 0x7FFF;
   a->d2 = mad24(a->d2, 2, a->d1 >> 14) & 0x7FFF;
   a->d1 = mad24(a->d1, 2, a->d0 >> 14) & 0x7FFF;
@@ -2135,7 +2135,7 @@ a is precomputed on host ONCE.
   __private int75_v tmp75;
   __private float_v ff;
   __private uint tid, bit_max_75=75-bit_max, bit_max_60=bit_max-60; //bit_max is 60 .. 73
-  __private uint bit_max60_mult = 1 << bit_max_60; /* used for bit shifting... */
+  __private uint bit_max75_mult = 1 << bit_max_75; /* used for bit shifting... */
   __private uint_v t;
 
   // implicitely assume b > 2^30 and use the 8 fields of the uint8 for d2-d9
@@ -2260,24 +2260,24 @@ Precalculated here since it is the same for all steps in the following loop */
         u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
 #endif
     //PERF: min limit of bb? skip lower eval's?
-  a.d0 = mad24(bb.d5, bit_max60_mult, (bb.d4 >> bit_max_75))&0x7FFF;			// a = b / (2^bit_max)
-  a.d1 = mad24(bb.d6, bit_max60_mult, (bb.d5 >> bit_max_75))&0x7FFF;			// a = b / (2^bit_max)
-  a.d2 = mad24(bb.d7, bit_max60_mult, (bb.d6 >> bit_max_75))&0x7FFF;			// a = b / (2^bit_max)
-  a.d3 = mad24(bb.d8, bit_max60_mult, (bb.d7 >> bit_max_75))&0x7FFF;			// a = b / (2^bit_max)
-  a.d4 = mad24(bb.d9, bit_max60_mult, (bb.d8 >> bit_max_75))&0x7FFF;			// a = b / (2^bit_max)
+  a.d0 = mad24(bb.d5, bit_max75_mult, (bb.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
+  a.d1 = mad24(bb.d6, bit_max75_mult, (bb.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
+  a.d2 = mad24(bb.d7, bit_max75_mult, (bb.d6 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
+  a.d3 = mad24(bb.d8, bit_max75_mult, (bb.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
+  a.d4 = mad24(bb.d9, bit_max75_mult, (bb.d8 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
 
-  mul_75_150_no_low2(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
+  mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf("barrett15_75: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x...\n",
+    if (tid==TRACE_TID) printf("barrett15_75: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:...\n",
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
         tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0, tmp150.d3.s0);
 #endif
 
-  a.d0 = mad24(tmp150.d5, bit_max60_mult, (tmp150.d4 >> bit_max_75))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d1 = mad24(tmp150.d6, bit_max60_mult, (tmp150.d5 >> bit_max_75))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d2 = mad24(tmp150.d7, bit_max60_mult, (tmp150.d6 >> bit_max_75))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d3 = mad24(tmp150.d8, bit_max60_mult, (tmp150.d7 >> bit_max_75))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d4 = mad24(tmp150.d9, bit_max60_mult, (tmp150.d8 >> bit_max_75))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
+  a.d0 = mad24(tmp150.d5, bit_max75_mult, (tmp150.d4 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
+  a.d1 = mad24(tmp150.d6, bit_max75_mult, (tmp150.d5 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
+  a.d2 = mad24(tmp150.d7, bit_max75_mult, (tmp150.d6 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
+  a.d3 = mad24(tmp150.d8, bit_max75_mult, (tmp150.d7 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
+  a.d4 = mad24(tmp150.d9, bit_max75_mult, (tmp150.d8 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
 
   mul_75(&tmp75, a, f);							// tmp75 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
 
@@ -2285,6 +2285,7 @@ Precalculated here since it is the same for all steps in the following loop */
     if (tid==TRACE_TID) printf("barrett15_75: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
+    // PERF: shouldn't all those bb's be 0, thus always require a borrow?
   tmp75.d0 = (bb.d0 - tmp75.d0) & 0x7FFF;
   tmp75.d1 = (bb.d1 - tmp75.d1 - AS_UINT_V((tmp75.d0 > bb.d0) ? 1 : 0 ));
   tmp75.d2 = (bb.d2 - tmp75.d2 - AS_UINT_V((tmp75.d1 > bb.d1) ? 1 : 0 ));
@@ -2331,24 +2332,39 @@ Precalculated here since it is the same for all steps in the following loop */
         exp, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
         b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
-    a.d0 = mad24(b.d5, bit_max60_mult, (b.d4 >> bit_max_75))&0x7FFF;			// a = b / (2^bit_max)
-    a.d1 = mad24(b.d6, bit_max60_mult, (b.d5 >> bit_max_75))&0x7FFF;			// a = b / (2^bit_max)
-    a.d2 = mad24(b.d7, bit_max60_mult, (b.d6 >> bit_max_75))&0x7FFF;			// a = b / (2^bit_max)
-    a.d3 = mad24(b.d8, bit_max60_mult, (b.d7 >> bit_max_75))&0x7FFF;			// a = b / (2^bit_max)
-    a.d4 = mad24(b.d9, bit_max60_mult, (b.d8 >> bit_max_75))&0x7FFF;			// a = b / (2^bit_max)
+#if (TRACE_KERNEL > 14)
+    // verify squaring by dividing again.
+    __private float_v f1 = CONVERT_FLOAT_V(mad24(a.d4, 32768, a.d3));
+    f1= f1 * 32768.0f + CONVERT_FLOAT_V(a.d2);   // f.d1 needed?
 
-    mul_75_150_no_low2(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
+    f1= as_float(0x3f7ffffb) / f1;		// just a little bit below 1.0f so we always underestimate the quotient
+    div_150_75(&tmp75, b, a, f1, tid
+#ifdef CHECKS_MODBASECASE
+                  ,modbasecase_debug
+#endif
+              );
+    if (tid==TRACE_TID) printf("vrfy: b = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x / a=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x\n",
+        b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
+        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+#endif
+    a.d0 = mad24(b.d5, bit_max75_mult, (b.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
+    a.d1 = mad24(b.d6, bit_max75_mult, (b.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
+    a.d2 = mad24(b.d7, bit_max75_mult, (b.d6 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
+    a.d3 = mad24(b.d8, bit_max75_mult, (b.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
+    a.d4 = mad24(b.d9, bit_max75_mult, (b.d8 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
+
+    mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x...\n",
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
         tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0, tmp150.d3.s0);
 #endif
-    a.d0 = mad24(tmp150.d5, bit_max60_mult, (tmp150.d4 >> bit_max_75))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d1 = mad24(tmp150.d6, bit_max60_mult, (tmp150.d5 >> bit_max_75))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d2 = mad24(tmp150.d7, bit_max60_mult, (tmp150.d6 >> bit_max_75))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d3 = mad24(tmp150.d8, bit_max60_mult, (tmp150.d7 >> bit_max_75))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d4 = mad24(tmp150.d9, bit_max60_mult, (tmp150.d8 >> bit_max_75))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
+    a.d0 = mad24(tmp150.d5, bit_max75_mult, (tmp150.d4 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
+    a.d1 = mad24(tmp150.d6, bit_max75_mult, (tmp150.d5 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
+    a.d2 = mad24(tmp150.d7, bit_max75_mult, (tmp150.d6 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
+    a.d3 = mad24(tmp150.d8, bit_max75_mult, (tmp150.d7 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
+    a.d4 = mad24(tmp150.d9, bit_max75_mult, (tmp150.d8 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
 
     mul_75(&tmp75, a, f);						// tmp75 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
 
@@ -2357,10 +2373,10 @@ Precalculated here since it is the same for all steps in the following loop */
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
     tmp75.d0 = (b.d0 - tmp75.d0) & 0x7FFF;
-    tmp75.d1 = (b.d1 - tmp75.d1 - AS_UINT_V((tmp75.d0 > bb.d0) ? 1 : 0 ));
-    tmp75.d2 = (b.d2 - tmp75.d2 - AS_UINT_V((tmp75.d1 > bb.d1) ? 1 : 0 ));
-    tmp75.d3 = (b.d3 - tmp75.d3 - AS_UINT_V((tmp75.d2 > bb.d2) ? 1 : 0 ));
-    tmp75.d4 = (b.d4 - tmp75.d4 - AS_UINT_V((tmp75.d3 > bb.d3) ? 1 : 0 ));
+    tmp75.d1 = (b.d1 - tmp75.d1 - AS_UINT_V((tmp75.d0 > b.d0) ? 1 : 0 ));
+    tmp75.d2 = (b.d2 - tmp75.d2 - AS_UINT_V((tmp75.d1 > b.d1) ? 1 : 0 ));
+    tmp75.d3 = (b.d3 - tmp75.d3 - AS_UINT_V((tmp75.d2 > b.d2) ? 1 : 0 ));
+    tmp75.d4 = (b.d4 - tmp75.d4 - AS_UINT_V((tmp75.d3 > b.d3) ? 1 : 0 ));
     tmp75.d1 &= 0x7FFF;
     tmp75.d2 &= 0x7FFF;
     tmp75.d3 &= 0x7FFF;

@@ -393,6 +393,18 @@ k_max and k_min are used as 64bit temporary integers here...
         
         f_low  &= 0x00FFFFFF;
       }
+      else if ((use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
+      {
+        // 30 bits per reported result int
+        f_hi  <<= 4;
+        f_hi   += f_med >> 28;
+
+        f_med <<= 2;
+        f_med  += f_low >> 30;
+        f_med  &= 0x3FFFFFFF;
+        
+        f_low  &= 0x3FFFFFFF;
+      }
       k_min=0; /* using k_min for counting the number of matches here */
       for(i=0; (i<mystuff->h_RES[0]) && (i<10); i++)
       {
@@ -493,8 +505,8 @@ RET_ERROR we might have a serios problem
   unsigned long long int k[NUM_SELFTESTS];
   int retval=1, ind;
   enum GPUKernels kernels[9];
-  unsigned int index[] = {  2 , 25,  57,     // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
-                            70 , 72,  73,  88,  106,    // some factors below 2^75 (test 75 bit kernel)
+  unsigned int index[] = {   39, 2 , 25, 57,      // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+                            70 , 72, 73, 88, 106,    // some factors below 2^75 (test 75 bit kernel)
                             355, 358, 666,   // some very small factors
                            1547, 1552, 1556, // some factors below 2^95 (test 95 bit kernel)
                            1557 };           // mfakto special case (25-bit factor)
@@ -504,6 +516,8 @@ RET_ERROR we might have a serios problem
     selftests_to_run = 1559;
 
 #include "selftest-data.h"
+
+  register_signal_handler(mystuff);
 
   for(i=0; i<selftests_to_run; i++)
   {
@@ -527,11 +541,11 @@ RET_ERROR we might have a serios problem
 
 /* create a list which kernels can handle this testcase */
     j = 0;
-    if (bit_min[ind] <= 63)                            kernels[j++] = _63BIT_MUL24;
-    if ((bit_min[ind] >= 61) && (bit_min[ind] < 72))   kernels[j++] = _71BIT_MUL24;
-    if ((bit_min[ind] >= 64) && (bit_min[ind] < 79))   kernels[j++] = BARRETT79_MUL32; 
-    if ((bit_min[ind] >= 64) && (bit_min[ind] < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-    if ((bit_min[ind] >= 63) && (bit_min[ind] < 70))   kernels[j++] = BARRETT72_MUL24;
+//    if (bit_min[ind] <= 63)                            kernels[j++] = _63BIT_MUL24;
+//    if ((bit_min[ind] >= 61) && (bit_min[ind] < 72))   kernels[j++] = _71BIT_MUL24;
+//    if ((bit_min[ind] >= 64) && (bit_min[ind] < 79))   kernels[j++] = BARRETT79_MUL32; 
+//    if ((bit_min[ind] >= 64) && (bit_min[ind] < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
+    if ((bit_min[ind] >= 63) && (bit_min[ind] < 71))   kernels[j++] = BARRETT72_MUL24;
     if ((bit_min[ind] >= 60) && (bit_min[ind] < 73))   kernels[j++] = BARRETT73_MUL15;
 //
 //      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
@@ -549,7 +563,9 @@ RET_ERROR we might have a serios problem
       printf("Test %d finished, so far suc: %d, no: %d, wr: %d, unk: %d\n", num_selftests, st_success, st_nofactor, st_wrongfactor, st_unknown);
       fflush(NULL);
 #endif
+      if (mystuff->quit) break;
     }
+    if (mystuff->quit) break;
   }
 
   printf("Selftest statistics                          \n");
