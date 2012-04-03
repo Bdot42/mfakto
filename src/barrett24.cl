@@ -716,17 +716,14 @@ are "out of range".
         q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
 #endif
 
-  tmp   = mul24(n.d0, qi);
-  nn.d1 = mad24(mul_hi(n.d0, qi), 256u, tmp >> 24);
-  nn.d0 = tmp & 0xFFFFFF;
-
-  tmp   = mul24(n.d1, qi);
-  nn.d2 = mad24(mul_hi(n.d1, qi), 256u, tmp >> 24);
-  nn.d1 += tmp & 0xFFFFFF;
-
-  nn.d2 += mad24(n.d2, qi, nn.d1 >> 24);
+  // qi < 8 bit, so no mul_hi is needed (+3% total speed)
+  nn.d0 = mul24(n.d0, qi);
+  nn.d1 = mad24(n.d1, qi, nn.d0 >> 24);
+  nn.d2 = mad24(n.d2, qi, nn.d1 >> 24);
+  nn.d0 &= 0xFFFFFF;
   nn.d1 &= 0xFFFFFF;
-
+  
+  
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("mod_simple_72: nn=%x:%x:%x\n",
         nn.d2.s0, nn.d1.s0, nn.d0.s0);

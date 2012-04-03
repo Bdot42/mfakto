@@ -76,7 +76,7 @@ code path - not used by mfakto, see kernel trace */
 /* issue lots of additional trace output from the C-part of the program
    (see mfakto_kernels.cl - TRACE_KERNEL and TRACE_TID for how to trace the
    kernel execution, kernel trace does not require a rebuild) */
-#define DETAILED_INFO
+//#define DETAILED_INFO
 
 
 /* enable the OpenCL built-in performance measurement. This will print the
