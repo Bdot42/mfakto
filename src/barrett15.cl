@@ -1616,17 +1616,17 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
         n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0);
 #endif
 
-/********** Step 1, Offset 2^55 (3*15 + 10) **********/
+/********** Step 1, Offset 2^53 (3*15 + 8) **********/
   qf= CONVERT_FLOAT_V(mad24(q.d9, 32768, q.d8));
   qf= qf * 32768.0f * 32768.0f + CONVERT_FLOAT_V(mad24(q.d7, 32768, q.d6));
-  qf*= 32.0f;
+  qf*= 128.0f;
 
   qi=CONVERT_UINT_V(qf*nf);
 
   MODBASECASE_QI_ERROR(1<<22, 1, qi, 0);
 
-  res->d4 = (qi >> 5) & 0x7FFF;
-  res->d3 = (qi << 10) & 0x7FFF;
+  res->d4 = (qi >> 7);
+  res->d3 = (qi << 8) & 0x7FFF;
   qil = qi & 0x7FFF;
   qih = (qi >> 15) & 0x7FFF;
 #if (TRACE_KERNEL > 1)
@@ -1676,14 +1676,14 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
         nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
 #endif
 
-// now shift-left 10 bits
-  nn.d9  = nn.d8 >> 5;  // PERF: not needed as it will be gone anyway after sub
-  nn.d8  = mad24(nn.d8 & 0x1F, 1024u, nn.d7 >> 5);  
-  nn.d7  = mad24(nn.d7 & 0x1F, 1024u, nn.d6 >> 5);
-  nn.d6  = mad24(nn.d6 & 0x1F, 1024u, nn.d5 >> 5);
-  nn.d5  = mad24(nn.d5 & 0x1F, 1024u, nn.d4 >> 5);
-  nn.d4  = mad24(nn.d4 & 0x1F, 1024u, nn.d3 >> 5);
-  nn.d3  = (nn.d3 & 0x1F) << 10;
+// now shift-left 8 bits
+  nn.d9  = nn.d8 >> 7;  // PERF: not needed as it will be gone anyway after sub
+  nn.d8  = mad24(nn.d8 & 0x7F, 256u, nn.d7 >> 7);
+  nn.d7  = mad24(nn.d7 & 0x7F, 256u, nn.d6 >> 7);
+  nn.d6  = mad24(nn.d6 & 0x7F, 256u, nn.d5 >> 7);
+  nn.d5  = mad24(nn.d5 & 0x7F, 256u, nn.d4 >> 7);
+  nn.d4  = mad24(nn.d4 & 0x7F, 256u, nn.d3 >> 7);
+  nn.d3  = (nn.d3 & 0x1F) << 8;
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf("div_150_75#1.6: nn=%x:%x:%x:%x:%x:%x:%x:..:..:..\n",
         nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
@@ -1704,22 +1704,22 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
   q.d7 &= 0x7FFF;
   q.d8 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf("div_150_75#1.7: q=%x:%x:%x:%x:%x:%x:%x:..:..:..\n",
+  if (tid==TRACE_TID) printf("div_150_75#1.7: q=%x!%x:%x:%x:%x:%x:%x:..:..:..\n",
         q.d9.s0, q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0);
 #endif
 
-  /********** Step 2, Offset 2^40 (2*15 + 10) **********/
+  /********** Step 2, Offset 2^38 (2*15 + 8) **********/
 
   qf= CONVERT_FLOAT_V(mad24(q.d8, 32768, q.d7));
   qf= qf * 32768.0f * 32768.0f + CONVERT_FLOAT_V(mad24(q.d6, 32768, q.d5));
-  qf*= 1024.0f;
+  qf*= 4096.0f;
 
   qi=CONVERT_UINT_V(qf*nf);
 
   MODBASECASE_QI_ERROR(1<<22, 1, qi, 0);
 
-  res->d3 += (qi >> 10) & 0x7FFF;
-  res->d2 = (qi << 5) & 0x7FFF;
+  res->d3 += (qi >> 12);
+  res->d2 = (qi << 3) & 0x7FFF;
   qil = qi & 0x7FFF;
   qih = (qi >> 15) & 0x7FFF;
 #if (TRACE_KERNEL > 1)
@@ -1769,14 +1769,14 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
         nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
 #endif
 
-// now shift-left 5 bits
-  nn.d8  = nn.d7 >> 10;  // PERF: not needed as it will be gone anyway after sub
-  nn.d7  = mad24(nn.d7 & 0x3FF, 32u, nn.d6 >> 10);  // PERF: not needed as it will be gone anyway after sub
-  nn.d6  = mad24(nn.d6 & 0x3FF, 32u, nn.d5 >> 10);
-  nn.d5  = mad24(nn.d5 & 0x3FF, 32u, nn.d4 >> 10);
-  nn.d4  = mad24(nn.d4 & 0x3FF, 32u, nn.d3 >> 10);
-  nn.d3  = mad24(nn.d3 & 0x3FF, 32u, nn.d2 >> 10);
-  nn.d2  = (nn.d2 & 0x3FF) << 5;
+// now shift-left 3 bits
+  nn.d8  = nn.d7 >> 12;  // PERF: not needed as it will be gone anyway after sub
+  nn.d7  = mad24(nn.d7 & 0xFFF, 8u, nn.d6 >> 12);  // PERF: not needed as it will be gone anyway after sub
+  nn.d6  = mad24(nn.d6 & 0xFFF, 8u, nn.d5 >> 12);
+  nn.d5  = mad24(nn.d5 & 0xFFF, 8u, nn.d4 >> 12);
+  nn.d4  = mad24(nn.d4 & 0xFFF, 8u, nn.d3 >> 12);
+  nn.d3  = mad24(nn.d3 & 0xFFF, 8u, nn.d2 >> 12);
+  nn.d2  = (nn.d2 & 0x3FF) << 3;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("div_150_75#2.6: nn=..:%x:%x:%x:%x:%x:%x:%x:..:..\n",
         nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
@@ -1797,7 +1797,7 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
   q.d6 &= 0x7FFF;
   q.d7 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf("div_150_75#2.7: q=..:%x:%x:%x:%x:%x:%x:%x:..:..\n",
+  if (tid==TRACE_TID) printf("div_150_75#2.7: q=..:%x:%x!%x:%x:%x:%x:%x:..:..\n",
         q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0);
 #endif
 
@@ -1872,8 +1872,8 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
 //  nn.d2  = mad24(nn.d2 & 0x1F, 1024u, nn.d1 >> 5);
 //  nn.d1  = (nn.d1 & 0x1F) << 10;
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("div_150_75#3.6: nn=..:%x:%x:%x:%x:%x:%x:%x:..\n",
-        nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+  if (tid==TRACE_TID) printf("div_150_75#3.6: nn=..:..:%x:%x:%x:%x:%x:%x:..\n",
+        nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
 #endif
 
 //  q = q - nn
@@ -1891,7 +1891,7 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
   q.d5 &= 0x7FFF;
   q.d6 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf("div_150_75#3.7: q=%x:%x:%x:%x:%x:%x:%x:%x:..\n",
+  if (tid==TRACE_TID) printf("div_150_75#3.7: q=..:%x:%x:%x!%x:%x:%x:%x:%x:..\n",
         q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0);
 #endif
 
@@ -1975,7 +1975,7 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
   q.d4 &= 0x7FFF;
   q.d5 &= 0x7FFF;// PERF: not needed: should be zero anyway
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf("div_150_75#4.7: q=%x:%x:%x:%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf("div_150_75#4.7: q=..:%x:%x:%x:%x!%x:%x:%x:%x:%x\n",
         q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0);
 #endif
 
