@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -278,8 +278,8 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 #endif
 
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf("div_144_72#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, res=%x:%x:%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+    if (tid==TRACE_TID) printf("div_144_72#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, res=%x:..:..\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, res->d2.s0);
 #endif
 
 //  nn.d0=0;
@@ -290,8 +290,8 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 //  nn.d3  = (mul_hi(n.d0, qi) << 11) | (tmp >> 21);
   nn.d2  = (tmp << 3) & 0xFFFFFF;
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_144_72#1.1: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+  if (tid==TRACE_TID) printf("div_144_72#1.1: nn=..:..:%x:%x:..:..\n",
+        nn.d3.s0, nn.d2.s0);
 #endif
 
   tmp    =  mul24(n.d1, qi);
@@ -300,8 +300,8 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 //  nn.d3 += (tmp << 3) & 0xFFFFFF;
   nn.d3  =  mad24((tmp & 0x1FFFFF), 8u, nn.d3);
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_144_72#1.2: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+  if (tid==TRACE_TID) printf("div_144_72#1.2: nn=..:%x:%x:%x:..:..\n",
+        nn.d4.s0, nn.d3.s0, nn.d2.s0);
 #endif
 
   tmp    =  mul24(n.d2, qi);
@@ -310,8 +310,8 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 //  nn.d4 += (tmp << 3) & 0xFFFFFF;
   nn.d4  =  mad24((tmp & 0x1FFFFF), 8u, nn.d4);
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_144_72#1.3: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+  if (tid==TRACE_TID) printf("div_144_72#1.3: nn=%x:%x:%x:%x:..:..\n",
+        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
 #endif
 
 

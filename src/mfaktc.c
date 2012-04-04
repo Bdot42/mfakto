@@ -505,8 +505,8 @@ RET_ERROR we might have a serios problem
   unsigned long long int k[NUM_SELFTESTS];
   int retval=1, ind;
   enum GPUKernels kernels[9];
-  unsigned int index[] = {   39, 2 , 25, 57,      // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
-                            70 , 72, 73, 88, 106,    // some factors below 2^75 (test 75 bit kernel)
+  unsigned int index[] = {   73, 2 , 25, 39, 57,      // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+                            70 , 72, 88, 106,    // some factors below 2^75 (test 75 bit kernel)
                             355, 358, 666,   // some very small factors
                            1547, 1552, 1556, // some factors below 2^95 (test 95 bit kernel)
                            1557 };           // mfakto special case (25-bit factor)
@@ -525,8 +525,8 @@ RET_ERROR we might have a serios problem
     {
       if (i < (sizeof(index)/sizeof(index[0])))
       {
-        printf("########## testcase %d/%d ##########\r", i+1, (int) (sizeof(index)/sizeof(index[0])));
         ind = index[i];
+        printf("########## testcase %d/%d (#%d) ##########\r", i+1, (int) (sizeof(index)/sizeof(index[0])), ind);
       }
       else
         break; // short test done
