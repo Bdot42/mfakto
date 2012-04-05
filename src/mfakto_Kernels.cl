@@ -33,19 +33,15 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
     Since we've shown that 47 is a factor, 2^23-1 is not prime.
  */
 
-// In Catalyst 11.10 and 11.11, not all parameters were passed to the kernel
+// Starting with Catalyst 11.10, not all parameters were passed to the kernel
 // -> replace user-defined struct with uint8
 #define WA_FOR_CATALYST11_10_BUG
 
 // TRACE_KERNEL: higher is more trace, 0-5 currently used
-#define TRACE_KERNEL 5
+#define TRACE_KERNEL 0
 
 // If above tracing is on, only the thread with the ID below will trace
 #define TRACE_TID 0
-
-// defines how many factor candidates the barrett kernels will process in parallel per thread
-// this is now defined via commandline to the OpenCL compiler
-//#define BARRETT_VECTOR_SIZE 4
 
 /***********************************
  * DONT CHANGE ANYTHING BELOW THIS *

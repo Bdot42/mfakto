@@ -156,7 +156,7 @@ int get_next_assignment(char *filename, unsigned int *exponent, int *bit_min, in
                     reason = 0;
                     if(valid_assignment(*exponent, *bit_min, *bit_max))
                     {
-                      fclose(f_in);
+                      unlock_and_fclose(f_in);
                       return 0;
                     }
                   }

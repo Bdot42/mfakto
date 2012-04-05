@@ -83,7 +83,7 @@ code path - not used by mfakto, see kernel trace */
    pure times needed to copy the data over, and to test the FC's of the chunk
    (pure run time per kernel invokation) - best measure to compare changes in
    the kernels, or drivers. */
-#define CL_PERFORMANCE_INFO
+//#define CL_PERFORMANCE_INFO
 
 
 /* Tell the OpenCL compiler to create debuggable code for the Kernels */
@@ -98,9 +98,9 @@ code path - not used by mfakto, see kernel trace */
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.11-pre2" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11-pre3" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.11-pre2-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11-pre3-Win" /* DO NOT CHANGE! */
 #endif
 
 
