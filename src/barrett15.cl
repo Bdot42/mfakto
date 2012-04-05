@@ -1383,137 +1383,63 @@ void mul_75(int75_v * const res, const int75_v a, const int75_v b)
 }
 
 
-void mul_75_150_no_low2(int150_v * const res, const int75_v a, const int75_v b)
-/*
-res ~= a * b
-res.d0 and res.d1 are NOT computed. Carry from res.d1 to res.d2 is ignored,
-too. So the digits res.d{2-5} might differ from mul_96_192(). In
-mul_96_192() are two carries from res.d1 to res.d2. So ignoring the digits
-res.d0 and res.d1 the result of mul_96_192_no_low() is 0 to 2 lower than
-of mul_96_192().
- */
-{
-  /* this is the exact multiplication including d0-d2 - optimize later */
-  // carry is always immediately evaluated: quite slow but can run in shorts
-
-  // NOT YET ADAPTED TO 75-150 bits
-  __private uint_v tmp;
-  
-  // d0 * d0
-  tmp = mul24(a.d0, b.d0);
-  res->d0  = tmp & 0x7FFF;
-  res->d1  = (tmp >> 15);
-  // d0 * d1
-  tmp = mul24(a.d0, b.d1); // PERF:? mad24(a.d0, b.d1, res->d1);
-  res->d1 += tmp & 0x7FFF;
-  res->d2  = (tmp >> 15) + AS_UINT_V((res->d1 > 0x7FFF) ? 1 : 0);
-  res->d1 &= 0x7FFF;
-  // d0 * d2
-  tmp = mul24(a.d0, b.d2); // PERF:? mad24(a.d0, b.d2, res->d2);
-  res->d2 += tmp & 0x7FFF;
-  res->d3  = (tmp >> 15) + AS_UINT_V((res->d2 > 0x7FFF) ? 1 : 0);
-  res->d2 &= 0x7FFF;
-  // d0 * d3
-  tmp = mul24(a.d0, b.d3); // PERF:? mad24(a.d0, b.d3, res->d3);
-  res->d3 += tmp & 0x7FFF;
-  res->d4  = (tmp >> 15) + AS_UINT_V((res->d3 > 0x7FFF) ? 1 : 0);
-  res->d3 &= 0x7FFF;
-  // d3 * d1
-  tmp = mul24(a.d3, b.d1); // PERF:? mad24(a.d3, b.d1, res->d4);
-  res->d4 += tmp & 0x7FFF;
-  res->d5  = (tmp >> 15) + AS_UINT_V((res->d4 > 0x7FFF) ? 1 : 0);
-  res->d4 &= 0x7FFF;
-  // d3 * d2
-  tmp = mul24(a.d2, b.d3); // PERF:? mad24(a.d2, b.d3, res->d5);
-  res->d5 += tmp & 0x7FFF;
-  res->d6  = (tmp >> 15) + AS_UINT_V((res->d5 > 0x7FFF) ? 1 : 0);
-  res->d5 &= 0x7FFF;
-  // d3 * d3
-  tmp = mul24(a.d3, b.d3); // PERF:? mad24(a.d3, b.d3, res->d6);
-  res->d6 += tmp & 0x7FFF;
-  res->d7  = (tmp >> 15) + AS_UINT_V((res->d6 > 0x7FFF) ? 1 : 0);
-  res->d6 &= 0x7FFF;
-  // d1 * d0
-  tmp = mul24(a.d1, b.d0); // PERF:? mad24(a.d1, b.d0, res->d1);
-  res->d1 += tmp & 0x7FFF;
-  res->d2 += (tmp >> 15) + AS_UINT_V((res->d1 > 0x7FFF) ? 1 : 0);
-  res->d1 &= 0x7FFF;
-  // d1 * d1
-  tmp = mul24(a.d1, b.d1); // PERF:? mad24(a.d1, b.d1, res->d2);
-  // d2 already has 2 15-bit values and a carry: delay the addition until after
-  // d2's carry is processed
-  res->d3 += (tmp >> 15) + AS_UINT_V((res->d2 > 0x7FFF) ? 1 : 0);
-  res->d2 &= 0x7FFF;
-  res->d2 += tmp & 0x7FFF;
-  // d1 * d2
-  tmp = mul24(a.d1, b.d2); // PERF:? mad24(a.d1, b.d2, res->d3);
-  res->d4 += (tmp >> 15) + AS_UINT_V((res->d3 > 0x7FFF) ? 1 : 0);
-  res->d3 &= 0x7FFF;
-  res->d3 += (tmp & 0x7FFF) + AS_UINT_V((res->d2 > 0x7FFF) ? 1 : 0);
-  res->d2 &= 0x7FFF;
-  // d1 * d3
-  tmp = mul24(a.d1, b.d3); // PERF:? mad24(a.d1, b.d3, res->d3);
-  res->d5 += (tmp >> 15) + AS_UINT_V((res->d4 > 0x7FFF) ? 1 : 0);
-  res->d4 &= 0x7FFF;
-  res->d4 += (tmp & 0x7FFF) + AS_UINT_V((res->d3 > 0x7FFF) ? 1 : 0);
-  res->d3 &= 0x7FFF;
-  // d2 * d3
-  tmp = mul24(a.d2, b.d3); // PERF:? mad24(a.d2, b.d3, res->d5);
-  res->d6 += (tmp >> 15) + AS_UINT_V((res->d5 > 0x7FFF) ? 1 : 0);
-  res->d5 &= 0x7FFF;
-  res->d5 += (tmp & 0x7FFF) + AS_UINT_V((res->d4 > 0x7FFF) ? 1 : 0);
-  res->d4 &= 0x7FFF;
-  // carries to make room in d5
-  res->d7 += AS_UINT_V((res->d6 > 0x7FFF) ? 1 : 0);
-  res->d6 &= 0x7FFF;
-  res->d6 += AS_UINT_V((res->d5 > 0x7FFF) ? 1 : 0);
-  res->d5 &= 0x7FFF;
-  // d2 * d0
-  tmp = mul24(a.d2, b.d0); // PERF:? mad24(a.d2, b.d0, res->d2);
-  res->d2 += tmp & 0x7FFF;
-  res->d3 += (tmp >> 15) + AS_UINT_V((res->d2 > 0x7FFF) ? 1 : 0);
-  res->d2 &= 0x7FFF;
-  // d2 * d1
-  tmp = mul24(a.d2, b.d1); // PERF:? mad24(a.d2, b.d1, res->d3);
-  res->d4 += (tmp >> 15) + AS_UINT_V((res->d3 > 0x7FFF) ? 1 : 0);
-  res->d3 &= 0x7FFF;
-  res->d3 += tmp & 0x7FFF;
-  // d2 * d2
-  tmp = mul24(a.d2, b.d2); // PERF:? mad24(a.d2, b.d2, res->d4);
-  res->d5 += (tmp >> 15) + AS_UINT_V((res->d4 > 0x7FFF) ? 1 : 0);
-  res->d4 &= 0x7FFF;
-  res->d4 += (tmp & 0x7FFF) + AS_UINT_V((res->d3 > 0x7FFF) ? 1 : 0);
-  res->d3 &= 0x7FFF;
-  res->d6 += AS_UINT_V((res->d5 > 0x7FFF) ? 1 : 0);
-  res->d5 &= 0x7FFF;
-  res->d5 += AS_UINT_V((res->d4 > 0x7FFF) ? 1 : 0);
-  res->d4 &= 0x7FFF;
-  // d3 * d0
-  tmp = mul24(a.d3, b.d0); // PERF:? mad24(a.d3, b.d0, res->d3);
-  res->d3 += tmp & 0x7FFF;
-  res->d4 += (tmp >> 15) + AS_UINT_V((res->d3 > 0x7FFF) ? 1 : 0);
-  res->d3 &= 0x7FFF;
-  //  final carries
-  res->d5 += AS_UINT_V((res->d4 > 0x7FFF) ? 1 : 0);
-  res->d4 &= 0x7FFF;
-  res->d6 += AS_UINT_V((res->d5 > 0x7FFF) ? 1 : 0);
-  res->d5 &= 0x7FFF;
-  res->d7 += AS_UINT_V((res->d6 > 0x7FFF) ? 1 : 0);
-  res->d6 &= 0x7FFF;
-}
-
-
 void mul_75_150_no_low3(int150_v * const res, const int75_v a, const int75_v b)
 /*
 res ~= a * b
-res.d0, res.d1 and res.d2 are NOT computed. Carry to res.d3 is ignored,
-too. So the digits res.d{3-5} might differ from mul_96_192(). In
-mul_96_192() are four carries from res.d2 to res.d3. So ignoring the digits
-res.d0, res.d1 and res.d2 the result of mul_96_192_no_low() is 0 to 4 lower
-than of mul_96_192().
+res.d0 to res.d2 are NOT computed. Carries to res.d2 are ignored,
+too. So the digits res.d{4-9} might differ from mul_75_150(). 
  */
 {
-  /* for now, use the complete implementation, optimize later */
+  // assume we have enough spare bits and can do all the carries at the very end:
+  // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
+  // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
+  // one (almost two) carry of 17 bit (32-bit >> 15)
+  // this optimized mul 5x5 requires: 19 mul/mad24, 7 shift, 7 and, 1 add
+
+  res->d3 = mul24(a.d3, b.d0);
+  res->d3 = mad24(a.d2, b.d1, res->d3);
+  res->d3 = mad24(a.d1, b.d2, res->d3);
+  res->d3 = mad24(a.d0, b.d3, res->d3);
+
+  res->d4 = mad24(a.d4, b.d0, res->d3 >> 15);
+  res->d3 &= 0x7FFF;
+  res->d4 = mad24(a.d3, b.d1, res->d4);
+  res->d4 = mad24(a.d2, b.d2, res->d4);
+  res->d4 = mad24(a.d1, b.d3, res->d4);
+   // 5th mad24 can overflow d4, need to handle carry before: pull in the first d5 line
+  res->d5 = mad24(a.d4, b.d1, res->d4 >> 15);
+  res->d4 &= 0x7FFF;
+  res->d4 = mad24(a.d0, b.d4, res->d4);  // 31-bit at most
+
+  res->d5 = mad24(a.d3, b.d2, res->d4 >> 15) + res->d5;
+  res->d5 = mad24(a.d2, b.d3, res->d5);
+  res->d5 = mad24(a.d1, b.d4, res->d5);
+  res->d4 &= 0x7FFF;
+  // now we have in d5: 4x mad24() + 1x 17-bit carry + 1x 16-bit carry: still fits into 32 bits
+
+  res->d6 = mad24(a.d2, b.d4, res->d5 >> 15);
+  res->d6 = mad24(a.d3, b.d3, res->d6);
+  res->d6 = mad24(a.d4, b.d2, res->d6);
+  res->d5 &= 0x7FFF;
+
+  res->d7 = mad24(a.d3, b.d4, res->d6 >> 15);
+  res->d7 = mad24(a.d4, b.d3, res->d7);
+  res->d6 &= 0x7FFF;
+
+  res->d8 = mad24(a.d4, b.d4, res->d7 >> 15);
+  res->d7 &= 0x7FFF;
+
+  res->d9 = res->d8 >> 15;
+  res->d8 &= 0x7FFF;
+}
+
+
+void mul_75_150(int150_v * const res, const int75_v a, const int75_v b)
+/*
+res = a * b
+ */
+{
+  /* this is the complete implementation, optimize later */
   // assume we have enough spare bits and can do all the carries at the very end:
   // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
   // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
@@ -1581,7 +1507,7 @@ void square_75_150(int150_v * const res, const int75_v a)
 
   /* for now, use the complete implementation, optimize later */
 
-  mul_75_150_no_low3(res, a, a);
+  mul_75_150(res, a, a);
 }
 
 
@@ -2356,7 +2282,7 @@ Precalculated here since it is the same for all steps in the following loop */
     mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf("loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x...\n",
+    if (tid==TRACE_TID) printf("loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:...\n",
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
         tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0, tmp150.d3.s0);
 #endif
