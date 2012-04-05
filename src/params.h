@@ -98,9 +98,9 @@ code path - not used by mfakto, see kernel trace */
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.11-pre2" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11-pre3" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.11-pre2-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11-pre3-Win" /* DO NOT CHANGE! */
 #endif
 
 

@@ -54,14 +54,14 @@ kernel_info_t       kernel_info[NUM_KERNELS] = {
   /*   kernel (in sequence) | kernel function name | bit_min | bit_max | loaded kernel pointer */
      {   AUTOSELECT_KERNEL,   "auto",                  0,      0,         NULL},
      {   _TEST_MOD_,          "mod_128_64_k",          0,      0,         NULL}, // used for various tests
-     {   _95BIT_64_OpenCL,    "mfakto_cl_barrett79_ns",         64,     79,         NULL}, // no sieved input (test all FC's)
+     {   _95BIT_64_OpenCL,    "mfakto_cl_barrett79_ns",         64,     70,         NULL}, // no sieved input (test all FC's)
      {   _71BIT_MUL24,        "mfakto_cl_71",         61,     72,         NULL},
      {   _63BIT_MUL24,        "mfakto_cl_63",          0,     64,         NULL},
-     {   BARRETT72_MUL24,     "mfakto_cl_barrett72",  64,     72,         NULL}, // one kernel for all vector sizes
+     {   BARRETT72_MUL24,     "mfakto_cl_barrett72",  64,     70,         NULL}, // one kernel for all vector sizes
      {   BARRETT79_MUL32,     "mfakto_cl_barrett79",  64,     79,         NULL}, // one kernel for all vector sizes
      {   BARRETT92_MUL32,     "mfakto_cl_barrett92",  64,     92,         NULL}, // one kernel for all vector sizes
      {   BARRETT58_MUL15,     "barrett15_60",         45,     58,         NULL}, // one kernel for all vector sizes
-     {   BARRETT73_MUL15,     "barrett15_75",         60,     73,         NULL}, // one kernel for all vector sizes
+     {   BARRETT73_MUL15,     "barrett15_75",         60,     72,         NULL}, // one kernel for all vector sizes
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         NULL},
      {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         NULL}, // slow shift-cmp-sub kernel: removed
      {   BARRETT92_64_OpenCL, "mfakto_cl_barrett92",  64,     92,         NULL}, // mapped to 32-bit barrett so far
@@ -788,7 +788,6 @@ int run_cl_sieve_init(cl_uint exp, cl_ulong k_min, cl_ulong num_threads)
                                    __global  uint *next_multiple,  // out-array of k-offsets when the corresponding prime divides the factor candidate
                                    __private uint vector_size)     // not yet used
   */
-  cl_uint  unused=0;
   cl_int   status;
   size_t   globalThreads[2];
   size_t   localThreads[2];
@@ -942,7 +941,6 @@ int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
                               __global   uint *savestate      // to remember where to continue
                              )
   */
-  cl_uint  unused=0;
   cl_int   status;
   size_t   globalThreads[2];
   size_t   localThreads[2];
@@ -1851,7 +1849,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   int72  k_base;
   int144 b_preinit = {0};
   int192 b_192 = {0};
-  cl_uint8 b_in = {0};
+  cl_uint8 b_in = {{0}};
 
   cl_uint factor_lo, factor_mid, factor_hi, factorsfound=0;
   unsigned long long int b_preinit_lo, b_preinit_mid, b_preinit_hi;
@@ -1939,7 +1937,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   count=0;
   if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT72_MUL24)) 
   {
-    if     (ln2b<24 )b_preinit.d0=1<< ln2b;       // must not happen; d0 will not be evaluated in the kernel
+    if     (ln2b<24 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
     else if(ln2b<48 )b_preinit.d1=1<<(ln2b-24);   // should not happen
     else if(ln2b<72 )b_preinit.d2=1<<(ln2b-48);
     else if(ln2b<96 )b_preinit.d3=1<<(ln2b-72);
