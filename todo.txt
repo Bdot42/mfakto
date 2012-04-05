@@ -102,3 +102,5 @@ TODO
 - set affinity for main thread
 - repunit
 - SDK 2.6: __attribute__((always_inline)), set environment variable GPU_ASYNC_MEM_COPY=2, Profiler
+- PERF: (d0 + d1 + d2 + d3 + d4)^2 = d0^2 + 2d0d1 + d1^2 + 2d0d2 + 2(d1d2 + d0d3) + d2^2 + 2(d0d4 + d1d3) + 2(d1d4 + d2d3) + d3^2 + 2d2d4 + 2d3d4 + d4^2
+  => any better than current a x b in 15-bit-kernel

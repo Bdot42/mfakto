@@ -41,7 +41,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #define TRACE_KERNEL 0
 
 // If above tracing is on, only the thread with the ID below will trace
-#define TRACE_TID 0
+#define TRACE_TID 96
 
 /***********************************
  * DONT CHANGE ANYTHING BELOW THIS *

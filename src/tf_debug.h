@@ -74,7 +74,7 @@ D = index for modbasecase_debug[];
   #define MODBASECASE_NN_BIG_ERROR(A, B, C, D) \
   if(C > A) \
   { \
-    printf("EEEEEK, step %d nn.dX is too big: %u\n", B, C); \
+    printf("EEEEEK, step %d nn.dX is too big: %x\n", B, C); \
     modbasecase_debug[D]++; \
   }
 #else

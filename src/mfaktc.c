@@ -505,11 +505,11 @@ RET_ERROR we might have a serios problem
   unsigned long long int k[NUM_SELFTESTS];
   int retval=1, ind;
   enum GPUKernels kernels[9];
-  unsigned int index[] = {   73, 2 , 25, 39, 57,      // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
-                            70 , 72, 88, 106,    // some factors below 2^75 (test 75 bit kernel)
-                            355, 358, 666,   // some very small factors
-                           1547, 1552, 1556, // some factors below 2^95 (test 95 bit kernel)
-                           1557 };           // mfakto special case (25-bit factor)
+  unsigned int index[] = {    82, 2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+                             70,   72,   73,   88,   // some factors below 2^75 (test 75 bit kernel)
+                            106,  355,  358,  666,   // some very small factors
+                           1547, 1552, 1556, 1557    // some factors below 2^95 (test 95 bit kernel)
+                         };                          // mfakto special case (25-bit factor)
   if (type == MODE_SELFTEST_FULL)
     selftests_to_run = NUM_SELFTESTS;
   else
@@ -543,10 +543,10 @@ RET_ERROR we might have a serios problem
     j = 0;
 //    if (bit_min[ind] <= 63)                            kernels[j++] = _63BIT_MUL24;
     if ((bit_min[ind] >= 61) && (bit_min[ind] < 72))   kernels[j++] = _71BIT_MUL24;
-//    if ((bit_min[ind] >= 64) && (bit_min[ind] < 79))   kernels[j++] = BARRETT79_MUL32; 
+    if ((bit_min[ind] >= 64) && (bit_min[ind] < 79))   kernels[j++] = BARRETT79_MUL32; 
 //    if ((bit_min[ind] >= 64) && (bit_min[ind] < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-    if ((bit_min[ind] >= 63) && (bit_min[ind] < 70))   kernels[j++] = BARRETT72_MUL24;
-    if ((bit_min[ind] >= 60) && (bit_min[ind] < 72))   kernels[j++] = BARRETT73_MUL15;
+    if ((bit_min[ind] >= 63) && (bit_min[ind] < 71))   kernels[j++] = BARRETT72_MUL24;
+    if ((bit_min[ind] >= 60) && (bit_min[ind] < 73))   kernels[j++] = BARRETT73_MUL15;
 //
 //      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
 

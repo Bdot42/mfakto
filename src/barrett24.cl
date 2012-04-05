@@ -677,7 +677,7 @@ assumes q < 6n (6n includes "optional mul 2")
 */
 {
   __private float_v qf;
-  __private uint_v qi, tmp;
+  __private uint_v qi;
   __private int72_v nn;
 
   qf = CONVERT_FLOAT_V(q.d2);
