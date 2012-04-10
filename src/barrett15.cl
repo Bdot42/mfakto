@@ -1332,14 +1332,25 @@ int75_v sub_if_gte_75(const int75_v a, const int75_v b)
 
 void inc_if_ge_75(int75_v * const res, const int75_v a, const int75_v b)
 { /* if (a >= b) res++ */
-  __private uint_v ge;
+  __private uint_v ge,tmpa0,tmpa1,tmpb0,tmpb1;
   // PERF: faster to combine them to 30-bits before all this?
+  // Yes, a tiny bit: 9 operations each, plus 2 vs. 4 conditional loads with dependencies.
+  // PERF: further improvement by upsampling to long int? No, that is slower.
+  tmpa0=mad24(a.d2, 32768, a.d1);
+  tmpa1=mad24(a.d4, 32768, a.d3);
+  tmpb0=mad24(b.d2, 32768, b.d1);
+  tmpb1=mad24(b.d4, 32768, b.d3);
+  ge = AS_UINT_V((tmpa1 == tmpb1) ? ((tmpa0 == tmpb0) ? (a.d0 >= b.d0)
+                                                      : (tmpa0 > tmpb0))
+                                  : (tmpa1 > tmpb1));
+  /*
   ge = AS_UINT_V((a.d4 == b.d4) ? ((a.d3 == b.d3) ? ((a.d2 == b.d2) ? ((a.d1 == b.d1) ? (a.d0 >= b.d0)
                                                                                       : (a.d1 > b.d1))
                                                                     : (a.d2 > b.d2))
                                                   : (a.d3 > b.d3))
                                 :(a.d4 > b.d4));
 
+                                */
   res->d0 += AS_UINT_V(ge ? 1 : 0);
   res->d1 += res->d0 >> 15;
   res->d2 += res->d1 >> 15;
@@ -1349,7 +1360,6 @@ void inc_if_ge_75(int75_v * const res, const int75_v a, const int75_v b)
   res->d1 &= 0x7FFF;
   res->d2 &= 0x7FFF;
   res->d3 &= 0x7FFF;
-  res->d4 &= 0x7FFF;  // PERF: needed?
 }
 
 void mul_75(int75_v * const res, const int75_v a, const int75_v b)
@@ -1603,7 +1613,9 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
 #endif
 
 // now shift-left 7 bits
+#ifdef CHECKS_MODBASECASE
   nn.d9  = nn.d8 >> 8;  // PERF: not needed as it will be gone anyway after sub
+#endif
   nn.d8  = mad24(nn.d8 & 0xFF, 128u, nn.d7 >> 8);
   nn.d7  = mad24(nn.d7 & 0xFF, 128u, nn.d6 >> 8);
   nn.d6  = mad24(nn.d6 & 0xFF, 128u, nn.d5 >> 8);
@@ -1622,7 +1634,9 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
   q.d6 = q.d6 - nn.d6 - AS_UINT_V((q.d5 > 0x7FFF)?1:0);
   q.d7 = q.d7 - nn.d7 - AS_UINT_V((q.d6 > 0x7FFF)?1:0);
   q.d8 = q.d8 - nn.d8 - AS_UINT_V((q.d7 > 0x7FFF)?1:0); 
+#ifdef CHECKS_MODBASECASE
   q.d9 = q.d9 - nn.d9 - AS_UINT_V((q.d8 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
+#endif
   q.d3 &= 0x7FFF;
   q.d4 &= 0x7FFF;
   q.d5 &= 0x7FFF;
@@ -1643,7 +1657,7 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
 
   qi=CONVERT_UINT_V(qf*nf);
 
-  MODBASECASE_QI_ERROR(1<<22, 2, qi, 2);
+  MODBASECASE_QI_ERROR(1<<23, 2, qi, 2); // here, we need 2^23 ...
 
   res->d3 += (qi >> 14);
   res->d2 = (qi << 1) & 0x7FFF;
@@ -1688,17 +1702,23 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
   if (tid==TRACE_TID) printf("div_150_75#2.4: nn=..:%x:%x:%x:%x:%x:..:..\n",
         nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
 #endif
+
   nn.d6  = mad24(n.d4, qil, nn.d6);
+#ifdef CHECKS_MODBASECASE
   nn.d7  = mad24(n.d4, qih, nn.d6 >> 15);
+#endif
   nn.d6 &= 0x7FFF;
+
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("div_150_75#2.5: nn=..:%x:%x:%x:%x:%x:%x:..:..\n",
         nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
 #endif
 
 // now shift-left 1 bit
+#ifdef CHECKS_MODBASECASE
   nn.d8  = nn.d7 >> 14;  // PERF: not needed as it will be gone anyway after sub
   nn.d7  = mad24(nn.d7 & 0x3FFF, 2u, nn.d6 >> 14);  // PERF: not needed as it will be gone anyway after sub
+#endif
   nn.d6  = mad24(nn.d6 & 0x3FFF, 2u, nn.d5 >> 14);
   nn.d5  = mad24(nn.d5 & 0x3FFF, 2u, nn.d4 >> 14);
   nn.d4  = mad24(nn.d4 & 0x3FFF, 2u, nn.d3 >> 14);
@@ -1715,14 +1735,16 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
   q.d4 = q.d4 - nn.d4 - AS_UINT_V((q.d3 > 0x7FFF)?1:0);
   q.d5 = q.d5 - nn.d5 - AS_UINT_V((q.d4 > 0x7FFF)?1:0);
   q.d6 = q.d6 - nn.d6 - AS_UINT_V((q.d5 > 0x7FFF)?1:0);
+#ifdef CHECKS_MODBASECASE
   q.d7 = q.d7 - nn.d7 - AS_UINT_V((q.d6 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
   q.d8 = q.d8 - nn.d8 - AS_UINT_V((q.d7 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
+  q.d7 &= 0x7FFF;
+#endif
   q.d2 &= 0x7FFF;
   q.d3 &= 0x7FFF;
   q.d4 &= 0x7FFF;
   q.d5 &= 0x7FFF;
   q.d6 &= 0x7FFF;
-  q.d7 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf("div_150_75#2.7: q=..:%x:%x!%x:%x:%x:%x:%x:..:..\n",
         q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0);
@@ -1785,7 +1807,9 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
 #endif
   nn.d5  = mad24(n.d4, qil, nn.d5);
+#ifdef CHECKS_MODBASECASE
   nn.d6  = mad24(n.d4, qih, nn.d5 >> 15);
+#endif
   nn.d5 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("div_150_75#3.5: nn=..:%x:%x:%x:%x:%x:%x:..\n",
@@ -1811,14 +1835,15 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
   q.d3 = q.d3 - nn.d3 - AS_UINT_V((q.d2 > 0x7FFF)?1:0);
   q.d4 = q.d4 - nn.d4 - AS_UINT_V((q.d3 > 0x7FFF)?1:0);
   q.d5 = q.d5 - nn.d5 - AS_UINT_V((q.d4 > 0x7FFF)?1:0);
+#ifdef CHECKS_MODBASECASE
   q.d6 = q.d6 - nn.d6 - AS_UINT_V((q.d5 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
-//  q.d7 = q.d7 - nn.d7 - AS_UINT_V((q.d6 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
+  q.d6 &= 0x7FFF;
+#endif
   q.d1 &= 0x7FFF;
   q.d2 &= 0x7FFF;
   q.d3 &= 0x7FFF;
   q.d4 &= 0x7FFF;
   q.d5 &= 0x7FFF;
-  q.d6 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf("div_150_75#3.7: q=..:%x:%x:%x!%x:%x:%x:%x:%x:..\n",
         q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0);
@@ -1881,7 +1906,9 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
         nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
   nn.d4  = mad24(n.d4, qil, nn.d4);
+#ifdef CHECKS_MODBASECASE
   nn.d5  = mad24(n.d4, qih, nn.d4 >> 15);
+#endif
   nn.d4 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("div_150_75#4.5: nn=..:%x:%x:%x:%x:%x:%x\n",
@@ -1896,14 +1923,15 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
   q.d2 = q.d2 - nn.d2 - AS_UINT_V((q.d1 > 0x7FFF)?1:0);
   q.d3 = q.d3 - nn.d3 - AS_UINT_V((q.d2 > 0x7FFF)?1:0);
   q.d4 = q.d4 - nn.d4 - AS_UINT_V((q.d3 > 0x7FFF)?1:0);
+#ifdef CHECKS_MODBASECASE
   q.d5 = q.d5 - nn.d5 - AS_UINT_V((q.d4 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
-//  q.d6 = q.d6 - nn.d6 - AS_UINT_V((q.d5 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
+  q.d5 &= 0x7FFF;// PERF: not needed: should be zero anyway
+#endif
   q.d0 &= 0x7FFF;
   q.d1 &= 0x7FFF;
   q.d2 &= 0x7FFF;
   q.d3 &= 0x7FFF;
   q.d4 &= 0x7FFF;
-  q.d5 &= 0x7FFF;// PERF: not needed: should be zero anyway
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf("div_150_75#4.7: q=..:%x:%x:%x:%x!%x:%x:%x:%x:%x\n",
         q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0);
