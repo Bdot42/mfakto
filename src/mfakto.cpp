@@ -682,6 +682,9 @@ int init_CL(int num_streams, cl_int devnumber)
   if (mystuff.sieve_gpu == 1)
     strcat(program_options, " -DCL_GPU_SIEVE");
 
+  if (mystuff.small_exp == 1)
+    strcat(program_options, " -DSMALL_EXP");
+
 #ifdef DETAILED_INFO
   printf("Compiling kernels (build options: \"%s\").", program_options);
 #else

@@ -408,5 +408,21 @@ int read_config(mystuff_t *mystuff)
 
   /*****************************************************************************/
 
+  if(my_read_int(mystuff->inifile, "SmallExp", &i))
+  {
+    printf("WARNING: Cannot read SmallExp from inifile, set to 0 by default\n");
+    i=0;
+  }
+  else if(i != 0 && i != 1)
+  {
+    printf("WARNING: SmallExp must be 0 or 1, set to 0 by default\n");
+    i=0;
+  }
+  if(i == 0)printf("  SmallExp                  no\n");
+  else      printf("  SmallExp                  yes\n");
+  mystuff->small_exp = i;
+
+  /*****************************************************************************/
+
   return 0;
 }

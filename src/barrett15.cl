@@ -1336,10 +1336,10 @@ void inc_if_ge_75(int75_v * const res, const int75_v a, const int75_v b)
   // PERF: faster to combine them to 30-bits before all this?
   // Yes, a tiny bit: 9 operations each, plus 2 vs. 4 conditional loads with dependencies.
   // PERF: further improvement by upsampling to long int? No, that is slower.
-  tmpa0=mad24(a.d2, 32768, a.d1);
-  tmpa1=mad24(a.d4, 32768, a.d3);
-  tmpb0=mad24(b.d2, 32768, b.d1);
-  tmpb1=mad24(b.d4, 32768, b.d3);
+  tmpa0=mad24(a.d2, 32768u, a.d1);
+  tmpa1=mad24(a.d4, 32768u, a.d3);
+  tmpb0=mad24(b.d2, 32768u, b.d1);
+  tmpb1=mad24(b.d4, 32768u, b.d3);
   ge = AS_UINT_V((tmpa1 == tmpb1) ? ((tmpa0 == tmpb0) ? (a.d0 >= b.d0)
                                                       : (tmpa0 > tmpb0))
                                   : (tmpa1 > tmpb1));
@@ -1559,7 +1559,7 @@ void div_150_75(int75_v * const res, __private int150_v q, const int75_v n, cons
 
   qi=CONVERT_UINT_V(qf*nf);
 
-  MODBASECASE_QI_ERROR(1<<23, 1, qi, 0);  // first step is 1 bit bigger
+  MODBASECASE_QI_ERROR(1<<22, 1, qi, 0);
 
   res->d4 = (qi >> 8);
   res->d3 = (qi << 7) & 0x7FFF;
@@ -1960,6 +1960,420 @@ This function also handles outstanding carries in res.
 }
 
 
+void div_float_75(int75_v * const res, const float qf1, const int d8, const int75_v n, const float_v nf
+#if (TRACE_KERNEL > 1)
+                  , const uint tid
+#endif
+#ifdef CHECKS_MODBASECASE
+                  , __global uint * restrict modbasecase_debug
+#endif
+)/* res = q / n (integer division) */
+{
+  __private float_v qf;
+  __private uint_v qi, qil, qih;
+  __private int150_v nn, q;
+  __private int75_v tmp75;
+
+#if (TRACE_KERNEL > 1)
+  if (tid==TRACE_TID) printf("div_float_75#0: q=%x, n=%x:%x:%x:%x:%x, nf=%#G\n",
+        d8, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0);
+#endif
+
+/********** Step 1, Offset 2^53 (3*15 + 8) **********/
+
+  qi=CONVERT_UINT_V(qf1*nf);
+
+  MODBASECASE_QI_ERROR(1<<22, 1, qi, 0);
+
+  res->d4 = (qi >> 8);
+  res->d3 = (qi << 7) & 0x7FFF;
+  qil = qi & 0x7FFF;
+  qih = (qi >> 15);
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID) printf("div_150_75#1: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:..:..:..\n",
+                                 qf1, nf.s0, qf1*nf.s0, qi.s0, qi.s0, res->d4.s0, res->d3.s0);
+#endif
+
+  /*******************************************************/
+
+// nn = n * qi
+  nn.d3  = mul24(n.d0, qil);
+  nn.d4  = mad24(n.d0, qih, nn.d3 >> 15);
+  nn.d3 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("div_150_75#1.1: nn=..:..:..:..:..:%x:%x:..:..:..\n",
+        nn.d4.s0, nn.d3.s0);
+#endif
+
+  nn.d4  = mad24(n.d1, qil, nn.d4);
+  nn.d5  = mad24(n.d1, qih, nn.d4 >> 15);
+  nn.d4 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("div_150_75#1.2: nn=..:..:..:..:%x:%x:%x:...\n",
+        nn.d5.s0, nn.d4.s0, nn.d3.s0);
+#endif
+
+  nn.d5  = mad24(n.d2, qil, nn.d5);
+  nn.d6  = mad24(n.d2, qih, nn.d5 >> 15);
+  nn.d5 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("div_150_75#1.3: nn=..:..:..:%x:%x:%x:%x:...\n",
+        nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+#endif
+
+  nn.d6  = mad24(n.d3, qil, nn.d6);
+  nn.d7  = mad24(n.d3, qih, nn.d6 >> 15);
+  nn.d6 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("div_150_75#1.4: nn=..:..:%x:%x:%x:%x:%x:...\n",
+        nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+#endif
+  nn.d7  = mad24(n.d4, qil, nn.d7);
+  nn.d8  = mad24(n.d4, qih, nn.d7 >> 15);
+  nn.d7 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("div_150_75#1.5: nn=..:%x:%x:%x:%x:%x:%x:...\n",
+        nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+#endif
+
+// now shift-left 7 bits
+#ifdef CHECKS_MODBASECASE
+  nn.d9  = nn.d8 >> 8;  // PERF: not needed as it will be gone anyway after sub
+#endif
+  nn.d8  = mad24(nn.d8 & 0xFF, 128u, nn.d7 >> 8);
+  nn.d7  = mad24(nn.d7 & 0xFF, 128u, nn.d6 >> 8);
+  nn.d6  = mad24(nn.d6 & 0xFF, 128u, nn.d5 >> 8);
+  nn.d5  = mad24(nn.d5 & 0xFF, 128u, nn.d4 >> 8);
+  nn.d4  = mad24(nn.d4 & 0xFF, 128u, nn.d3 >> 8);
+  nn.d3  = (nn.d3 & 0xFF) << 7;
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf("div_150_75#1.6: nn=%x:%x:%x:%x:%x:%x:%x:..:..:..\n",
+        nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+#endif
+
+//  q = q - nn, q.d0-q.d7 are all zero
+  q.d3 = (-nn.d3);
+  q.d4 = (-nn.d4 - 1);
+  q.d5 = (-nn.d5 - 1);
+  q.d6 = (-nn.d6 - 1);
+  q.d7 = (-nn.d7 - 1);
+  q.d8 = d8 - nn.d8 - 1;
+#if defined( CHECKS_MODBASECASE ) || (TRACE_KERNEL > 2)
+  q.d9 = (d8 >> 15) - nn.d9 - AS_UINT_V((q.d8 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
+#endif
+  q.d3 &= 0x7FFF;
+  q.d4 &= 0x7FFF;
+  q.d5 &= 0x7FFF;
+  q.d6 &= 0x7FFF;
+  q.d7 &= 0x7FFF;
+  q.d8 &= 0x7FFF;
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf("div_150_75#1.7: q=%x!%x:%x:%x:%x:%x:%x:..:..:..\n",
+        q.d9.s0, q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0);
+#endif
+  MODBASECASE_NONZERO_ERROR(q.d9, 1, 9, 1);
+
+  /********** Step 2, Offset 2^38 (2*15 + 8) **********/
+
+  qf= CONVERT_FLOAT_V(mad24(q.d8, 32768u, q.d7));
+  qf= qf * 32768.0f * 32768.0f + CONVERT_FLOAT_V(mad24(q.d6, 32768u, q.d5));
+  qf*= 16384.0f;
+
+  qi=CONVERT_UINT_V(qf*nf);
+
+  MODBASECASE_QI_ERROR(1<<22, 2, qi, 2);
+
+  res->d3 += (qi >> 14);
+  res->d2 = (qi << 1) & 0x7FFF;
+  qil = qi & 0x7FFF;
+  qih = (qi >> 15) & 0x7FFF;
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID) printf("div_150_75#2: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:..:..\n",
+                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d4.s0, res->d3.s0, res->d2.s0);
+#endif
+
+  /*******************************************************/
+
+// nn = n * qi
+  nn.d2  = mul24(n.d0, qil);
+  nn.d3  = mad24(n.d0, qih, nn.d2 >> 15);
+  nn.d2 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("div_150_75#2.1: nn=..:..:..:..:%x:%x:..:..\n",
+        nn.d3.s0, nn.d2.s0);
+#endif
+
+  nn.d3  = mad24(n.d1, qil, nn.d3);
+  nn.d4  = mad24(n.d1, qih, nn.d3 >> 15);
+  nn.d3 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("div_150_75#2.2: nn=..:..:..:%x:%x:%x:..:..\n",
+        nn.d4.s0, nn.d3.s0, nn.d2.s0);
+#endif
+
+  nn.d4  = mad24(n.d2, qil, nn.d4);
+  nn.d5  = mad24(n.d2, qih, nn.d4 >> 15);
+  nn.d4 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("div_150_75#2.3: nn=..:..:%x:%x:%x:%x:..:..\n",
+        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
+#endif
+
+  nn.d5  = mad24(n.d3, qil, nn.d5);
+  nn.d6  = mad24(n.d3, qih, nn.d5 >> 15);
+  nn.d5 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("div_150_75#2.4: nn=..:%x:%x:%x:%x:%x:..:..\n",
+        nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
+#endif
+
+  nn.d6  = mad24(n.d4, qil, nn.d6);
+#ifdef CHECKS_MODBASECASE g
+  nn.d7  = mad24(n.d4, qih, nn.d6 >> 15);
+#endif
+  nn.d6 &= 0x7FFF;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("div_150_75#2.5: nn=..:%x:%x:%x:%x:%x:%x:..:..\n",
+        nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
+#endif
+
+// now shift-left 1 bit
+#ifdef CHECKS_MODBASECASE
+  nn.d8  = nn.d7 >> 14;  // PERF: not needed as it will be gone anyway after sub
+  nn.d7  = mad24(nn.d7 & 0x3FFF, 2u, nn.d6 >> 14);  // PERF: not needed as it will be gone anyway after sub
+#endif
+  nn.d6  = mad24(nn.d6 & 0x3FFF, 2u, nn.d5 >> 14);
+  nn.d5  = mad24(nn.d5 & 0x3FFF, 2u, nn.d4 >> 14);
+  nn.d4  = mad24(nn.d4 & 0x3FFF, 2u, nn.d3 >> 14);
+  nn.d3  = mad24(nn.d3 & 0x3FFF, 2u, nn.d2 >> 14);
+  nn.d2  = (nn.d2 & 0x3FFF) << 1;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("div_150_75#2.6: nn=..:%x:%x:%x:%x:%x:%x:%x:..:..\n",
+        nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
+#endif
+
+//  q = q - nn
+  q.d2 = (-nn.d2);
+  q.d3 = q.d3 - nn.d3 - 1;
+  q.d4 = q.d4 - nn.d4 - AS_UINT_V((q.d3 > 0x7FFF)?1:0);
+  q.d5 = q.d5 - nn.d5 - AS_UINT_V((q.d4 > 0x7FFF)?1:0);
+  q.d6 = q.d6 - nn.d6 - AS_UINT_V((q.d5 > 0x7FFF)?1:0);
+#ifdef CHECKS_MODBASECASE
+  q.d7 = q.d7 - nn.d7 - AS_UINT_V((q.d6 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
+  q.d8 = q.d8 - nn.d8 - AS_UINT_V((q.d7 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
+  q.d7 &= 0x7FFF;
+#endif
+  q.d2 &= 0x7FFF;
+  q.d3 &= 0x7FFF;
+  q.d4 &= 0x7FFF;
+  q.d5 &= 0x7FFF;
+  q.d6 &= 0x7FFF;
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf("div_150_75#2.7: q=..:%x:%x!%x:%x:%x:%x:%x:..:..\n",
+        q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0);
+#endif
+
+  MODBASECASE_NONZERO_ERROR(q.d8, 2, 8, 3);
+  MODBASECASE_NONZERO_ERROR(q.d7, 2, 7, 4);
+
+  /********** Step 3, Offset 2^20 (1*15 + 5) **********/
+
+  qf= CONVERT_FLOAT_V(mad24(q.d6, 32768u, q.d5));
+  qf= qf * 32768.0f * 32768.0f + CONVERT_FLOAT_V(mad24(q.d4, 32768u, q.d3));
+
+  qi=CONVERT_UINT_V(qf*nf);
+
+  MODBASECASE_QI_ERROR(1<<22, 3, qi, 5);
+
+  qih = (qi >> 15) & 0x7FFF;
+  qil = qi & 0x7FFF;
+  res->d2 += qih;
+  res->d1 = qil;
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID) printf("div_150_75#3: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:%x:..\n",
+                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0);
+#endif
+
+  /*******************************************************/
+
+// nn = n * qi
+  nn.d1  = mul24(n.d0, qil);
+  nn.d2  = mad24(n.d0, qih, nn.d1 >> 15);
+  nn.d1 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("div_150_75#3.1: nn=..:..:..:..:%x:%x:..\n",
+        nn.d2.s0, nn.d1.s0);
+#endif
+
+  nn.d2  = mad24(n.d1, qil, nn.d2);
+  nn.d3  = mad24(n.d1, qih, nn.d2 >> 15);
+  nn.d2 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("div_150_75#3.2: nn=..:..:..:%x:%x:%x:..\n",
+        nn.d3.s0, nn.d2.s0, nn.d1.s0);
+#endif
+
+  nn.d3  = mad24(n.d2, qil, nn.d3);
+  nn.d4  = mad24(n.d2, qih, nn.d3 >> 15);
+  nn.d3 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("div_150_75#3.3: nn=..:..:%x:%x:%x:%x:..\n",
+        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+#endif
+
+  nn.d4  = mad24(n.d3, qil, nn.d4);
+  nn.d5  = mad24(n.d3, qih, nn.d4 >> 15);
+  nn.d4 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("div_150_75#3.4: nn=..:%x:%x:%x:%x:%x:..\n",
+        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+#endif
+  nn.d5  = mad24(n.d4, qil, nn.d5);
+#ifdef CHECKS_MODBASECASE
+  nn.d6  = mad24(n.d4, qih, nn.d5 >> 15);
+#endif
+  nn.d5 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("div_150_75#3.5: nn=..:%x:%x:%x:%x:%x:%x:..\n",
+        nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+#endif
+
+// no shift-left required
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("div_150_75#3.6: nn=..:..:%x:%x:%x:%x:%x:%x:..\n",
+        nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+#endif
+
+//  q = q - nn
+  q.d1 = (-nn.d1);
+  q.d2 = q.d2 - nn.d2 - 1;
+  q.d3 = q.d3 - nn.d3 - AS_UINT_V((q.d2 > 0x7FFF)?1:0);
+  q.d4 = q.d4 - nn.d4 - AS_UINT_V((q.d3 > 0x7FFF)?1:0);
+  q.d5 = q.d5 - nn.d5 - AS_UINT_V((q.d4 > 0x7FFF)?1:0);
+#ifdef CHECKS_MODBASECASE
+  q.d6 = q.d6 - nn.d6 - AS_UINT_V((q.d5 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
+  q.d6 &= 0x7FFF;
+#endif
+  q.d1 &= 0x7FFF;
+  q.d2 &= 0x7FFF;
+  q.d3 &= 0x7FFF;
+  q.d4 &= 0x7FFF;
+  q.d5 &= 0x7FFF;
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf("div_150_75#3.7: q=..:%x:%x:%x!%x:%x:%x:%x:%x:..\n",
+        q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0);
+#endif
+
+  MODBASECASE_NONZERO_ERROR(q.d6, 3, 6, 6);
+
+  /********** Step 4, Offset 2^0 (0*15 + 0) **********/
+
+  qf= CONVERT_FLOAT_V(mad24(q.d5, 32768u, q.d4));
+  qf= qf * 32768.0f * 32768.0f + CONVERT_FLOAT_V(mad24(q.d3, 32768u, q.d2));
+
+  qi=CONVERT_UINT_V(qf*nf);
+
+  MODBASECASE_QI_ERROR(1<<22, 4, qi, 7);
+
+  qil = qi & 0x7FFF;
+  qih = (qi >> 15) & 0x7FFF;
+  res->d1 += qih;
+  res->d0 = qil;
+
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID) printf("div_150_75#4: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:%x:%x\n",
+                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+#endif
+
+  /*******************************************************/
+
+// nn = n * qi
+  nn.d0  = mul24(n.d0, qil);
+  nn.d1  = mad24(n.d0, qih, nn.d0 >> 15);
+  nn.d0 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("div_150_75#4.1: nn=..:..:..:..:%x:%x\n",
+        nn.d1.s0, nn.d0.s0);
+#endif
+
+  nn.d1  = mad24(n.d1, qil, nn.d1);
+  nn.d2  = mad24(n.d1, qih, nn.d1 >> 15);
+  nn.d1 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("div_150_75#4.2: nn=..:..:..:%x:%x:%x\n",
+        nn.d2.s0, nn.d1.s0, nn.d0.s0);
+#endif
+
+  nn.d2  = mad24(n.d2, qil, nn.d2);
+  nn.d3  = mad24(n.d2, qih, nn.d2 >> 15);
+  nn.d2 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf("div_150_75#4.3: nn=..:..:%x:%x:%x:%x\n",
+        nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+#endif
+
+  nn.d3  = mad24(n.d3, qil, nn.d3);
+  nn.d4  = mad24(n.d3, qih, nn.d3 >> 15);
+  nn.d3 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("div_150_75#4.4: nn=..:%x:%x:%x:%x:%x\n",
+        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+#endif
+  nn.d4  = mad24(n.d4, qil, nn.d4);
+#ifdef CHECKS_MODBASECASE
+  nn.d5  = mad24(n.d4, qih, nn.d4 >> 15);
+#endif
+  nn.d4 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("div_150_75#4.5: nn=..:%x:%x:%x:%x:%x:%x\n",
+        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+#endif
+
+// no shift-left required
+
+//  q = q - nn
+  q.d0 = (-nn.d0);
+  q.d1 = q.d1 - nn.d1 - 1;
+  q.d2 = q.d2 - nn.d2 - AS_UINT_V((q.d1 > 0x7FFF)?1:0);
+  q.d3 = q.d3 - nn.d3 - AS_UINT_V((q.d2 > 0x7FFF)?1:0);
+  q.d4 = q.d4 - nn.d4 - AS_UINT_V((q.d3 > 0x7FFF)?1:0);
+#ifdef CHECKS_MODBASECASE
+  q.d5 = q.d5 - nn.d5 - AS_UINT_V((q.d4 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
+  q.d5 &= 0x7FFF;// PERF: not needed: should be zero anyway
+#endif
+  q.d0 &= 0x7FFF;
+  q.d1 &= 0x7FFF;
+  q.d2 &= 0x7FFF;
+  q.d3 &= 0x7FFF;
+  q.d4 &= 0x7FFF;
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf("div_150_75#4.7: q=..:%x:%x:%x:%x!%x:%x:%x:%x:%x\n",
+        q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0);
+#endif
+ MODBASECASE_NONZERO_ERROR(q.d5, 3, 5, 8);
+
+/********** Step 5, final compare **********/
+
+
+//  res->d0=q.d0;
+//  res->d1=q.d1;
+//  res->d2=q.d2;
+
+  tmp75.d0=q.d0;
+  tmp75.d1=q.d1;
+  tmp75.d2=q.d2;
+  tmp75.d3=q.d3;
+  tmp75.d4=q.d4;
+
+/*
+qi is allways a little bit too small, this is OK for all steps except the last
+one. Sometimes the result is a little bit bigger than n
+*/
+  inc_if_ge_75(res, tmp75, n);
+}
+
+
 void mod_simple_75(int75_v * const res, const int75_v q, const int75_v n, const float_v nf
 #if (TRACE_KERNEL > 1)
                   , const uint tid
@@ -2063,8 +2477,8 @@ a is precomputed on host ONCE.
   __private int150_v b, tmp150;
   __private int75_v tmp75;
   __private float_v ff;
-  __private uint tid, bit_max_75=75-bit_max, bit_max_60=bit_max-60; //bit_max is 60 .. 73
-  __private uint bit_max75_mult = 1 << bit_max_75; /* used for bit shifting... */
+  __private uint tid, _2bit_max_41=(bit_max-41)<<1, bit_max_60=bit_max-60; //bit_max is 60 .. 73
+  __private uint bit_max75_mult = 1 << (75-bit_max); /* used for bit shifting... */
   __private uint_v t;
 
   // implicitely assume b > 2^30 and use the 8 fields of the uint8 for d2-d9
@@ -2073,9 +2487,18 @@ a is precomputed on host ONCE.
 	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
 
   // exp75.d4=0;exp75.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
-  exp75.d2=exp>>29;exp75.d1=(exp>>14)&0x7FFF;exp75.d0=(exp<<1)&0x7FFF;	// exp75 = 2 * exp
+#ifndef SMALL_EXP
+  exp75.d2=exp>>29;
+  exp75.d1=(exp>>14)&0x7FFF;
+#else
+  exp75.d1=exp>>14;
+#endif
+  exp75.d0=(exp<<1)&0x7FFF;	// exp75 = 2 * exp
 
 #if (TRACE_KERNEL > 1)
+#ifdef SMALL_EXP
+  exp75.d2=0;
+#endif
   if (tid==TRACE_TID) printf("barrett15_75: exp=%d, x2=%x:%x:%x, b=%x:%x:%x:%x:%x:%x:%x:%x:0:0, k_base=%x:%x:%x:%x:%x\n",
         exp, exp75.d2, exp75.d1, exp75.d0, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, bb.d3, bb.d2, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0);
 #endif
@@ -2127,9 +2550,11 @@ a is precomputed on host ONCE.
   k.d1 &= 0x7FFF;
   k.d3  = (k.d2 >> 15) + k_base.d3;
   k.d2 &= 0x7FFF;
+#ifndef SMALL_EXP
   k.d4  = (k.d3 >> 15) + k_base.d4;  // PERF: k.d4 = 0, normally. Can we limit k to 2^60?
   k.d3 &= 0x7FFF;
-        
+#endif
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("barrett15_75: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
         tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -2143,18 +2568,23 @@ a is precomputed on host ONCE.
 
   f.d2 = mad24(k.d2, exp75.d0, f.d1 >> 15);
   f.d2 = mad24(k.d1, exp75.d1, f.d2);
+#ifndef SMALL_EXP
   f.d2 = mad24(k.d0, exp75.d2, f.d2);  // PERF: if we limit exp at kernel compile time to 2^29, then we can skip exp75.d2 here and above.
+#endif
   f.d1 &= 0x7FFF;
 
   f.d3 = mad24(k.d3, exp75.d0, f.d2 >> 15);
   f.d3 = mad24(k.d2, exp75.d1, f.d3);
+#ifndef SMALL_EXP
   f.d3 = mad24(k.d1, exp75.d2, f.d3);
-//  f.d3 = mad24(k.d0, exp75.d3, f.d3);    // exp75.d3 = 0
+#endif
   f.d2 &= 0x7FFF;
 
-  f.d4 = mad24(k.d4, exp75.d0, f.d3 >> 15);  // PERF: see above
-  f.d4 = mad24(k.d3, exp75.d1, f.d4);
+  f.d4 = mad24(k.d3, exp75.d1, f.d3 >> 15);
+#ifndef SMALL_EXP
+  f.d4 = mad24(k.d4, exp75.d0, f.d4);  // PERF: see above
   f.d4 = mad24(k.d2, exp75.d2, f.d4);
+#endif
   f.d3 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 1)
@@ -2169,14 +2599,9 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
         
-        
   // OpenCL shifts 32-bit values by 31 at most
-  tmp150.d9 = (0x8000 >> (bit_max_75)) >> (bit_max_75);	// tmp150 = 2^(2*bit_max)
-  tmp150.d8 = ((1 << (bit_max_60)) << (bit_max_60))&0x7FFF;   // 1 << (b << 1) = (1 << b) << b
-  tmp150.d7 = 0; tmp150.d6 = 0; tmp150.d5 = 0; tmp150.d4 = 0; tmp150.d3 = 0; tmp150.d2 = 0; tmp150.d1 = 0; tmp150.d0 = 0;
-  // PERF: as div is only used here, use all those zeros directly in there and evaluate only d9 and d8, or keep all in d8 (30 bits, omit d9)
-
-  div_150_75(&u,tmp150,f,ff
+  // the float-parm (exp2) matches the qf value of the first step in the div_150_75 function 
+  div_float_75(&u, native_exp2(convert_float(_2bit_max_41)), (1 << bit_max_60) << bit_max_60, f, ff
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
@@ -2216,9 +2641,9 @@ Precalculated here since it is the same for all steps in the following loop */
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
     // PERF: shouldn't all those bb's be 0, thus always require a borrow?
-  tmp75.d0 = (bb.d0 - tmp75.d0) & 0x7FFF;
-  tmp75.d1 = (bb.d1 - tmp75.d1 - AS_UINT_V((tmp75.d0 > bb.d0) ? 1 : 0 ));
-  tmp75.d2 = (bb.d2 - tmp75.d2 - AS_UINT_V((tmp75.d1 > bb.d1) ? 1 : 0 ));
+  tmp75.d0 = (-tmp75.d0) & 0x7FFF;
+  tmp75.d1 = (-tmp75.d1 - 1);
+  tmp75.d2 = (bb.d2 - tmp75.d2 - 1);
   tmp75.d3 = (bb.d3 - tmp75.d3 - AS_UINT_V((tmp75.d2 > bb.d2) ? 1 : 0 ));
   tmp75.d4 = (bb.d4 - tmp75.d4 - AS_UINT_V((tmp75.d3 > bb.d3) ? 1 : 0 ));
   tmp75.d1 &= 0x7FFF;
@@ -2238,13 +2663,13 @@ Precalculated here since it is the same for all steps in the following loop */
                );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
 #else
   int limit = 6;
-  if(bit_max_75 == 2) limit = 8;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-  if(bit_max_75 == 3) limit = 7;						// bit_max == 66, ...
+  if(75 - bit_max == 2) limit = 8;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
+  if(75 - bit_max == 3) limit = 7;						// bit_max == 66, ...
   mod_simple_75(&a, tmp75, f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
-                   , bit_max_75, limit, modbasecase_debug);
+                   , 75 - bit_max, limit, modbasecase_debug);
 #endif
   
 #if (TRACE_KERNEL > 2)
@@ -2326,13 +2751,13 @@ Precalculated here since it is the same for all steps in the following loop */
                  );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
 #else
     int limit = 6;
-    if(bit_max_75 == 2) limit = 8;					// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-    if(bit_max_75 == 3) limit = 7;					// bit_max == 66, ...
+    if(75 - bit_max == 2) limit = 8;					// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
+    if(75 - bit_max == 3) limit = 7;					// bit_max == 66, ...
     mod_simple_75(&a, tmp75, f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
-                   , bit_max_75, limit, modbasecase_debug);
+                   , 75 - bit_max, limit, modbasecase_debug);
 #endif
 
     exp+=exp;

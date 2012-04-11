@@ -151,6 +151,7 @@ typedef struct
   cl_uint printmode;
   cl_uint class_counter;		/* needed for ETA calculation */
   cl_uint allowsleep;
+  cl_uint small_exp;
   cl_uint quit; 
   char workfile[51];		/* allow filenames up to 50 chars... */
   char inifile[51];		/* allow filenames up to 50 chars... */
