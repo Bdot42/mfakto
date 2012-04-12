@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.11
+Version 0.11pre3
 */
 
 /* This file will be included TWICE by the main kernel file, once with
@@ -281,7 +281,7 @@ void mod_144_72
   nn.d4 += nn.d3 >> 24; nn.d3 &= 0xFFFFFF;
   nn.d5 += nn.d4 >> 24; nn.d4 &= 0xFFFFFF;
 
-  MODBASECASE_NN_BIG_ERROR(0xFFFFFF, 1, nn.d5, 1);
+//  MODBASECASE_NN_BIG_ERROR(0xFFFFFF, 1, nn.d5, 1);
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("mod_144_72#1: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
