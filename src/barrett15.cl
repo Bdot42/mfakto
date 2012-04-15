@@ -292,19 +292,6 @@ typedef struct _int180_v
 # error "invalid BARRETT_VECTOR_SIZE"
 #endif
 
-void mul_60(int60_v * const res, const int60_v a, const int60_v b);
-void mul_60_120_no_low2(int120_v *const res, const int60_v a, const int60_v b);
-void mul_60_120_no_low3(int120_v *const res, const int60_v a, const int60_v b);
-
-void mul_75(int75_v * const res, const int75_v a, const int75_v b);
-void mul_75_150_no_low2(int150_v *const res, const int75_v a, const int75_v b);
-void mul_75_150_no_low3(int150_v *const res, const int75_v a, const int75_v b);
-
-void mul_90(int90_v * const res, const int90_v a, const int90_v b);
-void mul_90_180_no_low2(int180_v *const res, const int90_v a, const int90_v b);
-void mul_90_180_no_low3(int180_v *const res, const int90_v a, const int90_v b);
-
-
 
 /****************************************
  ****************************************
@@ -1507,17 +1494,53 @@ res = a * b
 
 
 void square_75_150(int150_v * const res, const int75_v a)
-/* res = a^2 = a.d0^2 + a.d1^2 + a.d2^2 + a.d3^2 + ...
-         2(a.d0*a.d1 + a.d0*a.d2 + a.d0*a.d3 + a.d1*a.d2 + a.d1*a.d3 + a.d2*a.d3 ...)
-       = a.d0^2 + a.d1^2 + a.d2^2 + a.d3^2 +
-         2(a.d0(a.d1+a.d2) + a.d1(a.d2+a.d3) + a.d3(a.d0+a.d2)) ...
+/* res = a^2 = d0^2 + 2d0d1 + d1^2 + 2d0d2 + 2(d1d2 + d0d3) + d2^2 +
+               2(d0d4 + d1d3) + 2(d1d4 + d2d3) + d3^2 + 2d2d4 + 2d3d4 + d4^2
    */
 {
+    // assume we have enough spare bits and can do all the carries at the very end:
+  // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
+  // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
+  // one (almost two) carry of 17 bit (32-bit >> 15)
+  // mul 5x5 requires: 25 mul/mad24, 10 shift, 10 and, 1 add
 
+  res->d0 = mul24(a.d0, a.d0);
 
-  /* for now, use the complete implementation, optimize later */
+  res->d1 = mad24(a.d1, a.d0 << 1, res->d0 >> 15);
+  res->d0 &= 0x7FFF;
 
-  mul_75_150(res, a, a);
+  res->d2 = mad24(a.d1, a.d1, res->d1 >> 15);
+  res->d2 = mad24(a.d2, a.d0 << 1, res->d2);
+  res->d1 &= 0x7FFF;
+
+  res->d3 = mad24(a.d3, a.d0 << 1, res->d2 >> 15);
+  res->d3 = mad24(a.d2, a.d1 << 1, res->d3);
+  res->d2 &= 0x7FFF;
+
+  res->d4 = mad24(a.d4, a.d0 << 1, res->d3 >> 15);
+  res->d3 &= 0x7FFF;
+  res->d4 = mad24(a.d3, a.d1 << 1, res->d4);
+   // 5th mad24 can overflow d4, need to handle carry before: pull in the first d5 line
+  res->d5 = mad24(a.d4, a.d1 << 1, res->d4 >> 15);
+  res->d4 &= 0x7FFF;
+  res->d4 = mad24(a.d2, a.d2, res->d4);  // 31-bit at most
+
+  res->d5 = mad24(a.d3, a.d2 << 1, res->d4 >> 15) + res->d5;
+  res->d4 &= 0x7FFF;
+  // now we have in d5: 4x mad24() + 1x 17-bit carry + 1x 16-bit carry: still fits into 32 bits
+
+  res->d6 = mad24(a.d4, a.d2 << 1, res->d5 >> 15);
+  res->d6 = mad24(a.d3, a.d3, res->d6);
+  res->d5 &= 0x7FFF;
+
+  res->d7 = mad24(a.d4, a.d3 << 1, res->d6 >> 15);
+  res->d6 &= 0x7FFF;
+
+  res->d8 = mad24(a.d4, a.d4, res->d7 >> 15);
+  res->d7 &= 0x7FFF;
+
+  res->d9 = res->d8 >> 15;
+  res->d8 &= 0x7FFF;
 }
 
 

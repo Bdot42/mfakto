@@ -56,6 +56,9 @@ TODO
 +DONE+ - bugfix for "Only 1 platforms found, cannot use platform 1 ..."
 +DONE+ - lock results file
 +DONE+ - bugfix for total runtime calculation if a factor was found in a restarted run
++DONE+ - test optimisation options on Linux
++DONE+ - fast 64-bit kernel (mul24_63)
++DONE+ - 5x15bit based on mul24 (barrett15_75)
 
 - display GHz-days/day: 0.016968 * pow(2, $bitlevel - 48) * 1680 / $exponent
 
@@ -68,10 +71,23 @@ TODO
   // magic constant is 0.01116 for 62-bit and below
 
   Then all you need is: 86400 / (time_per_class * classes_per_exponent) * ghz_days_assignment
+  %c - class ID (n/4620)
+  %C - class number (n/960)
+  %p - percent complete (%)
+  %g - GHz-days/day (GHz)
+  %t - time per class (s)
+  %e - eta (d/h/m/s)
+  %n - number of candidates (M/G)
+  %r - rate (M/s)
+  %s - SievePrimes
+  %w - CPU wait time for GPU (us)
+  %W - CPU wait % (%)
+  %d - date (Mon nn)
+  %T - time (HH:MM)
+  into an array {pos (0=off), format, output}, fill as it comes in, print in a loop
 - dynamic sieve size, adjusting as SievePrimes changes
 - worktodo.add
 - AllowSleep
-- test optimisation options on Linux
 - test if fix SieveSizeLimit is faster : yes, is. Provide 3 fix size sieve functions and dynamically use them.
 - run all tests with SievePrimes 256 and 1000
 - perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
@@ -81,9 +97,7 @@ TODO
 - output datestamp lines in results.txt [Sat Dec 31 21:29:40 2011]
 - serialize memory access for vector kernels
 - div/mul-modulo for 96 bits
-- fast 64-bit kernel (barrett)
-- enhanced barrett for >64bit, based on mul24
-- 5/6x15bit based on mul24
+- 6x15bit based on mul24
 - mu = 2^(bitlevel+1) / FC on host?
 - kernel trace more specific (bitmask)
 - error handling: RES[0] -= 100; save up to 3 ints in RES; only in single-vec
@@ -104,3 +118,4 @@ TODO
 - SDK 2.6: __attribute__((always_inline)), set environment variable GPU_ASYNC_MEM_COPY=2, Profiler
 - PERF: (d0 + d1 + d2 + d3 + d4)^2 = d0^2 + 2d0d1 + d1^2 + 2d0d2 + 2(d1d2 + d0d3) + d2^2 + 2(d0d4 + d1d3) + 2(d1d4 + d2d3) + d3^2 + 2d2d4 + 2d3d4 + d4^2
   => any better than current a x b in 15-bit-kernel
+- Auto-adjust VectorSize per kernel
