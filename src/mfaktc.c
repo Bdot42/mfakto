@@ -150,7 +150,7 @@ other return value
   }
 
   if(use_kernel == AUTOSELECT_KERNEL)
-  {  // this is probably the speed order for VLIW4, Cayman (HD6970)
+  {  // this is probably the speed order for VLIW4, Cayman (HD6970), and most likely also for GCN
     if (mystuff->preferredKernel == _71BIT_MUL24)  // maybe this can be bound to some version/feature/capability or be tested during selftest
     {
       if      ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 295M/s on HD6970
@@ -505,8 +505,8 @@ RET_ERROR we might have a serios problem
   unsigned long long int k[NUM_SELFTESTS];
   int retval=1, ind;
   enum GPUKernels kernels[9];
-  unsigned int index[] = {    82, 2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
-                             70,   72,   73,   88,   // some factors below 2^75 (test 75 bit kernel)
+  unsigned int index[] = {    2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+                             70,   72,   73,  82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
                            1547, 1552, 1556, 1557    // some factors below 2^95 (test 95 bit kernel)
                          };                          // mfakto special case (25-bit factor)

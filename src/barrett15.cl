@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.11pre3
+Version 0.11pre4
 */
 
 /****************************************
@@ -1383,8 +1383,8 @@ void mul_75(int75_v * const res, const int75_v a, const int75_v b)
 void mul_75_150_no_low3(int150_v * const res, const int75_v a, const int75_v b)
 /*
 res ~= a * b
-res.d0 to res.d2 are NOT computed. Carries to res.d2 are ignored,
-too. So the digits res.d{4-9} might differ from mul_75_150(). 
+res.d0 to res.d2 are NOT computed. Carries to res.d3 are ignored,
+too. So the digits res.d{3-9} might differ from mul_75_150().
  */
 {
   // assume we have enough spare bits and can do all the carries at the very end:
@@ -1436,7 +1436,8 @@ void mul_75_150(int150_v * const res, const int75_v a, const int75_v b)
 res = a * b
  */
 {
-  /* this is the complete implementation, optimize later */
+  /* this is the complete implementation, no longer used, but was the basis for
+     the _no_low3 and square functions */
   // assume we have enough spare bits and can do all the carries at the very end:
   // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
   // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
@@ -1498,11 +1499,11 @@ void square_75_150(int150_v * const res, const int75_v a)
                2(d0d4 + d1d3) + 2(d1d4 + d2d3) + d3^2 + 2d2d4 + 2d3d4 + d4^2
    */
 {
-    // assume we have enough spare bits and can do all the carries at the very end:
+  // assume we have enough spare bits and can do all the carries at the very end:
   // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
   // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
   // one (almost two) carry of 17 bit (32-bit >> 15)
-  // mul 5x5 requires: 25 mul/mad24, 10 shift, 10 and, 1 add
+  // square 5x5 requires: 15 mul/mad24, 14 shift, 10 and, 1 add
 
   res->d0 = mul24(a.d0, a.d0);
 
