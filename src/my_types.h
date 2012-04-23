@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -16,6 +16,34 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
+
+/* 60bit (4x 15bit) integer
+D=d0 + d1*(2^15) + d2*(2^30) ... */
+typedef struct
+{
+  cl_uint d0,d1,d2,d3;
+}int60;
+
+/* 120bit (8x 15bit) integer
+D=d0 + d1*(2^15) + d2*(2^30) + ... */
+typedef struct
+{
+  cl_uint d0,d1,d2,d3,d4,d5,d6,d7;
+}int120;
+
+/* 75bit (5x 15bit) integer
+D=d0 + d1*(2^15) + d2*(2^30) ... */
+typedef struct
+{
+  cl_uint d0,d1,d2,d3,d4;
+}int75;
+
+/* 150bit (10x 15bit) integer
+D=d0 + d1*(2^15) + d2*(2^30) + ... */
+typedef struct
+{
+  cl_uint d0,d1,d2,d3,d4,d5,d6,d7,d8,d9;
+}int150;
 
 /* 72bit (3x 24bit) integer
 D=d0 + d1*(2^24) + d2*(2^48) */
@@ -77,6 +105,8 @@ enum GPUKernels
   BARRETT72_MUL24,
   BARRETT79_MUL32,
   BARRETT92_MUL32,
+  BARRETT58_MUL15,
+  BARRETT73_MUL15,
   UNKNOWN_KERNEL, /* what comes after this one will not be loaded automatically*/
   _64BIT_64_OpenCL,
   BARRETT92_64_OpenCL,
@@ -121,6 +151,7 @@ typedef struct
   cl_uint printmode;
   cl_uint class_counter;		/* needed for ETA calculation */
   cl_uint allowsleep;
+  cl_uint small_exp;
   cl_uint quit; 
   char workfile[51];		/* allow filenames up to 50 chars... */
   char inifile[51];		/* allow filenames up to 50 chars... */

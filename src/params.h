@@ -32,13 +32,13 @@ of your CPUs L1-Data cache.
 This is just the upper LIMIT of the SIEVE_SIZE, the actual sieve size depends
 on some other factors as well, but you don't have to worry about.
 
-If this define is not set, an ini-file key SieveSizeLimit will be evaluated to
+If this #define is not set, an ini-file key SieveSizeLimit will be evaluated to
 set it. This allows for adjusting the SieveSize, but may be up to 3% slower
-than an equal SIEVE_SIZE_LIMIT define.
+than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
-#define SIEVE_SIZE_LIMIT 36
+//#define SIEVE_SIZE_LIMIT 36
 
 
 /******************
@@ -98,9 +98,9 @@ code path - not used by mfakto, see kernel trace */
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.11-pre2" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11-pre4" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.11-pre2-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11-pre4-Win" /* DO NOT CHANGE! */
 #endif
 
 

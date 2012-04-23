@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.10p1
+Version 0.11pre4
 */
 
 /****************************************
@@ -1635,7 +1635,7 @@ a is precomputed on host ONCE.
   k.d1 = mad_hi(t, 4620u, k_base.d1) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
         
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf("mfakto_cl_barrett92: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
+    if (tid==TRACE_TID) printf("mfakto_cl_barrett79: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 

@@ -20,7 +20,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #ifndef mfakto_H_
 #define mfakto_H_
 
-#define NUM_KERNELS 15
+#define NUM_KERNELS 17
 #define KERNEL_FILE "mfakto_Kernels.cl"
 
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.11
+Version 0.11pre4
 */
 
 /* This file will be included TWICE by the main kernel file, once with
@@ -31,122 +31,6 @@ Version 0.11
  * for the 71-bit-kernel
  *
  ***********************************************/
-
-#ifdef CHECKS_MODBASECASE
-// this check only works for single vector (i.e. no vector)
-#if (VECTOR_SIZE != 1)
-# error "CHECKS_MODBASECASE only works with VECTOR_SIZE = 1"
-#endif
-// to make tf_debug.h happy:
-#define USE_DEVICE_PRINTF
-#define __CUDA_ARCH__ 200
-
-#include "tf_debug.h"
-
-#else
-
-#define MODBASECASE_QI_ERROR(A, B, C, D)
-#define MODBASECASE_NONZERO_ERROR(A, B, C, D)
-#define MODBASECASE_NN_BIG_ERROR(A, B, C, D)
-
-#endif
-
-#if (VECTOR_SIZE == 1)
-typedef struct _int72_v
-{
-  uint d0,d1,d2;
-}int72_v;
-
-typedef struct _int144_v
-{
-  uint d0,d1,d2,d3,d4,d5;
-}int144_v;
-
-#define int_v int
-#define uint_v uint
-#define float_v float
-#define CONVERT_FLOAT_V convert_float
-#define CONVERT_UINT_V convert_uint
-#define AS_UINT_V as_uint
-// tracing does not work with no vectors ...
-
-#elif (VECTOR_SIZE == 2)
-typedef struct _int72_v
-{
-  uint2 d0,d1,d2;
-}int72_v;
-
-typedef struct _int144_v
-{
-  uint2 d0,d1,d2,d3,d4,d5;
-}int144_v;
-
-#define int_v int2
-#define uint_v uint2
-#define float_v float2
-#define CONVERT_FLOAT_V convert_float2
-#define CONVERT_UINT_V convert_uint2
-#define AS_UINT_V as_uint2
-#define s0 x  // to make traceing work
-#elif (VECTOR_SIZE == 4)
-typedef struct _int72_v
-{
-  uint4 d0,d1,d2;
-}int72_v;
-
-typedef struct _int144_v
-{
-  uint4 d0,d1,d2,d3,d4,d5;
-}int144_v;
-
-#define int_v int4
-#define uint_v uint4
-#define float_v float4
-#define CONVERT_FLOAT_V convert_float4
-#define CONVERT_UINT_V convert_uint4
-#define AS_UINT_V as_uint4
-#define s0 x  // to make traceing work
-
-#elif (VECTOR_SIZE == 8)
-typedef struct _int72_v
-{
-  uint8 d0,d1,d2;
-}int72_v;
-
-typedef struct _int144_v
-{
-  uint8 d0,d1,d2,d3,d4,d5;
-}int144_v;
-
-#define int_v int8
-#define uint_v uint8
-#define float_v float8
-#define CONVERT_FLOAT_V convert_float8
-#define CONVERT_UINT_V convert_uint8
-#define AS_UINT_V as_uint8
-
-#elif (VECTOR_SIZE == 16)
-//# error "Vector size 16 is so slow, don't use it. If you really want to, remove this #error."
-typedef struct _int72_v
-{
-  uint16 d0,d1,d2;
-}int72_v;
-
-typedef struct _int144_v
-{
-  uint16 d0,d1,d2,d3,d4,d5;
-}int144_v;
-
-#define int_v int16
-#define uint_v uint16
-#define float_v float16
-#define CONVERT_FLOAT_V convert_float16
-#define CONVERT_UINT_V convert_uint16
-#define AS_UINT_V as_uint16
-
-#else
-# error "invalid VECTOR_SIZE"
-#endif
 
 
 void mul_24_48(uint_v * const res_hi, uint_v * const res_lo, const uint_v a, const uint_v b)
@@ -177,7 +61,7 @@ int72_v sub_if_gte_72(const int72_v a, const int72_v b)
   /* tmp valid if tmp.d2 <= a.d2 (separately for each part of the vector) */
   tmp.d0 = (tmp.d2 > a.d2) ? a.d0 : tmp.d0;
   tmp.d1 = (tmp.d2 > a.d2) ? a.d1 : tmp.d1;
-  tmp.d2 = (tmp.d2 > a.d2) ? a.d2 : tmp.d2 & 0xFFFFFF;
+  tmp.d2 = (tmp.d2 > a.d2) ? a.d2 : tmp.d2;  //  & 0xFFFFFF not necessary as tmp.d4 is <= a.d4
 
   return tmp;
 }
@@ -397,7 +281,7 @@ void mod_144_72
   nn.d4 += nn.d3 >> 24; nn.d3 &= 0xFFFFFF;
   nn.d5 += nn.d4 >> 24; nn.d4 &= 0xFFFFFF;
 
-  MODBASECASE_NN_BIG_ERROR(0xFFFFFF, 1, nn.d5, 1);
+//  MODBASECASE_NN_BIG_ERROR(0xFFFFFF, 1, nn.d5, 1);
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("mod_144_72#1: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",

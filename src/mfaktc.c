@@ -150,24 +150,25 @@ other return value
   }
 
   if(use_kernel == AUTOSELECT_KERNEL)
-  {
+  {  // this is probably the speed order for VLIW4, Cayman (HD6970), and most likely also for GCN
     if (mystuff->preferredKernel == _71BIT_MUL24)  // maybe this can be bound to some version/feature/capability or be tested during selftest
     {
-      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;
-      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;
-      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
-      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
+      if      ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 295M/s on HD6970
+      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 203M/s
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 207M/s
+      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 211M/s
+      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 195M/s
+      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 155M/s
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
     }
     else
-    {
-      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;
-      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
-//      if      ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;
-      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;
-      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
+    {  // this is the speed order for VLIW5, HD5770, for instance
+      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 321M/s on HD5870
+      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 288M/s
+      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 258M/s
+      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 255M/s
+      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 236M/s
+      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 205M/s
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
     }
 
@@ -276,6 +277,8 @@ other return value
           case _63BIT_MUL24:
           case _64BIT_64_OpenCL:
           case _95BIT_64_OpenCL:
+          case BARRETT58_MUL15:
+          case BARRETT73_MUL15:
           case BARRETT72_MUL24:
           case BARRETT79_MUL32:
           case BARRETT92_MUL32:
@@ -390,6 +393,18 @@ k_max and k_min are used as 64bit temporary integers here...
         
         f_low  &= 0x00FFFFFF;
       }
+      else if ((use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
+      {
+        // 30 bits per reported result int
+        f_hi  <<= 4;
+        f_hi   += f_med >> 28;
+
+        f_med <<= 2;
+        f_med  += f_low >> 30;
+        f_med  &= 0x3FFFFFFF;
+        
+        f_low  &= 0x3FFFFFFF;
+      }
       k_min=0; /* using k_min for counting the number of matches here */
       for(i=0; (i<mystuff->h_RES[0]) && (i<10); i++)
       {
@@ -490,11 +505,11 @@ RET_ERROR we might have a serios problem
   unsigned long long int k[NUM_SELFTESTS];
   int retval=1, ind;
   enum GPUKernels kernels[9];
-  unsigned int index[] = {  2 , 25,  57,     // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
-                            70 , 72,  73,  88,  106,    // some factors below 2^75 (test 75 bit kernel)
-                            355, 358, 666,   // some very small factors
-                           1547, 1552, 1556, // some factors below 2^95 (test 95 bit kernel)
-                           1557 };           // mfakto special case (25-bit factor)
+  unsigned int index[] = {    2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+                             70,   72,   73,  82,  88,   // some factors below 2^75 (test 75 bit kernel)
+                            106,  355,  358,  666,   // some very small factors
+                           1547, 1552, 1556, 1557    // some factors below 2^95 (test 95 bit kernel)
+                         };                          // mfakto special case (25-bit factor)
   if (type == MODE_SELFTEST_FULL)
     selftests_to_run = NUM_SELFTESTS;
   else
@@ -502,14 +517,16 @@ RET_ERROR we might have a serios problem
 
 #include "selftest-data.h"
 
+  register_signal_handler(mystuff);
+
   for(i=0; i<selftests_to_run; i++)
   {
     if(type == MODE_SELFTEST_SHORT)
     {
       if (i < (sizeof(index)/sizeof(index[0])))
       {
-        printf("########## testcase %d/%d ##########\r", i+1, (int) (sizeof(index)/sizeof(index[0])));
         ind = index[i];
+        printf("########## testcase %d/%d (#%d) ##########\r", i+1, (int) (sizeof(index)/sizeof(index[0])), ind);
       }
       else
         break; // short test done
@@ -528,7 +545,8 @@ RET_ERROR we might have a serios problem
     if ((bit_min[ind] >= 61) && (bit_min[ind] < 72))   kernels[j++] = _71BIT_MUL24;
     if ((bit_min[ind] >= 64) && (bit_min[ind] < 79))   kernels[j++] = BARRETT79_MUL32; 
     if ((bit_min[ind] >= 64) && (bit_min[ind] < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-    if ((bit_min[ind] >= 63) && (bit_min[ind] < 70))   kernels[j++] = BARRETT72_MUL24; 
+    if ((bit_min[ind] >= 63) && (bit_min[ind] < 70))   kernels[j++] = BARRETT72_MUL24;
+    if ((bit_min[ind] >= 60) && (bit_min[ind] < 73))   kernels[j++] = BARRETT73_MUL15;
 //
 //      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
 
@@ -545,7 +563,9 @@ RET_ERROR we might have a serios problem
       printf("Test %d finished, so far suc: %d, no: %d, wr: %d, unk: %d\n", num_selftests, st_success, st_nofactor, st_wrongfactor, st_unknown);
       fflush(NULL);
 #endif
+      if (mystuff->quit) break;
     }
+    if (mystuff->quit) break;
   }
 
   printf("Selftest statistics                          \n");

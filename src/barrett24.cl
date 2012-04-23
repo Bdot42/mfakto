@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.11
+Version 0.11pre4
 */
 
 /****************************************
@@ -278,8 +278,8 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 #endif
 
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf("div_144_72#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, res=%x:%x:%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+    if (tid==TRACE_TID) printf("div_144_72#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, res=%x:..:..\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, res->d2.s0);
 #endif
 
 //  nn.d0=0;
@@ -290,8 +290,8 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 //  nn.d3  = (mul_hi(n.d0, qi) << 11) | (tmp >> 21);
   nn.d2  = (tmp << 3) & 0xFFFFFF;
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_144_72#1.1: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+  if (tid==TRACE_TID) printf("div_144_72#1.1: nn=..:..:%x:%x:..:..\n",
+        nn.d3.s0, nn.d2.s0);
 #endif
 
   tmp    =  mul24(n.d1, qi);
@@ -300,8 +300,8 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 //  nn.d3 += (tmp << 3) & 0xFFFFFF;
   nn.d3  =  mad24((tmp & 0x1FFFFF), 8u, nn.d3);
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_144_72#1.2: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+  if (tid==TRACE_TID) printf("div_144_72#1.2: nn=..:%x:%x:%x:..:..\n",
+        nn.d4.s0, nn.d3.s0, nn.d2.s0);
 #endif
 
   tmp    =  mul24(n.d2, qi);
@@ -310,8 +310,8 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 //  nn.d4 += (tmp << 3) & 0xFFFFFF;
   nn.d4  =  mad24((tmp & 0x1FFFFF), 8u, nn.d4);
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_144_72#1.3: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+  if (tid==TRACE_TID) printf("div_144_72#1.3: nn=%x:%x:%x:%x:..:..\n",
+        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
 #endif
 
 
@@ -677,7 +677,7 @@ assumes q < 6n (6n includes "optional mul 2")
 */
 {
   __private float_v qf;
-  __private uint_v qi, tmp;
+  __private uint_v qi;
   __private int72_v nn;
 
   qf = CONVERT_FLOAT_V(q.d2);
@@ -716,17 +716,14 @@ are "out of range".
         q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
 #endif
 
-  tmp   = mul24(n.d0, qi);
-  nn.d1 = mad24(mul_hi(n.d0, qi), 256u, tmp >> 24);
-  nn.d0 = tmp & 0xFFFFFF;
-
-  tmp   = mul24(n.d1, qi);
-  nn.d2 = mad24(mul_hi(n.d1, qi), 256u, tmp >> 24);
-  nn.d1 += tmp & 0xFFFFFF;
-
-  nn.d2 += mad24(n.d2, qi, nn.d1 >> 24);
+  // qi < 8 bit, so no mul_hi is needed (+3% total speed)
+  nn.d0 = mul24(n.d0, qi);
+  nn.d1 = mad24(n.d1, qi, nn.d0 >> 24);
+  nn.d2 = mad24(n.d2, qi, nn.d1 >> 24);
+  nn.d0 &= 0xFFFFFF;
   nn.d1 &= 0xFFFFFF;
-
+  
+  
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("mod_simple_72: nn=%x:%x:%x\n",
         nn.d2.s0, nn.d1.s0, nn.d0.s0);
@@ -765,9 +762,9 @@ bit_max64 is bit_max - 64! (1 .. 8)
   __private int144_v b, tmp144;
   __private int72_v tmp72;
   __private float_v ff;
-  __private uint bit_max48 = 16 + bit_max64; /* used for bit shifting... */
-  __private uint bit_max48_24 = 24 - bit_max48; /* used for bit shifting... */
-  __private uint bit_max48_24_mult = 1 << bit_max48_24; /* used for bit shifting... */
+  __private uint bit_max48 = 16 + bit_max64; /* = bit_max - 48, used for bit shifting... */
+  __private uint bit_max48_24 = 24 - bit_max48; /* = 72 - bit_max, used for bit shifting... */
+  __private uint bit_max48_24_mult = 1 << bit_max48_24; /* = 2 ^ (72 - bit_max), used for bit shifting... */
   __private uint tid;
   __private uint_v t;
 

@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -15,6 +15,9 @@ GNU General Public License for more details.
                                 
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
+
+Version 0.11pre4
+
 */
 /*
  All OpenCL kernels for mfakto Trial-Factoring, version 0.10
@@ -33,7 +36,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
     Since we've shown that 47 is a factor, 2^23-1 is not prime.
  */
 
-// In Catalyst 11.10 and 11.11, not all parameters were passed to the kernel
+// Starting with Catalyst 11.10, not all parameters were passed to the kernel
 // -> replace user-defined struct with uint8
 #define WA_FOR_CATALYST11_10_BUG
 
@@ -41,11 +44,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #define TRACE_KERNEL 0
 
 // If above tracing is on, only the thread with the ID below will trace
-#define TRACE_TID 0
-
-// defines how many factor candidates the barrett kernels will process in parallel per thread
-// this is now defined via commandline to the OpenCL compiler
-//#define BARRETT_VECTOR_SIZE 4
+#define TRACE_TID 96
 
 /***********************************
  * DONT CHANGE ANYTHING BELOW THIS *
@@ -101,6 +100,122 @@ typedef struct _int144_t
 }int144_t;
 
 
+#ifdef CHECKS_MODBASECASE
+// this check only works for single vector (i.e. no vector)
+#if (VECTOR_SIZE != 1)
+# error "CHECKS_MODBASECASE only works with VECTOR_SIZE = 1"
+#endif
+// to make tf_debug.h happy:
+#define USE_DEVICE_PRINTF
+#define __CUDA_ARCH__ 200
+
+#include "tf_debug.h"
+
+#else
+
+#define MODBASECASE_QI_ERROR(A, B, C, D)
+#define MODBASECASE_NONZERO_ERROR(A, B, C, D)
+#define MODBASECASE_NN_BIG_ERROR(A, B, C, D)
+
+#endif
+
+#if (VECTOR_SIZE == 1)
+typedef struct _int72_v
+{
+  uint d0,d1,d2;
+}int72_v;
+
+typedef struct _int144_v
+{
+  uint d0,d1,d2,d3,d4,d5;
+}int144_v;
+
+#define int_v int
+#define uint_v uint
+#define float_v float
+#define CONVERT_FLOAT_V convert_float
+#define CONVERT_UINT_V convert_uint
+#define AS_UINT_V as_uint
+// tracing does not work with no vectors ...
+
+#elif (VECTOR_SIZE == 2)
+typedef struct _int72_v
+{
+  uint2 d0,d1,d2;
+}int72_v;
+
+typedef struct _int144_v
+{
+  uint2 d0,d1,d2,d3,d4,d5;
+}int144_v;
+
+#define int_v int2
+#define uint_v uint2
+#define float_v float2
+#define CONVERT_FLOAT_V convert_float2
+#define CONVERT_UINT_V convert_uint2
+#define AS_UINT_V as_uint2
+//#define s0 x  // to make traceing work
+#elif (VECTOR_SIZE == 4)
+typedef struct _int72_v
+{
+  uint4 d0,d1,d2;
+}int72_v;
+
+typedef struct _int144_v
+{
+  uint4 d0,d1,d2,d3,d4,d5;
+}int144_v;
+
+#define int_v int4
+#define uint_v uint4
+#define float_v float4
+#define CONVERT_FLOAT_V convert_float4
+#define CONVERT_UINT_V convert_uint4
+#define AS_UINT_V as_uint4
+//#define s0 x  // to make traceing work
+
+#elif (VECTOR_SIZE == 8)
+typedef struct _int72_v
+{
+  uint8 d0,d1,d2;
+}int72_v;
+
+typedef struct _int144_v
+{
+  uint8 d0,d1,d2,d3,d4,d5;
+}int144_v;
+
+#define int_v int8
+#define uint_v uint8
+#define float_v float8
+#define CONVERT_FLOAT_V convert_float8
+#define CONVERT_UINT_V convert_uint8
+#define AS_UINT_V as_uint8
+
+#elif (VECTOR_SIZE == 16)
+//# error "Vector size 16 is so slow, don't use it. If you really want to, remove this #error."
+typedef struct _int72_v
+{
+  uint16 d0,d1,d2;
+}int72_v;
+
+typedef struct _int144_v
+{
+  uint16 d0,d1,d2,d3,d4,d5;
+}int144_v;
+
+#define int_v int16
+#define uint_v uint16
+#define float_v float16
+#define CONVERT_FLOAT_V convert_float16
+#define CONVERT_UINT_V convert_uint16
+#define AS_UINT_V as_uint16
+
+#else
+# error "invalid VECTOR_SIZE"
+#endif
+
 #ifdef CL_GPU_SIEVE
 #include "sieve.cl"
 #endif
@@ -132,6 +247,7 @@ typedef struct _int144_t
     } \
   }
 
+#include "barrett15.cl"  // mul24-based barrett 73-bit kernel using a word size of 15 bit
 #include "barrett.cl"   // one kernel file for 32-bit-barrett of different vector sizes (1, 2, 4, 8, 16)
 #define EVAL_RES(x) EVAL_RES_b(x)  // no check for f==1 if running the "big" version
 #include "mul24.cl" // one kernel file for 24-bit-kernels of different vector sizes (1, 2, 4, 8, 16)
