@@ -84,12 +84,16 @@ TODO
   %W - CPU wait % (%)
   %d - date (Mon nn)
   %T - time (HH:MM)
-  into an array {pos (0=off), format, output}, fill as it comes in, print in a loop
+  %u - username (as configured)
+  %h - hostname (as configured)
+  into an array {pos (0=off), format, output}, fill as it comes in, print in a loop,
+  sorted index array for fprintf
 - dynamic sieve size, adjusting as SievePrimes changes
 - worktodo.add
 - AllowSleep
 - test if fix SieveSizeLimit is faster : yes, is. Provide 3 fix size sieve functions and dynamically use them.
 - run all tests with SievePrimes 256 and 1000
+- SievePrimesMin
 - perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
 - retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
 - two optional fields in mfaktc.ini for username and computerid, so that if the user fills them out then it puts
