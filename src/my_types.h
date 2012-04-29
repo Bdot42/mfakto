@@ -115,6 +115,36 @@ enum GPUKernels
   _95BIT_MUL32  /* not yet there */
 };
 
+enum PRINT_PARM // cCpgtenrswWdTUHulM .. CcpgtenrswWdTUHMlu
+{
+  CLASS_ID,       //  %C - class ID (n/4620)
+  CLASS_NUM,      //  %c - class number (n/960)
+  PCT_COMPLETE,   //  %p - percent complete (%)
+  GHZ,            //  %g - GHz-days/day (GHz)
+  TIME_PER_CLASS, //  %t - time per class (s)
+  ETA,            //  %e - eta (d/h/m/s)
+  CANDIDATES,     //  %n - number of candidates (M/G)
+  RATE,           //  %r - rate (M/s)
+  SIEVE_PRIMES,   //  %s - SievePrimes
+  CPU_WAIT_TIME,  //  %w - CPU wait time for GPU (us)
+  CPU_WAIT_PCT,   //  %W - CPU wait % (%)
+  DATE_SHORT,     //  %d - date (Mon nn)
+  TIME_SHORT,     //  %T - time (HH:MM)
+  USER,           //  %U - username (as configured)
+  HOST,           //  %H - hostname (as configured), ComputerID
+  EXP,            //  %M - the exponent being worked on
+  LOWER_LIMIT,    //  %l - the lower bit-limit
+  UPPER_LIMIT,    //  %u - the upper bit-limit
+
+  NUM_PRINT_PARM  //
+};
+
+typedef struct
+{
+  cl_uint  pos;  /* the position where this parameter shall appear, 0=unused */
+  char     out[16]; /* fixed size output string */
+  char     parm; /* the parameter, one of cCpgtenrswWdTuhf */
+} print_parameter;
 
 typedef struct
 {
@@ -153,6 +183,11 @@ typedef struct
   cl_uint allowsleep;
   cl_uint small_exp;
   cl_uint quit; 
+  char * p_ptr[20];         /* pointers to the formatted output string arrays, in the order they are being used, allow 20 of them */
+  print_parameter p_par[NUM_PRINT_PARM]; /* to hold the position and strings of each possible parameter */
+  char print_line[512];
+  char V5UserID[51];
+  char ComputerID[51];
   char workfile[51];		/* allow filenames up to 50 chars... */
   char inifile[51];		/* allow filenames up to 50 chars... */
   char resultsfile[51];

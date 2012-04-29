@@ -28,7 +28,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 extern kernel_info_t       kernel_info[];
 
-int my_read_int(char *inifile, char *name, int *value)
+static int my_read_int(char *inifile, char *name, int *value)
 {
   FILE *in;
   char buf[100];
@@ -48,24 +48,96 @@ int my_read_int(char *inifile, char *name, int *value)
   return 1;
 }
 
-int my_read_string(char *inifile, char *name, char *string)
+static int my_read_string(char *inifile, char *name, char *string, unsigned int len)
 {
   FILE *in;
-  char buf[100];
+  char buf[512];
   int found=0;
+  unsigned int idx = strlen(name);
 
   in=fopen(inifile,"r");
   if(!in)return 1;
-  while(fgets(buf,100,in) && !found)
+  while(fgets(buf,512,in) && !found)
   {
-    if(!strncmp(buf,name,strlen(name)) && buf[strlen(name)]=='=')
+    if(!strncmp(buf,name,idx) && buf[idx]=='=')
     {
-      if(sscanf(&(buf[strlen(name)+1]),"%50s",string)==1)found=1;	/* string has enough space for 50+1 chars, see my_types.h */
+      found = strlen(buf + idx + 1);
+      if (found > 0)
+        strncpy(string, buf+idx+1, len > found-1 ? found-1 : len);
+      string[len-1]='\0';
     }
   }
   fclose(in);
   if(found)return 0;
   return 1;
+}
+
+static int set_print_line(mystuff_t *mystuff)
+{
+  char printparms[]="CcpgtenrswWdTUHMlu";  /* list of allowed print parameters,
+                                         when adding some, also update PRINT_PARM in my_types.h */
+  char buf[512]={0};
+  char *ppos;
+  unsigned int i,out_pos=0,out_parm=0;
+
+  for (i=0; i<strlen(printparms); i++)
+  {
+    mystuff->p_par[i].parm = printparms[i];
+    mystuff->p_par[i].pos = 0;
+  }
+
+  for (i=0; i<strlen(mystuff->print_line) && out_pos<510; i++)  // 510 to allow writing 2 bytes plus \0 without checking again
+  {
+    buf[out_pos++] = mystuff->print_line[i];
+    if (mystuff->print_line[i] == '%')
+    {
+      i++;
+      ppos = strchr(printparms, mystuff->print_line[i]);
+      if (ppos != NULL && mystuff->print_line[i]!='\0')
+      {
+        // found a valid param: remember the order number
+        // special handling for strings already known right now (UserID and ComputerID)
+        if (*ppos == 'U')
+        {
+          strncpy(buf+out_pos-1, mystuff->V5UserID, 512 - out_pos);
+          out_pos = out_pos -1 + (unsigned int)strlen(mystuff->V5UserID);
+          strncpy(mystuff->p_par[USER].out, mystuff->V5UserID, 15);
+          mystuff->p_par[USER].out[15]='\0';
+        }
+        else if (*ppos == 'H')
+        {
+          strncpy(buf+out_pos-1, mystuff->ComputerID, 512 - out_pos);
+          out_pos = out_pos -1 + (unsigned int)strlen(mystuff->ComputerID);
+          strncpy(mystuff->p_par[HOST].out, mystuff->ComputerID, 15);
+          mystuff->p_par[HOST].out[15]='\0';
+        }
+        else
+        {
+          // use '%s' in the format string
+          if (out_parm >= 20) // too many params
+          {
+            fprintf(stderr, "Warning: More than 20 parameters in output format - line truncated\n");
+            break;
+          }
+          buf[out_pos++] = 's';
+          // p_ptr[0] ... p_ptr[n] will point to the correct parameter's string,
+          // even allowing to use the same parm multiple times
+          mystuff->p_ptr[out_parm++] = mystuff->p_par[ppos - printparms].out;
+          // remember the posistion, but this is only used as a flag: if != 0, this parm need to be formatted
+          mystuff->p_par[ppos - printparms].pos = out_parm; // starts counting at 1
+        }
+      }
+      else
+      {  
+        buf[out_pos++] = '%';  // double the % sign to escape unknown parms
+        i--;
+      }
+    }
+  }
+
+  strncpy(mystuff->print_line, buf, 512);
+  mystuff->print_line[511]='\0';
+  return 0;
 }
 
 int read_config(mystuff_t *mystuff)
@@ -224,7 +296,7 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_string(mystuff->inifile, "WorkFile", mystuff->workfile))
+  if(my_read_string(mystuff->inifile, "WorkFile", mystuff->workfile, 50))
   {
     sprintf(mystuff->workfile, "worktodo.txt");
     printf("WARNING: Cannot read WorkFile from inifile, using default (%s)\n", mystuff->workfile);
@@ -233,7 +305,7 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_string(mystuff->inifile, "ResultsFile", mystuff->resultsfile))
+  if(my_read_string(mystuff->inifile, "ResultsFile", mystuff->resultsfile, 50))
   {
     printf("WARNING: Cannot read ResultsFile from inifile, using default (results.txt)\n");
     sprintf(mystuff->resultsfile, "results.txt");
@@ -335,6 +407,45 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
+  if (my_read_string(mystuff->inifile, "V5UserID", mystuff->V5UserID, 50))
+  {
+    /* no problem, don't use any */
+    mystuff->V5UserID[0]='\0';
+  }
+  else
+  {
+    printf("  V5UserID                  %s\n", mystuff->V5UserID);
+  }
+
+/*****************************************************************************/
+
+  if(my_read_string(mystuff->inifile, "ComputerID", mystuff->ComputerID, 50))
+  {
+    /* no problem, don't use any */
+    mystuff->ComputerID[0]='\0';
+  }
+  else
+  {
+    printf("  ComputerID                %s\n", mystuff->ComputerID);
+  }
+
+/*****************************************************************************/
+
+  if(my_read_string(mystuff->inifile, "PrintFormat", mystuff->print_line, 510))
+  {
+    /* no problem, use the default */
+    strcpy(mystuff->print_line, "[%T] %p | %g | %s | %w");
+  }
+  else
+  {
+    printf("  PrintFormat               %s\n", mystuff->print_line);
+  }
+  printf("\"%s\" -> ", mystuff->print_line);
+  set_print_line(mystuff);
+  printf("\"%s\"\n", mystuff->print_line);
+
+/*****************************************************************************/
+
   if(my_read_int(mystuff->inifile, "AllowSleep", &i))
   {
     printf("WARNING: Cannot read AllowSleep from inifile, set to 0 by default\n");
@@ -375,7 +486,7 @@ int read_config(mystuff_t *mystuff)
 
   mystuff->preferredKernel = BARRETT79_MUL32;
 
-  if (my_read_string(mystuff->inifile, "PreferKernel", tmp))
+  if (my_read_string(mystuff->inifile, "PreferKernel", tmp, 50))
   {
     printf("WARNING: Cannot read PreferKernel from inifile, using default (mfakto_cl_barrett79)\n");
   }

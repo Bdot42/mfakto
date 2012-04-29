@@ -71,21 +71,24 @@ TODO
   // magic constant is 0.01116 for 62-bit and below
 
   Then all you need is: 86400 / (time_per_class * classes_per_exponent) * ghz_days_assignment
-  %c - class ID (n/4620)
-  %C - class number (n/960)
-  %p - percent complete (%)
-  %g - GHz-days/day (GHz)
-  %t - time per class (s)
-  %e - eta (d/h/m/s)
-  %n - number of candidates (M/G)
-  %r - rate (M/s)
-  %s - SievePrimes
-  %w - CPU wait time for GPU (us)
-  %W - CPU wait % (%)
-  %d - date (Mon nn)
-  %T - time (HH:MM)
-  %u - username (as configured)
-  %h - hostname (as configured)
++  %C - class ID (n/4620)            "%4d"
++  %c - class number (n/960)         "%3d"
++  %p - percent complete (%)         "%6.2f"
++  %g - GHz-days/day (GHz)           "%7.2f"
++  %t - time per class (s)           "%6G"
++  %e - eta (d/h/m/s)                "%2dm%02ds"/"%2dh%02dm"/"%2dd%02dh"
++  %n - number of candidates (M/G)   "%6.2fM"/"%6.2fG"
++  %r - rate (M/s)                   "%6.2f"
++  %s - SievePrimes                  "%7d"
++  %w - CPU wait time for GPU (us)   "%6lld"
++  %W - CPU wait % (%)               "6.2f"
++  %d - date (Mon nn)                "%b %d"
++  %T - time (HH:MM)                 "%H:%M"
++  %U - username (as configured)     "%15s"
++  %H - hostname (as configured)     "%15s"
++  %M - the exponent being worked on "%9d"
++  %l - the lower bit-limit          "%2d"
++  %u - the upper bit-limit          "%2d"
   into an array {pos (0=off), format, output}, fill as it comes in, print in a loop,
   sorted index array for fprintf
 - dynamic sieve size, adjusting as SievePrimes changes

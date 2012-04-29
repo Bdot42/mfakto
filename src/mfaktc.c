@@ -270,7 +270,9 @@ other return value
         }
         count++;
         mystuff->class_counter++;
-      
+        if (mystuff->p_par[CLASS_NUM].pos) sprintf(mystuff->p_par[CLASS_NUM].out, "%3d", mystuff->class_counter);
+        if (mystuff->p_par[PCT_COMPLETE].pos) sprintf(mystuff->p_par[PCT_COMPLETE].out, "%6.2f", 0.1041666667f * mystuff->class_counter);
+
         switch (use_kernel)
         {
           case _71BIT_MUL24:
@@ -771,7 +773,7 @@ int main(int argc, char **argv)
   if(init_CL(mystuff.num_streams, devicenumber)!=CL_SUCCESS)
   {
     printf("init_CL(%d, %d) failed\n", mystuff.num_streams, devicenumber);
-    return 1;
+    return 2;
   }
   printf("\nOpenCL device info\n");
   printf("  name                      %s (%s)\n", deviceinfo.d_name, deviceinfo.v_name);
@@ -827,6 +829,7 @@ int main(int argc, char **argv)
       if (parse_ret == 0)
       {
         printf("got assignment: exp=%u bit_min=%d bit_max=%d\n",exp,bit_min,bit_max);
+        if (mystuff.p_par[EXP].pos) sprintf(mystuff.p_par[EXP].out, "%9d", exp);
 
         bit_min_stage = bit_min;
         bit_max_stage = bit_max;
@@ -840,6 +843,8 @@ int main(int argc, char **argv)
           printf("         It is not allowed to sieve primes which are equal or bigger than the \n");
           printf("         exponent itself!\n");
         }
+        if (mystuff.p_par[SIEVE_PRIMES].pos) sprintf(mystuff.p_par[SIEVE_PRIMES].out, "%7d", mystuff.sieve_primes);
+
         if(mystuff.stages == 1)
         {
           while( ((calculate_k(exp,bit_max_stage) - calculate_k(exp,bit_min_stage)) > (250000000ULL * NUM_CLASSES))
@@ -848,6 +853,8 @@ int main(int argc, char **argv)
         tmp = 0;
         while(bit_max_stage <= bit_max && !mystuff.quit)
         {
+          if (mystuff.p_par[LOWER_LIMIT].pos) sprintf(mystuff.p_par[LOWER_LIMIT].out, "%2d", bit_min_stage);
+          if (mystuff.p_par[UPPER_LIMIT].pos) sprintf(mystuff.p_par[UPPER_LIMIT].out, "%2d", bit_max_stage);
           tmp = tf(exp, bit_min_stage, bit_max_stage, &mystuff, 0, 0, AUTOSELECT_KERNEL);
           if(tmp == RET_ERROR) return 1; /* bail out, we might have a serios problem  */
 
