@@ -86,7 +86,7 @@ TODO
 +  %T - time (HH:MM)                 "%H:%M"
 +  %U - username (as configured)     "%15s"
 +  %H - hostname (as configured)     "%15s"
-+  %M - the exponent being worked on "%9d"
++  %M - the exponent being worked on "%d"  !! no fixed width !!
 +  %l - the lower bit-limit          "%2d"
 +  %u - the upper bit-limit          "%2d"
   into an array {pos (0=off), format, output}, fill as it comes in, print in a loop,

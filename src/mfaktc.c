@@ -829,7 +829,7 @@ int main(int argc, char **argv)
       if (parse_ret == 0)
       {
         printf("got assignment: exp=%u bit_min=%d bit_max=%d\n",exp,bit_min,bit_max);
-        if (mystuff.p_par[EXP].pos) sprintf(mystuff.p_par[EXP].out, "%9d", exp);
+        if (mystuff.p_par[EXP].pos) sprintf(mystuff.p_par[EXP].out, "%d", exp);
 
         bit_min_stage = bit_min;
         bit_max_stage = bit_max;

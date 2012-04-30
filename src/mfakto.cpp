@@ -35,8 +35,11 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "mfakto.h"
 #ifndef _MSC_VER
 #include <sys/time.h>
+#include <math.h>
 #else
 #include "time.h"
+#define time _time64
+#define localtime _localtime64
 #endif
 
 /* Global variables */
@@ -2387,7 +2390,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     else if(t < 10000000ULL)printf(" | %6.1fs", (double)t/1000.0);
     else                    printf(" | %6.0fs", (double)t/1000.0);
     if (mystuff->p_par[TIME_PER_CLASS].pos) sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%5G", (double)t/1000.0);
-    if (mystuff->p_par[GHZ].pos) sprintf(mystuff->p_par[GHZ].out, "%7.2f", ghz_assignment * 86.4 / ((double)t * 960));
+    if (mystuff->p_par[GHZ].pos) sprintf(mystuff->p_par[GHZ].out, "%7.2f", ghz_assignment * 90000.0 / (double)t); // ass * 86400 / (t * 960 / 1000 s/ms)    (t is in ms)
 
     printf(" | %6.2fM/s", (double)mystuff->threads_per_grid * (double)count / ((double)t * 1000.0));
     if (mystuff->p_par[RATE].pos)
@@ -2435,8 +2438,8 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     if (mystuff->p_par[CPU_WAIT_PCT].pos) sprintf(mystuff->p_par[CPU_WAIT_PCT].out, "%6.2f", (double)twait/(double)t/10.0);
     if (mystuff->p_par[DATE_SHORT].pos || mystuff->p_par[TIME_SHORT].pos)
     {
-      time_t now = _time64(NULL);
-      struct tm *tm_now = _localtime64(&now);
+      time_t now = time(NULL);
+      struct tm *tm_now = localtime(&now);
       strftime(mystuff->p_par[DATE_SHORT].out, 16, "%b %d", tm_now);
       strftime(mystuff->p_par[TIME_SHORT].out, 16, "%H:%M", tm_now);
     }
