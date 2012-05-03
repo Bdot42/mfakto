@@ -186,6 +186,7 @@ typedef struct
   char * p_ptr[20];         /* pointers to the formatted output string arrays, in the order they are being used, allow 20 of them */
   print_parameter p_par[NUM_PRINT_PARM]; /* to hold the position and strings of each possible parameter */
   char print_line[512];
+  char head_line[512];
   char V5UserID[51];
   char ComputerID[51];
   char workfile[51];		/* allow filenames up to 50 chars... */

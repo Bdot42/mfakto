@@ -62,13 +62,13 @@ static int my_read_string(char *inifile, char *name, char *string, unsigned int 
     if(!strncmp(buf,name,idx) && buf[idx]=='=')
     {
       found = strlen(buf + idx + 1);
-      if (found > 0)
+      if (found > 1)
         strncpy(string, buf+idx+1, len > found-1 ? found-1 : len);
       string[len-1]='\0';
     }
   }
   fclose(in);
-  if(found)return 0;
+  if(found>1)return 0;
   return 1;
 }
 
@@ -113,12 +113,12 @@ static int set_print_line(mystuff_t *mystuff)
         }
         else
         {
-          // use '%s' in the format string
           if (out_parm >= 20) // too many params
           {
             fprintf(stderr, "Warning: More than 20 parameters in output format - line truncated\n");
             break;
           }
+          // use '%s' in the format string
           buf[out_pos++] = 's';
           // p_ptr[0] ... p_ptr[n] will point to the correct parameter's string,
           // even allowing to use the same parm multiple times
@@ -129,8 +129,9 @@ static int set_print_line(mystuff_t *mystuff)
       }
       else
       {  
-        buf[out_pos++] = '%';  // double the % sign to escape unknown parms
-        i--;
+        buf[out_pos++] = '%';  // double the % sign to escape it
+        i--;                   // start over with the char that did not match a known format.
+                               // do not just copy it - it could be the leading %-sign of a known format
       }
     }
   }
@@ -410,6 +411,7 @@ int read_config(mystuff_t *mystuff)
   if (my_read_string(mystuff->inifile, "V5UserID", mystuff->V5UserID, 50))
   {
     /* no problem, don't use any */
+    printf("  V5UserID                  none\n", mystuff->V5UserID);
     mystuff->V5UserID[0]='\0';
   }
   else
@@ -422,6 +424,7 @@ int read_config(mystuff_t *mystuff)
   if(my_read_string(mystuff->inifile, "ComputerID", mystuff->ComputerID, 50))
   {
     /* no problem, don't use any */
+    printf("  ComputerID                none\n", mystuff->ComputerID);
     mystuff->ComputerID[0]='\0';
   }
   else
@@ -431,18 +434,30 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  if(my_read_string(mystuff->inifile, "PrintFormat", mystuff->print_line, 510))
+  if(my_read_string(mystuff->inifile, "ProgressHeader", mystuff->head_line, 510))
   {
-    /* no problem, use the default */
-    strcpy(mystuff->print_line, "[%T] %p | %g | %s | %w");
+    /* no problem, use some default */
+    strcpy(mystuff->head_line, "[time] complete | GHz-days/day |    #FCs | SieveP. | CPU idle");
   }
   else
   {
-    printf("  PrintFormat               %s\n", mystuff->print_line);
+// do not clutter the screen too much
+//    printf("  ProgressHeader            %s\n", mystuff->head_line);
   }
-  printf("\"%s\" -> ", mystuff->print_line);
+
+/*****************************************************************************/
+
+  if(my_read_string(mystuff->inifile, "PrintFormat", mystuff->print_line, 510))
+  {
+    /* no problem, use some default */
+    strcpy(mystuff->print_line, "[%T] %p% |    %g   | %n | %s | %W%");
+  }
+  else
+  {
+// do not clutter the screen too much
+//    printf("  PrintFormat               %s\n", mystuff->print_line);
+  }
   set_print_line(mystuff);
-  printf("\"%s\"\n", mystuff->print_line);
 
 /*****************************************************************************/
 

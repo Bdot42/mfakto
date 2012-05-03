@@ -117,7 +117,8 @@ other return value
   unsigned long long int time_run, time_est;
 
 
-  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d\n", exp, bit_min, bit_max);
+  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d (%5.2fGHz-days)\n",
+    exp, bit_min, bit_max, 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1));
   timer_init(&timer);
   time(&time_last_checkpoint);
 
@@ -266,7 +267,7 @@ other return value
 #endif
         if(mystuff->mode != MODE_SELFTEST_SHORT && (count == 0 || (count%20 == 0 && mystuff->printmode == 0)))
         {
-          printf("      class |   # FCs |    time | avg. rate | SievePrimes |    ETA | CPU wait\n");
+          printf("%s\n", mystuff->head_line);
         }
         count++;
         mystuff->class_counter++;
@@ -301,13 +302,11 @@ other return value
           {
             if ( ((mystuff->checkpoints > 1) && (--do_checkpoint == 0)) ||
                  ((mystuff->checkpoints == 1) && (time(NULL) - time_last_checkpoint > (time_t) mystuff->checkpointdelay)) ||
-                   mystuff->quit ||
-                  (numfactors > 0) )
+                   mystuff->quit )
             {
               checkpoint_write(exp, bit_min, bit_max, cur_class, factorsfound);
               do_checkpoint = mystuff->checkpoints;
               time(&time_last_checkpoint);
-              printf("C\b"); fflush(NULL);
             }
           }
           if((mystuff->stopafterfactor >= 2) && (factorsfound > 0) && (cur_class != max_class))cur_class = max_class + 1;

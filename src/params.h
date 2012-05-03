@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
-//#define SIEVE_SIZE_LIMIT 36
+#define SIEVE_SIZE_LIMIT 64
 
 
 /******************
@@ -98,9 +98,9 @@ code path - not used by mfakto, see kernel trace */
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.11-pre4" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11-pre5" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.11-pre4-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11-pre5-Win" /* DO NOT CHANGE! */
 #endif
 
 

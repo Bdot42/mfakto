@@ -35,7 +35,6 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "mfakto.h"
 #ifndef _MSC_VER
 #include <sys/time.h>
-#include <math.h>
 #else
 #include "time.h"
 #define time _time64
@@ -1862,7 +1861,8 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   int144 b_preinit = {0};
   int192 b_192 = {0};
   cl_uint8 b_in = {{0}};
-  double ghz_assignment = 0.016968 * pow((double)2, bit_min - 47) * 1680 / exp * (pow((double)2, bit_max-bit_min) -1);
+//  double ghz_assignment = 0.016968 * pow((double)2, bit_min - 47) * 1680 / exp * (pow((double)2, bit_max-bit_min) -1);
+  double ghz_assignment = 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1);
 
   cl_uint factor_lo, factor_mid, factor_hi, factorsfound=0;
   unsigned long long int b_preinit_lo, b_preinit_mid, b_preinit_hi;
@@ -2366,76 +2366,63 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 #endif
 
   t=timer_diff(&timer)/1000;
-  if(t==0)t=1;	/* prevent division by zero in the following printf(s) */
+  if(t==0)t=1;	/* prevent division by zero */
+  if(count==0)count=1;
 
   if(mystuff->mode != MODE_SELFTEST_SHORT)
   {
-    printf("%6" PRIu64 "/%4d", k_min%NUM_CLASSES, (int)NUM_CLASSES);
     if (mystuff->p_par[CLASS_ID].pos) sprintf(mystuff->p_par[CLASS_ID].out, "%4d", (unsigned int)(k_min%NUM_CLASSES));
-
-    if(((unsigned long long int)mystuff->threads_per_grid * (unsigned long long int)count) < 1000000000ULL)
+    if (mystuff->p_par[CANDIDATES].pos)
     {
-      printf(" | %6.2fM", (double)mystuff->threads_per_grid * (double)count / 1000000.0);
-      if (mystuff->p_par[CANDIDATES].pos) sprintf(mystuff->p_par[CANDIDATES].out, "%6.2fM", (double)mystuff->threads_per_grid * (double)count / 1000000.0);
-    }
-    else
-    {
-      printf(" | %6.2fG", (double)mystuff->threads_per_grid * (double)count / 1000000000.0);
-      if (mystuff->p_par[CANDIDATES].pos)
-        sprintf(mystuff->p_par[CANDIDATES].out, "%6.2fG", (double)mystuff->threads_per_grid * (double)count / 1000000000.0);
-    }
-
-         if(t < 100000ULL  )printf(" | %6.3fs", (double)t/1000.0);
-    else if(t < 1000000ULL )printf(" | %6.2fs", (double)t/1000.0);
-    else if(t < 10000000ULL)printf(" | %6.1fs", (double)t/1000.0);
-    else                    printf(" | %6.0fs", (double)t/1000.0);
-    if (mystuff->p_par[TIME_PER_CLASS].pos) sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%5G", (double)t/1000.0);
-    if (mystuff->p_par[GHZ].pos) sprintf(mystuff->p_par[GHZ].out, "%7.2f", ghz_assignment * 90000.0 / (double)t); // ass * 86400 / (t * 960 / 1000 s/ms)    (t is in ms)
-
-    printf(" | %6.2fM/s", (double)mystuff->threads_per_grid * (double)count / ((double)t * 1000.0));
-    if (mystuff->p_par[RATE].pos)
-      sprintf(mystuff->p_par[RATE].out, "%6.2f", (double)mystuff->threads_per_grid * (double)count / ((double)t * 1000.0));
-    
-    printf(" | %11d", mystuff->sieve_primes);
-
-    if (mystuff->p_par[ETA].pos) sprintf(mystuff->p_par[ETA].out, "  n.a.");
-    if(mystuff->mode == MODE_NORMAL)
-    {
-      if(t > 250.0)
+      float f = (float)mystuff->threads_per_grid * (float)count;
+      if(f < 1000000000.0)
       {
-        
-#ifdef MORE_CLASSES      
-        eta = (unsigned int)(t * (960 - mystuff->class_counter) + 500)  / 1000;
-#else
-        eta = (unsigned int)(t * (96 - mystuff->class_counter) + 500)  / 1000;
-#endif
-        if(eta < 3600)
-        {
-          printf(" | %2dm%02ds", eta / 60, eta % 60);
-          if (mystuff->p_par[ETA].pos) sprintf(mystuff->p_par[ETA].out, "%2dm%02ds", eta / 60, eta % 60);
-        }
-        else if(eta < 86400)
-        {
-          printf(" | %2dh%02dm", eta / 3600, (eta / 60) % 60);
-          if (mystuff->p_par[ETA].pos) sprintf(mystuff->p_par[ETA].out, "%2dh%02dm", eta / 3600, (eta / 60) % 60);
-        }
-        else
-        {
-          printf(" | %2dd%02dh", eta / 86400, (eta / 3600) % 24);
-          if (mystuff->p_par[ETA].pos) sprintf(mystuff->p_par[ETA].out, "%2dd%02dh", eta / 86400, (eta / 3600) % 24);
-        }
+        sprintf(mystuff->p_par[CANDIDATES].out, "%6.2fM", f / 1000000.0);
       }
       else
       {
-        printf(" |   n.a.");
+        sprintf(mystuff->p_par[CANDIDATES].out, "%6.2fG", f / 1000000000.0);
       }
     }
-    else if(mystuff->mode == MODE_SELFTEST_FULL)printf(" |   n.a.");
-  }
 
-  if(count>0)
-  {
+    if (mystuff->p_par[TIME_PER_CLASS].pos)
+    {
+           if(t < 100000ULL  )sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%6.3f", (float)t/1000.0);
+      else if(t < 1000000ULL )sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%6.2f", (float)t/1000.0);
+      else if(t < 10000000ULL)sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%6.1f", (float)t/1000.0);
+      else                    sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%6.0f", (float)t/1000.0);
+    }
+    if (mystuff->p_par[GHZ].pos) sprintf(mystuff->p_par[GHZ].out, "%7.2f", ghz_assignment * 90000.0 / (float)t); // ass * 86400 / (t * 960 / 1000 s/ms)    (t is in ms)
+    if (mystuff->p_par[RATE].pos)
+      sprintf(mystuff->p_par[RATE].out, "%6.2f", (float)mystuff->threads_per_grid * (float)count / ((float)t * 1000.0));
+
+    if (mystuff->p_par[ETA].pos)
+    {
+      sprintf(mystuff->p_par[ETA].out, "  n.a.");
+      if (mystuff->mode == MODE_NORMAL)
+      {
+        if (t > 250)
+        {
+          eta = (unsigned int)(t * (960 - mystuff->class_counter) + 500)  / 1000;
+          if(eta < 3600)
+          {
+            sprintf(mystuff->p_par[ETA].out, "%2dm%02ds", eta / 60, eta % 60);
+          }
+          else if(eta < 86400)
+          {
+            sprintf(mystuff->p_par[ETA].out, "%2dh%02dm", eta / 3600, (eta / 60) % 60);
+          }
+          else
+          {
+            sprintf(mystuff->p_par[ETA].out, "%2dd%02dh", eta / 86400, (eta / 3600) % 24);
+          }
+        }
+      }
+    }
+
     if (mystuff->p_par[CPU_WAIT_PCT].pos) sprintf(mystuff->p_par[CPU_WAIT_PCT].out, "%6.2f", (double)twait/(double)t/10.0);
+    twait/=count;
+    if (mystuff->p_par[CPU_WAIT_TIME].pos) sprintf(mystuff->p_par[CPU_WAIT_TIME].out, "%6lld", twait);
     if (mystuff->p_par[DATE_SHORT].pos || mystuff->p_par[TIME_SHORT].pos)
     {
       time_t now = time(NULL);
@@ -2443,19 +2430,14 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
       strftime(mystuff->p_par[DATE_SHORT].out, 16, "%b %d", tm_now);
       strftime(mystuff->p_par[TIME_SHORT].out, 16, "%H:%M", tm_now);
     }
-    twait/=count;
-    if(mystuff->mode != MODE_SELFTEST_SHORT)
-    {
-      printf(" | %6" PRIu64 "us\n", twait);
-      if (mystuff->p_par[CPU_WAIT_TIME].pos) sprintf(mystuff->p_par[CPU_WAIT_TIME].out, "%6lld", twait);
+
       // Now we have all possible parms: print the line
-      printf(mystuff->print_line, mystuff->p_ptr[0], mystuff->p_ptr[1],
+    printf(mystuff->print_line, mystuff->p_ptr[0], mystuff->p_ptr[1],
         mystuff->p_ptr[2], mystuff->p_ptr[3], mystuff->p_ptr[4], mystuff->p_ptr[5],
         mystuff->p_ptr[6], mystuff->p_ptr[7], mystuff->p_ptr[8], mystuff->p_ptr[9],
         mystuff->p_ptr[10], mystuff->p_ptr[11],
         mystuff->p_ptr[12], mystuff->p_ptr[13], mystuff->p_ptr[14], mystuff->p_ptr[15],
         mystuff->p_ptr[16], mystuff->p_ptr[17], mystuff->p_ptr[18], mystuff->p_ptr[19]);
-    }
 
     if(mystuff->sieve_primes_adjust==1 && twait>500 && mystuff->sieve_primes < mystuff->sieve_primes_max && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
@@ -2471,17 +2453,16 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
       if(mystuff->sieve_primes < SIEVE_PRIMES_MIN) mystuff->sieve_primes = SIEVE_PRIMES_MIN;
 //      printf("\navg. wait < 200us, decreasing SievePrimes to %d",mystuff->sieve_primes);
     }
+    // this is already for the next iteration, if SievePrimes was adjusted.
     if (mystuff->p_par[SIEVE_PRIMES].pos) sprintf(mystuff->p_par[SIEVE_PRIMES].out, "%7d", mystuff->sieve_primes);
   }
-  else if(mystuff->mode != MODE_SELFTEST_SHORT)printf(" |      n.a.");
-
 
   if(mystuff->mode == MODE_NORMAL)
   {
     if(mystuff->printmode == 1)printf("\r");
     else printf("\n");
   }
-  else if((mystuff->mode != MODE_SELFTEST_SHORT) && (mystuff->printmode == 0))
+  else if(mystuff->mode != MODE_SELFTEST_SHORT)
   {
     printf("\n");
   }
