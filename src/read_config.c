@@ -62,9 +62,10 @@ static int my_read_string(char *inifile, char *name, char *string, unsigned int 
     if(!strncmp(buf,name,idx) && buf[idx]=='=')
     {
       found = strlen(buf + idx + 1);
-      if (found > 1)
-        strncpy(string, buf+idx+1, len > found-1 ? found-1 : len);
-      string[len-1]='\0';
+      found = (len > found ? found : len) - 1;
+      if (found)
+        strncpy(string, buf+idx+1, found);
+      string[found]='\0';
     }
   }
   fclose(in);
@@ -411,7 +412,7 @@ int read_config(mystuff_t *mystuff)
   if (my_read_string(mystuff->inifile, "V5UserID", mystuff->V5UserID, 50))
   {
     /* no problem, don't use any */
-    printf("  V5UserID                  none\n", mystuff->V5UserID);
+    printf("  V5UserID                  none\n");
     mystuff->V5UserID[0]='\0';
   }
   else
@@ -424,7 +425,7 @@ int read_config(mystuff_t *mystuff)
   if(my_read_string(mystuff->inifile, "ComputerID", mystuff->ComputerID, 50))
   {
     /* no problem, don't use any */
-    printf("  ComputerID                none\n", mystuff->ComputerID);
+    printf("  ComputerID                none\n");
     mystuff->ComputerID[0]='\0';
   }
   else
