@@ -2331,7 +2331,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   if(status != CL_SUCCESS) 
 	{ 
     std::cout << "Error " << status << ": clEnqueueReadBuffer RES failed.\n";
-		return 1;
+    return RET_ERROR;
   }
 
 #ifdef DETAILED_INFO
@@ -2352,7 +2352,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   if(status != CL_SUCCESS) 
 	{ 
     std::cout << "Error " << status << ": clEnqueueReadBuffer modbasecase_debug failed.\n";
-		return 1;
+    return RET_ERROR;
   }
 
 #ifdef DETAILED_INFO
@@ -2494,6 +2494,19 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     if(mystuff->mode == MODE_NORMAL)
     {
       resultfile = fopen_and_lock(mystuff->resultsfile, "a");
+      if (resultfile == NULL)
+        return RET_ERROR;
+      if (mystuff->print_timestamp)
+      {
+        time_t now = time(NULL);
+        char *ptr = ctime(&now);
+        ptr[24] = '\0'; // cut off the newline
+        fprintf(resultfile, "[%s]\n", ptr);
+      }
+      if (mystuff->ComputerID[0] && mystuff->V5UserID[0])
+      {
+        fprintf(resultfile, "UID: %s/%s, ", mystuff->V5UserID, mystuff->ComputerID);
+      }
 #ifndef MORE_CLASSES      
       fprintf(resultfile,"M%u has a factor: %s [TF:%d:%d%s:%s %s]\n", exp, string, bit_min, bit_max,
         ((mystuff->stopafterfactor == 2) && (mystuff->class_counter <  96)) ? "*" : "" , MFAKTO_VERSION, kernel_info[use_kernel].kernelname);
@@ -2504,8 +2517,8 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
       unlock_and_fclose(resultfile);
     }
   }
-  if(factorsfound>=10)
-  {
+  if(factorsfound>=10) // so unlikely that I don't care that this will lock the file a second time and another
+  {                    // mfakto instance could write something in between (even less likely)
     if(mystuff->mode != MODE_SELFTEST_SHORT)printf("M%u: %d additional factors not shown\n", exp, factorsfound - 10);
     if(mystuff->mode == MODE_NORMAL)
     {

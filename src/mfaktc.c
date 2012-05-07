@@ -117,7 +117,7 @@ other return value
   unsigned long long int time_run, time_est;
 
 
-  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d (%5.2fGHz-days)\n",
+  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d (%4.2fGHz-days)\n",
     exp, bit_min, bit_max, 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1));
   timer_init(&timer);
   time(&time_last_checkpoint);
@@ -341,6 +341,17 @@ other return value
   }
   else
   {
+    if (mystuff->print_timestamp)
+    {
+      time_t now = time(NULL);
+      char *ptr = ctime(&now);
+      ptr[24] = '\0'; // cut off the newline
+      fprintf(resultfile, "[%s]\n", ptr);
+    }
+    if (mystuff->ComputerID[0] && mystuff->V5UserID[0])
+    {
+      fprintf(resultfile, "UID: %s/%s, ", mystuff->V5UserID, mystuff->ComputerID);
+    }
     if(mystuff->mode == MODE_NORMAL)        fprintf(resultfile, "no factor for M%u from 2^%d to 2^%d [%s %s_%d]\n",
       exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
     if(mystuff->mode != MODE_SELFTEST_SHORT)printf(             "no factor for M%u from 2^%d to 2^%d [%s %s_%d]\n",

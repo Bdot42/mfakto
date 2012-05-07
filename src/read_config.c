@@ -438,7 +438,7 @@ int read_config(mystuff_t *mystuff)
   if(my_read_string(mystuff->inifile, "ProgressHeader", mystuff->head_line, 510))
   {
     /* no problem, use some default */
-    strcpy(mystuff->head_line, "[time] complete | GHz-days/day |    #FCs | SieveP. | CPU idle");
+    strcpy(mystuff->head_line, "   done |    ETA |     GHz |time/class|    #FCs | avg. rate | SieveP. |CPU idle");
   }
   else
   {
@@ -451,7 +451,7 @@ int read_config(mystuff_t *mystuff)
   if(my_read_string(mystuff->inifile, "PrintFormat", mystuff->print_line, 510))
   {
     /* no problem, use some default */
-    strcpy(mystuff->print_line, "[%T] %p% |    %g   | %n | %s | %W%");
+    strcpy(mystuff->print_line, "%p% | %e | %g |  %ts | %n | %rM/s | %s | %W%");
   }
   else
   {
@@ -476,7 +476,23 @@ int read_config(mystuff_t *mystuff)
   else      printf("  AllowSleep                yes\n");
   mystuff->allowsleep = i;
 
-  /*****************************************************************************/
+/*****************************************************************************/
+
+  if(my_read_int(mystuff->inifile, "TimeStampInResults", &i))
+  {
+    // no big deal, just leave it out
+    i=0;
+  }
+  else if(i != 0 && i != 1)
+  {
+    printf("WARNING: TimeStampInResults must be 0 or 1, set to 0 by default\n");
+    i=0;
+  }
+  if(i == 0)printf("  TimeStampInResults        no\n");
+  else      printf("  TimeStampInResults        yes\n");
+  mystuff->print_timestamp = i;
+
+/*****************************************************************************/
 
   if(my_read_int(mystuff->inifile, "VectorSize", &i))
   {
