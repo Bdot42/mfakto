@@ -127,3 +127,5 @@ TODO
   => any better than current a x b in 15-bit-kernel
 - Auto-adjust VectorSize per kernel
 - dummy kernel for performance testing of sieve and transfer
+- transfer 4 FCs in 3 ints
+

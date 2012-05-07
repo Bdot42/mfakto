@@ -518,6 +518,7 @@ RET_ERROR we might have a serios problem
 
 #include "selftest-data.h"
 
+  if (mystuff->p_par[SIEVE_PRIMES].pos) sprintf(mystuff->p_par[SIEVE_PRIMES].out, "%7d", mystuff->sieve_primes);
   register_signal_handler(mystuff);
 
   for(i=0; i<selftests_to_run; i++)
@@ -550,6 +551,10 @@ RET_ERROR we might have a serios problem
     if ((bit_min[ind] >= 60) && (bit_min[ind] < 73))   kernels[j++] = BARRETT73_MUL15;
 //
 //      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
+
+    if (mystuff->p_par[EXP].pos)         sprintf(mystuff->p_par[EXP].out, "%d", exp[ind]);
+    if (mystuff->p_par[LOWER_LIMIT].pos) sprintf(mystuff->p_par[LOWER_LIMIT].out, "%2d", bit_min[ind]);
+    if (mystuff->p_par[UPPER_LIMIT].pos) sprintf(mystuff->p_par[UPPER_LIMIT].out, "%2d", bit_min[ind]+1);
 
     while(j>0)
     {
@@ -783,9 +788,8 @@ int main(int argc, char **argv)
   printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
 
   printf("\nAutomatic parameters\n");
-  i = (int) deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
-  while( (i * 2) <= (int)mystuff.threads_per_grid_max) i = i * 2;
-  mystuff.threads_per_grid = i;
+
+  mystuff.threads_per_grid = mystuff.threads_per_grid_max;
   if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
   {
     mystuff.threads_per_grid = (cl_uint)deviceinfo.maxThreadsPerGrid;
