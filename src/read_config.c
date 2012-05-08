@@ -52,7 +52,7 @@ static int my_read_string(char *inifile, char *name, char *string, unsigned int 
 {
   FILE *in;
   char buf[512];
-  int found=0;
+  unsigned int found=0;
   unsigned int idx = strlen(name);
 
   in=fopen(inifile,"r");
