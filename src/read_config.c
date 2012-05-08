@@ -152,15 +152,32 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/  
 
+  if(my_read_int(mystuff->inifile, "SievePrimesMin", &i))
+  {
+    printf("WARNING: Cannot read SievePrimesMin from inifile, using default value (%d)\n", 5000);
+    i=5000;
+  }
+  else if((i < SIEVE_PRIMES_MIN) || (i >= SIEVE_PRIMES_MAX))
+  {
+    printf("WARNING: SievePrimesMin must be between %d and %d, using default value (%d)\n",
+        SIEVE_PRIMES_MIN, SIEVE_PRIMES_MAX, 5000);
+    i=5000;
+  }
+  printf("  SievePrimesMin            %d\n",i);
+  mystuff->sieve_primes_min = i;
+
+/*****************************************************************************/  
+
   if(my_read_int(mystuff->inifile, "SievePrimesMax", &i))
   {
     printf("WARNING: Cannot read SievePrimesMax from inifile, using default value (%d)\n", SIEVE_PRIMES_MAX);
     i=SIEVE_PRIMES_MAX;
   }
-  else if((i < 5000) || (i > 1000000))
+  else if((i < mystuff->sieve_primes_min) || (i > SIEVE_PRIMES_MAX))
   {
-    printf("WARNING: SievePrimesMax must be between 5000 and 1000000, using default value (%d)\n", SIEVE_PRIMES_MAX);
-    i=SIEVE_PRIMES_MAX;
+    printf("WARNING: SievePrimesMax must be between SievePrimesMin(%d) and %d, using default value (%d)\n",
+        mystuff->sieve_primes_min, SIEVE_PRIMES_MAX, 200000);
+    i=200000;
   }
   printf("  SievePrimesMax            %d\n",i);
   mystuff->sieve_primes_max_global = i;
@@ -178,10 +195,10 @@ int read_config(mystuff_t *mystuff)
       printf("WARNING: Read SievePrimes=%d from inifile, using max value (%d)\n",i,mystuff->sieve_primes_max_global);
       i=mystuff->sieve_primes_max_global;
     }
-    else if(i<SIEVE_PRIMES_MIN)
+    else if(i<mystuff->sieve_primes_min)
     {
-      printf("WARNING: Read SievePrimes=%d from inifile, using min value (%d)\n",i,SIEVE_PRIMES_MIN);
-      i=SIEVE_PRIMES_MIN;
+      printf("WARNING: Read SievePrimes=%d from inifile, using min value (%d)\n",i,mystuff->sieve_primes_min);
+      i=mystuff->sieve_primes_min;
     }
   }
   printf("  SievePrimes               %d\n",i);

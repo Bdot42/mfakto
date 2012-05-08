@@ -749,9 +749,9 @@ int main(int argc, char **argv)
   printf("  SIEVE_SIZE                %dbits\n", SIEVE_SIZE);
 #endif
   printf("  SIEVE_SPLIT               %d\n", SIEVE_SPLIT);
-  if(SIEVE_SPLIT > SIEVE_PRIMES_MIN)
+  if(SIEVE_SPLIT > mystuff.sieve_primes_min)
   {
-    printf("ERROR: SIEVE_SPLIT must be <= SIEVE_PRIMES_MIN\n");
+    printf("ERROR: SIEVE_SPLIT must be <= SievePrimesMin\n");
     return 1;
   }
 #ifdef MORE_CLASSES

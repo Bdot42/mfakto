@@ -2446,11 +2446,11 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
       if(mystuff->sieve_primes > mystuff->sieve_primes_max) mystuff->sieve_primes = mystuff->sieve_primes_max;
 //      printf("\navg. wait > 750us, increasing SievePrimes to %d",mystuff->sieve_primes);
     }
-    if(mystuff->sieve_primes_adjust==1 && twait<150 && mystuff->sieve_primes > SIEVE_PRIMES_MIN && (mystuff->mode != MODE_SELFTEST_SHORT))
+    if(mystuff->sieve_primes_adjust==1 && twait<150 && mystuff->sieve_primes > mystuff->sieve_primes_min && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
       mystuff->sieve_primes *= 7;
       mystuff->sieve_primes /= 8;
-      if(mystuff->sieve_primes < SIEVE_PRIMES_MIN) mystuff->sieve_primes = SIEVE_PRIMES_MIN;
+      if(mystuff->sieve_primes < mystuff->sieve_primes_min) mystuff->sieve_primes = mystuff->sieve_primes_min;
 //      printf("\navg. wait < 200us, decreasing SievePrimes to %d",mystuff->sieve_primes);
     }
     // this is already for the next iteration, if SievePrimes was adjusted.
@@ -3217,6 +3217,10 @@ int perftest(int par)
   int peak_index[MAX_NUM_SPS]={0};
   double last_elem[MAX_NUM_SPS]={0.0};
 
+#ifdef SIEVE_SIZE_LIMIT
+  printf("Sieve size is fixed at compile time, cannot test with variable sizes. Just running 3 fixed tests.\n\n");
+#endif
+
   printf("SievePrimes:");
   for(ii=0; ii<nsp; ii++)
   {
@@ -3229,12 +3233,14 @@ int perftest(int par)
     sieve_free();
 #ifdef SIEVE_SIZE_LIMIT
     sieve_init();
-    if (j>3) break; // quit after 3 equal loops if we can't dynamically set the sieve size anyway
+    if (j>=3) break; // quit after 3 equal loops if we can't dynamically set the sieve size anyway
+    sieve_init_class(exp, k++, 1000000);
+    printf("\n%6d kiB  ", SIEVE_SIZE/8192+1);
 #else
     sieve_init(tmp, 1000000);
-#endif
     sieve_init_class(exp, k++, 1000000);
     printf("\n%6d kiB  ", tmp/8192+1);
+#endif
 
     for(ii=0; ii<nsp; ii++)
     {
@@ -3268,7 +3274,11 @@ int perftest(int par)
   printf("\nat kiB:     ");
   for(ii=0; ii<nsp; ii++)
   {
+#ifdef SIEVE_SIZE_LIMIT
+    printf(" %7u", SIEVE_SIZE/8192+1);
+#else
     printf(" %7u", m*ssizes[peak_index[ii]]/8192+1);
+#endif
   }
   printf("\nmax M/s:    ");
   for(ii=0; ii<nsp; ii++)

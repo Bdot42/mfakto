@@ -135,8 +135,8 @@ The actual configuration is done in mfakto.ini.
 The following lines define the min, default and max value.
 */
 
-#define SIEVE_PRIMES_MIN      5000 /* DO NOT CHANGE! */
-#define SIEVE_PRIMES_DEFAULT 25000 /* DO NOT CHANGE! */
+#define SIEVE_PRIMES_MIN        256 /* DO NOT CHANGE! */
+#define SIEVE_PRIMES_DEFAULT  25000 /* DO NOT CHANGE! */
 #define SIEVE_PRIMES_MAX    1000000 /* DO NOT CHANGE! */
 
 /*

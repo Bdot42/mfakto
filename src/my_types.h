@@ -165,7 +165,7 @@ typedef struct
   cl_mem   d_savestate;
 
 
-  cl_uint sieve_primes, sieve_primes_adjust, sieve_primes_max, sieve_primes_max_global, sieve_gpu, sieve_size;
+  cl_uint sieve_primes, sieve_primes_adjust, sieve_primes_min, sieve_primes_max, sieve_primes_max_global, sieve_gpu, sieve_size;
   cl_uint num_streams;
   
   enum MODES mode;
