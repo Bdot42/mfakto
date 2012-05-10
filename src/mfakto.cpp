@@ -819,8 +819,8 @@ int run_cl_sieve_init(cl_uint exp, cl_ulong k_min, cl_ulong num_threads)
   localThreads[1] = 1;
 
 #ifdef DETAILED_INFO
-    printf("run_sieve_init: %d primes -> %d x %d = %d threads, exp=%d, k_min=%lld\n", num_threads, globalThreads[0], globalThreads[1],
-                                                                                 total_threads, exp, k_min);
+    printf("run_sieve_init: %d primes -> %d x %d = %d threads, exp=%d, k_min=%llu\n",
+        (int) num_threads, (int) globalThreads[0], (int) globalThreads[1], (int) total_threads, exp, (long long unsigned int) k_min);
 #endif
 
   status = clSetKernelArg(kernel_info[CL_SIEVE_INIT].kernel, 
@@ -972,8 +972,8 @@ int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
   localThreads[1] = 1;
 
 #ifdef DETAILED_INFO
-    printf("run_sieve: %d primes -> %d x %d = %d threads, exp=%d, k_min=%lld\n", num_threads, globalThreads[0], globalThreads[1],
-                                                                                 total_threads, exp, *k_min);
+    printf("run_sieve: %d primes -> %d x %d = %d threads, exp=%d, k_min=%llu\n", 
+        (int) num_threads, (int) globalThreads[0], (int) globalThreads[1], (int) total_threads, exp, (long long unsigned int) *k_min);
 #endif
 
   status = clSetKernelArg(kernel_info[CL_SIEVE].kernel, 
@@ -1062,7 +1062,8 @@ int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
   *k_min += mystuff.h_savestate[0];
   //#ifdef DETAILED_INFO
   printArray("save", mystuff.h_savestate, 4);
-  printf("Sieved %d FC's to receive %d. New k_min = %lld.\n", mystuff.h_savestate[0], mystuff.threads_per_grid, *k_min);
+  printf("Sieved %d FC's to receive %d. New k_min = %llu.\n",
+      mystuff.h_savestate[0], mystuff.threads_per_grid, (long long unsigned int) *k_min);
   //#endif
 
 #ifdef CL_PERFORMANCE_INFO
@@ -1475,7 +1476,8 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
   		
   	}
 #ifdef DETAILED_INFO
-    printf("run_kernel64: b=%llx:%llx:%llx, shift=%lld\n", b_preinit.s[2], b_preinit.s[1], b_preinit.s[0], b_preinit.s[3]);
+    printf("run_kernel64: b=%llx:%llx:%llx, shift=%u\n",
+        (long long unsigned int)b_preinit.s[2], (long long unsigned int)b_preinit.s[1], (long long unsigned int)b_preinit.s[0], (unsigned int)b_preinit.s[3]);
 #endif
   }
   // now the params that change everytime
@@ -1489,7 +1491,7 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
 		return 1;
 	}
 #ifdef DETAILED_INFO
-  printf("run_kernel64: kbase=%lld\n", k_base);
+  printf("run_kernel64: kbase=%llu\n", (long long unsigned int) k_base);
 #endif
   return run_kernel(l_kernel, exp, stream, res);
 }
@@ -1878,7 +1880,8 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   
   timer_init(&timer);
 #ifdef DETAILED_INFO
-  printf("tf_class_opencl(%u, %d, %llu, %llu, ...)\n",exp, bit_min, k_min, k_max);
+  printf("tf_class_opencl(%u, %d, %llu, %llu, ...)\n",
+      exp, bit_min, (long long unsigned int) k_min, (long long unsigned int) k_max);
 #endif
 
   //  exp=51152869; k_min=20582854459640ULL; k_max=20582854459641ULL;  // test test test
@@ -2056,7 +2059,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 	    mystuff->stream_status[h_ktab_index] = PREPARED;
       running++;
 #ifdef DETAILED_INFO
-      printf("k-base: %llu, ", k_min);
+      printf("k-base: %llu, ", (long long unsigned int) k_min);
       printArray("ktab", mystuff->h_ktab[h_ktab_index], mystuff->threads_per_grid);
 #endif
 

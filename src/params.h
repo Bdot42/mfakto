@@ -53,11 +53,6 @@ than an equal SIEVE_SIZE_LIMIT #define.
 //#define VERBOSE_SIEVE_TIMING
 
 
-/* enable for printf's from device (GPU) code. Only used in sm_20 or newer
-code path - not used by mfakto, see kernel trace */
-//#define USE_DEVICE_PRINTF
-
-
 /* do some checks on the mod/div routines */
 //#define CHECKS_MODBASECASE
 
@@ -152,7 +147,8 @@ primes[1000000]=15485867 (24) k_tab(2M) = 12733916
 
 
 /* the first SIEVE_SPLIT primes have a special code in sieve.c. This defines
-when the siever switches between those two code variants. */
+when the siever switches between those two code variants.
+Needs to be less than SIEVE_PRIMES_MIN.*/
 
 #define SIEVE_SPLIT 250 /* DO NOT CHANGE! */
 
