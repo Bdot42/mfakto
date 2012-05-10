@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
-#define SIEVE_SIZE_LIMIT 64
+#define SIEVE_SIZE_LIMIT 36
 
 
 /******************
@@ -98,9 +98,9 @@ code path - not used by mfakto, see kernel trace */
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.11-pre5" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.11-pre5-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11-Win" /* DO NOT CHANGE! */
 #endif
 
 
@@ -109,9 +109,8 @@ If MORE_CLASSES is defined then the TF process is split into 4620
 (4 * 3*5*7*11) classes. Otherwise it will be split into 420 (4 * 3*5*7)
 classes. With 4620 the siever runs a bit more efficent at the cost of 10 times
 more sieve initializations. This will allow to increase SIEVE_PRIMES a little
-bit further. The OpenCL version mfakto requires MORE_CLASSES be defined.
-This starts to become useful on my system for e.g. TF M66xxxxxx from 2^66 to
-2^67.
+bit further. This starts to become useful on my system for e.g. TF M66xxxxxx
+from 2^66 to 2^67. The OpenCL version, mfakto, requires MORE_CLASSES be defined.
 */
 
 #define MORE_CLASSES

@@ -59,8 +59,7 @@ TODO
 +DONE+ - test optimisation options on Linux
 +DONE+ - fast 64-bit kernel (mul24_63)
 +DONE+ - 5x15bit based on mul24 (barrett15_75)
-
-- display GHz-days/day: 0.016968 * pow(2, $bitlevel - 48) * 1680 / $exponent
++DONE+ - display GHz-days/day: 0.016968 * pow(2, $bitlevel - 48) * 1680 / $exponent
 
   // example using M50,000,000 from 2^69-2^70:
   = 0.016968 * pow(2, 70 - 48) * 1680 / 50000000
@@ -89,14 +88,13 @@ TODO
 +  %M - the exponent being worked on "%d"  !! no fixed width !!
 +  %l - the lower bit-limit          "%2d"
 +  %u - the upper bit-limit          "%2d"
-  into an array {pos (0=off), format, output}, fill as it comes in, print in a loop,
-  sorted index array for fprintf
+
++DONE+ - run all tests with SievePrimes 256 and 1000
++DONE+ - SievePrimesMin
 - dynamic sieve size, adjusting as SievePrimes changes
 - worktodo.add
 - AllowSleep
 - test if fix SieveSizeLimit is faster : yes, is. Provide 3 fix size sieve functions and dynamically use them.
-- run all tests with SievePrimes 256 and 1000
-- SievePrimesMin
 - perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
 - retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
 - two optional fields in mfaktc.ini for username and computerid, so that if the user fills them out then it puts
@@ -123,8 +121,6 @@ TODO
 - set affinity for main thread
 - repunit
 - SDK 2.6: __attribute__((always_inline)), set environment variable GPU_ASYNC_MEM_COPY=2, Profiler
-- PERF: (d0 + d1 + d2 + d3 + d4)^2 = d0^2 + 2d0d1 + d1^2 + 2d0d2 + 2(d1d2 + d0d3) + d2^2 + 2(d0d4 + d1d3) + 2(d1d4 + d2d3) + d3^2 + 2d2d4 + 2d3d4 + d4^2
-  => any better than current a x b in 15-bit-kernel
 - Auto-adjust VectorSize per kernel
 - dummy kernel for performance testing of sieve and transfer
 - transfer 4 FCs in 3 ints
