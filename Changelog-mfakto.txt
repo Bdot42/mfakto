@@ -1,3 +1,29 @@
+version 0.11 (2012-05-??)
+- new 24-bit barrett kernel for FCs up to 2^70 - very fast!
+- new 15-bit barrett kernel for FCs up to 2^73 - almost as fast, 
+  especially on Cayman this one has a speedup of 50%
+- new SievePrimesMin ini-file variable to replace the so-far fix
+  value of 5000
+- new V5UserID and ComputerID ini-file variables that let you configure
+  these ID's for the results file output (so far only useful for 
+	mersenne-aries.sili.net)
+- new TimeStampInResults ini-file variable allows to configure that each
+  output line in the results file should be preceded by a time stamp
+- new ProgressHeader and PrintFormat ini-file variables to adapt the
+  information that is printed after each class is finished. See the included
+	mfakto.ini file for details.
+- On Linux: Siever code is now compiled with gcc4.6: ~10% faster sieve
+- file locking: worktodo and results files accesses are now synchronized
+  using a lock file (.lck appended to the file name).
+- evaluation of GHz-days of assignments, and current speed as GHz-days/day
+- Ctrl-C handler already in selftest to get a summary of so-far-completed
+  tests
+- new --pertest option to test the siever performance depending on SievePrimes
+  and SieveSizeLimit (if that is not fix at compile time)
+- using a fix power of 2 for the number of GPU threads (still set via
+  GridSize)
+- removed many compiler-warnings
+
 version 0.10 (2011-12-19)
 - added workaround for compatibility with Catalyst 11.10 and above
 - MODBASECASE for barrett kernels enabled
