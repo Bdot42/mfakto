@@ -56,8 +56,10 @@ TODO
 +DONE+ - bugfix for "Only 1 platforms found, cannot use platform 1 ..."
 +DONE+ - lock results file
 +DONE+ - bugfix for total runtime calculation if a factor was found in a restarted run
-
-- display GHz-days/day: 0.016968 * pow(2, $bitlevel - 48) * 1680 / $exponent
++DONE+ - test optimisation options on Linux
++DONE+ - fast 64-bit kernel (mul24_63)
++DONE+ - 5x15bit based on mul24 (barrett15_75)
++DONE+ - display GHz-days/day: 0.016968 * pow(2, $bitlevel - 48) * 1680 / $exponent
 
   // example using M50,000,000 from 2^69-2^70:
   = 0.016968 * pow(2, 70 - 48) * 1680 / 50000000
@@ -68,12 +70,31 @@ TODO
   // magic constant is 0.01116 for 62-bit and below
 
   Then all you need is: 86400 / (time_per_class * classes_per_exponent) * ghz_days_assignment
++  %C - class ID (n/4620)            "%4d"
++  %c - class number (n/960)         "%3d"
++  %p - percent complete (%)         "%6.2f"
++  %g - GHz-days/day (GHz)           "%7.2f"
++  %t - time per class (s)           "%6G"
++  %e - eta (d/h/m/s)                "%2dm%02ds"/"%2dh%02dm"/"%2dd%02dh"
++  %n - number of candidates (M/G)   "%6.2fM"/"%6.2fG"
++  %r - rate (M/s)                   "%6.2f"
++  %s - SievePrimes                  "%7d"
++  %w - CPU wait time for GPU (us)   "%6lld"
++  %W - CPU wait % (%)               "6.2f"
++  %d - date (Mon nn)                "%b %d"
++  %T - time (HH:MM)                 "%H:%M"
++  %U - username (as configured)     "%15s"
++  %H - hostname (as configured)     "%15s"
++  %M - the exponent being worked on "%d"  !! no fixed width !!
++  %l - the lower bit-limit          "%2d"
++  %u - the upper bit-limit          "%2d"
+
++DONE+ - run all tests with SievePrimes 256 and 1000
++DONE+ - SievePrimesMin
 - dynamic sieve size, adjusting as SievePrimes changes
 - worktodo.add
 - AllowSleep
-- test optimisation options on Linux
 - test if fix SieveSizeLimit is faster : yes, is. Provide 3 fix size sieve functions and dynamically use them.
-- run all tests with SievePrimes 256 and 1000
 - perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
 - retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
 - two optional fields in mfaktc.ini for username and computerid, so that if the user fills them out then it puts
@@ -81,9 +102,7 @@ TODO
 - output datestamp lines in results.txt [Sat Dec 31 21:29:40 2011]
 - serialize memory access for vector kernels
 - div/mul-modulo for 96 bits
-- fast 64-bit kernel (barrett)
-- enhanced barrett for >64bit, based on mul24
-- 5/6x15bit based on mul24
+- 6x15bit based on mul24
 - mu = 2^(bitlevel+1) / FC on host?
 - kernel trace more specific (bitmask)
 - error handling: RES[0] -= 100; save up to 3 ints in RES; only in single-vec
@@ -99,5 +118,10 @@ TODO
 - Llano: zero-copy-path (BeaverCreek)
 - decode GPU-names
 - better estimate of compute cores (CPU!)
+- set affinity for main thread
 - repunit
 - SDK 2.6: __attribute__((always_inline)), set environment variable GPU_ASYNC_MEM_COPY=2, Profiler
+- Auto-adjust VectorSize per kernel
+- dummy kernel for performance testing of sieve and transfer
+- transfer 4 FCs in 3 ints
+

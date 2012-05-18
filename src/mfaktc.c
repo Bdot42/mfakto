@@ -117,7 +117,8 @@ other return value
   unsigned long long int time_run, time_est;
 
 
-  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d\n", exp, bit_min, bit_max);
+  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d (%4.2fGHz-days)\n",
+    exp, bit_min, bit_max, 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1));
   timer_init(&timer);
   time(&time_last_checkpoint);
 
@@ -150,24 +151,25 @@ other return value
   }
 
   if(use_kernel == AUTOSELECT_KERNEL)
-  {
+  {  // this is probably the speed order for VLIW4, Cayman (HD6970), and most likely also for GCN
     if (mystuff->preferredKernel == _71BIT_MUL24)  // maybe this can be bound to some version/feature/capability or be tested during selftest
     {
-      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;
-      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;
-      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
-      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
+      if      ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 295M/s on HD6970
+      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 203M/s
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 207M/s
+      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 211M/s
+      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 195M/s
+      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 155M/s
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
     }
     else
-    {
-      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;
-      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
-//      if      ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;
-      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;
-      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;
+    {  // this is the speed order for VLIW5, HD5770, for instance
+      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 321M/s on HD5870
+      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 288M/s
+      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 258M/s
+      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 255M/s
+      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 236M/s
+      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 205M/s
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
     }
 
@@ -265,17 +267,21 @@ other return value
 #endif
         if(mystuff->mode != MODE_SELFTEST_SHORT && (count == 0 || (count%20 == 0 && mystuff->printmode == 0)))
         {
-          printf("      class |   # FCs |    time | avg. rate | SievePrimes |    ETA | CPU wait\n");
+          printf("%s\n", mystuff->head_line);
         }
         count++;
         mystuff->class_counter++;
-      
+        if (mystuff->p_par[CLASS_NUM].pos) sprintf(mystuff->p_par[CLASS_NUM].out, "%3d", mystuff->class_counter);
+        if (mystuff->p_par[PCT_COMPLETE].pos) sprintf(mystuff->p_par[PCT_COMPLETE].out, "%6.2f", 0.1041666667f * mystuff->class_counter);
+
         switch (use_kernel)
         {
           case _71BIT_MUL24:
           case _63BIT_MUL24:
           case _64BIT_64_OpenCL:
           case _95BIT_64_OpenCL:
+          case BARRETT58_MUL15:
+          case BARRETT73_MUL15:
           case BARRETT72_MUL24:
           case BARRETT79_MUL32:
           case BARRETT92_MUL32:
@@ -296,13 +302,11 @@ other return value
           {
             if ( ((mystuff->checkpoints > 1) && (--do_checkpoint == 0)) ||
                  ((mystuff->checkpoints == 1) && (time(NULL) - time_last_checkpoint > (time_t) mystuff->checkpointdelay)) ||
-                   mystuff->quit ||
-                  (numfactors > 0) )
+                   mystuff->quit )
             {
               checkpoint_write(exp, bit_min, bit_max, cur_class, factorsfound);
               do_checkpoint = mystuff->checkpoints;
               time(&time_last_checkpoint);
-              printf("C\b"); fflush(NULL);
             }
           }
           if((mystuff->stopafterfactor >= 2) && (factorsfound > 0) && (cur_class != max_class))cur_class = max_class + 1;
@@ -337,6 +341,17 @@ other return value
   }
   else
   {
+    if (mystuff->print_timestamp)
+    {
+      time_t now = time(NULL);
+      char *ptr = ctime(&now);
+      ptr[24] = '\0'; // cut off the newline
+      fprintf(resultfile, "[%s]\n", ptr);
+    }
+    if (mystuff->ComputerID[0] && mystuff->V5UserID[0])
+    {
+      fprintf(resultfile, "UID: %s/%s, ", mystuff->V5UserID, mystuff->ComputerID);
+    }
     if(mystuff->mode == MODE_NORMAL)        fprintf(resultfile, "no factor for M%u from 2^%d to 2^%d [%s %s_%d]\n",
       exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
     if(mystuff->mode != MODE_SELFTEST_SHORT)printf(             "no factor for M%u from 2^%d to 2^%d [%s %s_%d]\n",
@@ -389,6 +404,18 @@ k_max and k_min are used as 64bit temporary integers here...
         f_med  &= 0x00FFFFFF;
         
         f_low  &= 0x00FFFFFF;
+      }
+      else if ((use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
+      {
+        // 30 bits per reported result int
+        f_hi  <<= 4;
+        f_hi   += f_med >> 28;
+
+        f_med <<= 2;
+        f_med  += f_low >> 30;
+        f_med  &= 0x3FFFFFFF;
+        
+        f_low  &= 0x3FFFFFFF;
       }
       k_min=0; /* using k_min for counting the number of matches here */
       for(i=0; (i<mystuff->h_RES[0]) && (i<10); i++)
@@ -490,11 +517,11 @@ RET_ERROR we might have a serios problem
   unsigned long long int k[NUM_SELFTESTS];
   int retval=1, ind;
   enum GPUKernels kernels[9];
-  unsigned int index[] = {  2 , 25,  57,     // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
-                            70 , 72,  73,  88,  106,    // some factors below 2^75 (test 75 bit kernel)
-                            355, 358, 666,   // some very small factors
-                           1547, 1552, 1556, // some factors below 2^95 (test 95 bit kernel)
-                           1557 };           // mfakto special case (25-bit factor)
+  unsigned int index[] = {    2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+                             70,   72,   73,  82,  88,   // some factors below 2^75 (test 75 bit kernel)
+                            106,  355,  358,  666,   // some very small factors
+                           1547, 1552, 1556, 1557    // some factors below 2^95 (test 95 bit kernel)
+                         };                          // mfakto special case (25-bit factor)
   if (type == MODE_SELFTEST_FULL)
     selftests_to_run = NUM_SELFTESTS;
   else
@@ -502,14 +529,17 @@ RET_ERROR we might have a serios problem
 
 #include "selftest-data.h"
 
+  if (mystuff->p_par[SIEVE_PRIMES].pos) sprintf(mystuff->p_par[SIEVE_PRIMES].out, "%7d", mystuff->sieve_primes);
+  register_signal_handler(mystuff);
+
   for(i=0; i<selftests_to_run; i++)
   {
     if(type == MODE_SELFTEST_SHORT)
     {
       if (i < (sizeof(index)/sizeof(index[0])))
       {
-        printf("########## testcase %d/%d ##########\r", i+1, (int) (sizeof(index)/sizeof(index[0])));
         ind = index[i];
+        printf("########## testcase %d/%d (#%d) ##########\r", i+1, (int) (sizeof(index)/sizeof(index[0])), ind);
       }
       else
         break; // short test done
@@ -528,9 +558,14 @@ RET_ERROR we might have a serios problem
     if ((bit_min[ind] >= 61) && (bit_min[ind] < 72))   kernels[j++] = _71BIT_MUL24;
     if ((bit_min[ind] >= 64) && (bit_min[ind] < 79))   kernels[j++] = BARRETT79_MUL32; 
     if ((bit_min[ind] >= 64) && (bit_min[ind] < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-    if ((bit_min[ind] >= 63) && (bit_min[ind] < 70))   kernels[j++] = BARRETT72_MUL24; 
+    if ((bit_min[ind] >= 63) && (bit_min[ind] < 70))   kernels[j++] = BARRETT72_MUL24;
+    if ((bit_min[ind] >= 60) && (bit_min[ind] < 73))   kernels[j++] = BARRETT73_MUL15;
 //
 //      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
+
+    if (mystuff->p_par[EXP].pos)         sprintf(mystuff->p_par[EXP].out, "%d", exp[ind]);
+    if (mystuff->p_par[LOWER_LIMIT].pos) sprintf(mystuff->p_par[LOWER_LIMIT].out, "%2d", bit_min[ind]);
+    if (mystuff->p_par[UPPER_LIMIT].pos) sprintf(mystuff->p_par[UPPER_LIMIT].out, "%2d", bit_min[ind]+1);
 
     while(j>0)
     {
@@ -545,7 +580,9 @@ RET_ERROR we might have a serios problem
       printf("Test %d finished, so far suc: %d, no: %d, wr: %d, unk: %d\n", num_selftests, st_success, st_nofactor, st_wrongfactor, st_unknown);
       fflush(NULL);
 #endif
+      if (mystuff->quit) break;
     }
+    if (mystuff->quit) break;
   }
 
   printf("Selftest statistics                          \n");
@@ -712,9 +749,9 @@ int main(int argc, char **argv)
   printf("  SIEVE_SIZE                %dbits\n", SIEVE_SIZE);
 #endif
   printf("  SIEVE_SPLIT               %d\n", SIEVE_SPLIT);
-  if(SIEVE_SPLIT > SIEVE_PRIMES_MIN)
+  if(SIEVE_SPLIT > mystuff.sieve_primes_min)
   {
-    printf("ERROR: SIEVE_SPLIT must be <= SIEVE_PRIMES_MIN\n");
+    printf("ERROR: SIEVE_SPLIT must be <= SievePrimesMin\n");
     return 1;
   }
 #ifdef MORE_CLASSES
@@ -751,7 +788,7 @@ int main(int argc, char **argv)
   if(init_CL(mystuff.num_streams, devicenumber)!=CL_SUCCESS)
   {
     printf("init_CL(%d, %d) failed\n", mystuff.num_streams, devicenumber);
-    return 1;
+    return 2;
   }
   printf("\nOpenCL device info\n");
   printf("  name                      %s (%s)\n", deviceinfo.d_name, deviceinfo.v_name);
@@ -762,9 +799,8 @@ int main(int argc, char **argv)
   printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
 
   printf("\nAutomatic parameters\n");
-  i = (int) deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
-  while( (i * 2) <= (int)mystuff.threads_per_grid_max) i = i * 2;
-  mystuff.threads_per_grid = i;
+
+  mystuff.threads_per_grid = mystuff.threads_per_grid_max;
   if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
   {
     mystuff.threads_per_grid = (cl_uint)deviceinfo.maxThreadsPerGrid;
@@ -807,6 +843,7 @@ int main(int argc, char **argv)
       if (parse_ret == 0)
       {
         printf("got assignment: exp=%u bit_min=%d bit_max=%d\n",exp,bit_min,bit_max);
+        if (mystuff.p_par[EXP].pos) sprintf(mystuff.p_par[EXP].out, "%d", exp);
 
         bit_min_stage = bit_min;
         bit_max_stage = bit_max;
@@ -820,6 +857,8 @@ int main(int argc, char **argv)
           printf("         It is not allowed to sieve primes which are equal or bigger than the \n");
           printf("         exponent itself!\n");
         }
+        if (mystuff.p_par[SIEVE_PRIMES].pos) sprintf(mystuff.p_par[SIEVE_PRIMES].out, "%7d", mystuff.sieve_primes);
+
         if(mystuff.stages == 1)
         {
           while( ((calculate_k(exp,bit_max_stage) - calculate_k(exp,bit_min_stage)) > (250000000ULL * NUM_CLASSES))
@@ -828,6 +867,8 @@ int main(int argc, char **argv)
         tmp = 0;
         while(bit_max_stage <= bit_max && !mystuff.quit)
         {
+          if (mystuff.p_par[LOWER_LIMIT].pos) sprintf(mystuff.p_par[LOWER_LIMIT].out, "%2d", bit_min_stage);
+          if (mystuff.p_par[UPPER_LIMIT].pos) sprintf(mystuff.p_par[UPPER_LIMIT].out, "%2d", bit_max_stage);
           tmp = tf(exp, bit_min_stage, bit_max_stage, &mystuff, 0, 0, AUTOSELECT_KERNEL);
           if(tmp == RET_ERROR) return 1; /* bail out, we might have a serios problem  */
 

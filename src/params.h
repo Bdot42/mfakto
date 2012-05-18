@@ -32,9 +32,9 @@ of your CPUs L1-Data cache.
 This is just the upper LIMIT of the SIEVE_SIZE, the actual sieve size depends
 on some other factors as well, but you don't have to worry about.
 
-If this define is not set, an ini-file key SieveSizeLimit will be evaluated to
+If this #define is not set, an ini-file key SieveSizeLimit will be evaluated to
 set it. This allows for adjusting the SieveSize, but may be up to 3% slower
-than an equal SIEVE_SIZE_LIMIT define.
+than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
@@ -51,11 +51,6 @@ than an equal SIEVE_SIZE_LIMIT define.
 
 /* print detailed timing information of the sieve*/
 //#define VERBOSE_SIEVE_TIMING
-
-
-/* enable for printf's from device (GPU) code. Only used in sm_20 or newer
-code path - not used by mfakto, see kernel trace */
-//#define USE_DEVICE_PRINTF
 
 
 /* do some checks on the mod/div routines */
@@ -98,9 +93,9 @@ code path - not used by mfakto, see kernel trace */
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.11-pre2" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.11-pre2-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.11-Win" /* DO NOT CHANGE! */
 #endif
 
 
@@ -109,9 +104,8 @@ If MORE_CLASSES is defined then the TF process is split into 4620
 (4 * 3*5*7*11) classes. Otherwise it will be split into 420 (4 * 3*5*7)
 classes. With 4620 the siever runs a bit more efficent at the cost of 10 times
 more sieve initializations. This will allow to increase SIEVE_PRIMES a little
-bit further. The OpenCL version mfakto requires MORE_CLASSES be defined.
-This starts to become useful on my system for e.g. TF M66xxxxxx from 2^66 to
-2^67.
+bit further. This starts to become useful on my system for e.g. TF M66xxxxxx
+from 2^66 to 2^67. The OpenCL version, mfakto, requires MORE_CLASSES be defined.
 */
 
 #define MORE_CLASSES
@@ -135,8 +129,8 @@ The actual configuration is done in mfakto.ini.
 The following lines define the min, default and max value.
 */
 
-#define SIEVE_PRIMES_MIN      5000 /* DO NOT CHANGE! */
-#define SIEVE_PRIMES_DEFAULT 25000 /* DO NOT CHANGE! */
+#define SIEVE_PRIMES_MIN        256 /* DO NOT CHANGE! */
+#define SIEVE_PRIMES_DEFAULT  25000 /* DO NOT CHANGE! */
 #define SIEVE_PRIMES_MAX    1000000 /* DO NOT CHANGE! */
 
 /*
@@ -153,7 +147,8 @@ primes[1000000]=15485867 (24) k_tab(2M) = 12733916
 
 
 /* the first SIEVE_SPLIT primes have a special code in sieve.c. This defines
-when the siever switches between those two code variants. */
+when the siever switches between those two code variants.
+Needs to be less than SIEVE_PRIMES_MIN.*/
 
 #define SIEVE_SPLIT 250 /* DO NOT CHANGE! */
 

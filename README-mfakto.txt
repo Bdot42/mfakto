@@ -97,6 +97,7 @@ M3321932839 from 2^50 to 2^61.
 # 2.1 Supported GPUs #
 ######################
 
+- HD7xxx not yet tested, but likely to work
 - HD5xxx, HD6xxx, including the builtin HD6xxx on AMD APUs
 - HD4xxx, FireStream 92xx (no atomic operations available *)
 - not supported (kernel compilation fails): HD2xxx, HD3xxx, FireStream 91xx
@@ -260,7 +261,6 @@ A Currently, the 79-bit-barrett kernel is the fastest one, working for factors
 - full 95-bit implementation
 - Makefile.win  --  any volunteers?
 - perftest modes for sieving, data copy and kernel speed.
-- test optimisation options on Linux
 - retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
 - Implement&test AllowSleep
 

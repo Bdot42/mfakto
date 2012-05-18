@@ -33,6 +33,13 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "checkpoint.h"
 #include "filelocking.h"
 #include "mfakto.h"
+#ifndef _MSC_VER
+#include <sys/time.h>
+#else
+#include "time.h"
+#define time _time64
+#define localtime _localtime64
+#endif
 
 /* Global variables */
 
@@ -54,12 +61,14 @@ kernel_info_t       kernel_info[NUM_KERNELS] = {
   /*   kernel (in sequence) | kernel function name | bit_min | bit_max | loaded kernel pointer */
      {   AUTOSELECT_KERNEL,   "auto",                  0,      0,         NULL},
      {   _TEST_MOD_,          "mod_128_64_k",          0,      0,         NULL}, // used for various tests
-     {   _95BIT_64_OpenCL,    "mfakto_cl_barrett79_ns",         64,     79,         NULL}, // no sieved input (test all FC's)
+     {   _95BIT_64_OpenCL,    "mfakto_cl_barrett79_ns",         64,     70,         NULL}, // no sieved input (test all FC's)
      {   _71BIT_MUL24,        "mfakto_cl_71",         61,     72,         NULL},
      {   _63BIT_MUL24,        "mfakto_cl_63",          0,     64,         NULL},
-     {   BARRETT72_MUL24,     "mfakto_cl_barrett72",  64,     72,         NULL}, // one kernel for all vector sizes
+     {   BARRETT72_MUL24,     "mfakto_cl_barrett72",  64,     70,         NULL}, // one kernel for all vector sizes
      {   BARRETT79_MUL32,     "mfakto_cl_barrett79",  64,     79,         NULL}, // one kernel for all vector sizes
      {   BARRETT92_MUL32,     "mfakto_cl_barrett92",  64,     92,         NULL}, // one kernel for all vector sizes
+     {   BARRETT58_MUL15,     "barrett15_60",         45,     58,         NULL}, // one kernel for all vector sizes
+     {   BARRETT73_MUL15,     "barrett15_75",         60,     72,         NULL}, // one kernel for all vector sizes
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         NULL},
      {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         NULL}, // slow shift-cmp-sub kernel: removed
      {   BARRETT92_64_OpenCL, "mfakto_cl_barrett92",  64,     92,         NULL}, // mapped to 32-bit barrett so far
@@ -680,6 +689,9 @@ int init_CL(int num_streams, cl_int devnumber)
   if (mystuff.sieve_gpu == 1)
     strcat(program_options, " -DCL_GPU_SIEVE");
 
+  if (mystuff.small_exp == 1)
+    strcat(program_options, " -DSMALL_EXP");
+
 #ifdef DETAILED_INFO
   printf("Compiling kernels (build options: \"%s\").", program_options);
 #else
@@ -786,7 +798,6 @@ int run_cl_sieve_init(cl_uint exp, cl_ulong k_min, cl_ulong num_threads)
                                    __global  uint *next_multiple,  // out-array of k-offsets when the corresponding prime divides the factor candidate
                                    __private uint vector_size)     // not yet used
   */
-  cl_uint  unused=0;
   cl_int   status;
   size_t   globalThreads[2];
   size_t   localThreads[2];
@@ -808,8 +819,8 @@ int run_cl_sieve_init(cl_uint exp, cl_ulong k_min, cl_ulong num_threads)
   localThreads[1] = 1;
 
 #ifdef DETAILED_INFO
-    printf("run_sieve_init: %d primes -> %d x %d = %d threads, exp=%d, k_min=%lld\n", num_threads, globalThreads[0], globalThreads[1],
-                                                                                 total_threads, exp, k_min);
+    printf("run_sieve_init: %d primes -> %d x %d = %d threads, exp=%d, k_min=%llu\n",
+        (int) num_threads, (int) globalThreads[0], (int) globalThreads[1], (int) total_threads, exp, (long long unsigned int) k_min);
 #endif
 
   status = clSetKernelArg(kernel_info[CL_SIEVE_INIT].kernel, 
@@ -940,7 +951,6 @@ int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
                               __global   uint *savestate      // to remember where to continue
                              )
   */
-  cl_uint  unused=0;
   cl_int   status;
   size_t   globalThreads[2];
   size_t   localThreads[2];
@@ -962,8 +972,8 @@ int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
   localThreads[1] = 1;
 
 #ifdef DETAILED_INFO
-    printf("run_sieve: %d primes -> %d x %d = %d threads, exp=%d, k_min=%lld\n", num_threads, globalThreads[0], globalThreads[1],
-                                                                                 total_threads, exp, *k_min);
+    printf("run_sieve: %d primes -> %d x %d = %d threads, exp=%d, k_min=%llu\n", 
+        (int) num_threads, (int) globalThreads[0], (int) globalThreads[1], (int) total_threads, exp, (long long unsigned int) *k_min);
 #endif
 
   status = clSetKernelArg(kernel_info[CL_SIEVE].kernel, 
@@ -1052,7 +1062,8 @@ int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
   *k_min += mystuff.h_savestate[0];
   //#ifdef DETAILED_INFO
   printArray("save", mystuff.h_savestate, 4);
-  printf("Sieved %d FC's to receive %d. New k_min = %lld.\n", mystuff.h_savestate[0], mystuff.threads_per_grid, *k_min);
+  printf("Sieved %d FC's to receive %d. New k_min = %llu.\n",
+      mystuff.h_savestate[0], mystuff.threads_per_grid, (long long unsigned int) *k_min);
   //#endif
 
 #ifdef CL_PERFORMANCE_INFO
@@ -1230,6 +1241,95 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
 
 }
 
+int run_kernel15(cl_kernel l_kernel, cl_uint exp, int75 k_base, int stream, cl_uint8 b_in, cl_mem res, cl_int shiftcount, cl_int bin_max)
+/*
+  run_kernel15(kernel_info[use_kernel].kernel, exp, k_base, i, b_in, mystuff->d_RES, shiftcount, bit_max);
+*/
+{
+  cl_int   status;
+  /*
+__kernel void barrett15_75(__private uint exp, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
+                           const uint8 b_in, __global uint * restrict RES, const int bit_max
+#ifdef CHECKS_MODBASECASE
+         , __global uint * restrict modbasecase_debug
+#endif
+         )
+*/
+  //////// test test test ...
+  // {k_min_grid[i] = 2822192209735ULL; mystuff.h_ktab[i][0]=0;}
+  // k_base.d4=0;
+  // k_base.d3=0;
+  // k_base.d2=0xa44;
+  // k_base.d1=0x2f86;
+  // k_base.d0=0x7b2f;  // together with ktab[0]=2 this will run the proper factor in thread 0
+  //new_class=1;
+  ///////
+
+  // first set the specific params that don't change per block: b_preinit, shiftcount, RES
+  if (new_class)
+  {
+    status = clSetKernelArg(l_kernel, 
+                    3, 
+                    sizeof(cl_int), 
+                    (void *)&shiftcount);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (shiftcount)\n";
+  		return 1;
+  	}
+
+    status = clSetKernelArg(l_kernel, 
+                    4, 
+                    sizeof(cl_uint8),
+                    (void *)&b_in);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (b_in)\n";
+  		return 1;
+  	}
+      /* the bit_max for the barrett kernels (the others ignore it) */
+      status = clSetKernelArg(l_kernel, 
+                      6, 
+                      sizeof(cl_int), 
+                      (void *)&bin_max);
+      if(status != CL_SUCCESS) 
+      { 
+        std::cerr<<"Warning " << status << ": Setting kernel argument. (bit_max)\n";
+      }
+#ifdef CHECKS_MODBASECASE
+      status = clSetKernelArg(l_kernel, 
+                    7, 
+                    sizeof(cl_mem), 
+                    (void *)&mystuff.d_modbasecase_debug);
+      if(status != CL_SUCCESS) 
+  	  { 
+	  	  std::cerr<<"Error " << status << ": Setting kernel argument. (d_modbasecase_debug)\n";
+  		  return 1;
+  	  }
+#endif
+#ifdef DETAILED_INFO
+    printf("run_kernel15: b=%x:%x:%x:%x:%x:%x:%x:%x:0:0, shift=%d\n",
+      b_in.s[7], b_in.s[6], b_in.s[5], b_in.s[4], b_in.s[3], b_in.s[2], b_in.s[1], b_in.s[0], shiftcount);
+#endif
+
+  }
+  // now the params that change everytime
+  status = clSetKernelArg(l_kernel, 
+                    1, 
+                    sizeof(int75), 
+                    (void *)&k_base);
+  if(status != CL_SUCCESS) 
+	{ 
+		std::cerr<<"Error " << status << ": Setting kernel argument. (k_base)\n";
+		return 1;
+	}
+#ifdef DETAILED_INFO
+  printf("run_kernel15: k_base=%x:%x:%x:%x:%x\n", k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0);
+#endif
+    
+  return run_kernel(l_kernel, exp, stream, res); // set params 0,2,5 and start the kernel
+}
+
 int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int144 b_preinit, cl_mem res, cl_int shiftcount, cl_int bin_min63)
 /*
   run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount);
@@ -1376,7 +1476,8 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
   		
   	}
 #ifdef DETAILED_INFO
-    printf("run_kernel64: b=%llx:%llx:%llx, shift=%lld\n", b_preinit.s[2], b_preinit.s[1], b_preinit.s[0], b_preinit.s[3]);
+    printf("run_kernel64: b=%llx:%llx:%llx, shift=%u\n",
+        (long long unsigned int)b_preinit.s[2], (long long unsigned int)b_preinit.s[1], (long long unsigned int)b_preinit.s[0], (unsigned int)b_preinit.s[3]);
 #endif
   }
   // now the params that change everytime
@@ -1390,7 +1491,7 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
 		return 1;
 	}
 #ifdef DETAILED_INFO
-  printf("run_kernel64: kbase=%lld\n", k_base);
+  printf("run_kernel64: kbase=%llu\n", (long long unsigned int) k_base);
 #endif
   return run_kernel(l_kernel, exp, stream, res);
 }
@@ -1719,18 +1820,51 @@ writes "a" into "buf" in decimal
   }
 }
 
+void print_dez90(cl_uint a_hi, cl_uint a_mid, cl_uint a_lo, char *buf)
+/*
+assumes 30 bits per component
+writes "a" into "buf" in decimal
+"buf" must be at least 30 bytes
+*/
+{
+  char digit[29];
+  int  digits=0,carry,i=0;
+  long long int tmp;
+  
+  while((a_lo!=0 || a_mid!=0 || a_hi!=0) && digits<29)
+  {
+                                                    carry=a_hi%10; a_hi/=10;
+    tmp = a_mid; tmp += (long long int)carry << 30; carry=tmp%10;  a_mid=(cl_uint) (tmp/10);
+    tmp = a_lo;  tmp += (long long int)carry << 30; carry=tmp%10;  a_lo =(cl_uint) (tmp/10);
+    digit[digits++]=carry;
+  }
+  if(digits==0)sprintf(buf,"0");
+  else
+  {
+    digits--;
+    while(digits >= 0)
+    {
+      sprintf(&(buf[i++]),"%1d",digit[digits--]);
+    }
+  }
+}
+
 
 int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPUKernels use_kernel)
 {
   size_t size = mystuff->threads_per_grid * sizeof(int);
   int status, wait = 0;
   struct timeval timer, timer2;
-  unsigned long long int twait=0, eta;
+  unsigned long long int twait=0;
+  unsigned int eta;
   cl_uint cwait=0, i;
 // for TF_72BIT  
   int72  k_base;
   int144 b_preinit = {0};
   int192 b_192 = {0};
+  cl_uint8 b_in = {{0}};
+//  double ghz_assignment = 0.016968 * pow((double)2, bit_min - 47) * 1680 / exp * (pow((double)2, bit_max-bit_min) -1);
+  double ghz_assignment = 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1);
 
   cl_uint factor_lo, factor_mid, factor_hi, factorsfound=0;
   unsigned long long int b_preinit_lo, b_preinit_mid, b_preinit_hi;
@@ -1746,7 +1880,8 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   
   timer_init(&timer);
 #ifdef DETAILED_INFO
-  printf("tf_class_opencl(%u, %d, %" PRIu64 ", %" PRIu64 ", ...)\n",exp, bit_min, k_min, k_max);
+  printf("tf_class_opencl(%u, %d, %llu, %llu, ...)\n",
+      exp, bit_min, (long long unsigned int) k_min, (long long unsigned int) k_max);
 #endif
 
   //  exp=51152869; k_min=20582854459640ULL; k_max=20582854459641ULL;  // test test test
@@ -1818,12 +1953,24 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   count=0;
   if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT72_MUL24)) 
   {
-    if     (ln2b<24 )b_preinit.d0=1<< ln2b;       // must not happen; d0 will not be evaluated in the kernel
+    if     (ln2b<24 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
     else if(ln2b<48 )b_preinit.d1=1<<(ln2b-24);   // should not happen
     else if(ln2b<72 )b_preinit.d2=1<<(ln2b-48);
     else if(ln2b<96 )b_preinit.d3=1<<(ln2b-72);
     else if(ln2b<120)b_preinit.d4=1<<(ln2b-96);
     else             b_preinit.d5=1<<(ln2b-120);	// b_preinit = 2^ln2b
+  }
+  else if ((use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15) )
+  { // skip the "lowest" levels, so that uint8 is sufficient for 10 components of int150
+    if     (ln2b<30 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
+    else if(ln2b<45 )b_in.s[0]=1<<(ln2b-30);   
+    else if(ln2b<60 )b_in.s[1]=1<<(ln2b-45);   // should not happen
+    else if(ln2b<75 )b_in.s[2]=1<<(ln2b-60);
+    else if(ln2b<90 )b_in.s[3]=1<<(ln2b-75);
+    else if(ln2b<105)b_in.s[4]=1<<(ln2b-90);
+    else if(ln2b<120)b_in.s[5]=1<<(ln2b-105);
+    else if(ln2b<135)b_in.s[6]=1<<(ln2b-120);
+    else             b_in.s[7]=1<<(ln2b-135);
   }
   else if ((use_kernel == BARRETT79_MUL32) || (use_kernel == BARRETT92_MUL32) || (use_kernel == _95BIT_64_OpenCL) )
   {
@@ -1854,6 +2001,12 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 	  std::cerr<< "Error " << status << ": Waiting for copy RES call to finish. (clWaitForEvents)\n";
 	  return RET_ERROR;
   }
+  status = clReleaseEvent(mystuff->copy_events[0]);
+  if(status != CL_SUCCESS) 
+  { 
+		std::cerr<< "Error " << status << ": Release copy RES object. (clReleaseEvent)\n";
+		return RET_ERROR;
+  }
 
   while((k_min <= k_max) || (running > 0))
   {
@@ -1870,7 +2023,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
       printf(" STREAM_SCHEDULE: preprocessing on h_ktab[%d]\n", h_ktab_index);
 #endif
     
-      if (use_kernel == _95BIT_64_OpenCL)
+      if (use_kernel == _95BIT_64_OpenCL) // no sieving for this kernel
       {
         k_min_grid[h_ktab_index] = k_min;
         k_diff = NUM_CLASSES * (unsigned long long int) mystuff->threads_per_grid;
@@ -1906,7 +2059,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 	    mystuff->stream_status[h_ktab_index] = PREPARED;
       running++;
 #ifdef DETAILED_INFO
-      printf("k-base: %llu, ", k_min);
+      printf("k-base: %llu, ", (long long unsigned int) k_min);
       printArray("ktab", mystuff->h_ktab[h_ktab_index], mystuff->threads_per_grid);
 #endif
 
@@ -1940,6 +2093,16 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
               k_base.d1 = (k_min_grid[i] >> 24) & 0xFFFFFF;
               k_base.d2 =  k_min_grid[i] >> 48;
               status = run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount, bit_min-63);
+            }
+            else if ((use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
+            {
+              int75 k_base;
+              k_base.d0 =  k_min_grid[i] & 0x7FFF;
+              k_base.d1 = (k_min_grid[i] >> 15) & 0x7FFF;
+              k_base.d2 = (k_min_grid[i] >> 30) & 0x7FFF;
+              k_base.d3 = (k_min_grid[i] >> 45) & 0x7FFF;
+              k_base.d4 =  k_min_grid[i] >> 60;
+              status = run_kernel15(kernel_info[use_kernel].kernel, exp, k_base, i, b_in, mystuff->d_RES, shiftcount, bit_max);
             }
             else if ((use_kernel == BARRETT79_MUL32) || (use_kernel == BARRETT92_MUL32) || (use_kernel == _95BIT_64_OpenCL))
             {
@@ -2171,7 +2334,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   if(status != CL_SUCCESS) 
 	{ 
     std::cout << "Error " << status << ": clEnqueueReadBuffer RES failed.\n";
-		return 1;
+    return RET_ERROR;
   }
 
 #ifdef DETAILED_INFO
@@ -2192,7 +2355,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   if(status != CL_SUCCESS) 
 	{ 
     std::cout << "Error " << status << ": clEnqueueReadBuffer modbasecase_debug failed.\n";
-		return 1;
+    return RET_ERROR;
   }
 
 #ifdef DETAILED_INFO
@@ -2206,49 +2369,79 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 #endif
 
   t=timer_diff(&timer)/1000;
-  if(t==0)t=1;	/* prevent division by zero in the following printf(s) */
+  if(t==0)t=1;	/* prevent division by zero */
+  if(count==0)count=1;
 
   if(mystuff->mode != MODE_SELFTEST_SHORT)
   {
-    printf("%6" PRIu64 "/%4d", k_min%NUM_CLASSES, (int)NUM_CLASSES);
-
-    if(((unsigned long long int)mystuff->threads_per_grid * (unsigned long long int)count) < 1000000000ULL)
-      printf(" | %6.2fM", (double)mystuff->threads_per_grid * (double)count / 1000000.0);
-    else
-      printf(" | %6.2fG", (double)mystuff->threads_per_grid * (double)count / 1000000000.0);
-
-         if(t < 100000ULL  )printf(" | %6.3fs", (double)t/1000.0);
-    else if(t < 1000000ULL )printf(" | %6.2fs", (double)t/1000.0);
-    else if(t < 10000000ULL)printf(" | %6.1fs", (double)t/1000.0);
-    else                    printf(" | %6.0fs", (double)t/1000.0);
-
-    printf(" | %6.2fM/s", (double)mystuff->threads_per_grid * (double)count / ((double)t * 1000.0));
-    
-    printf(" | %11d", mystuff->sieve_primes);
-
-    if(mystuff->mode == MODE_NORMAL)
+    if (mystuff->p_par[CLASS_ID].pos) sprintf(mystuff->p_par[CLASS_ID].out, "%4d", (unsigned int)(k_min%NUM_CLASSES));
+    if (mystuff->p_par[CANDIDATES].pos)
     {
-      if(t > 250.0)
+      float f = (float)mystuff->threads_per_grid * (float)count;
+      if(f < 1000000000.0)
       {
-        
-#ifdef MORE_CLASSES      
-        eta = (t * (960 - mystuff->class_counter) + 500)  / 1000;
-#else
-        eta = (t * (96 - mystuff->class_counter) + 500)  / 1000;
-#endif
-             if(eta < 3600) printf(" | %2" PRIu64 "m%02" PRIu64 "s", eta / 60, eta % 60);
-        else if(eta < 86400)printf(" | %2" PRIu64 "h%02" PRIu64 "m", eta / 3600, (eta / 60) % 60);
-        else                printf(" | %2" PRIu64 "d%02" PRIu64 "h", eta / 86400, (eta / 3600) % 24);
+        sprintf(mystuff->p_par[CANDIDATES].out, "%6.2fM", f / 1000000.0);
       }
-      else printf(" |   n.a.");
+      else
+      {
+        sprintf(mystuff->p_par[CANDIDATES].out, "%6.2fG", f / 1000000000.0);
+      }
     }
-    else if(mystuff->mode == MODE_SELFTEST_FULL)printf(" |   n.a.");
-  }
 
-  if(count>0)
-  {
+    if (mystuff->p_par[TIME_PER_CLASS].pos)
+    {
+           if(t < 100000ULL  )sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%6.3f", (float)t/1000.0);
+      else if(t < 1000000ULL )sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%6.2f", (float)t/1000.0);
+      else if(t < 10000000ULL)sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%6.1f", (float)t/1000.0);
+      else                    sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%6.0f", (float)t/1000.0);
+    }
+    if (mystuff->p_par[GHZ].pos) sprintf(mystuff->p_par[GHZ].out, "%7.2f", ghz_assignment * 90000.0 / (float)t); // ass * 86400 / (t * 960 / 1000 s/ms)    (t is in ms)
+    if (mystuff->p_par[RATE].pos)
+      sprintf(mystuff->p_par[RATE].out, "%6.2f", (float)mystuff->threads_per_grid * (float)count / ((float)t * 1000.0));
+
+    if (mystuff->p_par[ETA].pos)
+    {
+      sprintf(mystuff->p_par[ETA].out, "  n.a.");
+      if (mystuff->mode == MODE_NORMAL)
+      {
+        if (t > 250)
+        {
+          eta = (unsigned int)(t * (960 - mystuff->class_counter) + 500)  / 1000;
+          if(eta < 3600)
+          {
+            sprintf(mystuff->p_par[ETA].out, "%2dm%02ds", eta / 60, eta % 60);
+          }
+          else if(eta < 86400)
+          {
+            sprintf(mystuff->p_par[ETA].out, "%2dh%02dm", eta / 3600, (eta / 60) % 60);
+          }
+          else
+          {
+            sprintf(mystuff->p_par[ETA].out, "%2dd%02dh", eta / 86400, (eta / 3600) % 24);
+          }
+        }
+      }
+    }
+
+    if (mystuff->p_par[CPU_WAIT_PCT].pos) sprintf(mystuff->p_par[CPU_WAIT_PCT].out, "%6.2f", (double)twait/(double)t/10.0);
     twait/=count;
-    if(mystuff->mode != MODE_SELFTEST_SHORT)printf(" | %6" PRIu64 "us", twait);
+    if (mystuff->p_par[CPU_WAIT_TIME].pos) sprintf(mystuff->p_par[CPU_WAIT_TIME].out, "%6lld", twait);
+    if (mystuff->p_par[DATE_SHORT].pos || mystuff->p_par[TIME_SHORT].pos)
+    {
+      time_t now = time(NULL);
+      struct tm *tm_now = localtime(&now);
+      strftime(mystuff->p_par[DATE_SHORT].out, 16, "%b %d", tm_now);
+      strftime(mystuff->p_par[TIME_SHORT].out, 16, "%H:%M", tm_now);
+    }
+
+      // Now we have all possible parms: print the line
+    printf(mystuff->print_line, mystuff->p_ptr[0], mystuff->p_ptr[1],
+        mystuff->p_ptr[2], mystuff->p_ptr[3], mystuff->p_ptr[4], mystuff->p_ptr[5],
+        mystuff->p_ptr[6], mystuff->p_ptr[7], mystuff->p_ptr[8], mystuff->p_ptr[9],
+        mystuff->p_ptr[10], mystuff->p_ptr[11],
+        mystuff->p_ptr[12], mystuff->p_ptr[13], mystuff->p_ptr[14], mystuff->p_ptr[15],
+        mystuff->p_ptr[16], mystuff->p_ptr[17], mystuff->p_ptr[18], mystuff->p_ptr[19]);
+
     if(mystuff->sieve_primes_adjust==1 && twait>500 && mystuff->sieve_primes < mystuff->sieve_primes_max && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
       mystuff->sieve_primes *= 9;
@@ -2256,23 +2449,23 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
       if(mystuff->sieve_primes > mystuff->sieve_primes_max) mystuff->sieve_primes = mystuff->sieve_primes_max;
 //      printf("\navg. wait > 750us, increasing SievePrimes to %d",mystuff->sieve_primes);
     }
-    if(mystuff->sieve_primes_adjust==1 && twait<150 && mystuff->sieve_primes > SIEVE_PRIMES_MIN && (mystuff->mode != MODE_SELFTEST_SHORT))
+    if(mystuff->sieve_primes_adjust==1 && twait<150 && mystuff->sieve_primes > mystuff->sieve_primes_min && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
       mystuff->sieve_primes *= 7;
       mystuff->sieve_primes /= 8;
-      if(mystuff->sieve_primes < SIEVE_PRIMES_MIN) mystuff->sieve_primes = SIEVE_PRIMES_MIN;
+      if(mystuff->sieve_primes < mystuff->sieve_primes_min) mystuff->sieve_primes = mystuff->sieve_primes_min;
 //      printf("\navg. wait < 200us, decreasing SievePrimes to %d",mystuff->sieve_primes);
     }
+    // this is already for the next iteration, if SievePrimes was adjusted.
+    if (mystuff->p_par[SIEVE_PRIMES].pos) sprintf(mystuff->p_par[SIEVE_PRIMES].out, "%7d", mystuff->sieve_primes);
   }
-  else if(mystuff->mode != MODE_SELFTEST_SHORT)printf(" |      n.a.");
-
 
   if(mystuff->mode == MODE_NORMAL)
   {
     if(mystuff->printmode == 1)printf("\r");
     else printf("\n");
   }
-  else if((mystuff->mode != MODE_SELFTEST_SHORT) && (mystuff->printmode == 0))
+  else if(mystuff->mode != MODE_SELFTEST_SHORT)
   {
     printf("\n");
   }
@@ -2288,6 +2481,10 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
       int72 factor={factor_lo, factor_mid, factor_hi};
       print_dez72(factor,string);
     }
+    else if ((use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
+    {
+      print_dez90(factor_hi, factor_mid, factor_lo, string);
+    }
     else
     {
       print_dez96(factor_hi, factor_mid, factor_lo, string);
@@ -2300,6 +2497,19 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     if(mystuff->mode == MODE_NORMAL)
     {
       resultfile = fopen_and_lock(mystuff->resultsfile, "a");
+      if (resultfile == NULL)
+        return RET_ERROR;
+      if (mystuff->print_timestamp)
+      {
+        time_t now = time(NULL);
+        char *ptr = ctime(&now);
+        ptr[24] = '\0'; // cut off the newline
+        fprintf(resultfile, "[%s]\n", ptr);
+      }
+      if (mystuff->ComputerID[0] && mystuff->V5UserID[0])
+      {
+        fprintf(resultfile, "UID: %s/%s, ", mystuff->V5UserID, mystuff->ComputerID);
+      }
 #ifndef MORE_CLASSES      
       fprintf(resultfile,"M%u has a factor: %s [TF:%d:%d%s:%s %s]\n", exp, string, bit_min, bit_max,
         ((mystuff->stopafterfactor == 2) && (mystuff->class_counter <  96)) ? "*" : "" , MFAKTO_VERSION, kernel_info[use_kernel].kernelname);
@@ -2310,8 +2520,8 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
       unlock_and_fclose(resultfile);
     }
   }
-  if(factorsfound>=10)
-  {
+  if(factorsfound>=10) // so unlikely that I don't care that this will lock the file a second time and another
+  {                    // mfakto instance could write something in between (even less likely)
     if(mystuff->mode != MODE_SELFTEST_SHORT)printf("M%u: %d additional factors not shown\n", exp, factorsfound - 10);
     if(mystuff->mode == MODE_NORMAL)
     {
@@ -3010,6 +3220,10 @@ int perftest(int par)
   int peak_index[MAX_NUM_SPS]={0};
   double last_elem[MAX_NUM_SPS]={0.0};
 
+#ifdef SIEVE_SIZE_LIMIT
+  printf("Sieve size is fixed at compile time, cannot test with variable sizes. Just running 3 fixed tests.\n\n");
+#endif
+
   printf("SievePrimes:");
   for(ii=0; ii<nsp; ii++)
   {
@@ -3022,12 +3236,14 @@ int perftest(int par)
     sieve_free();
 #ifdef SIEVE_SIZE_LIMIT
     sieve_init();
-    if (j>3) break; // quit after 3 equal loops if we can't dynamically set the sieve size anyway
+    if (j>=3) break; // quit after 3 equal loops if we can't dynamically set the sieve size anyway
+    sieve_init_class(exp, k++, 1000000);
+    printf("\n%6d kiB  ", SIEVE_SIZE/8192+1);
 #else
     sieve_init(tmp, 1000000);
-#endif
     sieve_init_class(exp, k++, 1000000);
     printf("\n%6d kiB  ", tmp/8192+1);
+#endif
 
     for(ii=0; ii<nsp; ii++)
     {
@@ -3061,7 +3277,11 @@ int perftest(int par)
   printf("\nat kiB:     ");
   for(ii=0; ii<nsp; ii++)
   {
+#ifdef SIEVE_SIZE_LIMIT
+    printf(" %7u", SIEVE_SIZE/8192+1);
+#else
     printf(" %7u", m*ssizes[peak_index[ii]]/8192+1);
+#endif
   }
   printf("\nmax M/s:    ");
   for(ii=0; ii<nsp; ii++)
