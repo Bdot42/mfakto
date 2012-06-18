@@ -53,7 +53,7 @@ static int my_read_string(char *inifile, char *name, char *string, unsigned int 
   FILE *in;
   char buf[512];
   unsigned int found=0;
-  unsigned int idx = strlen(name);
+  unsigned int idx = (unsigned int) strlen(name);
 
   in=fopen(inifile,"r");
   if(!in)return 1;
@@ -61,7 +61,7 @@ static int my_read_string(char *inifile, char *name, char *string, unsigned int 
   {
     if(!strncmp(buf,name,idx) && buf[idx]=='=')
     {
-      found = strlen(buf + idx + 1);
+      found = (unsigned int) strlen(buf + idx + 1);
       found = (len > found ? found : len) - 1;
       if (found)
         strncpy(string, buf+idx+1, found);
@@ -173,7 +173,7 @@ int read_config(mystuff_t *mystuff)
     printf("WARNING: Cannot read SievePrimesMax from inifile, using default value (%d)\n", SIEVE_PRIMES_MAX);
     i=SIEVE_PRIMES_MAX;
   }
-  else if((i < mystuff->sieve_primes_min) || (i > SIEVE_PRIMES_MAX))
+  else if((i < (int) mystuff->sieve_primes_min) || (i > SIEVE_PRIMES_MAX))
   {
     printf("WARNING: SievePrimesMax must be between SievePrimesMin(%d) and %d, using default value (%d)\n",
         mystuff->sieve_primes_min, SIEVE_PRIMES_MAX, 200000);
@@ -185,19 +185,19 @@ int read_config(mystuff_t *mystuff)
 /*****************************************************************************/
   if(my_read_int(mystuff->inifile, "SievePrimes", &i))
   {
-    printf("WARNING: Cannot read SievePrimes from inifile, using default value (%d)\n",SIEVE_PRIMES_DEFAULT);
+    printf("WARNING: Cannot read SievePrimes from inifile, using default value (%d)\n", SIEVE_PRIMES_DEFAULT);
     i=SIEVE_PRIMES_DEFAULT;
   }
   else
   {
     if((cl_uint)i>mystuff->sieve_primes_max_global)
     {
-      printf("WARNING: Read SievePrimes=%d from inifile, using max value (%d)\n",i,mystuff->sieve_primes_max_global);
+      printf("WARNING: Read SievePrimes=%d from inifile, using max value (%d)\n", i, mystuff->sieve_primes_max_global);
       i=mystuff->sieve_primes_max_global;
     }
-    else if(i<mystuff->sieve_primes_min)
+    else if( i < (int) mystuff->sieve_primes_min)
     {
-      printf("WARNING: Read SievePrimes=%d from inifile, using min value (%d)\n",i,mystuff->sieve_primes_min);
+      printf("WARNING: Read SievePrimes=%d from inifile, using min value (%d)\n", i, mystuff->sieve_primes_min);
       i=mystuff->sieve_primes_min;
     }
   }
