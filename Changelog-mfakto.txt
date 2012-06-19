@@ -1,4 +1,4 @@
-version 0.11 (2012-05-??)
+version 0.11 (2012-05-21)
 - new 24-bit barrett kernel for FCs up to 2^70 - very fast!
 - new 15-bit barrett kernel for FCs up to 2^73 - almost as fast, 
   especially on Cayman this one has a speedup of 50%

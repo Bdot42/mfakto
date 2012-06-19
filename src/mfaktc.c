@@ -260,7 +260,9 @@ other return value
         }
         else
         {
-          sieve_init_class(exp, k_min+cur_class, mystuff->sieve_primes);
+          sieve_init_class(exp, k_min+cur_class, mystuff->sieve_primes_max);
+          if (mystuff->sieve_primes > mystuff->sieve_primes_max)
+            mystuff->sieve_primes = mystuff->sieve_primes_max;
         }
 #ifdef VERBOSE_TIMING      
         printf("tf(): time spent for sieve_init_class(exp, k_min+cur_class, mystuff->sieve_primes): %" PRIu64 "ms\n",timer_diff(&timer2)/1000);
@@ -341,22 +343,26 @@ other return value
   }
   else
   {
-    if (mystuff->print_timestamp)
+    if(mystuff->mode == MODE_NORMAL)
     {
-      time_t now = time(NULL);
-      char *ptr = ctime(&now);
-      ptr[24] = '\0'; // cut off the newline
-      fprintf(resultfile, "[%s]\n", ptr);
+      if (mystuff->print_timestamp)
+      {
+        time_t now = time(NULL);
+        char *ptr = ctime(&now);
+        ptr[24] = '\0'; // cut off the newline
+        fprintf(resultfile, "[%s]\n", ptr);
+      }
+      if (mystuff->ComputerID[0] && mystuff->V5UserID[0])
+      {
+        fprintf(resultfile, "UID: %s/%s, ", mystuff->V5UserID, mystuff->ComputerID);
+      }
+      fprintf(resultfile, "no factor for M%u from 2^%d to 2^%d [%s %s_%d]\n",
+        exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
     }
-    if (mystuff->ComputerID[0] && mystuff->V5UserID[0])
-    {
-      fprintf(resultfile, "UID: %s/%s, ", mystuff->V5UserID, mystuff->ComputerID);
-    }
-    if(mystuff->mode == MODE_NORMAL)        fprintf(resultfile, "no factor for M%u from 2^%d to 2^%d [%s %s_%d]\n",
-      exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
     if(mystuff->mode != MODE_SELFTEST_SHORT)printf(             "no factor for M%u from 2^%d to 2^%d [%s %s_%d]\n",
       exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
   }
+
   if(mystuff->mode == MODE_NORMAL)
   {
     retval = factorsfound;
@@ -440,6 +446,7 @@ k_max and k_min are used as 64bit temporary integers here...
       }
     }
   }
+
   if(mystuff->mode != MODE_SELFTEST_SHORT)
   {
     time_run = timer_diff(&timer)/1000;
@@ -563,9 +570,12 @@ RET_ERROR we might have a serios problem
 //
 //      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
 
-    if (mystuff->p_par[EXP].pos)         sprintf(mystuff->p_par[EXP].out, "%d", exp[ind]);
-    if (mystuff->p_par[LOWER_LIMIT].pos) sprintf(mystuff->p_par[LOWER_LIMIT].out, "%2d", bit_min[ind]);
-    if (mystuff->p_par[UPPER_LIMIT].pos) sprintf(mystuff->p_par[UPPER_LIMIT].out, "%2d", bit_min[ind]+1);
+    // careful to not sieve out small test candidates
+    mystuff->sieve_primes_max = sieve_sieve_primes_max(exp[ind], mystuff->sieve_primes_max_global);
+    if (mystuff->p_par[SIEVE_PRIMES].pos) sprintf(mystuff->p_par[SIEVE_PRIMES].out, "%7d", mystuff->sieve_primes);
+    if (mystuff->p_par[EXP].pos)          sprintf(mystuff->p_par[EXP].out, "%d", exp[ind]);
+    if (mystuff->p_par[LOWER_LIMIT].pos)  sprintf(mystuff->p_par[LOWER_LIMIT].out, "%2d", bit_min[ind]);
+    if (mystuff->p_par[UPPER_LIMIT].pos)  sprintf(mystuff->p_par[UPPER_LIMIT].out, "%2d", bit_min[ind]+1);
 
     while(j>0)
     {
