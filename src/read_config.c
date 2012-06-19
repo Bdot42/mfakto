@@ -69,7 +69,7 @@ static int my_read_string(char *inifile, char *name, char *string, unsigned int 
     }
   }
   fclose(in);
-  if(found>1)return 0;
+  if(found>0)return 0;
   return 1;
 }
 

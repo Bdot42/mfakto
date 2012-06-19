@@ -91,15 +91,17 @@ TODO
 
 +DONE+ - run all tests with SievePrimes 256 and 1000
 +DONE+ - SievePrimesMin
-- dynamic sieve size, adjusting as SievePrimes changes
++DONE+ - two optional fields in mfaktc.ini for username and computerid, so that if the user fills them out then it puts
+         the Primenet-style "UID: username/computername, " at the beginning of results lines
++DONE+ - output datestamp lines in results.txt [Sat Dec 31 21:29:40 2011]
 - worktodo.add
+- GHz-days/day in the "total time ..." line
+- transfer 4 FCs in 3 ints
+- dynamic sieve size, adjusting as SievePrimes changes
 - AllowSleep
 - test if fix SieveSizeLimit is faster : yes, is. Provide 3 fix size sieve functions and dynamically use them.
 - perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
 - retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
-- two optional fields in mfaktc.ini for username and computerid, so that if the user fills them out then it puts
-  the Primenet-style "UID: username/computername, " at the beginning of results lines
-- output datestamp lines in results.txt [Sat Dec 31 21:29:40 2011]
 - serialize memory access for vector kernels
 - div/mul-modulo for 96 bits
 - 6x15bit based on mul24
@@ -123,5 +125,4 @@ TODO
 - SDK 2.6: __attribute__((always_inline)), set environment variable GPU_ASYNC_MEM_COPY=2, Profiler
 - Auto-adjust VectorSize per kernel
 - dummy kernel for performance testing of sieve and transfer
-- transfer 4 FCs in 3 ints
 
