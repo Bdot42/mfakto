@@ -261,8 +261,6 @@ other return value
         else
         {
           sieve_init_class(exp, k_min+cur_class, mystuff->sieve_primes_max);
-          if (mystuff->sieve_primes > mystuff->sieve_primes_max)
-            mystuff->sieve_primes = mystuff->sieve_primes_max;
         }
 #ifdef VERBOSE_TIMING      
         printf("tf(): time spent for sieve_init_class(exp, k_min+cur_class, mystuff->sieve_primes): %" PRIu64 "ms\n",timer_diff(&timer2)/1000);
@@ -536,7 +534,9 @@ RET_ERROR we might have a serios problem
 
 #include "selftest-data.h"
 
-  if (mystuff->p_par[SIEVE_PRIMES].pos) sprintf(mystuff->p_par[SIEVE_PRIMES].out, "%7d", mystuff->sieve_primes);
+  // save the SievePrimes ini value as the selftest may lower it to fit small test-exponents
+  unsigned int sieve_primes_save = mystuff->sieve_primes;
+
   register_signal_handler(mystuff);
 
   for(i=0; i<selftests_to_run; i++)
@@ -572,6 +572,8 @@ RET_ERROR we might have a serios problem
 
     // careful to not sieve out small test candidates
     mystuff->sieve_primes_max = sieve_sieve_primes_max(exp[ind], mystuff->sieve_primes_max_global);
+    if (mystuff->sieve_primes > mystuff->sieve_primes_max)
+      mystuff->sieve_primes = mystuff->sieve_primes_max;
     if (mystuff->p_par[SIEVE_PRIMES].pos) sprintf(mystuff->p_par[SIEVE_PRIMES].out, "%7d", mystuff->sieve_primes);
     if (mystuff->p_par[EXP].pos)          sprintf(mystuff->p_par[EXP].out, "%d", exp[ind]);
     if (mystuff->p_par[LOWER_LIMIT].pos)  sprintf(mystuff->p_par[LOWER_LIMIT].out, "%2d", bit_min[ind]);
@@ -602,6 +604,9 @@ RET_ERROR we might have a serios problem
   if(st_wrongfactor > 0)printf("  wrong factor reported     %d\n", st_wrongfactor);
   if(st_unknown > 0)    printf("  unknown return value      %d\n", st_unknown);
   printf("\n");
+
+  // restore SievePrimes ini value
+  mystuff->sieve_primes = sieve_primes_save;
 
   if(st_success == num_selftests)
   {
