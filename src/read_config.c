@@ -539,6 +539,10 @@ int read_config(mystuff_t *mystuff)
     strcpy(tmp, "AUTO");
     mystuff->gpu_type = GPU_AUTO;
   }
+  else if (strcmp(tmp, "AUTO") == 0)
+  {
+    mystuff->gpu_type = GPU_AUTO;
+  }
   else if (strcmp(tmp, "VLIW4") == 0)
   {
     mystuff->gpu_type = GPU_VLIW4;
