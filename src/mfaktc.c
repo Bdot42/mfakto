@@ -125,10 +125,11 @@ other return value
   int retval = 0;
     
   unsigned long long int time_run, time_est;
+  double ghz_assignment = 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1);
 
 
   if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d (%4.2fGHz-days)\n",
-    exp, bit_min, bit_max, 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1));
+    exp, bit_min, bit_max, ghz_assignment);
   timer_init(&timer);
   time(&time_last_checkpoint);
 
@@ -489,6 +490,7 @@ k_max and k_min are used as 64bit temporary integers here...
   if(mystuff->mode != MODE_SELFTEST_SHORT)
   {
     time_run = timer_diff(&timer)/1000;
+    time_est = time_run;
     
     if(restart == 0)printf("tf(): total time spent: ");
     else            printf("tf(): time spent since restart:   ");
@@ -498,17 +500,18 @@ k_max and k_min are used as 64bit temporary integers here...
     if(time_run > 86400000ULL)printf("%" PRIu64 "d ",   time_run / 86400000ULL);
     if(time_run > 3600000ULL) printf("%2" PRIu64 "h ", (time_run /  3600000ULL) % 24ULL);
     if(time_run > 60000ULL)   printf("%2" PRIu64 "m ", (time_run /    60000ULL) % 60ULL);
-                              printf("%2" PRIu64 ".%03" PRIu64 "s\n", (time_run / 1000ULL) % 60ULL, time_run % 1000ULL);
+                              printf("%2" PRIu64 ".%03" PRIu64 "s", (time_run / 1000ULL) % 60ULL, time_run % 1000ULL);
     if(restart != 0)
     {
       time_est = (time_run * mystuff->class_counter ) / (unsigned long long int)(mystuff->class_counter-restart);
-      printf("      estimated total time spent: ");
+      printf("\n      estimated total time spent: ");
       if(time_est > 86400000ULL)printf("%" PRIu64 "d ",   time_est / 86400000ULL);
       if(time_est > 3600000ULL) printf("%2" PRIu64 "h ", (time_est /  3600000ULL) % 24ULL);
       if(time_est > 60000ULL)   printf("%2" PRIu64 "m ", (time_est /    60000ULL) % 60ULL);
-                                printf("%2" PRIu64 ".%03" PRIu64 "s\n", (time_est / 1000ULL) % 60ULL, time_est % 1000ULL);
+                                printf("%2" PRIu64 ".%03" PRIu64 "s", (time_est / 1000ULL) % 60ULL, time_est % 1000ULL);
     }
-    printf("\n");
+    if(mystuff->mode == MODE_NORMAL) printf(" (%6.2f GHz-days / day)", ghz_assignment * 86400000.0 / (double) time_est);
+    printf("\n\n");
   }
   return retval;
 }
@@ -568,15 +571,15 @@ RET_ERROR we might have a serios problem
                             106,  355,  358,  666,   // some very small factors
                            1547, 1552, 1556, 1557    // some factors below 2^95 (test 95 bit kernel)
                          };                          // mfakto special case (25-bit factor)
+  // save the SievePrimes ini value as the selftest may lower it to fit small test-exponents
+  unsigned int sieve_primes_save = mystuff->sieve_primes;
+
   if (type == MODE_SELFTEST_FULL)
     selftests_to_run = NUM_SELFTESTS;
   else
     selftests_to_run = 1559;
 
 #include "selftest-data.h"
-
-  // save the SievePrimes ini value as the selftest may lower it to fit small test-exponents
-  unsigned int sieve_primes_save = mystuff->sieve_primes;
 
   register_signal_handler(mystuff);
 

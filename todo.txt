@@ -91,15 +91,15 @@ TODO
 
 +DONE+ - run all tests with SievePrimes 256 and 1000
 +DONE+ - SievePrimesMin
++DONE+ - two optional fields in mfaktc.ini for username and computerid, so that if the user fills them out then it puts
+  the Primenet-style "UID: username/computername, " at the beginning of results lines
++DONE+ - output datestamp lines in results.txt [Sat Dec 31 21:29:40 2011]
 - dynamic sieve size, adjusting as SievePrimes changes
 - worktodo.add
 - AllowSleep
 - test if fix SieveSizeLimit is faster : yes, is. Provide 3 fix size sieve functions and dynamically use them.
 - perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
 - retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
-- two optional fields in mfaktc.ini for username and computerid, so that if the user fills them out then it puts
-  the Primenet-style "UID: username/computername, " at the beginning of results lines
-- output datestamp lines in results.txt [Sat Dec 31 21:29:40 2011]
 - serialize memory access for vector kernels
 - div/mul-modulo for 96 bits
 - 6x15bit based on mul24
