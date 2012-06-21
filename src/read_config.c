@@ -27,6 +27,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "my_types.h"
 
 extern kernel_info_t       kernel_info[];
+extern struct GPU_type     gpu_types[];
 
 static int my_read_int(char *inifile, char *name, int *value)
 {
@@ -539,39 +540,23 @@ int read_config(mystuff_t *mystuff)
     strcpy(tmp, "AUTO");
     mystuff->gpu_type = GPU_AUTO;
   }
-  else if (strcmp(tmp, "AUTO") == 0)
-  {
-    mystuff->gpu_type = GPU_AUTO;
-  }
-  else if (strcmp(tmp, "VLIW4") == 0)
-  {
-    mystuff->gpu_type = GPU_VLIW4;
-  }
-  else if (strcmp(tmp, "VLIW5") == 0)
-  {
-    mystuff->gpu_type = GPU_VLIW5;
-  }
-  else if (strcmp(tmp, "GCN") == 0)
-  {
-    mystuff->gpu_type = GPU_GCN;
-  }
-  else if (strcmp(tmp, "CPU") == 0)
-  {
-    mystuff->gpu_type = GPU_CPU;
-  }
-  else if (strcmp(tmp, "APU") == 0)
-  {
-    mystuff->gpu_type = GPU_APU;
-  }
-  else if (strcmp(tmp, "NVIDIA") == 0)
-  {
-    mystuff->gpu_type = GPU_NVIDIA;
-  }
   else
   {
-    printf("WARNING: Unknown setting \"%s\" for GPUType, using default (AUTO)\n", tmp);
-    strcpy(tmp, "AUTO");
-    mystuff->gpu_type = GPU_AUTO;
+    mystuff->gpu_type = GPU_UNKNOWN;
+    for (i=0; i < (int)GPU_UNKNOWN; i++)
+    {
+      if (strcmp(tmp, gpu_types[i].gpu_name) == 0)
+      {
+        mystuff->gpu_type = gpu_types[i].gpu_type;
+        break;
+      }
+    }
+    if (mystuff->gpu_type == GPU_UNKNOWN)
+    {
+      printf("WARNING: Unknown setting \"%s\" for GPUType, using default (AUTO)\n", tmp);
+      strcpy(tmp, "AUTO");
+      mystuff->gpu_type = GPU_AUTO;
+    }
   }
 
   printf("  GPUType                   %s\n", tmp);

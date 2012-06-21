@@ -45,14 +45,15 @@ mystuff_t mystuff;
 
 extern OpenCL_deviceinfo_t deviceinfo;
 extern kernel_info_t       kernel_info[];
-char gpu_types[][7]={
-    "AUTO",
-    "VLIW4",
-    "VLIW5",
-    "GCN",
-    "CPU",
-    "APU",
-    "NVIDIA"
+struct GPU_type gpu_types[]={
+  {GPU_AUTO,     0,  "AUTO"},
+  {GPU_VLIW4,   64,  "VLIW4"},
+  {GPU_VLIW5,   80,  "VLIW5"},
+  {GPU_GCN,     64,  "GCN"},
+  {GPU_CPU,      1,  "CPU"},
+  {GPU_APU,     80,  "APU"},
+  {GPU_NVIDIA,   8,  "NVIDIA"},
+  {GPU_UNKNOWN,  0,  "UNKNOWN"}
 };
 
 unsigned long long int calculate_k(unsigned int exp, int bits)
@@ -673,7 +674,6 @@ int main(int argc, char **argv)
   int i = 1, tmp = 0;
   char *ptr;
   int use_worktodo = 1;
-  unsigned int CE_per_multiprocessor = 80;
   
   mystuff.mode=MODE_NORMAL;
   mystuff.quit = 0;
@@ -856,13 +856,11 @@ int main(int argc, char **argv)
         strstr(deviceinfo.d_name, "Tahiti"))         // 7950, 7970
     {
       mystuff.gpu_type = GPU_GCN;
-      CE_per_multiprocessor = 64;
     }
     else if (strstr(deviceinfo.d_name, "Cayman")   ||  // 6950, 6970
              strstr(deviceinfo.d_name, "Antilles"))    // 6990
     {
       mystuff.gpu_type = GPU_VLIW4;
-      CE_per_multiprocessor = 64;
     }
     else if (strstr(deviceinfo.d_name, "WinterPark")  ||  // 6370D (E2-3200), 6410D (A4-3300, A4-3400)
              strstr(deviceinfo.d_name, "BeaverCreek") ||  // 6530D (A6-3500, A6-3600, A6-3650, A63670K), 6550D (A8-3800, A8-3850, A8-3870K)
@@ -871,7 +869,6 @@ int main(int argc, char **argv)
              strstr(deviceinfo.d_name, "Wrestler"))       // 6250 (C-30, C-50), 6310 (E-240, E-300, E-350)
     {
       mystuff.gpu_type = GPU_APU;
-      CE_per_multiprocessor = 80;
     }
     else if (strstr(deviceinfo.d_name, "Caicos")   ||  // 6450, 7450, 7470
              strstr(deviceinfo.d_name, "Cedar")    ||  // 7350, 5450
@@ -883,17 +880,14 @@ int main(int argc, char **argv)
              strstr(deviceinfo.d_name, "Barts"))       // 6790, 6850, 6870
     {
       mystuff.gpu_type = GPU_VLIW5;
-      CE_per_multiprocessor = 80;
     }
     else if (strstr(deviceinfo.d_name, "CPU"))
     {
       mystuff.gpu_type = GPU_CPU;
-      CE_per_multiprocessor = 1;
     }
     else if (strstr(deviceinfo.v_name, "NVIDIA"))
     {
       mystuff.gpu_type = GPU_NVIDIA;
-      CE_per_multiprocessor = 8;
     }
     else
     {
@@ -910,7 +904,7 @@ int main(int argc, char **argv)
   printf("  device (driver) version   %s (%s)\n", deviceinfo.d_ver, deviceinfo.dr_version);
   printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
   printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
-  printf("  number of multiprocessors %d (%d compute elements)\n", deviceinfo.units, deviceinfo.units * CE_per_multiprocessor);
+  printf("  number of multiprocessors %d (%d compute elements)\n", deviceinfo.units, deviceinfo.units * gpu_types[mystuff.gpu_type].CE_per_multiprocessor);
   printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
 
   printf("\nAutomatic parameters\n");
@@ -921,7 +915,7 @@ int main(int argc, char **argv)
     mystuff.threads_per_grid = (cl_uint)deviceinfo.maxThreadsPerGrid;
   }
   printf("  threads per grid          %d\n", mystuff.threads_per_grid);
-  printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type]);
+  printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
 
   if (init_CLstreams())
   {

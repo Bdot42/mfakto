@@ -123,9 +123,16 @@ enum GPU_types
   GPU_GCN,
   GPU_CPU,
   GPU_APU,
-  GPU_NVIDIA
+  GPU_NVIDIA,
+  GPU_UNKNOWN   // must be the last one
 };
 
+typedef struct GPU_type
+{
+  enum GPU_types gpu_type;
+  unsigned int   CE_per_multiprocessor;
+  char           gpu_name[8];
+} GPU_type;
 
 enum PRINT_PARM // cCpgtenrswWdTUHulM .. CcpgtenrswWdTUHMlu
 {
