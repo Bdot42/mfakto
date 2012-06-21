@@ -533,22 +533,44 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  mystuff->preferredKernel = BARRETT79_MUL32;
+  if (my_read_string(mystuff->inifile, "GPUType", tmp, 50))
+  {
+    printf("WARNING: Cannot read GPUType from inifile, using default (AUTO)\n");
+    strcpy(tmp, "AUTO");
+    mystuff->gpu_type = GPU_AUTO;
+  }
+  else if (strcmp(tmp, "VLIW4") == 0)
+  {
+    mystuff->gpu_type = GPU_VLIW4;
+  }
+  else if (strcmp(tmp, "VLIW5") == 0)
+  {
+    mystuff->gpu_type = GPU_VLIW5;
+  }
+  else if (strcmp(tmp, "GCN") == 0)
+  {
+    mystuff->gpu_type = GPU_GCN;
+  }
+  else if (strcmp(tmp, "CPU") == 0)
+  {
+    mystuff->gpu_type = GPU_CPU;
+  }
+  else if (strcmp(tmp, "APU") == 0)
+  {
+    mystuff->gpu_type = GPU_APU;
+  }
+  else if (strcmp(tmp, "NVIDIA") == 0)
+  {
+    mystuff->gpu_type = GPU_NVIDIA;
+  }
+  else
+  {
+    printf("WARNING: Unknown setting \"%s\" for GPUType, using default (AUTO)\n", tmp);
+    strcpy(tmp, "AUTO");
+    mystuff->gpu_type = GPU_AUTO;
+  }
 
-  if (my_read_string(mystuff->inifile, "PreferKernel", tmp, 50))
-  {
-    printf("WARNING: Cannot read PreferKernel from inifile, using default (mfakto_cl_barrett79)\n");
-  }
-  else if (strcmp(tmp, "mfakto_cl_71") == 0)
-  {
-    mystuff->preferredKernel = _71BIT_MUL24;
-  }
-  else if (strcmp(tmp, "mfakto_cl_barrett79") != 0)
-  {
-    printf("WARNING: Unknown setting \"%s\" for PreferKernel, using default (mfakto_cl_barrett79)\n", tmp);
-  }
-
-  printf("  PreferKernel              %s\n", kernel_info[mystuff->preferredKernel].kernelname);
+  printf("  GPUType                   %s\n", tmp);
 
 /*****************************************************************************/
 

@@ -115,6 +115,18 @@ enum GPUKernels
   _95BIT_MUL32  /* not yet there */
 };
 
+enum GPU_types
+{
+  GPU_AUTO,
+  GPU_VLIW4,
+  GPU_VLIW5,
+  GPU_GCN,
+  GPU_CPU,
+  GPU_APU,
+  GPU_NVIDIA
+};
+
+
 enum PRINT_PARM // cCpgtenrswWdTUHulM .. CcpgtenrswWdTUHMlu
 {
   CLASS_ID,       //  %C - class ID (n/4620)
@@ -155,7 +167,7 @@ typedef struct
   cl_uint *h_RES;
   cl_mem   d_RES;
   enum STREAM_STATUS stream_status[NUM_STREAMS_MAX];
-  enum GPUKernels    preferredKernel;
+  enum GPU_types gpu_type;
   /* for GPU sieving: */
   cl_uint *h_primes;
   cl_mem   d_primes;

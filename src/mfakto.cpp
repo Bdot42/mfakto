@@ -679,7 +679,7 @@ int init_CL(int num_streams, cl_int devnumber)
 #ifdef CL_DEBUG
   strcat(program_options, "-g");
 #else
-  strcat(program_options, "-O3");
+  if (mystuff.gpu_type != GPU_NVIDIA) strcat(program_options, "-O3");
 #endif
 
 #ifdef CHECKS_MODBASECASE

@@ -45,6 +45,15 @@ mystuff_t mystuff;
 
 extern OpenCL_deviceinfo_t deviceinfo;
 extern kernel_info_t       kernel_info[];
+char gpu_types[][7]={
+    "AUTO",
+    "VLIW4",
+    "VLIW5",
+    "GCN",
+    "CPU",
+    "APU",
+    "NVIDIA"
+};
 
 unsigned long long int calculate_k(unsigned int exp, int bits)
 /* calculates biggest possible k in "2 * exp * k + 1 < 2^bits" */
@@ -151,27 +160,58 @@ other return value
   }
 
   if(use_kernel == AUTOSELECT_KERNEL)
-  {  // this is probably the speed order for VLIW4, Cayman (HD6970), and most likely also for GCN
-    if (mystuff->preferredKernel == _71BIT_MUL24)  // maybe this can be bound to some version/feature/capability or be tested during selftest
+  {  // this is the speed order for VLIW4, Cayman (HD6970)
+    if (mystuff->gpu_type == GPU_VLIW4)
     {
       if      ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 295M/s on HD6970
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 203M/s
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 207M/s
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 211M/s
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 207M/s
+      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 203M/s
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 195M/s
       else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 155M/s
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
     }
-    else
+    else if (mystuff->gpu_type == GPU_VLIW5)
     {  // this is the speed order for VLIW5, HD5770, for instance
-      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 321M/s on HD5870
-      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 288M/s
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 258M/s
-      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 255M/s
+      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 321M/s on HD5870, 161M/s on HD5770
+      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 288M/s            152M/s
+      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 258M/s            130M/s
+      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 255M/s            128M/s
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 236M/s
-      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 205M/s
+      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 205M/s            103M/s
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
     }
+    else if (mystuff->gpu_type == GPU_GCN)
+    {  // this is the speed order for GCN, HD77xx...HD79xx. Note this GPU requires VectorSize=2 for best performance
+      if      ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 165M/s on HD7770
+      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 137M/s
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 135M/s
+      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 115M/s
+      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 
+      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 106M/s
+//      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
+    }
+    else if (mystuff->gpu_type == GPU_APU)
+    {  // this is the speed order for APU's, HD6550D in A8-3850, for instance
+      if      ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 57M/s on HD6550D (A8-3850)
+      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 54M/s
+      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 45M/s
+      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 45M/s
+      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 
+      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 36M/s
+//      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
+    }
+    else
+    {  // this is the speed order for CPUs, also used for all others that we don't yet have data for
+      if      ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 19.4M/s on 2x X5650  (12 cores total)
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 15.8M/s
+      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 13.6M/s
+      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 11.6M/s
+      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 11.3M/s
+      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 11.1M/s
+//      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
+    }
+
 
     if(use_kernel == AUTOSELECT_KERNEL)
     {
@@ -633,6 +673,7 @@ int main(int argc, char **argv)
   int i = 1, tmp = 0;
   char *ptr;
   int use_worktodo = 1;
+  unsigned int CE_per_multiprocessor = 80;
   
   mystuff.mode=MODE_NORMAL;
   mystuff.quit = 0;
@@ -805,12 +846,71 @@ int main(int argc, char **argv)
     printf("init_CL(%d, %d) failed\n", mystuff.num_streams, devicenumber);
     return 2;
   }
+
+  if (mystuff.gpu_type == GPU_AUTO)
+  {
+    // try to auto-detect the type of GPU
+    if (strstr(deviceinfo.d_name, "Capeverde") ||    // 7750, 7770
+        strstr(deviceinfo.d_name, "Pitcairn")  ||    // 7850, 7870
+        strstr(deviceinfo.d_name, "Newzealand") ||   // 7990
+        strstr(deviceinfo.d_name, "Tahiti"))         // 7950, 7970
+    {
+      mystuff.gpu_type = GPU_GCN;
+      CE_per_multiprocessor = 64;
+    }
+    else if (strstr(deviceinfo.d_name, "Cayman")   ||  // 6950, 6970
+             strstr(deviceinfo.d_name, "Antilles"))    // 6990
+    {
+      mystuff.gpu_type = GPU_VLIW4;
+      CE_per_multiprocessor = 64;
+    }
+    else if (strstr(deviceinfo.d_name, "WinterPark")  ||  // 6370D (E2-3200), 6410D (A4-3300, A4-3400)
+             strstr(deviceinfo.d_name, "BeaverCreek") ||  // 6530D (A6-3500, A6-3600, A6-3650, A63670K), 6550D (A8-3800, A8-3850, A8-3870K)
+             strstr(deviceinfo.d_name, "Zacate")      ||  // 6320 (E-450)
+             strstr(deviceinfo.d_name, "Ontario")     ||  // 6290 (C-60)
+             strstr(deviceinfo.d_name, "Wrestler"))       // 6250 (C-30, C-50), 6310 (E-240, E-300, E-350)
+    {
+      mystuff.gpu_type = GPU_APU;
+      CE_per_multiprocessor = 80;
+    }
+    else if (strstr(deviceinfo.d_name, "Caicos")   ||  // 6450, 7450, 7470
+             strstr(deviceinfo.d_name, "Cedar")    ||  // 7350, 5450
+             strstr(deviceinfo.d_name, "Redwood")  ||  // 5550, 5570, 5670
+             strstr(deviceinfo.d_name, "Turks")    ||  // 6570, 6670, 7570, 7670
+             strstr(deviceinfo.d_name, "Juniper")  ||  // 6750, 6770, 5750, 5770
+             strstr(deviceinfo.d_name, "Cypress")  ||  // 5830, 5850, 5870
+             strstr(deviceinfo.d_name, "Hemlock")  ||  // 5970
+             strstr(deviceinfo.d_name, "Barts"))       // 6790, 6850, 6870
+    {
+      mystuff.gpu_type = GPU_VLIW5;
+      CE_per_multiprocessor = 80;
+    }
+    else if (strstr(deviceinfo.d_name, "CPU"))
+    {
+      mystuff.gpu_type = GPU_CPU;
+      CE_per_multiprocessor = 1;
+    }
+    else if (strstr(deviceinfo.v_name, "NVIDIA"))
+    {
+      mystuff.gpu_type = GPU_NVIDIA;
+      CE_per_multiprocessor = 8;
+    }
+    else
+    {
+      printf("WARNING: Unknown GPU name, assuming VLIW5 type. Please post the device "
+          "name \"%s (%s)\" to http://www.mersenneforum.org/showthread.php?t=15646 "
+          "to have it added to mfakto. Set GPUType in %s to select a GPU type yourself "
+          "and avoid this warning.\n", deviceinfo.d_name, deviceinfo.v_name, mystuff.inifile);
+      mystuff.gpu_type = GPU_VLIW5;
+    }
+  }
+
   printf("\nOpenCL device info\n");
   printf("  name                      %s (%s)\n", deviceinfo.d_name, deviceinfo.v_name);
   printf("  device (driver) version   %s (%s)\n", deviceinfo.d_ver, deviceinfo.dr_version);
   printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
   printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
-  printf("  number of multiprocessors %d (%d compute elements (estimate for ATI GPUs))\n", deviceinfo.units, deviceinfo.units * 80);
+  printf("  number of multiprocessors %d (%d compute elements)\n", deviceinfo.units, deviceinfo.units * CE_per_multiprocessor);
   printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
 
   printf("\nAutomatic parameters\n");
@@ -820,7 +920,8 @@ int main(int argc, char **argv)
   {
     mystuff.threads_per_grid = (cl_uint)deviceinfo.maxThreadsPerGrid;
   }
-  printf("  threads per grid          %d\n\n", mystuff.threads_per_grid);
+  printf("  threads per grid          %d\n", mystuff.threads_per_grid);
+  printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type]);
 
   if (init_CLstreams())
   {
