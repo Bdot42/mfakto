@@ -62,7 +62,7 @@ kernel_info_t       kernel_info[NUM_KERNELS] = {
      {   AUTOSELECT_KERNEL,   "auto",                  0,      0,         NULL},
      {   _TEST_MOD_,          "mod_128_64_k",          0,      0,         NULL}, // used for various tests
      {   _95BIT_64_OpenCL,    "mfakto_cl_barrett79_ns",         64,     70,         NULL}, // no sieved input (test all FC's)
-     {   _71BIT_MUL24,        "mfakto_cl_71",         61,     72,         NULL},
+     {   _71BIT_MUL24,        "mfakto_cl_71",         61,     71,         NULL},
      {   _63BIT_MUL24,        "mfakto_cl_63",          0,     64,         NULL},
      {   BARRETT72_MUL24,     "mfakto_cl_barrett72",  64,     70,         NULL}, // one kernel for all vector sizes
      {   BARRETT79_MUL32,     "mfakto_cl_barrett79",  64,     79,         NULL}, // one kernel for all vector sizes
@@ -1937,8 +1937,8 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 #endif
   shiftcount--;ln2b=1;
   count = kernel_info[use_kernel].bit_max;  // used to limit the preprocessing
-  if(bit_min <= 64) count/=2; // allow for lesser preprocessing if factors are small
-  if(use_kernel == BARRETT92_MUL32) count = (bit_min + 95) / 2; // this one can handle preprocessing depending on the tf size
+  if(bit_min <= 64) count/=2;               // allow for lesser preprocessing if factors are small
+  if(use_kernel == BARRETT92_MUL32 || use_kernel == BARRETT73_MUL15) count = (bit_max + count) / 2; // full barretts can handle preprocessing depending on the tf size
   do
   {
     shiftcount--;

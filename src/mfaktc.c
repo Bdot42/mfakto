@@ -560,13 +560,13 @@ RET_ERROR we might have a serios problem
 {
   int i, j, tf_res, st_success=0, st_nofactor=0, st_wrongfactor=0, st_unknown=0;
 
-#define NUM_SELFTESTS 2597
+#define NUM_SELFTESTS 2599
   unsigned int exp[NUM_SELFTESTS], num_selftests=0;
   int bit_min[NUM_SELFTESTS], f_class, selftests_to_run;
   unsigned long long int k[NUM_SELFTESTS];
   int retval=1, ind;
   enum GPUKernels kernels[9];
-  unsigned int index[] = {    2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+  unsigned int index[] = {    2597, 2598, 2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
                              70,   72,   73,  82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
                            1547, 1552, 1556, 1557    // some factors below 2^95 (test 95 bit kernel)

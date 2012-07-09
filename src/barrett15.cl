@@ -2100,8 +2100,8 @@ a is precomputed on host ONCE.
   exp75.d2=exp>>29;exp75.d1=(exp>>14)&0x7FFF;exp75.d0=(exp<<1)&0x7FFF;	// exp75 = 2 * exp
 
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf("barrett15_75: exp=%d, x2=%x:%x:%x, b=%x:%x:%x:%x:%x:%x:%x:%x:0:0, k_base=%x:%x:%x:%x:%x\n",
-        exp, exp75.d2, exp75.d1, exp75.d0, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, bb.d3, bb.d2, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0);
+  if (tid==TRACE_TID) printf("barrett15_75: exp=%d, x2=%x:%x:%x, b=%x:%x:%x:%x:%x:%x:%x:%x:0:0, k_base=%x:%x:%x:%x:%x, bit_max=%d\n",
+        exp, exp75.d2, exp75.d1, exp75.d0, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, bb.d3, bb.d2, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
 #endif
 
 #if (BARRETT_VECTOR_SIZE == 1)
@@ -2218,7 +2218,7 @@ Precalculated here since it is the same for all steps in the following loop */
   a.d1 = mad24(bb.d6, bit_max75_mult, (bb.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
   a.d2 = mad24(bb.d7, bit_max75_mult, (bb.d6 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
   a.d3 = mad24(bb.d8, bit_max75_mult, (bb.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-  a.d4 = mad24(bb.d9, bit_max75_mult, (bb.d8 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
+  a.d4 = mad24(bb.d9, bit_max75_mult, (bb.d8 >> bit_max_60));		        	// a = b / (2^bit_max)
 
   mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
@@ -2231,7 +2231,7 @@ Precalculated here since it is the same for all steps in the following loop */
   a.d1 = mad24(tmp150.d6, bit_max75_mult, (tmp150.d5 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
   a.d2 = mad24(tmp150.d7, bit_max75_mult, (tmp150.d6 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
   a.d3 = mad24(tmp150.d8, bit_max75_mult, (tmp150.d7 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d4 = mad24(tmp150.d9, bit_max75_mult, (tmp150.d8 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
+  a.d4 = mad24(tmp150.d9, bit_max75_mult, (tmp150.d8 >> bit_max_60));		        	// a = ((b / (2^bit_max)) * u) / (2^bit_max)
 
   mul_75(&tmp75, a, f);							// tmp75 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
 
@@ -2305,7 +2305,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d1 = mad24(b.d6, bit_max75_mult, (b.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
     a.d2 = mad24(b.d7, bit_max75_mult, (b.d6 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
     a.d3 = mad24(b.d8, bit_max75_mult, (b.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-    a.d4 = mad24(b.d9, bit_max75_mult, (b.d8 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
+    a.d4 = mad24(b.d9, bit_max75_mult, (b.d8 >> bit_max_60));       			// a = b / (2^bit_max)
 
     mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 
@@ -2318,7 +2318,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d1 = mad24(tmp150.d6, bit_max75_mult, (tmp150.d5 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
     a.d2 = mad24(tmp150.d7, bit_max75_mult, (tmp150.d6 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
     a.d3 = mad24(tmp150.d8, bit_max75_mult, (tmp150.d7 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d4 = mad24(tmp150.d9, bit_max75_mult, (tmp150.d8 >> bit_max_60))&0x7FFF;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
+    a.d4 = mad24(tmp150.d9, bit_max75_mult, (tmp150.d8 >> bit_max_60));       			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
 
     mul_75(&tmp75, a, f);						// tmp75 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
 
