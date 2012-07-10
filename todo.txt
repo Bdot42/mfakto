@@ -92,13 +92,15 @@ TODO
 +DONE+ - run all tests with SievePrimes 256 and 1000
 +DONE+ - SievePrimesMin
 +DONE+ - two optional fields in mfaktc.ini for username and computerid, so that if the user fills them out then it puts
-  the Primenet-style "UID: username/computername, " at the beginning of results lines
+         the Primenet-style "UID: username/computername, " at the beginning of results lines
 +DONE+ - output datestamp lines in results.txt [Sat Dec 31 21:29:40 2011]
 +DONE+ - decode GPU-names
 +DONE+ - bugfix for high SievePrimes
 +DONE+ - reordering kernels dynamically
-- dynamic sieve size, adjusting as SievePrimes changes
 - worktodo.add
+- GHz-days/day in the "total time ..." line
+- transfer 4 FCs in 3 ints
+- dynamic sieve size, adjusting as SievePrimes changes
 - AllowSleep
 - better estimate of compute cores (CPU!)
 - add James' PM1-F-vs-TF-NF list to selftest

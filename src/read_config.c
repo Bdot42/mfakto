@@ -49,6 +49,26 @@ static int my_read_int(char *inifile, char *name, int *value)
   return 1;
 }
 
+static int my_read_ulong(char *inifile, char *name, unsigned long long int *value)
+{
+  FILE *in;
+  char buf[100];
+  int found=0;
+
+  in=fopen(inifile,"r");
+  if(!in)return 1;
+  while(fgets(buf,100,in) && !found)
+  {
+    if(!strncmp(buf,name,strlen(name)) && buf[strlen(name)]=='=')
+    {
+      if(sscanf(&(buf[strlen(name)+1]),"%llu",value)==1)found=1;
+    }
+  }
+  fclose(in);
+  if(found)return 0;
+  return 1;
+}
+
 static int my_read_string(char *inifile, char *name, char *string, unsigned int len)
 {
   FILE *in;
@@ -147,6 +167,7 @@ int read_config(mystuff_t *mystuff)
 {
   int i;
   char tmp[51];
+  unsigned long long int ul;
 
   printf("\nRuntime options\n");
   printf("  Inifile                   %s\n",mystuff->inifile);
@@ -592,6 +613,17 @@ int read_config(mystuff_t *mystuff)
   if(i == 0)printf("  SmallExp                  no\n");
   else      printf("  SmallExp                  yes\n");
   mystuff->small_exp = i;
+
+  /*****************************************************************************/
+
+  if(my_read_ulong(mystuff->inifile, "SieveCPUMask", &ul))
+  {
+    printf("WARNING: Cannot read SieveCPUMask from inifile, set to 0 by default\n");
+    ul=0;
+  }
+  printf("  SieveCPUMask              %lld\n", ul);
+  
+  mystuff->cpu_mask = ul;
 
   /*****************************************************************************/
 

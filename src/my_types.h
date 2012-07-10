@@ -202,7 +202,8 @@ typedef struct
   cl_uint allowsleep;
   cl_uint small_exp;
   cl_uint print_timestamp;
-  cl_uint quit; 
+  cl_uint quit;
+  cl_ulong cpu_mask;        /* CPU affinity mask for the siever thread */
   char * p_ptr[20];         /* pointers to the formatted output string arrays, in the order they are being used, allow 20 of them */
   print_parameter p_par[NUM_PRINT_PARM]; /* to hold the position and strings of each possible parameter */
   char print_line[512];

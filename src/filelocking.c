@@ -32,7 +32,6 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #undef close
   #define open _open
   #define close _close
-  #define sched_yield SwitchToThread
   #define MODE _S_IREAD | _S_IWRITE
 #else
   #include <unistd.h>

@@ -926,6 +926,14 @@ int main(int argc, char **argv)
     return 1;
   }
 
+  if (mystuff.cpu_mask)
+  {
+#ifdef _MSC_VER
+    SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
+#else
+    sched_setaffinity(get_tid(), sizeof(mystuff.cpu_mask), mystuff.cpu_mask);
+#endif
+  }
 #ifdef VERBOSE_TIMING
   timer_init(&timer);
 #endif
