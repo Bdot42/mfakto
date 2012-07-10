@@ -27,6 +27,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "my_types.h"
 
 extern kernel_info_t       kernel_info[];
+extern struct GPU_type     gpu_types[];
 
 static int my_read_int(char *inifile, char *name, int *value)
 {
@@ -41,6 +42,26 @@ static int my_read_int(char *inifile, char *name, int *value)
     if(!strncmp(buf,name,strlen(name)) && buf[strlen(name)]=='=')
     {
       if(sscanf(&(buf[strlen(name)+1]),"%d",value)==1)found=1;
+    }
+  }
+  fclose(in);
+  if(found)return 0;
+  return 1;
+}
+
+static int my_read_ulong(char *inifile, char *name, unsigned long long int *value)
+{
+  FILE *in;
+  char buf[100];
+  int found=0;
+
+  in=fopen(inifile,"r");
+  if(!in)return 1;
+  while(fgets(buf,100,in) && !found)
+  {
+    if(!strncmp(buf,name,strlen(name)) && buf[strlen(name)]=='=')
+    {
+      if(sscanf(&(buf[strlen(name)+1]),"%llu",value)==1)found=1;
     }
   }
   fclose(in);
@@ -146,6 +167,7 @@ int read_config(mystuff_t *mystuff)
 {
   int i;
   char tmp[51];
+  unsigned long long int ul;
 
   printf("\nRuntime options\n");
   printf("  Inifile                   %s\n",mystuff->inifile);
@@ -533,22 +555,32 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-  mystuff->preferredKernel = BARRETT79_MUL32;
+  if (my_read_string(mystuff->inifile, "GPUType", tmp, 50))
+  {
+    printf("WARNING: Cannot read GPUType from inifile, using default (AUTO)\n");
+    strcpy(tmp, "AUTO");
+    mystuff->gpu_type = GPU_AUTO;
+  }
+  else
+  {
+    mystuff->gpu_type = GPU_UNKNOWN;
+    for (i=0; i < (int)GPU_UNKNOWN; i++)
+    {
+      if (strcmp(tmp, gpu_types[i].gpu_name) == 0)
+      {
+        mystuff->gpu_type = gpu_types[i].gpu_type;
+        break;
+      }
+    }
+    if (mystuff->gpu_type == GPU_UNKNOWN)
+    {
+      printf("WARNING: Unknown setting \"%s\" for GPUType, using default (AUTO)\n", tmp);
+      strcpy(tmp, "AUTO");
+      mystuff->gpu_type = GPU_AUTO;
+    }
+  }
 
-  if (my_read_string(mystuff->inifile, "PreferKernel", tmp, 50))
-  {
-    printf("WARNING: Cannot read PreferKernel from inifile, using default (mfakto_cl_barrett79)\n");
-  }
-  else if (strcmp(tmp, "mfakto_cl_71") == 0)
-  {
-    mystuff->preferredKernel = _71BIT_MUL24;
-  }
-  else if (strcmp(tmp, "mfakto_cl_barrett79") != 0)
-  {
-    printf("WARNING: Unknown setting \"%s\" for PreferKernel, using default (mfakto_cl_barrett79)\n", tmp);
-  }
-
-  printf("  PreferKernel              %s\n", kernel_info[mystuff->preferredKernel].kernelname);
+  printf("  GPUType                   %s\n", tmp);
 
 /*****************************************************************************/
 
@@ -581,6 +613,17 @@ int read_config(mystuff_t *mystuff)
   if(i == 0)printf("  SmallExp                  no\n");
   else      printf("  SmallExp                  yes\n");
   mystuff->small_exp = i;
+
+  /*****************************************************************************/
+
+  if(my_read_ulong(mystuff->inifile, "SieveCPUMask", &ul))
+  {
+    printf("WARNING: Cannot read SieveCPUMask from inifile, set to 0 by default\n");
+    ul=0;
+  }
+  printf("  SieveCPUMask              %lld\n", ul);
+  
+  mystuff->cpu_mask = ul;
 
   /*****************************************************************************/
 

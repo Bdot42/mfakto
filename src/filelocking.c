@@ -22,7 +22,6 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include <stdio.h>
 #include <string.h>
 #include <time.h>
 

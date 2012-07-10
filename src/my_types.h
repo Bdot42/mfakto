@@ -115,6 +115,25 @@ enum GPUKernels
   _95BIT_MUL32  /* not yet there */
 };
 
+enum GPU_types
+{
+  GPU_AUTO,
+  GPU_VLIW4,
+  GPU_VLIW5,
+  GPU_GCN,
+  GPU_CPU,
+  GPU_APU,
+  GPU_NVIDIA,
+  GPU_UNKNOWN   // must be the last one
+};
+
+typedef struct GPU_type
+{
+  enum GPU_types gpu_type;
+  unsigned int   CE_per_multiprocessor;
+  char           gpu_name[8];
+} GPU_type;
+
 enum PRINT_PARM // cCpgtenrswWdTUHulM .. CcpgtenrswWdTUHMlu
 {
   CLASS_ID,       //  %C - class ID (n/4620)
@@ -155,7 +174,7 @@ typedef struct
   cl_uint *h_RES;
   cl_mem   d_RES;
   enum STREAM_STATUS stream_status[NUM_STREAMS_MAX];
-  enum GPUKernels    preferredKernel;
+  enum GPU_types gpu_type;
   /* for GPU sieving: */
   cl_uint *h_primes;
   cl_mem   d_primes;
@@ -183,7 +202,8 @@ typedef struct
   cl_uint allowsleep;
   cl_uint small_exp;
   cl_uint print_timestamp;
-  cl_uint quit; 
+  cl_uint quit;
+  cl_ulong cpu_mask;        /* CPU affinity mask for the siever thread */
   char * p_ptr[20];         /* pointers to the formatted output string arrays, in the order they are being used, allow 20 of them */
   print_parameter p_par[NUM_PRINT_PARM]; /* to hold the position and strings of each possible parameter */
   char print_line[512];
