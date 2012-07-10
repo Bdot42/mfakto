@@ -884,7 +884,9 @@ int main(int argc, char **argv)
     {
       mystuff.gpu_type = GPU_VLIW5;
     }
-    else if (strstr(deviceinfo.d_name, "CPU"))
+    else if (strstr(deviceinfo.d_name, "CPU") ||
+             strstr(deviceinfo.v_name, "GenuineIntel") ||
+             strstr(deviceinfo.v_name, "AuthenticAMD"))
     {
       mystuff.gpu_type = GPU_CPU;
     }

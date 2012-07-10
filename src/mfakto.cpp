@@ -663,7 +663,7 @@ int init_CL(int num_streams, cl_int devnumber)
   }
 	else
 	{
-		std::cerr << "\nKernel file ""KERNEL_FILE"" not found, it needs to be in the same directory as the executable.\n";
+		std::cerr << "\nKernel file \""KERNEL_FILE"\" not found, it needs to be in the same directory as the executable.\n";
 		return 1;
 	}
 
@@ -2809,7 +2809,7 @@ void CL_test(cl_int devnumber)
   }
 	else
 	{
-		std::cerr << "\nKernel file ""KERNEL_FILE"" not found, it needs to be in the same directory as the executable.\n";
+		std::cerr << "\nKernel file \""KERNEL_FILE"\" not found, it needs to be in the same directory as the executable.\n";
 	}
 
   program = clCreateProgramWithSource(context, 1, (const char **)&source, &size, &status);

@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
-#define SIEVE_SIZE_LIMIT 64
+#define SIEVE_SIZE_LIMIT 36
 
 
 /******************
