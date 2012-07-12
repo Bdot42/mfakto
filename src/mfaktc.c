@@ -545,7 +545,6 @@ void print_help(char *string)
   printf("                         specify -d before --CLtest to test the specified device\n");
 }
 
-
 int selftest(mystuff_t *mystuff, enum MODES type)
 /*
 type = 1: small selftest (this is executed EACH time mfakto is started)
@@ -558,12 +557,12 @@ return value
 RET_ERROR we might have a serios problem
 */
 {
+#include "selftest-data.h"
+  
   int i, j, tf_res, st_success=0, st_nofactor=0, st_wrongfactor=0, st_unknown=0;
 
-#define NUM_SELFTESTS 2599
-  unsigned int exp[NUM_SELFTESTS], num_selftests=0;
-  int bit_min[NUM_SELFTESTS], f_class, selftests_to_run;
-  unsigned long long int k[NUM_SELFTESTS];
+  unsigned int num_selftests=0, total_selftests=sizeof(st_data) / sizeof(st_data[0]);
+  int f_class, selftests_to_run;
   int retval=1, ind;
   enum GPUKernels kernels[9];
   unsigned int index[] = {    2597, 2598, 2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
@@ -575,11 +574,9 @@ RET_ERROR we might have a serios problem
   unsigned int sieve_primes_save = mystuff->sieve_primes;
 
   if (type == MODE_SELFTEST_FULL)
-    selftests_to_run = NUM_SELFTESTS;
+    selftests_to_run = total_selftests;
   else
     selftests_to_run = 1559;
-
-#include "selftest-data.h"
 
   register_signal_handler(mystuff);
 
@@ -600,33 +597,33 @@ RET_ERROR we might have a serios problem
       printf("########## testcase %d/%d ##########\n", i+1, selftests_to_run);
       ind = i;
     }
-    f_class = (int)(k[ind] % NUM_CLASSES);
+    f_class = (int)(st_data[ind].k % NUM_CLASSES);
 
 
 /* create a list which kernels can handle this testcase */
     j = 0;
-    if (bit_min[ind] <= 63)                            kernels[j++] = _63BIT_MUL24;
-    if ((bit_min[ind] >= 61) && (bit_min[ind] < 72))   kernels[j++] = _71BIT_MUL24;
-    if ((bit_min[ind] >= 64) && (bit_min[ind] < 79))   kernels[j++] = BARRETT79_MUL32; 
-    if ((bit_min[ind] >= 64) && (bit_min[ind] < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-    if ((bit_min[ind] >= 63) && (bit_min[ind] < 70))   kernels[j++] = BARRETT72_MUL24;
-    if ((bit_min[ind] >= 60) && (bit_min[ind] < 73))   kernels[j++] = BARRETT73_MUL15;
+    if (st_data[ind].bit_min <= 63)                                    kernels[j++] = _63BIT_MUL24;
+    if ((st_data[ind].bit_min >= 61) && (st_data[ind].bit_min < 72))   kernels[j++] = _71BIT_MUL24;
+    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 79))   kernels[j++] = BARRETT79_MUL32; 
+    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
+    if ((st_data[ind].bit_min >= 63) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT72_MUL24;
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 73))   kernels[j++] = BARRETT73_MUL15;
 //
 //      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
 
     // careful to not sieve out small test candidates
-    mystuff->sieve_primes_max = sieve_sieve_primes_max(exp[ind], mystuff->sieve_primes_max_global);
+    mystuff->sieve_primes_max = sieve_sieve_primes_max(st_data[ind].exp, mystuff->sieve_primes_max_global);
     if (mystuff->sieve_primes > mystuff->sieve_primes_max)
       mystuff->sieve_primes = mystuff->sieve_primes_max;
     if (mystuff->p_par[SIEVE_PRIMES].pos) sprintf(mystuff->p_par[SIEVE_PRIMES].out, "%7d", mystuff->sieve_primes);
-    if (mystuff->p_par[EXP].pos)          sprintf(mystuff->p_par[EXP].out, "%d", exp[ind]);
-    if (mystuff->p_par[LOWER_LIMIT].pos)  sprintf(mystuff->p_par[LOWER_LIMIT].out, "%2d", bit_min[ind]);
-    if (mystuff->p_par[UPPER_LIMIT].pos)  sprintf(mystuff->p_par[UPPER_LIMIT].out, "%2d", bit_min[ind]+1);
+    if (mystuff->p_par[EXP].pos)          sprintf(mystuff->p_par[EXP].out, "%d", st_data[ind].exp);
+    if (mystuff->p_par[LOWER_LIMIT].pos)  sprintf(mystuff->p_par[LOWER_LIMIT].out, "%2d", st_data[ind].bit_min);
+    if (mystuff->p_par[UPPER_LIMIT].pos)  sprintf(mystuff->p_par[UPPER_LIMIT].out, "%2d", st_data[ind].bit_min+1);
 
     while(j>0)
     {
       num_selftests++;
-      tf_res=tf(exp[ind], bit_min[ind], bit_min[ind]+1, mystuff, f_class, k[ind], kernels[--j]);
+      tf_res=tf(st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min+1, mystuff, f_class, st_data[ind].k, kernels[--j]);
             if(tf_res == 0)st_success++;
       else if(tf_res == 1)st_nofactor++;
       else if(tf_res == 2)st_wrongfactor++;
