@@ -1936,16 +1936,18 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   printf("bits in exp %u: %u, ", exp, shiftcount);
 #endif
   shiftcount--;ln2b=1;
-  count = kernel_info[use_kernel].bit_max;  // used to limit the preprocessing
-  if(bit_min <= 64) count/=2;               // allow for lesser preprocessing if factors are small
-  if(use_kernel == BARRETT92_MUL32 || use_kernel == BARRETT73_MUL15) count = (bit_max + count) / 2; // full barretts can handle preprocessing depending on the tf size
+  // some kernels may actually accept a higher preprocessed value
+  // but it's hard to find the exact limit, and mfakto already had
+  // a bug with the precalculation being too high
+  // Therefore: play it safe and just precalc as far as the algorithm including modulus would go
+
   do
   {
     shiftcount--;
     ln2b<<=1;
     if(exp&(1<<(shiftcount)))ln2b++;
   }
-  while (ln2b < count);
+  while (ln2b < bit_max);
 #ifdef DETAILED_INFO
   printf("remaining shiftcount = %d, ln2b = %d\n", shiftcount, ln2b);
 #endif
