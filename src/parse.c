@@ -47,6 +47,9 @@ mfaktc 0.07-0.14 to see Luigis code.
 #include <math.h>
 #include "compatibility.h"
 #include "filelocking.h"
+#include "parse.h"
+
+static int add_file_disabled=0;
 
 int isprime(unsigned int n)
 /*
@@ -110,7 +113,9 @@ int get_next_assignment(char *filename, unsigned int *exponent, int *bit_min, in
   char line[101], *ptr, *ptr_start, *ptr_end, buf[50];
   int ret = 2, i,j, count = 0, reason = 0;
   FILE *f_in;
-  
+
+  // first, make sure we have an up-to-date worktodo file
+  process_add_file(filename);
   f_in = fopen_and_lock(filename, "r");
   if(f_in != NULL)
   {
@@ -275,4 +280,84 @@ int clear_assignment(char *filename, unsigned int exponent, int bit_min, int bit
   }
   
   return ret;
+}
+
+
+/* is there an add file for the worktodo file <filename> available ?
+   ret == 1 : yes
+   ret == 0 : no
+ */
+int add_file_available(char *filename)
+{
+	char	add_filename[256];
+	char	*dot;
+
+  if (add_file_disabled) return 0;  // there was an error with this add file earlier, ignore it forever
+
+	strncpy (add_filename, filename, 245);  // leave room if ".add.txt" will be appended
+  add_filename[245]='\0';
+	dot = strrchr (add_filename, '.');
+	if (dot == NULL)
+  {
+    dot = add_filename + strlen(add_filename);  // no dot? just append the extension
+  }
+	strcpy (dot, ".add");
+	if (file_exists (add_filename)) return 1;
+	strcpy (dot, ".add.txt");
+	if (file_exists (add_filename)) return 1;
+
+	return 0;
+}
+
+/* process the add file for the worktodo file <filename> */
+int process_add_file(char *filename)
+{
+	char	add_filename[256];
+	char	*dot;
+  FILE  *f_work, *f_add;
+  char  line[101];
+
+  if (add_file_disabled) return 1;  // there was an error with this add file earlier
+	strncpy (add_filename, filename, 245);  // leave room if ".add.txt" will be appended
+  add_filename[245]='\0';
+	dot = strrchr (add_filename, '.');
+	if (dot == NULL)
+  {
+    dot = add_filename + strlen(add_filename);  // no dot? just append the extension
+  }
+	strcpy (dot, ".add");
+	if (!file_exists (add_filename))
+  {
+	  strcpy (dot, ".add.txt");
+	  if (!file_exists (add_filename)) return 0;  // no problem if there is no .add file
+  }
+
+  // here, add_filename contains an existing add file's name
+  f_work = fopen_and_lock(filename, "a+");
+  if (f_work == NULL) return 1;
+  f_add = fopen_and_lock(add_filename, "r");
+  if (f_add == NULL)
+  {
+    unlock_and_fclose(f_work);
+    return 1;
+  }
+
+  while(fgets(line, 101, f_add) != NULL)
+  {
+    if (fputs(line, f_work) == EOF)
+    {
+      fprintf(stderr, "Error %d appending \"%s\" to \"%s\"\n", errno, add_filename, filename);
+      add_file_disabled = 1;  // Do not try again in order to avoid duplicating entries
+      break;
+    }
+  }
+  unlock_and_fclose(f_add);
+  unlock_and_fclose(f_work);
+  if (remove(add_filename)!= 0)
+  {
+    perror("Failed to delete add_file");
+    add_file_disabled = 1;  // Do not try again in order to avoid duplicating entries
+  }
+
+  return add_file_disabled;
 }

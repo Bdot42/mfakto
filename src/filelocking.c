@@ -58,6 +58,16 @@ typedef struct _lockinfo
 static unsigned int num_locked_files = 0;
 static lockinfo     locked_files[MAX_LOCKED_FILES];
 
+/* See if the given file exists */
+
+int file_exists (char	*filename)
+{
+	int fd = open(filename, _O_RDONLY | _O_BINARY);
+	if (fd < 0) return 0;
+	close(fd);
+	return 1;
+}
+
 FILE *fopen_and_lock(const char *path, const char *mode)
 {
   unsigned int i;
