@@ -342,6 +342,7 @@ int process_add_file(char *filename)
     return 1;
   }
 
+  printf("\nAdding \"%s\" to \"%s\".\n", add_filename, filename);
   while(fgets(line, 101, f_add) != NULL)
   {
     if (fputs(line, f_work) == EOF)
