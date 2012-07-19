@@ -33,7 +33,6 @@ static test_set st_data[] =
 // generated out of the previous header file by 
 // sed -e s'/^exp\[[ 0-9]*\]=/  { /' -e s'/; bit_min\[[ 0-9]*\]=/, /'  -e s'/; k\[[ 0-9]*\]=/, /' -e s'/;/ },  /' st_data  >st_data.h
 //
-#if 0
   { 50804297, 67, 1777608657747ULL },   // M50804297 has a factor: 180620316395899877719 (67.29 Bits)
   { 50725243, 67, 2270235299916ULL },   // M50725243 has a factor: 230316474510833959177 (67.64 Bits)
   { 49635893, 67, 2822192209735ULL },   // M49635893 has a factor: 280164061095680036711 (67.92 Bits)
@@ -2653,14 +2652,13 @@ except those which were allready in this file before */
   { 53097391, 87, 1660470362901298004ULL },   // M53097391 has a factor: 176333288205764229051815129
   { 53015323, 87, 2589820601322255465ULL },   // M53015323 has a factor: 274600351382307201130980391
   { 601983997, 65, 49948926615ULL },   // M601983997 has a factor: 60136908979114760311 (65.705 bits)
-#endif
   { 601986001, 65, 34847593440ULL }   // M601986001 has a factor: 41955526838838866881 (65.185 bits)
 
 #ifdef EXTENDED_SELFTEST
-  ,
     // generated out of a csv file ("exp";bits;k;"factor") by
-// sed -e 's/^"/  { /' -e 's/";/, /' -e 's/;/, /' -e 's/;"/},   \/\/ factor: /' -e 's/"$//' all.csv > all.h
+    // sed -e 's/^"/  { /' -e 's/";/, /' -e 's/;/, /' -e 's/;"/},   \/\/ factor: /' -e 's/"$//' all.csv > all.h
 
+  ,
   { 1158743, 62, 1993912308273},   // factor: 4620863859650361679
   { 1017623, 62, 2306815047816},   // factor: 4694936098807322737
   { 1093993, 62, 2146033807448},   // factor: 4695491926222919729

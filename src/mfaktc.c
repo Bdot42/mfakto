@@ -21,6 +21,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #ifndef _MSC_VER
 #include <unistd.h>
+#include <sched.h>
 #endif
 #include <string.h>
 #include <errno.h>
@@ -510,7 +511,7 @@ k_max and k_min are used as 64bit temporary integers here...
       if(time_est > 60000ULL)   printf("%2" PRIu64 "m ", (time_est /    60000ULL) % 60ULL);
                                 printf("%2" PRIu64 ".%03" PRIu64 "s", (time_est / 1000ULL) % 60ULL, time_est % 1000ULL);
     }
-    if(mystuff->mode == MODE_NORMAL) printf(" (%6.2f GHz-days / day)", ghz_assignment * 86400000.0 / (double) time_est);
+    if(mystuff->mode == MODE_NORMAL) printf(" (%.2f GHz-days / day)", ghz_assignment * 86400000.0 / (double) time_est);
     printf("\n\n");
   }
   return retval;
@@ -930,7 +931,7 @@ int main(int argc, char **argv)
 #ifdef _MSC_VER
     SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
 #else
-    sched_setaffinity(get_tid(), sizeof(mystuff.cpu_mask), mystuff.cpu_mask);
+    sched_setaffinity(0, sizeof(mystuff.cpu_mask), mystuff.cpu_mask);
 #endif
   }
 #ifdef VERBOSE_TIMING
