@@ -20,3 +20,11 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 int valid_assignment(unsigned int exp, int bit_min, int bit_max);
 int get_next_assignment(char *filename, unsigned int *exponent, int *bit_min, int *bit_max);
 int clear_assignment(char *filename, unsigned int exponent, int bit_min, int bit_max, int bit_min_new);
+/* is there an add file for the worktodo file <filename> available ?
+   ret == 1 : yes
+   ret == 0 : no
+ */
+int add_file_available(char *filename);
+
+/* process the add file for the worktodo file <filename> */
+int process_add_file(char *filename);

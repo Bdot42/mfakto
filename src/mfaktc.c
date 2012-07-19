@@ -115,7 +115,7 @@ other return value
   unsigned long long int k_min, k_max, k_range, tmp;
   unsigned int f_hi, f_med, f_low;
   struct timeval timer;
-  time_t time_last_checkpoint;
+  time_t time_last_checkpoint, time_add_file_check;
 #ifdef VERBOSE_TIMING  
   struct timeval timer2;
 #endif  
@@ -123,7 +123,7 @@ other return value
   FILE *resultfile=NULL;
 
   const char *kernelname;
-  int retval = 0;
+  int retval = 0, add_file_exists = 0;
     
   unsigned long long int time_run, time_est;
   double ghz_assignment = 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1);
@@ -341,15 +341,30 @@ other return value
 
         if(mystuff->mode == MODE_NORMAL)
         {
+          time_t now = time(NULL);
+          if (add_file_exists)
+          {
+            if (now > time_add_file_check + 300)   // do not process the add file until it is 5 minutes old
+            {
+              process_add_file(mystuff->workfile);
+              add_file_exists = 0;
+            } // else just wait until after the next class
+          }
+          else
+          {
+            add_file_exists = add_file_available(mystuff->workfile);
+            time_add_file_check = now;
+          }
+
           if (mystuff->checkpoints > 0)
           {
             if ( ((mystuff->checkpoints > 1) && (--do_checkpoint == 0)) ||
-                 ((mystuff->checkpoints == 1) && (time(NULL) - time_last_checkpoint > (time_t) mystuff->checkpointdelay)) ||
+                 ((mystuff->checkpoints == 1) && (now - time_last_checkpoint > (time_t) mystuff->checkpointdelay)) ||
                    mystuff->quit )
             {
               checkpoint_write(exp, bit_min, bit_max, cur_class, factorsfound);
               do_checkpoint = mystuff->checkpoints;
-              time(&time_last_checkpoint);
+              time_last_checkpoint = now;
             }
           }
           if((mystuff->stopafterfactor >= 2) && (factorsfound > 0) && (cur_class != max_class))cur_class = max_class + 1;

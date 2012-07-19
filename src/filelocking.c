@@ -33,6 +33,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #define open _open
   #define close _close
   #define MODE _S_IREAD | _S_IWRITE
+  #define O_RDONLY _O_RDONLY 
 #else
   #include <unistd.h>
   #include <sched.h>
@@ -57,6 +58,16 @@ typedef struct _lockinfo
 
 static unsigned int num_locked_files = 0;
 static lockinfo     locked_files[MAX_LOCKED_FILES];
+
+/* See if the given file exists */
+
+int file_exists (char	*filename)
+{
+	int fd = open(filename, O_RDONLY);
+	if (fd < 0) return 0;
+	close(fd);
+	return 1;
+}
 
 FILE *fopen_and_lock(const char *path, const char *mode)
 {
