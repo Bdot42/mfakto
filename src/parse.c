@@ -223,6 +223,9 @@ int clear_assignment(char *filename, unsigned int exponent, int bit_min, int bit
     {
       while(fgets(line, 101, f_in) != NULL)
       {
+        // ignore and don't copy empty (or very short) lines to avoid sytax warnings
+        // empty lines can be added automatically when .add files are appended
+        if (strlen(line) < 3) continue;
         if(line[strlen(line) - 1] == '\n')line[strlen(line) - 1] = 0;
         if(strlen(line) == 100) // lets ignore long lines, just copy them
         {
