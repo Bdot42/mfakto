@@ -186,12 +186,12 @@ other return value
     }
     else if (mystuff->gpu_type == GPU_GCN)
     {  // this is the speed order for GCN, HD77xx...HD79xx. Note this GPU requires VectorSize=2 for best performance
-      if      ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 165M/s on HD7770
-      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 137M/s
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 135M/s
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 115M/s
+      if      ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 165M/s on HD7770, 258M/s on HD7850 (975MHz)
+      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 137M/s            212M/s
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 135M/s            209M/s
+      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 115M/s            178M/s
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 
-      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 106M/s
+      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 106M/s            163M/s
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
     }
     else if (mystuff->gpu_type == GPU_APU)
@@ -315,7 +315,7 @@ other return value
         count++;
         mystuff->class_counter++;
         if (mystuff->p_par[CLASS_NUM].pos) sprintf(mystuff->p_par[CLASS_NUM].out, "%3d", mystuff->class_counter);
-        if (mystuff->p_par[PCT_COMPLETE].pos) sprintf(mystuff->p_par[PCT_COMPLETE].out, "%6.2f", 0.1041666667f * mystuff->class_counter);
+        if (mystuff->p_par[PCT_COMPLETE].pos) sprintf(mystuff->p_par[PCT_COMPLETE].out, "%5.1f", 0.1041666667f * mystuff->class_counter);
 
         switch (use_kernel)
         {
@@ -632,7 +632,7 @@ RET_ERROR we might have a serios problem
     if (mystuff->sieve_primes > mystuff->sieve_primes_max)
       mystuff->sieve_primes = mystuff->sieve_primes_max;
     if (mystuff->p_par[SIEVE_PRIMES].pos) sprintf(mystuff->p_par[SIEVE_PRIMES].out, "%7d", mystuff->sieve_primes);
-    if (mystuff->p_par[EXP].pos)          sprintf(mystuff->p_par[EXP].out, "%d", st_data[ind].exp);
+    if (mystuff->p_par[EXP].pos)          sprintf(mystuff->p_par[EXP].out, "%-10u", st_data[ind].exp);
     if (mystuff->p_par[LOWER_LIMIT].pos)  sprintf(mystuff->p_par[LOWER_LIMIT].out, "%2d", st_data[ind].bit_min);
     if (mystuff->p_par[UPPER_LIMIT].pos)  sprintf(mystuff->p_par[UPPER_LIMIT].out, "%2d", st_data[ind].bit_min+1);
 
@@ -935,6 +935,14 @@ int main(int argc, char **argv)
   printf("  threads per grid          %d\n", mystuff.threads_per_grid);
   printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
 
+  if ((mystuff.gpu_type == GPU_GCN) && (mystuff.vectorsize > 2))
+  {
+    printf("\nWARNING: Your GPU was detected as GCN (Graphics Core Next). "
+      "These chips perform very slow with vector sizes of 4 or higher. "
+      "Please change to VectorSize=2 in %s and restart mfakto for optimal performance.\n\n",
+      mystuff.inifile);
+  }
+
   if (init_CLstreams())
   {
     printf("ERROR: init_CLstreams (malloc buffers?) failed\n");
@@ -979,7 +987,7 @@ int main(int argc, char **argv)
       if (parse_ret == 0)
       {
         printf("got assignment: exp=%u bit_min=%d bit_max=%d\n",exp,bit_min,bit_max);
-        if (mystuff.p_par[EXP].pos) sprintf(mystuff.p_par[EXP].out, "%d", exp);
+        if (mystuff.p_par[EXP].pos) sprintf(mystuff.p_par[EXP].out, "%-10u", exp);
 
         bit_min_stage = bit_min;
         bit_max_stage = bit_max;

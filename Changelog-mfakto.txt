@@ -1,3 +1,23 @@
+version 0.12 (2012-07-29)
+- IMPORTANT: bugfix for missing factors for certain exponent ranges.
+  Thanks to dabaichi and Axelsson for bug report and help on
+  http://mersenneforum.org/showthread.php?t=13977&page=16#383
+- handling of <worktodo>.add (worktodo file name as configured, with suffix
+  replaced): will be appended to <worktodo> between 5 and ~10 minutes after
+  the add file's creation, or when moving to the next assignment
+- new mfakto.ini key SieveCPUMask to set the siever thread's CPU affinity
+- auto-detection of the GPU-type, along with new GPUType key in mfakto.ini,
+  removed PreferKernel key
+- optimization for GCN (Graphics Core Next: HD77xx, HD78xx, HD79xx)
+- improved estimation of the number of compute units
+- bugfix: occasional abort on very high SievePrimes (> 450,000)
+- progress line output format: percent complete now %5.1f (was %6.2f),
+  exponent now %-10u (was %d)
+- bugfix: if a kernel file cannot be found, tell it's name instead of
+  KERNEL_FILE (thanks to Axelsson)
+- approx. 30,000 new test cases (factors) for pre-release testing
+  (thanks to James Heinrich)
+
 version 0.11 (2012-05-21)
 - new 24-bit barrett kernel for FCs up to 2^70 - very fast!
 - new 15-bit barrett kernel for FCs up to 2^73 - almost as fast, 

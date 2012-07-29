@@ -55,11 +55,6 @@
 
 #include <stdio.h>
 #include <malloc.h>
-#include <unistd.h>
-
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include "my_intrinsics.h"
 
 // #define MAX_SIEVE_PRIMES      304 // Can't go smaller without code changes
 // #define MAX_SIEVE_PRIMES      559
@@ -154,12 +149,11 @@ typedef struct
   unsigned int d0, d1, d2;
 } int96;
 
-#include "cudahelper.h"         // Define CUDA "helper" functions
 
 typedef struct                  // Context information for each stream's work
 {
-  cudaStream_t stream;          // Space for cuda Stream Handles
-  cudaEvent_t linearized_event; // Event placed after linearization function
+  int stream;          // Space for cuda Stream Handles
+  int linearized_event; // Event placed after linearization function
   unsigned int   exp;           // Mersenne exponent
   unsigned int   kclass;        // Class number
   unsigned int   csieve_bits;   // Number of bits in current sieve

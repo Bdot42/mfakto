@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.11
+Version 0.12
 */
 
 #define CL_SIEVE_DEBUG 0   
@@ -26,7 +26,7 @@ Version 0.11
 #pragma  OPENCL EXTENSION cl_amd_printf : enable
 #endif
 
-__kernel void mfakto_cl_sieve_init(__private uint exp,
+__kernel void cl_sieve_init(__private uint exp,
                                    __private ulong k_base,
                                    __constant uint *primes,        // primes used for sieving, start with primes[0]=13
                                    __global  uint *next_multiple,  // out-array of k-offsets when the corresponding prime divides the factor candidate

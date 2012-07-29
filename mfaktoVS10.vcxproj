@@ -42,14 +42,20 @@
     <ClInclude Include="src/signal_handler.h" />
     <ClInclude Include="src/timer.h" />
     <ClInclude Include="src/timeval.h" />
+    <ClInclude Include="src\gpusieve.h" />
     <ClInclude Include="src\tf_debug.h" />
     <ClInclude Include="src\filelocking.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Changelog-mfakto.txt" />
+    <None Include="montgomery.cl" />
+    <None Include="README-mfakto.txt" />
     <None Include="src/mfakto_Kernels.cl" />
     <None Include="src\barrett.cl" />
     <None Include="src\barrett15.cl" />
     <None Include="src\barrett24.cl" />
+    <None Include="src\gpusieve.cl" />
+    <None Include="src\mfakto.ini" />
     <None Include="src\mul24.cl" />
     <None Include="src\sieve.cl" />
     <None Include="todo.txt" />

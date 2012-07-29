@@ -97,12 +97,12 @@ TODO
 +DONE+ - decode GPU-names
 +DONE+ - bugfix for high SievePrimes
 +DONE+ - reordering kernels dynamically
-- worktodo.add
-- GHz-days/day in the "total time ..." line
++DONE+ - worktodo.add
++DONE+ - GHz-days/day in the "total time ..." line
++DONE+ - better estimate of compute cores (CPU!)
 - transfer 4 FCs in 3 ints
 - dynamic sieve size, adjusting as SievePrimes changes
 - AllowSleep
-- better estimate of compute cores (CPU!)
 - add James' PM1-F-vs-TF-NF list to selftest
 - test if fix SieveSizeLimit is faster : yes, is. Provide 3 fix size sieve functions and dynamically use them.
 - perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
@@ -128,5 +128,4 @@ TODO
 - SDK 2.6: __attribute__((always_inline)), set environment variable GPU_ASYNC_MEM_COPY=2, Profiler
 - Auto-adjust VectorSize per kernel
 - dummy kernel for performance testing of sieve and transfer
-- transfer 4 FCs in 3 ints
 - test a montgomery kernel

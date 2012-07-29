@@ -477,7 +477,7 @@ int read_config(mystuff_t *mystuff)
   if(my_read_string(mystuff->inifile, "ProgressHeader", mystuff->head_line, 510))
   {
     /* no problem, use some default */
-    strcpy(mystuff->head_line, "   done |    ETA |     GHz |time/class|    #FCs | avg. rate | SieveP. |CPU idle");
+    strcpy(mystuff->head_line, "  done |    ETA |     GHz |time/class|    #FCs | avg. rate | SieveP. |CPU idle");
   }
   else
   {

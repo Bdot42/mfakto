@@ -97,7 +97,7 @@ M3321932839 from 2^50 to 2^61.
 # 2.1 Supported GPUs #
 ######################
 
-- HD7xxx not yet tested, but likely to work
+- HD7xxx
 - HD5xxx, HD6xxx, including the builtin HD6xxx on AMD APUs
 - HD4xxx, FireStream 92xx (no atomic operations available *)
 - not supported (kernel compilation fails): HD2xxx, HD3xxx, FireStream 91xx
@@ -173,10 +173,10 @@ Advanced usage (extend the upper limit):
 # 4 Known issues #
 ##################
 
-- ATTENTION: Both Windows and Linux crashed / hanged as long as the previous
-  version of the AMD APP SDK was installed. Be sure to remove AMD APP SDK 2.4!
-  AMD APP SDK 2.5 can be installed, but should not be needed on Windows with
-  Catalyst drivers since 11.7, and on Linux since 11.11.
+- On HD77xx, 78xx and 79xx, mfakto may run awfully slow at 99% GPU load.
+  mfakto warns about the issue during startup.
+  The reason is the lower number of registers available to the kernels.
+  Set VectorSize=2 in mfakto.ini and restart mfakto. It should be fast now.
 - The user interface is not hardened against malformed input. There are some
   checks but when you really try you should be able to screw it up.
 - The GUI of your OS might be very laggy while running mfakto. In severe
@@ -192,12 +192,14 @@ Advanced usage (extend the upper limit):
 - There's been reports of mfakto-crashes when other GPU-bound tools or GPU-Z
   were running.
 - GPU is not found, fallback to CPU
-  This happened on Linux when there was no X-server running, or the X-server
-  was not accessible. So please try to run mfakto locally on the main
-  X-display. If that fails as well, then the Graphics driver may be too old.
-  Check the clinfo (part of AMD APP SDK) output for your GPU.
-  If drivers and AMD APP SDK are up to date, then maybe your AMD GPU is not
-  the first GPU. Try the -d switch to specify a different device number.
+  This happens on Linux when there is no X-server running, or the X-server
+  is not accessible. It happens on Windows when not connected to the primay
+  display (e.g. being connected through terminal services). So please try to
+  run mfakto locally on the main X-display. If that fails as well, then the
+  Graphics driver may be too old. Check the clinfo (part of AMD APP SDK)
+  output for your GPU. If drivers and AMD APP SDK are up to date, then maybe
+  your AMD GPU is not the first GPU. Try the -d switch to specify a different
+  device number.
 
 ##################################################################
 # 4.1 Stuff that looks like an issue but actually isn't an issue #
@@ -242,12 +244,13 @@ A Not tested yet, but using the commandline option "-d <GPU number>" you should
 Q Can I run multiple instances of mfakto on the same computer?
 A Yes, and in most cases this is necessary to make full use of the GPU(s).
   A single instance can only run on a single GPU (no difference how the GPU's
-  are configured).
+  are configured) and will use just one CPU-core for sieving. Even for mid
+  range cards, running two or three instances will improve throughput.
 
 Q Which tasks should I assign to mfakto?
-A Currently, the 79-bit-barrett kernel is the fastest one, working for factors
-  from 64 bits to 79 bits. Selecting tasks for this kernel will give best
-  results. The 92-bit-barrett kernel is quite fast too.
+A Currently, the 73-bit-barrett kernel is the fastest one, working for factors
+  from 60 bits to 73 bits. Selecting tasks for this kernel will give best
+  results. The 79-bit-barrett kernel is quite fast too.
 
 
 ###########

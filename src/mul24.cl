@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.11
+Version 0.12
 */
 
 /* This file will be included TWICE by the main kernel file, once with

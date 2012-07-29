@@ -39,27 +39,10 @@
    owned the patent on sieving, one would hope it has expired,
    by now.
 
-   [The Sieve of Eratosthenes is a classic algorithm.  It was one
-   of those algorithms that sparked my interest in mathematical
-   computing, and which I actually first implemented as a boy to
-   run on an IBM 1130 computer.  I did, in fact, succeed in
-   printing a table of prime numbers up to 10 million on the
-   IBM 1130 -- A computer with 8192 16-bit words of main memory.
-   Using the same computer, I also managed to print the value of
-   pi to 100,000 places after the decimal.  Some of the same tricks
-   used to achieve those feats in the early 1970's still show
-   through in modern mathematical algorithms, including what
-   follows.  Very little is *really new*.  Things are just
-   rewrapped and reinvented.]
  **********************************************************************/
 
 #include <stdio.h>
 #include <malloc.h>
-#include <unistd.h>
-
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include "my_intrinsics.h"
 #include "gpusieve.h"
 
 sievecontext context[MAX_STREAMS];         // Space for one context per Stream Handle
@@ -102,7 +85,16 @@ unsigned int *h_bitmapw[MAX_STREAMS];   /* Bitmap for sieving */
 unsigned int *h_karray[MAX_STREAMS];    /* List k-offsets to be trial-factored */
 unsigned int *h_xaindexes[MAX_STREAMS]; /* atomic indices into karray */
 
+#ifndef bool
+typedef int bool;
+#define true (1)
+#define false (0)
+#endif
 
+bool bPinGenericMemory;
+
+/* kernels */
+#ifdef CUDA
 __global__ void rcv_build_prime_tree(
         unsigned int *d_plist,  /* In: pointer to list of primes */
         unsigned int pcount,    /* number of elements in list */
@@ -195,7 +187,7 @@ __global__ void rcv_linearize_sieve(
         unsigned int *d_kaindex /* atomic allocation index into karray */
         );
 
-
+#endif
 ////////////////////////////////////////////////////////////////////////
 //
 // fillprimep -- This functions fills a linear array with small primes
@@ -236,7 +228,6 @@ void fillprimep(unsigned int nump)
 //
 ////////////////////////////////////////////////////////////////////////
 
-bool bPinGenericMemory;
 
 void InitApplication()
 {
@@ -249,6 +240,7 @@ void InitApplication()
 #else
   b = false;
 #endif
+#ifdef CUDA
 
   {
     int devID;
@@ -378,6 +370,7 @@ void InitApplication()
                 h_ktree[i], h_ktree[2*i], h_ktree[2*i+1]);
   }
 #endif
+#endif
 
 }
 
@@ -398,14 +391,14 @@ int96 mul96by32(int96 x96, unsigned int y32)
 {
   int96 t96;
   unsigned long long t0,t1,t2;
-  t2 = (0llu+x96.d2)*y32;
-  t96.d2 = t2&0x00000000ffffffffllu;
-  t1 = (0llu+x96.d1)*y32;
+  t2 = ((unsigned long long)x96.d2)*y32;
+  t96.d2 = t2&0x00000000ffffffffL;
+  t1 = ((unsigned long long)x96.d1)*y32;
   t96.d2 += t1>>32;
-  t96.d1 = t1&0x00000000ffffffffllu;
-  t0 = (0llu+x96.d0)*y32;
+  t96.d1 = t1&0x00000000ffffffffL;
+  t0 = ((unsigned long long)x96.d0)*y32;
   t96.d1 += t0>>32;
-  t96.d0 = t0&0x00000000ffffffffllu;
+  t96.d0 = t0&0x00000000ffffffffL;
   if (t96.d1 < t0>>32)	// If sum is smaller than what we added, then we should carry
     t96.d2 += 1;
   return(t96);
@@ -416,13 +409,13 @@ int96 div96by32(int96 x96, unsigned int y32)
   // Does not handle divide-by-zero.
   int96 t96;
   unsigned long long t0,t1,t2;
-  t2 = (0llu+x96.d2);     // 64-bit version of high-order word of dividend
+  t2 = ((unsigned long long)x96.d2);     // 64-bit version of high-order word of dividend
   t96.d2 = t2/y32;        // Set h/o word of quotient.  Overflow not possible.
   t1 = (t2 % y32) << 32;  // Remainder becomes h/o part of next partial divide.
-  t1 += (0llu+x96.d1);    // Add in middle word of dividend
+  t1 += ((unsigned long long)x96.d1);    // Add in middle word of dividend
   t96.d1 = t1/y32;        // Set middle word of quotient.  Overflow not possible.
   t0 = (t1 % y32) << 32;  // Remainder becomes h/o part of next partial divide.
-  t0 += (0llu+x96.d0);    // Add in low-order word of dividend.
+  t0 += ((unsigned long long)x96.d0);    // Add in low-order word of dividend.
   t96.d0 = t0/y32;        // Set l/o word of quotient.  Overflow not possible.
                           // Remainder is discarded.
   return(t96);
@@ -433,11 +426,11 @@ unsigned int mod96by32(int96 x96, unsigned int y32)
   // Does not handle divide-by-zero.
   unsigned int t;
   unsigned long long t0,t1,t2;
-  t2 = (0llu+x96.d2);     // 64-bit version of high-order word of dividend
+  t2 = ((unsigned long long)x96.d2);     // 64-bit version of high-order word of dividend
   t1 = (t2 % y32) << 32;  // Remainder becomes h/o part of next partial divide.
-  t1 += (0llu+x96.d1);    // Add in middle word of dividend
+  t1 += ((unsigned long long)x96.d1);    // Add in middle word of dividend
   t0 = (t1 % y32) << 32;  // Remainder becomes h/o part of next partial divide.
-  t0 += (0llu+x96.d0);    // Add in low-order word of dividend.
+  t0 += ((unsigned long long)x96.d0);    // Add in low-order word of dividend.
   t  = (t0 % y32);        // Remainder is returned
   return(t);
 }
@@ -460,13 +453,13 @@ int96 add96by96(int96 x96, int96 y96)
 {
   int96 t96;
   unsigned long long t;
-  t = (0llu + x96.d0) + y96.d0;
+  t = ((unsigned long long)x96.d0) + y96.d0;
   t96.d0 = t & 0x00000000ffffffff;
   t >>= 32;
-  t += (0llu + x96.d1) + y96.d1;
+  t += ((unsigned long long)x96.d1) + y96.d1;
   t96.d1 = t & 0x00000000ffffffff;
   t >>= 32;
-  t += (0llu + x96.d2) + y96.d2;
+  t += ((unsigned long long)x96.d2) + y96.d2;
   t96.d2 = t & 0x00000000ffffffff;
   return(t96);
 }
@@ -512,7 +505,7 @@ int cmp96(int96 x96, int96 y96)
 
 char *cvt96hex24(int96 x96, char *s, int slength)
 {
-  snprintf(s, slength, "%8.8X%8.8X%8.8X", x96.d2, x96.d1, x96.d0);
+  _snprintf(s, slength, "%8.8X%8.8X%8.8X", x96.d2, x96.d1, x96.d0);
   return (s);
 }
 
@@ -528,7 +521,7 @@ unsigned int mbstartrem;  // 4620*mbstart + mbstartrem === mkstart.  (-4620 < mb
 unsigned int mbendrem;    // 4620*mbend + mbendrem === mkend.  (0 <= mbendrem < 4620)
 
 
-void InitMersenne(unsigned int exp, unsigned int qminbits, unsigned int qmaxbits)
+int InitMersenne(unsigned int exp, unsigned int qminbits, unsigned int qmaxbits)
 {
 
   unsigned int f;       // Factor of our Mersenne number
@@ -547,7 +540,7 @@ void InitMersenne(unsigned int exp, unsigned int qminbits, unsigned int qmaxbits
   if (exp < 13 || exp > 0x7fffffff)
   {
     printf("InitMersenne: exp=%u is outside supported range\n", exp);
-    exit(1);
+    return 1;
   }
 
   bprime = true;        // Assume caller has provided a prime exponent
@@ -580,26 +573,26 @@ void InitMersenne(unsigned int exp, unsigned int qminbits, unsigned int qmaxbits
   if (!bprime)
   {
     printf("InitMersenne: exp=%u is not prime.  It is divisible by %u\n", exp, f);
-    exit(1);
+    return 1;
   }
 
   if (qminbits >= qmaxbits)
   {
     printf("InitMersenne: qminbits=%u >= qmaxbits=%u\n",
             qminbits, qmaxbits);
-    exit(1);
+    return (1);
   }
 
   if (qmaxbits > 95)
   {
     printf("InitMersenne: qmaxbits=%u, exceeds limit of 95 bits\n", qmaxbits);
-    exit(1);
+    return (1);
   }
 
   if (qminbits < 24)
   {
     printf("InitMersenne: qminbits=%u is below limit of 24 bits\n", qminbits);
-    exit(1);
+    return (1);
   }
 
   if (b) printf("    exp=%8.8X%8.8X%8.8X = %20llu\n", 0, 0, exp, exp);
@@ -742,13 +735,13 @@ void InitMersenne(unsigned int exp, unsigned int qminbits, unsigned int qmaxbits
     if (cmp96(tq2,tq3) > 0 || cmp96(tq2,tq3) > 0)
     {
       printf("Computed mkstart is out of bounds.\n");
-      exit(1);
+      return (1);
     }
 
     if (cmp96(tq1,tq2) > 0 || cmp96(tq4,tq5) != 0)
     {
       printf("Computed mbstart is out of bounds.\n");
-      exit(1);
+      return (1);
     }
 
 
@@ -794,15 +787,16 @@ void InitMersenne(unsigned int exp, unsigned int qminbits, unsigned int qmaxbits
     if (cmp96(tq2,tq3) > 0 || cmp96(tq2,tq3) > 0)
     {
       printf("Computed mkend is out of bounds.\n");
-      exit(1);
+      return (1);
     }
 
     if (cmp96(tq1,tq2) != 0 || cmp96(tq4,tq5) > 0)
     {
       printf("Computed mbend is out of bounds.\n");
-      exit(1);
+      return (1);
     }
   }
+  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////
