@@ -66,9 +66,11 @@ kernel_info_t       kernel_info[NUM_KERNELS] = {
      {   _63BIT_MUL24,        "mfakto_cl_63",          0,     64,         NULL},
      {   BARRETT72_MUL24,     "mfakto_cl_barrett72",  64,     70,         NULL}, // one kernel for all vector sizes
      {   BARRETT79_MUL32,     "mfakto_cl_barrett79",  64,     79,         NULL}, // one kernel for all vector sizes
+     {   BARRETT77_MUL32,     "mfakto_cl_barrett77",  64,     77,         NULL}, // one kernel for all vector sizes
      {   BARRETT92_MUL32,     "mfakto_cl_barrett92",  64,     92,         NULL}, // one kernel for all vector sizes
      {   BARRETT58_MUL15,     "barrett15_60",         45,     58,         NULL}, // one kernel for all vector sizes
      {   BARRETT73_MUL15,     "barrett15_75",         60,     72,         NULL}, // one kernel for all vector sizes
+     {   BARRETT70_MUL15,     "barrett15_70",         60,     70,         NULL}, // one kernel for all vector sizes
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         NULL},
      {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         NULL}, // slow shift-cmp-sub kernel: removed
      {   BARRETT92_64_OpenCL, "mfakto_cl_barrett92",  64,     92,         NULL}, // mapped to 32-bit barrett so far
@@ -1962,7 +1964,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     else if(ln2b<120)b_preinit.d4=1<<(ln2b-96);
     else             b_preinit.d5=1<<(ln2b-120);	// b_preinit = 2^ln2b
   }
-  else if ((use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15) )
+  else if ((use_kernel == BARRETT70_MUL15) || (use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15) )
   { // skip the "lowest" levels, so that uint8 is sufficient for 10 components of int150
     if     (ln2b<30 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
     else if(ln2b<45 )b_in.s[0]=1<<(ln2b-30);   
@@ -1974,7 +1976,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     else if(ln2b<135)b_in.s[6]=1<<(ln2b-120);
     else             b_in.s[7]=1<<(ln2b-135);
   }
-  else if ((use_kernel == BARRETT79_MUL32) || (use_kernel == BARRETT92_MUL32) || (use_kernel == _95BIT_64_OpenCL) )
+  else if ((use_kernel == BARRETT77_MUL32) || (use_kernel == BARRETT79_MUL32) || (use_kernel == BARRETT92_MUL32) || (use_kernel == _95BIT_64_OpenCL) )
   {
     if     (ln2b<32 )b_192.d0=1<< ln2b;       // should not happen
     else if(ln2b<64 )b_192.d1=1<<(ln2b-32);   // should not happen
@@ -2096,7 +2098,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
               k_base.d2 =  k_min_grid[i] >> 48;
               status = run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount, bit_min-63);
             }
-            else if ((use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
+            else if ((use_kernel == BARRETT70_MUL15) || (use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
             {
               int75 k_base;
               k_base.d0 =  k_min_grid[i] & 0x7FFF;
@@ -2106,7 +2108,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
               k_base.d4 =  k_min_grid[i] >> 60;
               status = run_kernel15(kernel_info[use_kernel].kernel, exp, k_base, i, b_in, mystuff->d_RES, shiftcount, bit_max);
             }
-            else if ((use_kernel == BARRETT79_MUL32) || (use_kernel == BARRETT92_MUL32) || (use_kernel == _95BIT_64_OpenCL))
+            else if ((use_kernel == BARRETT77_MUL32) || (use_kernel == BARRETT79_MUL32) || (use_kernel == BARRETT92_MUL32) || (use_kernel == _95BIT_64_OpenCL))
             {
               int96 k;
               k.d0 = (cl_uint) k_min_grid[i];
@@ -2483,7 +2485,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
       int72 factor={factor_lo, factor_mid, factor_hi};
       print_dez72(factor,string);
     }
-    else if ((use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
+    else if ((use_kernel == BARRETT70_MUL15) || (use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
     {
       print_dez90(factor_hi, factor_mid, factor_lo, string);
     }
