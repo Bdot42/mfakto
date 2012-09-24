@@ -51,7 +51,7 @@ COBJS  = $(CSRC:.c=.o) mfakto.o
 
 ##############################################################################
 
-all: ../mfakto ../barrett.cl ../mfakto_Kernels.cl ../mul24.cl ../sieve.cl ../barrett24.cl ../barrett15.cl
+all: ../mfakto ../barrett.cl ../mfakto_Kernels.cl ../mul24.cl ../sieve.cl ../barrett24.cl ../barrett15.cl ../datatypes.h
 
 ../mfakto : $(COBJS)
 	$(LD) $^ $(LDFLAGS) -o $@
@@ -69,6 +69,9 @@ sieve.o : sieve.c
 	$(CPP) $(CFLAGS) $(CPP_FLAGS) -c $< -o $@
 
 ../%.cl : %.cl
+	cp $< ..
+
+../%.h : %.h
 	cp $< ..
 
 ##############################################################################
