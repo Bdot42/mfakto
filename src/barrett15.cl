@@ -2514,7 +2514,7 @@ a is precomputed on host ONCE.
   __private int180_v b, tmp180;
   __private int90_v tmp90;
   __private float_v ff;
-  __private uint tid, bit_max_bot, bit_max_mult;
+  __private uint tmp, tid, bit_max_bot, bit_max_mult;
   __private uint_v t;
 
   // implicitely assume b > 2^60 and use the 8 fields of the uint8 for d4-db
@@ -2632,14 +2632,14 @@ Precalculated here since it is the same for all steps in the following loop */
 
   // we need u=2^(2*bit_max)/f. As bit_max is between 60 and 90, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
 
-  tmp180.db.s0 = 1 << (bit_max - 61);	// tmp180 = 2^(89 + bits in f)
+  tmp = 1 << (bit_max - 61);	// tmp180 = 2^(89 + bits in f)
   
   // tmp180.d7 = 0; tmp180.d6 = 0; tmp180.d5 = 0; tmp180.d4 = 0; tmp180.d3 = 0; tmp180.d2 = 0; tmp180.d1 = 0; tmp180.d0 = 0;
   // PERF: as div is only used here, use all those zeros directly in there
   //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
   //       tmp180.db contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
 
-  div_180_90(&u, tmp180.db.s0, f, ff
+  div_180_90(&u, tmp, f, ff
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
@@ -2933,7 +2933,7 @@ a is precomputed on host ONCE.
   __private int180_v b, tmp180;
   __private int90_v tmp90;
   __private float_v ff;
-  __private uint tid, bit_max_bot, bit_max_mult;
+  __private uint tmp, tid, bit_max_bot, bit_max_mult;
   __private uint_v t;
 
   // implicitely assume b > 2^60 and use the 8 fields of the uint8 for d4-db
@@ -3051,14 +3051,14 @@ Precalculated here since it is the same for all steps in the following loop */
 
   // we need u=2^(2*bit_max)/f. As bit_max is between 60 and 90, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
 
-  tmp180.db.s0 = 1 << (bit_max - 61);	// tmp180 = 2^(89 + bits in f)
+  tmp = 1 << (bit_max - 61);	// tmp180 = 2^(89 + bits in f)
   
   // tmp180.d7 = 0; tmp180.d6 = 0; tmp180.d5 = 0; tmp180.d4 = 0; tmp180.d3 = 0; tmp180.d2 = 0; tmp180.d1 = 0; tmp180.d0 = 0;
   // PERF: as div is only used here, use all those zeros directly in there
   //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
   //       tmp180.db contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
 
-  div_180_90(&u, tmp180.db.s0, f, ff
+  div_180_90(&u, tmp, f, ff
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
@@ -3332,7 +3332,7 @@ a is precomputed on host ONCE.
   __private int180_v b, tmp180;
   __private int90_v tmp90;
   __private float_v ff;
-  __private uint tid, bit_max_bot, bit_max_mult;
+  __private uint tmp, tid, bit_max_bot, bit_max_mult;
   __private uint_v t;
 
   // implicitely assume b > 2^60 and use the 8 fields of the uint8 for d4-db
@@ -3450,14 +3450,14 @@ Precalculated here since it is the same for all steps in the following loop */
 
   // we need u=2^(2*bit_max)/f. As bit_max is between 60 and 90, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
 
-  tmp180.db.s0 = 1 << (bit_max - 61);	// tmp180 = 2^(89 + bits in f)
+  tmp = 1 << (bit_max - 61);	// tmp180 = 2^(89 + bits in f)
   
   // tmp180.d7 = 0; tmp180.d6 = 0; tmp180.d5 = 0; tmp180.d4 = 0; tmp180.d3 = 0; tmp180.d2 = 0; tmp180.d1 = 0; tmp180.d0 = 0;
   // PERF: as div is only used here, use all those zeros directly in there
   //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
   //       tmp180.db contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
 
-  div_180_90(&u, tmp180.db.s0, f, ff
+  div_180_90(&u, tmp, f, ff
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
