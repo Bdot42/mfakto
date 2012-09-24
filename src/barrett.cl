@@ -647,8 +647,8 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
   carry    = AS_UINT_V((qi > res->d0)? 1 : 0);
   res->d1 += carry;
   res->d2 += AS_UINT_V((carry > res->d1)? 1 : 0);
-  
-    // skip the last part - it will change the result by one at most - we can live with a result that is off by one
+
+  // skip the last part - it will change the result by one at most - we can live with a result that is off by one
   return;
 
   // nn = n * qi
@@ -693,7 +693,7 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
   tmp96.d0=q.d0;
   tmp96.d1=q.d1;
   tmp96.d2=q.d2;
-  
+
   MODBASECASE_NONZERO_ERROR(q.d5, 6, 5, 9);
   MODBASECASE_NONZERO_ERROR(q.d4, 6, 4, 10);
   MODBASECASE_NONZERO_ERROR(q.d3, 6, 3, 11);

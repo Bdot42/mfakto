@@ -179,7 +179,7 @@ other return value
     }
     else if (mystuff->gpu_type == GPU_VLIW5)
     {  // this is the speed order for VLIW5, HD5770, for instance
-      if      ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  // ?
+      if      ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  //                   192M/s
       else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 321M/s on HD5870, 161M/s on HD5770
       else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 288M/s            152M/s
       else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 258M/s            130M/s
@@ -190,8 +190,8 @@ other return value
     }
     else if (mystuff->gpu_type == GPU_GCN)
     {  // this is the speed order for GCN, HD77xx...HD79xx. Note this GPU requires VectorSize=2 for best performance
-      if      ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  // ?
-      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 165M/s on HD7770, 258M/s on HD7850 (975MHz)
+      if      ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 165M/s on HD7770, 258M/s on HD7850 (975MHz)
+      else if ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  // ?                 246M/s
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 137M/s            212M/s
       else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 135M/s            209M/s
       else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 115M/s            178M/s
