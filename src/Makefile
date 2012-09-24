@@ -30,8 +30,9 @@ OPTIMIZE_FLAG = -O3 -funroll-loops  -finline-functions -frerun-loop-opt -fgcse-s
 
 # Compiler settings for .c files (CPU)
 CC = gcc-4.6
-CPP = gcc
+CPP = $(CC)
 CFLAGS = -Wall $(OPTIMIZE_FLAG) $(AMD_APP_INCLUDE) -DBUILD_OPENCL
+CPP_FLAGS =
 #CFLAGS_EXTRA_SIEVE = -funroll-all-loops 
 #CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -floop-parallelize-all -fvariable-expansion-in-unroller -fno-align-labels 
 CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -fno-align-labels 
@@ -51,7 +52,7 @@ COBJS  = $(CSRC:.c=.o) mfakto.o
 
 ##############################################################################
 
-all: ../mfakto ../barrett.cl ../mfakto_Kernels.cl ../mul24.cl ../sieve.cl ../barrett24.cl ../barrett15.cl
+all: ../mfakto ../barrett.cl ../mfakto_Kernels.cl ../mul24.cl ../sieve.cl ../barrett24.cl ../barrett15.cl ../datatypes.h
 
 ../mfakto : $(COBJS)
 	$(LD) $^ $(LDFLAGS) -o $@
@@ -69,6 +70,9 @@ sieve.o : sieve.c
 	$(CPP) $(CFLAGS) $(CPP_FLAGS) -c $< -o $@
 
 ../%.cl : %.cl
+	cp $< ..
+
+../%.h : %.h
 	cp $< ..
 
 ##############################################################################

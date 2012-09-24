@@ -528,11 +528,16 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 #endif
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf("div_144_72#4: q=(%x:%x:)%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+  if (tid==TRACE_TID) printf("div_144_72#4: q=(%x:%x:)%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
         q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
       
   // skip the last part - it will change the result by one at most - we can live with a result that is off by one
+  // but handle the missing carries
+  res->d1 += res->d0 >> 24;
+  res->d0 &= 0xFFFFFF;
+  res->d2 += res->d1 >> 24;
+  res->d1 &= 0xFFFFFF;
   return;
 
 #if (TRACE_KERNEL > 4)

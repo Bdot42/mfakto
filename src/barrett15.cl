@@ -676,6 +676,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   res->d4 += res->d3 >> 15;
   res->d3 &= 0x7FFF;
 
+  // skip the last part as it would change the result by one at most
   return;
 
   /*******************************************************/
@@ -2494,7 +2495,6 @@ are "out of range".
   if (tid==TRACE_TID) printf("mod_simple_90#6: res=%x:%x:%x:%x:%x:%x\n",
         res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
 #endif
-
 }
 
 __kernel void cl_barrett15_88(__private uint exp, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
