@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 # 
-#  Version 0.10
+#  Version 0.13
 # 
 # where is the AMD_APP Toolkit installed?
 AMD_APP_DIR = /opt/AMDAPP

@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.12
+Version 0.13
 */
 
 /* This file will be included TWICE by the main kernel file, once with
@@ -676,6 +676,10 @@ a is precomputed on host ONCE. */
 #elif (VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
+#elif (VECTOR_SIZE == 3)
+  t.x  = k_tab[tid];
+  t.y  = k_tab[tid+1];
+  t.z  = k_tab[tid+2];
 #elif (VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
@@ -809,6 +813,10 @@ Precalculated here since it is the same for all steps in the following loop */
 #elif (VECTOR_SIZE == 2)
   EVAL_RES(x)
   EVAL_RES(y)
+#elif (VECTOR_SIZE == 3)
+  EVAL_RES(x)
+  EVAL_RES(y)
+  EVAL_RES(z)
 #elif (VECTOR_SIZE == 4)
   EVAL_RES(x)
   EVAL_RES(y)

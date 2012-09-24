@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.12
+Version 0.13
 
 */
 /*
@@ -44,18 +44,14 @@ Version 0.12
 #define TRACE_KERNEL 0
 
 // If above tracing is on, only the thread with the ID below will trace
-#define TRACE_TID 96
+#define TRACE_TID 0
 
 /***********************************
  * DONT CHANGE ANYTHING BELOW THIS *
  ***********************************/
 
-#if (TRACE_KERNEL > 0) || defined (CHECKS_MODBASECASE)
-// available on all platforms so far ...
 #pragma  OPENCL EXTENSION cl_amd_printf : enable
 //#pragma  OPENCL EXTENSION cl_khr_fp64 : enable
-#endif
-
 
 // HD4xxx does not have atomics, but mfakto will work on these GPUs as well.
 // Without atomics, the factors found may be scrambled when more than one
@@ -70,34 +66,6 @@ Version 0.12
 // No atomic operations available - using simple ++
 #define ATOMIC_INC(x) ((x)++)
 #endif
-
-/* 96bit (3x 32bit) integer
-D= d0 + d1*(2^32) + d2*(2^64) */
-typedef struct _int96_1t
-{
-  uint d0,d1,d2;
-}int96_1t;
-
-/* 192bit (6x 32bit) integer
-D=d0 + d1*(2^32) + d2*(2^64) + ... */
-typedef struct _int192_1t
-{
-  uint d0,d1,d2,d3,d4,d5;
-}int192_1t;
-
-/* 72bit (3x 24bit) integer
-D=d0 + d1*(2^24) + d2*(2^48) */
-typedef struct _int72_t
-{
-  uint d0,d1,d2;
-}int72_t;
-
-/* 144bit (6x 24bit) integer
-D=d0 + d1*(2^24) + d2*(2^48) + ... */
-typedef struct _int144_t
-{
-  uint d0,d1,d2,d3,d4,d5;
-}int144_t;
 
 
 #ifdef CHECKS_MODBASECASE
@@ -119,105 +87,11 @@ typedef struct _int144_t
 
 #endif
 
-#if (VECTOR_SIZE == 1)
-typedef struct _int72_v
-{
-  uint d0,d1,d2;
-}int72_v;
-
-typedef struct _int144_v
-{
-  uint d0,d1,d2,d3,d4,d5;
-}int144_v;
-
-#define int_v int
-#define uint_v uint
-#define float_v float
-#define CONVERT_FLOAT_V convert_float
-#define CONVERT_UINT_V convert_uint
-#define AS_UINT_V as_uint
-// tracing does not work with no vectors ...
-
-#elif (VECTOR_SIZE == 2)
-typedef struct _int72_v
-{
-  uint2 d0,d1,d2;
-}int72_v;
-
-typedef struct _int144_v
-{
-  uint2 d0,d1,d2,d3,d4,d5;
-}int144_v;
-
-#define int_v int2
-#define uint_v uint2
-#define float_v float2
-#define CONVERT_FLOAT_V convert_float2
-#define CONVERT_UINT_V convert_uint2
-#define AS_UINT_V as_uint2
-//#define s0 x  // to make traceing work
-#elif (VECTOR_SIZE == 4)
-typedef struct _int72_v
-{
-  uint4 d0,d1,d2;
-}int72_v;
-
-typedef struct _int144_v
-{
-  uint4 d0,d1,d2,d3,d4,d5;
-}int144_v;
-
-#define int_v int4
-#define uint_v uint4
-#define float_v float4
-#define CONVERT_FLOAT_V convert_float4
-#define CONVERT_UINT_V convert_uint4
-#define AS_UINT_V as_uint4
-//#define s0 x  // to make traceing work
-
-#elif (VECTOR_SIZE == 8)
-typedef struct _int72_v
-{
-  uint8 d0,d1,d2;
-}int72_v;
-
-typedef struct _int144_v
-{
-  uint8 d0,d1,d2,d3,d4,d5;
-}int144_v;
-
-#define int_v int8
-#define uint_v uint8
-#define float_v float8
-#define CONVERT_FLOAT_V convert_float8
-#define CONVERT_UINT_V convert_uint8
-#define AS_UINT_V as_uint8
-
-#elif (VECTOR_SIZE == 16)
-//# error "Vector size 16 is so slow, don't use it. If you really want to, remove this #error."
-typedef struct _int72_v
-{
-  uint16 d0,d1,d2;
-}int72_v;
-
-typedef struct _int144_v
-{
-  uint16 d0,d1,d2,d3,d4,d5;
-}int144_v;
-
-#define int_v int16
-#define uint_v uint16
-#define float_v float16
-#define CONVERT_FLOAT_V convert_float16
-#define CONVERT_UINT_V convert_uint16
-#define AS_UINT_V as_uint16
-
-#else
-# error "invalid VECTOR_SIZE"
-#endif
+#include "datatypes.h"
 
 #ifdef CL_GPU_SIEVE
-#include "sieve.cl"
+
+//#include "sieve.cl"
 #endif
 
 #define EVAL_RES_b(comp) \
@@ -261,27 +135,104 @@ typedef struct _int144_v
 
 // this kernel is only used for a quick test at startup - no need to be correct ;-)
 // currently this kernel is used for testing what happens without atomics when multiple factors are found
-__kernel void mod_128_64_k(const ulong hi, const ulong lo, const ulong q,
+__kernel void test_k(const ulong hi, const ulong lo, const ulong q,
                            const float qr, __global uint *res
 )
 {
-  __private uint i,f;
+  __private uint i,f, tid;
+  int180_v resv;
+  int90_v a, b, r;
+  tid = get_global_id(0);
+  float_v ff;
 
-  f = get_global_id(0);
-
-  f++; // let the reported results start with 1
 
 //  barrier(CLK_GLOBAL_MEM_FENCE);
 #if (TRACE_KERNEL > 0)
     printf("kernel tracing level %d enabled\n", TRACE_KERNEL);
 #endif
+  a.d0=0;
+  a.d1=0;
+  a.d2=0;
+  a.d3=0x0003;
+  a.d4=0x0000;
+  a.d5=0x0000;
 
+  b.d0=1;
+  b.d1=0;
+  b.d2=0x0;
+  b.d3=0x0;
+  b.d4=0x0;
+  b.d5=0x3FFF;
+
+  mul_90_180_no_low3(&resv, a, b);
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("test: a=%x:%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x:%x:%x:%x:...\n",
+        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
+        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
+        resv.db.s0, resv.da.s0, resv.d9.s0, resv.d8.s0, resv.d7.s0, resv.d6.s0, resv.d5.s0, resv.d4.s0, resv.d3.s0);
+#endif
+  inc_if_ge_90(&a, a, b);
+  mul_90_180_no_low3(&resv, a, b);
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("test: a=%x:%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x:%x:%x:%x:...\n",
+        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
+        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
+        resv.db.s0, resv.da.s0, resv.d9.s0, resv.d8.s0, resv.d7.s0, resv.d6.s0, resv.d5.s0, resv.d4.s0, resv.d3.s0);
+#endif
+
+  ff= CONVERT_FLOAT_RTP_V(mad24(a.d5, 32768u, a.d4));
+  ff= ff * 32768.0f * 32768.0f+ CONVERT_FLOAT_RTP_V(mad24(a.d3, 32768u, a.d2));   // f.d1 needed?
+
+  //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
+  ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
+#if (BARRETT_VECTOR_SIZE > 1)
+  i=mad24(resv.db.s0, 32768u, resv.da.s0)>>2;
+  f=(mad24(resv.db.s0, 32768u, resv.da.s0)<<30) + mad24(resv.d9.s0, 32768u, resv.d8.s0);
+
+  div_180_90(&r, i, a, ff
+#if (TRACE_KERNEL > 1)
+                  , tid
+#endif
+                  );
+  // enforce evaluation ... otherwise some calculations are optimized away ;-)
+  res[30] = r.d5.s0 + r.d4.s0 + r.d3.s0 + r.d2.s0 + r.d1.s0 + r.d0.s0;
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("test: %x:%x:120x0 / a=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x\n",
+        i, f, 
+        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
+        r.d5.s0, r.d4.s0, r.d3.s0, r.d2.s0, r.d1.s0, r.d0.s0);
+#endif
+
+  ff= CONVERT_FLOAT_RTP_V(mad24(b.d5, 32768u, b.d4));
+  ff= ff * 32768.0f * 32768.0f+ CONVERT_FLOAT_RTP_V(mad24(b.d3, 32768u, b.d2));   // f.d1 needed?
+
+  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+        
+  i=mad24(resv.db.s0, 32768u, resv.da.s0)>>2;
+  f=(mad24(resv.db.s0, 32768u, resv.da.s0)<<30) + mad24(resv.d9.s0, 32768u, resv.d8.s0);
+
+  div_180_90(&r, i, b, ff
+#if (TRACE_KERNEL > 1)
+                  , tid
+#endif
+                  );
+  // enforce evaluation ... otherwise some calculations are optimized away ;-)
+  res[31] = r.d5.s0 + r.d4.s0 + r.d3.s0 + r.d2.s0 + r.d1.s0 + r.d0.s0;
+#endif
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("test: %x:%x:120x0 / b=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x\n",
+        i, f, 
+        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
+        r.d5.s0, r.d4.s0, r.d3.s0, r.d2.s0, r.d1.s0, r.d0.s0);
+#endif
+
+
+  f=tid+1; // let the reported results start with 1
   if (1 == 1)
   {
     i=ATOMIC_INC(res[0]);
-#if (TRACE_KERNEL < 1)
-#pragma  OPENCL EXTENSION cl_amd_printf : enable
-#endif
     printf("thread %d: i=%d, res[0]=%d\n", get_global_id(0), i, res[0]);
 
     if(i<10)				/* limit to 10 results */
@@ -291,5 +242,4 @@ __kernel void mod_128_64_k(const ulong hi, const ulong lo, const ulong q,
       res[i*3 + 3]=f;
     }
   }
-
 }

@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.12
+Version 0.13
 */
 
 /****************************************
@@ -133,29 +133,7 @@ res.d0 and res.d1 the result of mul_72_144_no_low() is 0 to 2 lower than
 of mul_72_144().
  */
 {
-  /*
-  res->d2 = __umul32  (a.d2, b.d0);
-  res->d3 = __umul32hi(a.d2, b.d0);
-  
-  res->d2 = __add_cc (res->d2, __umul32hi(a.d1, b.d0));
-  res->d3 = __addc_cc(res->d3, __umul32  (a.d2, b.d1));
-  res->d4 = __addc   (      0,                      0);
-  
-  res->d2 = __add_cc (res->d2, __umul32hi(a.d0, b.d1));
-  res->d3 = __addc_cc(res->d3, __umul32  (a.d1, b.d2));
-  res->d4 = __addc_cc(res->d4, __umul32hi(a.d1, b.d2));  
-  res->d5 = __addc   (      0,                      0);
-
-  res->d2 = __add_cc (res->d2, __umul32  (a.d0, b.d2));
-  res->d3 = __addc_cc(res->d3, __umul32hi(a.d0, b.d2));
-  res->d4 = __addc_cc(res->d4, __umul32  (a.d2, b.d2));
-  res->d5 = __addc   (res->d5, __umul32hi(a.d2, b.d2));
-
-  res->d2 = __add_cc (res->d2, __umul32  (a.d1, b.d1));
-  res->d3 = __addc_cc(res->d3, __umul32hi(a.d1, b.d1));
-  res->d4 = __addc_cc(res->d4, __umul32hi(a.d2, b.d1));
-  res->d5 = __addc   (res->d5,                      0);
-  */
+ 
   __private uint_v tmp;
   
   res->d2  = mul_hi(a.d1, b.d0) + mul_hi(a.d0, b.d1);
@@ -206,26 +184,7 @@ res.d0, res.d1 and res.d2 the result of mul_72_144_no_low() is 0 to 4 lower
 than of mul_72_144().
  */
 {
-  /*
-  res->d3 = __umul32hi(a.d2, b.d0);
   
-  res->d3 = __add_cc (res->d3, __umul32  (a.d2, b.d1));
-  res->d4 = __addc   (      0,                      0);
-  
-  res->d3 = __add_cc (res->d3, __umul32  (a.d1, b.d2));
-  res->d4 = __addc   (res->d4, __umul32hi(a.d1, b.d2)); // no carry propagation to d5 needed: 0xFFFF.FFFF * 0xFFFF.FFFF + 0xFFFF.FFFF + 0xFFFF.FFFE = 0xFFFF.FFFF.FFFF.FFFE
-//  res->d4 = __addc_cc(res->d4, __umul32hi(a.d1, b.d2));  
-//  res->d5 = __addc   (      0,                      0);
-
-  res->d3 = __add_cc (res->d3, __umul32hi(a.d0, b.d2));
-  res->d4 = __addc_cc(res->d4, __umul32  (a.d2, b.d2));
-//  res->d5 = __addc   (res->d5, __umul32hi(a.d2, b.d2));
-  res->d5 = __addc   (      0, __umul32hi(a.d2, b.d2));
-
-  res->d3 = __add_cc (res->d3, __umul32hi(a.d1, b.d1));
-  res->d4 = __addc_cc(res->d4, __umul32hi(a.d2, b.d1));
-  res->d5 = __addc   (res->d5,                      0);
-  */
   /* not needed for now, return ..._no_low_2 */
 
   mul_72_144_no_low2(res, a, b);
@@ -572,15 +531,9 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
     if (tid==TRACE_TID) printf("div_144_72#4: q=(%x:%x:)%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
         q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
-
-  /* nn.d0 =                                  mul24(n.d0, qi)               & 0xFFFFFF;
-  nn.d1 = __add_cc (mul_hi(n.d0, qi) >> 8, mul24(n.d1, qi) | 0xFF000000) & 0xFFFFFF;
-#ifndef CHECKS_MODBASECASE
-  nn.d2 = __addc   (mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi));
-#else
-  nn.d2 = __addc_cc(mul_hi(n.d1, qi) >> 8, mul24(n.d2, qi) | 0xFF000000) & 0xFFFFFF;
-  nn.d3 = __addc   (mul_hi(n.d2, qi) >> 8, 0);
-#endif */
+      
+  // skip the last part - it will change the result by one at most - we can live with a result that is off by one
+  return;
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf("div_144_72#4.0: nn=%x:%x:%x:%x:%x:%x\n",
@@ -740,7 +693,7 @@ are "out of range".
 #endif
 }
 
-__kernel void mfakto_cl_barrett72(__private uint exp, const int72_t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void cl_barrett24_70(__private uint exp, const int72_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else
@@ -772,12 +725,12 @@ bit_max64 is bit_max - 64! (1 .. 8)
   __private int144_t bb={0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
 
   exp72.d2=0;exp72.d1=exp>>23;exp72.d0=(exp+exp)&0xFFFFFF;	// exp72 = 2 * exp
 
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf("mfakto_cl_barrett72: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x\n",
+  if (tid==TRACE_TID) printf("cl_barrett24_70: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x\n",
         exp, exp72.d1, exp72.d0, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0);
 #endif
 
@@ -786,6 +739,10 @@ bit_max64 is bit_max - 64! (1 .. 8)
 #elif (VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
+#elif (VECTOR_SIZE == 3)
+  t.x  = k_tab[tid];
+  t.y  = k_tab[tid+1];
+  t.z  = k_tab[tid+2];
 #elif (VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
@@ -829,20 +786,17 @@ bit_max64 is bit_max - 64! (1 .. 8)
   f.d0 += 1;				      	// f = 2 * k * exp + 1
 
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf("mfakto_cl_barrett72: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
+    if (tid==TRACE_TID) printf("cl_barrett24_70: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 /*
 ff = f as float, needed in mod and div.
 Precalculated here since it is the same for all steps in the following loop */
-  ff= CONVERT_FLOAT_V(f.d2);
-  ff= mad(ff, 16777216.0f, CONVERT_FLOAT_V(f.d1));
+  ff= CONVERT_FLOAT_RTP_V(f.d2);
+  ff= mad(ff, 16777216.0f, CONVERT_FLOAT_RTP_V(f.d1));
   // f.d0 not needed as d1 and d2 provide more than 23 bits precision
 
-//  ff=0.9999997f/ff;
-//  ff=__int_as_float(0x3f7ffffc) / ff;	// just a little bit below 1.0f so we allways underestimate the quotient
-  ff=as_float(0x3f7ffffb) / ff;	// just a little bit below 1.0f so we always underestimate the quotient
-        
+  ff= as_float(0x3f7ffffd) / ff;	// we rounded ff towards plus infinity, and round all other results towards zero.
         
   // OpenCL shifts 32-bit values by 31 at most. bit_max64 can be 0 .. 8
   tmp144.d5 = 256 << (bit_max64 <<1);     	// tmp144 = 2^(2*bit_max), may use the 2^144 bit
@@ -858,7 +812,7 @@ Precalculated here since it is the same for all steps in the following loop */
                   );						// u = floor(tmp144 / f)
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf("mfakto_cl_barrett72: u=%x:%x:%x, ff=%G\n",
+    if (tid==TRACE_TID) printf("cl_barrett24_70: u=%x:%x:%x, ff=%G\n",
         u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
 #endif
 
@@ -871,7 +825,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
   mul_72_144_no_low2(&tmp144, a, u);					// tmp144 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf("mfakto_cl_barrett72: a=%x:%x:%x * u = %x:%x:%x:%x...\n",
+    if (tid==TRACE_TID) printf("cl_barrett24_70: a=%x:%x:%x * u = %x:%x:%x:%x...\n",
         a.d2.s0, a.d1.s0, a.d0.s0, tmp144.d5.s0, tmp144.d4.s0, tmp144.d3.s0, tmp144.d2.s0);
 #endif
 
@@ -885,19 +839,19 @@ Precalculated here since it is the same for all steps in the following loop */
   mul_72_v(&tmp72, a, f);							// tmp72 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf("mfakto_cl_barrett72: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
+    if (tid==TRACE_TID) printf("cl_barrett24_70: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
         a.d2.s0, a.d1.s0, a.d0.s0, tmp72.d2.s0, tmp72.d1.s0, tmp72.d0.s0);
 #endif
-  tmp72.d0 = (bb.d0 - tmp72.d0) & 0xFFFFFF;
-  tmp72.d1 = (bb.d1 - tmp72.d1 - AS_UINT_V((tmp72.d0 > bb.d0) ? 1 : 0 ));
-  tmp72.d2 = (bb.d2 - tmp72.d2 - AS_UINT_V((tmp72.d1 > bb.d1) ? 1 : 0 ));
-  tmp72.d1 &= 0xFFFFFF;
-  tmp72.d2 &= 0xFFFFFF;
+  // bb.d0-bb.d1 are zero due to preprocessing on the host
+  // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
+  tmp72.d0 = ( -tmp72.d0) & 0xFFFFFF;
+  tmp72.d1 = ( -tmp72.d1 - 1) & 0xFFFFFF;
+  tmp72.d2 = ( bb.d2-tmp72.d2 - 1) & 0xFFFFFF;
 
 	 // we do not need the upper digits of b and tmp72 because they are 0 after this subtraction!
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf("mfakto_cl_barrett72: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
+    if (tid==TRACE_TID) printf("cl_barrett24_70: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         bb.d2, bb.d1, bb.d0, tmp72.d2.s0, tmp72.d1.s0, tmp72.d0.s0);
 #endif
 #ifndef CHECKS_MODBASECASE
@@ -918,7 +872,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
   
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf("mfakto_cl_barrett72: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
+    if (tid==TRACE_TID) printf("cl_barrett24_70: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
         tmp72.d2.s0, tmp72.d1.s0, tmp72.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
   exp<<= 32 - shiftcount;
@@ -1009,7 +963,7 @@ Precalculated here since it is the same for all steps in the following loop */
   if( ((a.d2|a.d1)==0 && a.d0==1) )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-    printf("mfakto_cl_barrett72: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+    printf("cl_barrett24_70: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
     tid=ATOMIC_INC(RES[0]);
@@ -1023,6 +977,10 @@ Precalculated here since it is the same for all steps in the following loop */
 #elif (VECTOR_SIZE == 2)
   EVAL_RES_b(x)
   EVAL_RES_b(y)
+#elif (VECTOR_SIZE == 3)
+  EVAL_RES_b(x)
+  EVAL_RES_b(y)
+  EVAL_RES_b(z)
 #elif (VECTOR_SIZE == 4)
   EVAL_RES_b(x)
   EVAL_RES_b(y)

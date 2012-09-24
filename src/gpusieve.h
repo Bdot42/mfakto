@@ -152,8 +152,8 @@ typedef struct
 
 typedef struct                  // Context information for each stream's work
 {
-  int stream;          // Space for cuda Stream Handles
-  int linearized_event; // Event placed after linearization function
+  int stream;                   // Space for cuda Stream Handles
+  int linearized_event;         // Event placed after linearization function
   unsigned int   exp;           // Mersenne exponent
   unsigned int   kclass;        // Class number
   unsigned int   csieve_bits;   // Number of bits in current sieve

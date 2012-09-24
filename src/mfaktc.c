@@ -41,6 +41,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 #include "mfakto.h"
 
+int gpu_sieve_main (int argc, char** argv);
 
 mystuff_t mystuff;
 
@@ -170,21 +171,21 @@ other return value
       if      ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  // ?
       else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 295M/s on HD6970
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 211M/s
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 207M/s
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 207M/s
       else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 203M/s
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 195M/s
-      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 155M/s
+      else if ((bit_min >= 65) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 155M/s
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
     }
     else if (mystuff->gpu_type == GPU_VLIW5)
     {  // this is the speed order for VLIW5, HD5770, for instance
       if      ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  // ?
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 321M/s on HD5870, 161M/s on HD5770
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 321M/s on HD5870, 161M/s on HD5770
       else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 288M/s            152M/s
       else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 258M/s            130M/s
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 255M/s            128M/s
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 236M/s
-      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 205M/s            103M/s
+      else if ((bit_min >= 65) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 205M/s            103M/s
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
     }
     else if (mystuff->gpu_type == GPU_GCN)
@@ -192,29 +193,29 @@ other return value
       if      ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  // ?
       else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 165M/s on HD7770, 258M/s on HD7850 (975MHz)
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 137M/s            212M/s
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 135M/s            209M/s
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 135M/s            209M/s
       else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 115M/s            178M/s
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 
-      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 106M/s            163M/s
+      else if ((bit_min >= 65) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 106M/s            163M/s
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
     }
     else if (mystuff->gpu_type == GPU_APU)
     {  // this is the speed order for APU's, HD6550D in A8-3850, for instance
       if      ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  // ?
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 57M/s on HD6550D (A8-3850)
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 57M/s on HD6550D (A8-3850)
       else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 54M/s
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 45M/s
       else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 45M/s
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 
-      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 36M/s
+      else if ((bit_min >= 65) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 36M/s
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
     }
     else
     {  // this is the speed order for CPUs, also used for all others that we don't yet have data for
       if      ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  // ?
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 19.4M/s on 2x X5650  (12 cores total)
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT72_MUL24;  // 15.8M/s
-      else if ((bit_min >= 64) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 13.6M/s
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 15.8M/s
+      else if ((bit_min >= 65) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 13.6M/s
       else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 11.6M/s
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 11.3M/s
       else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 11.1M/s
@@ -323,21 +324,13 @@ other return value
         if (mystuff->p_par[CLASS_NUM].pos) sprintf(mystuff->p_par[CLASS_NUM].out, "%3d", mystuff->class_counter);
         if (mystuff->p_par[PCT_COMPLETE].pos) sprintf(mystuff->p_par[PCT_COMPLETE].out, "%5.1f", 0.1041666667f * mystuff->class_counter);
 
-        switch (use_kernel)
+        if ((use_kernel >= _71BIT_MUL24) && (use_kernel < UNKNOWN_KERNEL))
         {
-          case _71BIT_MUL24:
-          case _63BIT_MUL24:
-          case _64BIT_64_OpenCL:
-          case _95BIT_64_OpenCL:
-          case BARRETT58_MUL15:
-          case BARRETT70_MUL15:
-          case BARRETT73_MUL15:
-          case BARRETT72_MUL24:
-          case BARRETT77_MUL32:
-          case BARRETT79_MUL32:
-          case BARRETT92_MUL32:
-          case BARRETT92_64_OpenCL: numfactors = tf_class_opencl (exp, bit_min, bit_max, k_min+cur_class, k_max, mystuff, use_kernel); break;
-          default:  printf("ERROR: Unknown kernel selected (%d)!\n", use_kernel);  return RET_ERROR;
+          numfactors = tf_class_opencl (exp, bit_min, bit_max, k_min+cur_class, k_max, mystuff, use_kernel);
+        }
+        else
+        {
+          printf("ERROR: Unknown kernel selected (%d)!\n", use_kernel);  return RET_ERROR;
         }
 
         if (numfactors == RET_ERROR)
@@ -464,7 +457,7 @@ k_max and k_min are used as 64bit temporary integers here...
 
       f_hi  = (unsigned int ) (k_min + (exp * f_hi)); /* f_{hi|med|low} = 2 * k_hint * exp +1 */
       
-      if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT72_MUL24)) /* 71bit kernel uses only 24bit per int */
+      if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24)) /* these kernels use 24bit per int */
       {
         f_hi  <<= 16;
         f_hi   += f_med >> 16;
@@ -475,7 +468,7 @@ k_max and k_min are used as 64bit temporary integers here...
         
         f_low  &= 0x00FFFFFF;
       }
-      else if ((use_kernel == BARRETT70_MUL15) || (use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
+      else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15))
       {
         // 30 bits per reported result int
         f_hi  <<= 4;
@@ -588,8 +581,8 @@ RET_ERROR we might have a serios problem
   unsigned int num_selftests=0, total_selftests=sizeof(st_data) / sizeof(st_data[0]);
   int f_class, selftests_to_run;
   int retval=1, ind;
-  enum GPUKernels kernels[9];
-  unsigned int index[] = {    2597, 2598, 2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+  enum GPUKernels kernels[16];
+  unsigned int index[] = {    2598, 2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
                              70,   72,   73,  82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
                            1547, 1552, 1556, 1557    // some factors below 2^95 (test 95 bit kernel)
@@ -628,12 +621,19 @@ RET_ERROR we might have a serios problem
     j = 0;
     if (st_data[ind].bit_min <= 63)                                    kernels[j++] = _63BIT_MUL24;
     if ((st_data[ind].bit_min >= 61) && (st_data[ind].bit_min < 72))   kernels[j++] = _71BIT_MUL24;
+    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 76))   kernels[j++] = BARRETT76_MUL32; 
+    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 77))   kernels[j++] = BARRETT77_MUL32; 
     if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 79))   kernels[j++] = BARRETT79_MUL32; 
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
-    if ((st_data[ind].bit_min >= 63) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT72_MUL24;
+    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 87))   kernels[j++] = BARRETT87_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
+    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
+    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 92))   kernels[j++] = BARRETT92_MUL32; /* no need to check bit_max - bit_min == 1 ;) */
+    if ((st_data[ind].bit_min >= 63) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL24;
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 68))   kernels[j++] = BARRETT68_MUL15;
     if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 73))   kernels[j++] = BARRETT73_MUL15;
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 77))   kernels[j++] = BARRETT77_MUL32;
-//
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 82))   kernels[j++] = BARRETT82_MUL15;
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 83))   kernels[j++] = BARRETT83_MUL15;
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL15;
+//  CAREFUL when adding more kernels to the test: kernels is a fixed size array
 //      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
 
     // careful to not sieve out small test candidates
@@ -811,6 +811,13 @@ int main(int argc, char **argv)
       CL_test(devicenumber);
       return 0;
     }
+    else if(!strcmp((char*)"--gpusievetest", argv[i]))
+    {
+      read_config(&mystuff);
+      init_CL(mystuff.num_streams, devicenumber);
+//      gpu_sieve_main(argc-i, &argv[i]);  
+      return 0;
+    }
     else
     {
       fprintf(stderr, "ERROR: unknown option '%s'\n", argv[i]);
@@ -918,11 +925,11 @@ int main(int argc, char **argv)
     }
     else
     {
-      printf("WARNING: Unknown GPU name, assuming VLIW5 type. Please post the device "
+      printf("WARNING: Unknown GPU name, assuming GCN type. Please post the device "
           "name \"%s (%s)\" to http://www.mersenneforum.org/showthread.php?t=15646 "
           "to have it added to mfakto. Set GPUType in %s to select a GPU type yourself "
           "and avoid this warning.\n", deviceinfo.d_name, deviceinfo.v_name, mystuff.inifile);
-      mystuff.gpu_type = GPU_VLIW5;
+      mystuff.gpu_type = GPU_GCN;
     }
   }
 
@@ -941,10 +948,14 @@ int main(int argc, char **argv)
   {
     mystuff.threads_per_grid = (cl_uint)deviceinfo.maxThreadsPerGrid;
   }
+  // threads_per_grid is the number of FC's per kernel invocation. It must be divisible by the vectorsize
+  // as only threads_per_grid / vectorsize threads will actually be started.
+  mystuff.threads_per_grid -= mystuff.threads_per_grid % (mystuff.vectorsize * deviceinfo.maxThreadsPerBlock);
+
   printf("  threads per grid          %d\n", mystuff.threads_per_grid);
   printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
 
-  if ((mystuff.gpu_type == GPU_GCN) && (mystuff.vectorsize > 2))
+  if ((mystuff.gpu_type == GPU_GCN) && (mystuff.vectorsize > 3))
   {
     printf("\nWARNING: Your GPU was detected as GCN (Graphics Core Next). "
       "These chips perform very slow with vector sizes of 4 or higher. "
@@ -958,6 +969,8 @@ int main(int argc, char **argv)
     return 1;
   }
 
+  // do not set the CPU affinity earlier as the OpenCL initialization will
+  // start some control threads which we do not want to bind to a certain CPU
   if (mystuff.cpu_mask)
   {
 #ifdef _MSC_VER

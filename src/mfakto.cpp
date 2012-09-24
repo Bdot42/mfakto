@@ -44,9 +44,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 /* Global variables */
 
 cl_uint             new_class=1;
-cl_context          context=NULL;
 cl_device_id        *devices;
-cl_command_queue    commandQueue;
 cl_program          program;
 
 #ifdef __cplusplus
@@ -54,35 +52,39 @@ extern "C"
 {
 #endif
 
+cl_context          context=NULL;
+cl_command_queue    commandQueue;
+
 #include "signal_handler.h"
 extern mystuff_t    mystuff;
 OpenCL_deviceinfo_t deviceinfo={{0}};
-kernel_info_t       kernel_info[NUM_KERNELS] = {
-  /*   kernel (in sequence) | kernel function name | bit_min | bit_max | loaded kernel pointer */
-     {   AUTOSELECT_KERNEL,   "auto",                  0,      0,         NULL},
-     {   _TEST_MOD_,          "mod_128_64_k",          0,      0,         NULL}, // used for various tests
-     {   _95BIT_64_OpenCL,    "mfakto_cl_barrett79_ns",         64,     70,         NULL}, // no sieved input (test all FC's)
-     {   _71BIT_MUL24,        "mfakto_cl_71",         61,     71,         NULL},
-     {   _63BIT_MUL24,        "mfakto_cl_63",          0,     64,         NULL},
-     {   BARRETT72_MUL24,     "mfakto_cl_barrett72",  64,     70,         NULL}, // one kernel for all vector sizes
-     {   BARRETT79_MUL32,     "mfakto_cl_barrett79",  64,     79,         NULL}, // one kernel for all vector sizes
-     {   BARRETT77_MUL32,     "mfakto_cl_barrett77",  64,     77,         NULL}, // one kernel for all vector sizes
-     {   BARRETT92_MUL32,     "mfakto_cl_barrett92",  64,     92,         NULL}, // one kernel for all vector sizes
-     {   BARRETT58_MUL15,     "barrett15_60",         45,     58,         NULL}, // one kernel for all vector sizes
-     {   BARRETT73_MUL15,     "barrett15_75",         60,     72,         NULL}, // one kernel for all vector sizes
-     {   BARRETT70_MUL15,     "barrett15_70",         60,     70,         NULL}, // one kernel for all vector sizes
-     {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         NULL},
-     {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         NULL}, // slow shift-cmp-sub kernel: removed
-     {   BARRETT92_64_OpenCL, "mfakto_cl_barrett92",  64,     92,         NULL}, // mapped to 32-bit barrett so far
-     {   CL_SIEVE_INIT,       "mfakto_cl_sieve_init",  0,      0,         NULL},
-     {   CL_SIEVE,            "mfakto_cl_sieve",       0,      0,         NULL}
+kernel_info_t       kernel_info[] = {
+  /*   kernel (in sequence) | kernel function name | bit_min | bit_max | stages? | loaded kernel pointer */
+     {   AUTOSELECT_KERNEL,   "auto",                  0,      0,         0,      NULL},
+     {   _TEST_MOD_,          "test_k",                0,      0,         0,      NULL}, // used for various tests
+     {   _95BIT_64_OpenCL,    "cl_barrett32_79_ns",   64,     79,         0,      NULL}, // no sieved input (test all FC's)
+     {   _71BIT_MUL24,        "mfakto_cl_71",         61,     71,         1,      NULL},
+     {   _63BIT_MUL24,        "mfakto_cl_63",          0,     64,         1,      NULL},
+     {   BARRETT70_MUL24,     "cl_barrett24_70",      64,     70,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT79_MUL32,     "cl_barrett32_79",      64,     79,         1,      NULL}, // one kernel for all vector sizes
+     {   BARRETT77_MUL32,     "cl_barrett32_77",      64,     77,         1,      NULL}, // one kernel for all vector sizes
+     {   BARRETT76_MUL32,     "cl_barrett32_76",      64,     76,         1,      NULL}, // one kernel for all vector sizes
+     {   BARRETT92_MUL32,     "cl_barrett32_92",      65,     92,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT88_MUL32,     "cl_barrett32_88",      65,     88,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT87_MUL32,     "cl_barrett32_87",      65,     87,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT73_MUL15,     "cl_barrett15_73",      60,     73,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT68_MUL15,     "cl_barrett15_68",      60,     68,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     88,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL}, // one kernel for all vector sizes
+     {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         0,      NULL}, // end of automatic loading
+     {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         0,      NULL}, // slow shift-cmp-sub kernel: removed
+     {   BARRETT92_64_OpenCL, "cl_barrett32_92",      64,     92,         0,      NULL}, // mapped to 32-bit barrett so far
+     {   CL_SIEVE_INIT,       "mfakto_cl_sieve_init",  0,      0,         0,      NULL},
+     {   CL_SIEVE,            "mfakto_cl_sieve",       0,      0,         0,      NULL},
+     {   SEG_SIEVE,           "seg_sieve",             0,      0,         0,      NULL}, // GW's sieve
+     {   COUNT_SIEVE,         "count_sieve",           0,      0,         0,      NULL}
 };
-
-
-/* not implemented (yet):
-         BARRETT72_MUL24
-         _95BIT_MUL32,        "95bit_mul32",         0, 95, NULL,
-         */
 
 
 void printArray(const char * Name, const cl_uint * Data, const cl_uint len)
@@ -193,7 +195,7 @@ int init_CLstreams(void)
                          &status);
     if(status != CL_SUCCESS) 
     { 
-		  std::cout<<"Error " << status << ": clCreateBuffer (d_primes)\n";
+		  std::cout<<"Error " << status << ": clCreateBuffer (d_k_mult)\n";
   		return 1;
 	  }
     if( (mystuff.h_savestate = (cl_uint *) malloc(4 * sizeof(cl_uint))) == NULL )
@@ -258,6 +260,7 @@ int init_CLstreams(void)
   		return 1;
 	  }
 
+    /* Using a different GPU sieve now ...
     // now already set the fix parameters for the sieve kernels
     // CL_SIEVE_INIT
     status = clSetKernelArg(kernel_info[CL_SIEVE_INIT].kernel, 
@@ -326,7 +329,7 @@ int init_CLstreams(void)
 		  std::cout<<"Error " << status << ": Setting kernel argument. (savestate)\n";
 		  return 1;
 	  }
-
+    */
   #ifdef DETAILED_INFO
     printArray("h_primes", mystuff.h_primes, SIEVE_PRIMES_MAX);
   #endif
@@ -677,6 +680,7 @@ int init_CL(int num_streams, cl_int devnumber)
 	}
 
   char program_options[150];
+  // so far use the same vector size for all kernels ...
   sprintf(program_options, "-I. -DBARRETT_VECTOR_SIZE=%d -DVECTOR_SIZE=%d ", mystuff.vectorsize, mystuff.vectorsize);
 #ifdef CL_DEBUG
   strcat(program_options, "-g");
@@ -700,6 +704,7 @@ int init_CL(int num_streams, cl_int devnumber)
   printf("Compiling kernels .");
 #endif
   fflush(NULL);
+  // program_options can be overridden by setting en environment variable AMD_OCL_BUILD_OPTIONS
 
   status = clBuildProgram(program, 1, &devices[devnumber], program_options, NULL, NULL);
   if(status != CL_SUCCESS) 
@@ -745,7 +750,7 @@ int init_CL(int num_streams, cl_int devnumber)
   /* get kernels by name */
   for (i=_TEST_MOD_; i<UNKNOWN_KERNEL; i++)
   {
-    printf("."); fflush(NULL);
+    printf("."); fflush(stdout);
     kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
     if(status != CL_SUCCESS) 
   	{  
@@ -755,8 +760,8 @@ int init_CL(int num_streams, cl_int devnumber)
   }
   if (mystuff.sieve_gpu == 1)
   {
-    printf("."); fflush(NULL);
-    i=CL_SIEVE_INIT;
+    printf("."); fflush(stdout);
+    i=SEG_SIEVE;
     kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
     if(status != CL_SUCCESS) 
   	{  
@@ -764,7 +769,7 @@ int init_CL(int num_streams, cl_int devnumber)
 	  	return 1;
   	}
 
-    i=CL_SIEVE;
+    i=COUNT_SIEVE;
     kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
     if(status != CL_SUCCESS) 
   	{  
@@ -775,6 +780,222 @@ int init_CL(int num_streams, cl_int devnumber)
 
   printf("\n"); fflush(NULL);
   return 0;
+}
+
+
+/* Run the seg_sieve kernel to do the FC sieving
+   numblocks and localThreads: correspond to cuda's numblocks and threadsPerBlock,
+   device_big_bit_array:  the sieve array, resides only on the GPU (except for debugging)
+   device_pinfo:          a block of info of the primes used for sieving
+   copy_event:            is used to synchronize the previous copy-to-device of pinfo with
+                          this kernel.
+   pinfo_size:            for statistics, used only when running with CL_PERFORMANCE_INFO defined
+*/
+cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
+                   cl_mem device_big_bit_array, cl_mem device_pinfo,
+                   cl_uint primes_per_thread,
+                   cl_event copy_event, cl_uint pinfo_size)
+{
+  cl_int status;
+  cl_event run_event;
+  static cl_uint first_run=1;
+  size_t globalThreads = numblocks * localThreads;
+
+
+  if (first_run)
+  {
+    // set all the kernel parameters that don't change
+    first_run=0;
+    status = clSetKernelArg(kernel_info[SEG_SIEVE].kernel, 
+                    0, 
+                    sizeof(cl_mem), 
+                    (void *)&device_big_bit_array);
+    if(status != CL_SUCCESS) 
+	  { 
+		  std::cerr<<"Error " << status << ": Setting kernel argument. (device_big_bit_array)\n";
+		  return 1;
+	  }
+    status = clSetKernelArg(kernel_info[SEG_SIEVE].kernel, 
+                    1, 
+                    sizeof(cl_mem), 
+                    (void *)&device_pinfo);
+    if(status != CL_SUCCESS) 
+	  { 
+		  std::cerr<<"Error " << status << ": Setting kernel argument. (device_pinfo)\n";
+		  return 1;
+	  }
+    status = clSetKernelArg(kernel_info[SEG_SIEVE].kernel, 
+                    2, 
+                    sizeof(cl_uint), 
+                    (void *)&primes_per_thread);
+    if(status != CL_SUCCESS) 
+	  { 
+		  std::cerr<<"Error " << status << ": Setting kernel argument. (primes_per_thread)\n";
+		  return 1;
+	  }
+  }
+  status = clEnqueueNDRangeKernel(commandQueue,
+                 kernel_info[SEG_SIEVE].kernel,
+                 1,
+                 NULL,
+                 &globalThreads,
+                 (size_t *)&localThreads,
+                 1,
+                 &copy_event, // wait for the primes write to finish
+                 &run_event);
+  if(status != CL_SUCCESS) 
+	{ 
+		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)" << "\n";
+		return 1;
+	}
+  clFinish(commandQueue);
+#ifdef CL_PERFORMANCE_INFO
+              cl_ulong startTime=0;
+              cl_ulong endTime=1000;
+              /* Get kernel profiling info */
+              status = clGetEventProfilingInfo(copy_event,
+                                CL_PROFILING_COMMAND_START,
+                                sizeof(cl_ulong),
+                                &startTime,
+                                0);
+              if(status != CL_SUCCESS)
+ 	            { 
+		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+                return RET_ERROR;
+              }
+              status = clGetEventProfilingInfo(copy_event,
+                                CL_PROFILING_COMMAND_END,
+                                sizeof(cl_ulong),
+                                &endTime,
+                                0);
+              if(status != CL_SUCCESS) 
+ 	            { 
+		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+                return RET_ERROR;
+              }
+              printf("primes array copied in %2.2f ms (%4.2f MB/s), ", (endTime - startTime)/1e6,
+                       pinfo_size * 1e3 / (endTime - startTime) );
+              status = clGetEventProfilingInfo(run_event,
+                                CL_PROFILING_COMMAND_START,
+                                sizeof(cl_ulong),
+                                &startTime,
+                                0);
+              if(status != CL_SUCCESS)
+ 	            { 
+		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+                return RET_ERROR;
+              }
+              status = clGetEventProfilingInfo(run_event,
+                                CL_PROFILING_COMMAND_END,
+                                sizeof(cl_ulong),
+                                &endTime,
+                                0);
+              if(status != CL_SUCCESS)
+ 	            { 
+		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+                return RET_ERROR;
+              }
+              printf("proc'd in %2.2f ms (%3.2f M/s)\n", (endTime - startTime)/1e6, double(globalThreads) *1e3/ (endTime - startTime));
+#endif
+              status = clReleaseEvent(copy_event);
+              if(status != CL_SUCCESS) 
+              { 
+		         	  std::cerr<< "Error " << status << ": Release copy event object. (clReleaseEvent)\n";
+		         	  return RET_ERROR;
+    	       	}
+              status = clReleaseEvent(run_event);
+             	if(status != CL_SUCCESS) 
+           	  { 
+		          	std::cerr<< "Error " << status << ": Release run event object. (clReleaseEvent)\n";
+		         	  return RET_ERROR;
+            	}
+
+  return status;
+}
+
+/* Run the count_sieve kernel to count the surviving FCs
+   numblocks and localThreads: correspond to cuda's numblocks and threadsPerBlock,
+   device_block_counts:   the result, one uint per workgroup (block)
+   device_big_bit_array:  the sieve array, resides only on the GPU (except for debugging)
+   run_event:             can be used to synchronize the following copy-to-host of the
+                          block_counts. But for now the kernel is run synchronously, so this
+                          is not needed.
+*/
+cl_int run_count_sieve(cl_uint numblocks, cl_uint localThreads,
+                   cl_mem device_block_counts, cl_mem device_big_bit_array,
+                   cl_event *run_event)
+{
+  cl_int status;
+  static cl_uint first_run=1;
+  size_t globalThreads = numblocks * localThreads;
+
+
+  if (first_run)
+  {
+    // set all the kernel parameters that don't change
+    first_run=0;
+    status = clSetKernelArg(kernel_info[COUNT_SIEVE].kernel, 
+                    0, 
+                    sizeof(cl_mem), 
+                    (void *)&device_block_counts);
+    if(status != CL_SUCCESS) 
+	  { 
+		  std::cerr<<"Error " << status << ": Setting kernel argument. (device_block_counts)\n";
+		  return 1;
+	  }
+    status = clSetKernelArg(kernel_info[COUNT_SIEVE].kernel, 
+                    1, 
+                    sizeof(cl_mem), 
+                    (void *)&device_big_bit_array);
+    if(status != CL_SUCCESS) 
+	  { 
+		  std::cerr<<"Error " << status << ": Setting kernel argument. (device_big_bit_array)\n";
+		  return 1;
+	  }
+  }
+  status = clEnqueueNDRangeKernel(commandQueue,
+                 kernel_info[COUNT_SIEVE].kernel,
+                 1,
+                 NULL,
+                 &globalThreads,
+                 (size_t *)&localThreads,
+                 0,
+                 NULL, // wait for the primes write to finish
+                 run_event);
+  if(status != CL_SUCCESS) 
+	{ 
+		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)" << "\n";
+		return 1;
+	}
+  clFinish(commandQueue);
+#ifdef CL_PERFORMANCE_INFO
+              cl_ulong startTime=0;
+              cl_ulong endTime=1000;
+              /* Get kernel profiling info */
+              status = clGetEventProfilingInfo(*run_event,
+                                CL_PROFILING_COMMAND_START,
+                                sizeof(cl_ulong),
+                                &startTime,
+                                0);
+              if(status != CL_SUCCESS)
+ 	            { 
+		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+                return RET_ERROR;
+              }
+              status = clGetEventProfilingInfo(*run_event,
+                                CL_PROFILING_COMMAND_END,
+                                sizeof(cl_ulong),
+                                &endTime,
+                                0);
+              if(status != CL_SUCCESS)
+ 	            { 
+		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+                return RET_ERROR;
+              }
+              printf("counted in %2.2f ms (%3.2f M/s)\n", (endTime - startTime)/1e6, double(globalThreads) *1e3/ (endTime - startTime));
+#endif
+
+  return status;
 }
 
 
@@ -1250,7 +1471,7 @@ int run_kernel15(cl_kernel l_kernel, cl_uint exp, int75 k_base, int stream, cl_u
 {
   cl_int   status;
   /*
-__kernel void barrett15_75(__private uint exp, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void barrett15_73(__private uint exp, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
                            const uint8 b_in, __global uint * restrict RES, const int bit_max
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
@@ -1344,7 +1565,7 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
                              __private int144_t b, __global uint *RES)
    *
 
-   __kernel void mfakto_cl_barrett72(__private uint exp, const int72_t k_base, const __global uint * restrict k_tab, const int shiftcount,
+   __kernel void cl_barrett24_70(__private uint exp, const int72_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else
@@ -1397,7 +1618,7 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
   		return 1;
   	}
     argnum=6;
-    if ((kernel_info[BARRETT72_MUL24].kernel == l_kernel))
+    if ((kernel_info[BARRETT70_MUL24].kernel == l_kernel))
     {
       /* the bit_max-64 for the barrett kernels (the others ignore it) */
       status = clSetKernelArg(l_kernel, 
@@ -1411,7 +1632,7 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
       argnum=7;
   	}
 #ifdef CHECKS_MODBASECASE
-    if ((kernel_info[_71BIT_MUL24].kernel == l_kernel) || (kernel_info[_63BIT_MUL24].kernel == l_kernel) || (kernel_info[BARRETT72_MUL24].kernel == l_kernel))
+    if ((kernel_info[_71BIT_MUL24].kernel == l_kernel) || (kernel_info[_63BIT_MUL24].kernel == l_kernel) || (kernel_info[BARRETT70_MUL24].kernel == l_kernel))
     {
       status = clSetKernelArg(l_kernel, 
                     argnum, 
@@ -1502,7 +1723,7 @@ int run_barrett_kernel32(cl_kernel l_kernel, cl_uint exp, int96 k_base, int stre
                   int192 b_preinit, cl_mem res, cl_int shiftcount, cl_int bin_min63)
 {
   cl_int   status;
-  /* __kernel void mfakto_cl_barrett79(__private uint exp, __private int96 k, __global uint *k_tab,
+  /* __kernel void cl_barrett32_79(__private uint exp, __private int96 k, __global uint *k_tab,
          __private int shiftcount, __private int192_t b, __global uint *RES, __private int bit_max64) */
   // first set the specific params that don't change per block: b_pre_shift, bin_min63
   if (new_class)
@@ -1642,7 +1863,7 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
                  globalThreads,
                  localThreads,
                  0,
-                 NULL, // wait for the k_tab write to finish
+                 NULL,       // this one does not copy anything, so no need to wait
                  &mystuff.exec_events[stream]);
   }
   else
@@ -1762,7 +1983,6 @@ writes "a" into "buf" in decimal
     }
   }
 }
-
 
 void print_dez144(int144 a, char *buf)
 {
@@ -1955,7 +2175,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 #endif
   b_preinit_hi=0;b_preinit_mid=0;b_preinit_lo=0;
   count=0;
-  if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT72_MUL24)) 
+  if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24)) 
   {
     if     (ln2b<24 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
     else if(ln2b<48 )b_preinit.d1=1<<(ln2b-24);   // should not happen
@@ -1964,19 +2184,19 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     else if(ln2b<120)b_preinit.d4=1<<(ln2b-96);
     else             b_preinit.d5=1<<(ln2b-120);	// b_preinit = 2^ln2b
   }
-  else if ((use_kernel == BARRETT70_MUL15) || (use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15) )
-  { // skip the "lowest" levels, so that uint8 is sufficient for 10 components of int150
-    if     (ln2b<30 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
-    else if(ln2b<45 )b_in.s[0]=1<<(ln2b-30);   
-    else if(ln2b<60 )b_in.s[1]=1<<(ln2b-45);   // should not happen
-    else if(ln2b<75 )b_in.s[2]=1<<(ln2b-60);
-    else if(ln2b<90 )b_in.s[3]=1<<(ln2b-75);
-    else if(ln2b<105)b_in.s[4]=1<<(ln2b-90);
-    else if(ln2b<120)b_in.s[5]=1<<(ln2b-105);
-    else if(ln2b<135)b_in.s[6]=1<<(ln2b-120);
-    else             b_in.s[7]=1<<(ln2b-135);
+  else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15))
+  { // skip the "lowest" 4 levels, so that uint8 is sufficient for 12 components of int180
+    if     (ln2b<60 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
+    else if(ln2b<75 )b_in.s[0]=1<<(ln2b-60);
+    else if(ln2b<90 )b_in.s[1]=1<<(ln2b-75);
+    else if(ln2b<105)b_in.s[2]=1<<(ln2b-90);
+    else if(ln2b<120)b_in.s[3]=1<<(ln2b-105);
+    else if(ln2b<135)b_in.s[4]=1<<(ln2b-120);
+    else if(ln2b<150)b_in.s[5]=1<<(ln2b-135);
+    else if(ln2b<165)b_in.s[6]=1<<(ln2b-150);
+    else             b_in.s[7]=1<<(ln2b-165);
   }
-  else if ((use_kernel == BARRETT77_MUL32) || (use_kernel == BARRETT79_MUL32) || (use_kernel == BARRETT92_MUL32) || (use_kernel == _95BIT_64_OpenCL) )
+  else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL))
   {
     if     (ln2b<32 )b_192.d0=1<< ln2b;       // should not happen
     else if(ln2b<64 )b_192.d1=1<<(ln2b-32);   // should not happen
@@ -2091,14 +2311,14 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
           }
         case PREPARED:                   // start the calculation of a preprocessed dataset on the device
           {
-            if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT72_MUL24))
+            if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24))
             {
               k_base.d0 =  k_min_grid[i] & 0xFFFFFF;
               k_base.d1 = (k_min_grid[i] >> 24) & 0xFFFFFF;
               k_base.d2 =  k_min_grid[i] >> 48;
               status = run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount, bit_min-63);
             }
-            else if ((use_kernel == BARRETT70_MUL15) || (use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
+            else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15))
             {
               int75 k_base;
               k_base.d0 =  k_min_grid[i] & 0x7FFF;
@@ -2108,7 +2328,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
               k_base.d4 =  k_min_grid[i] >> 60;
               status = run_kernel15(kernel_info[use_kernel].kernel, exp, k_base, i, b_in, mystuff->d_RES, shiftcount, bit_max);
             }
-            else if ((use_kernel == BARRETT77_MUL32) || (use_kernel == BARRETT79_MUL32) || (use_kernel == BARRETT92_MUL32) || (use_kernel == _95BIT_64_OpenCL))
+            else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL))
             {
               int96 k;
               k.d0 = (cl_uint) k_min_grid[i];
@@ -2480,12 +2700,12 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     factor_hi  = mystuff->h_RES[i*3 + 1];
     factor_mid = mystuff->h_RES[i*3 + 2];
     factor_lo  = mystuff->h_RES[i*3 + 3];
-    if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT72_MUL24))
+    if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24))
     {
       int72 factor={factor_lo, factor_mid, factor_hi};
       print_dez72(factor,string);
     }
-    else if ((use_kernel == BARRETT70_MUL15) || (use_kernel == BARRETT73_MUL15) || (use_kernel == BARRETT58_MUL15))
+    else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15))
     {
       print_dez90(factor_hi, factor_mid, factor_lo, string);
     }

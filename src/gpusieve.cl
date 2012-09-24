@@ -53,7 +53,7 @@
    rewrapped and reinvented.]
  **********************************************************************/
 
-#include "my_intrinsics.h"
+//#include "my_intrinsics.h"
 #include "gpusieve.h"
 
 
@@ -202,7 +202,7 @@ unsigned int mod32bit(unsigned int n, unsigned int d)
 }
 
 unsigned int modularinverse(unsigned int n, unsigned int d)
-{
+{ // PERF: init to 3*n^2
   int x, y, lastx, lasty, q, t;
   x=0; y=1; lastx=1; lasty=0;
   while (d != 0)
@@ -217,7 +217,7 @@ unsigned int modularinverse(unsigned int n, unsigned int d)
 
 __kernel void rcv_init_class(
         unsigned int exp,       // Mersenne exponent, p, of M(p) = 2^p-1 */
-        unsigned int nclass,    // Number of classes  (must = 4620) */
+  //      unsigned int nclass,    // Number of classes  (must = 4620) */
         unsigned int kclass,    // Number of this class */
         int96        kstart,    // Starting k-value.  Must=class (mod nclass) */
         unsigned int *d_plist,  // In: Pointer to list of primes for sieving */
@@ -233,7 +233,8 @@ __kernel void rcv_init_class(
   {
     // Compute lowest possible k_d, s.t. q=2(k+4620*k_d)p+1 is divisible by our prime
     unsigned int q0mp;
-    if (d_plist[i] > 46341)  // Do we have to use long arithmetic?
+    if (d_plist[pcount-1] > 46341)  // Do we have to use long arithmetic?
+             //Do it the same for all threads, otherwise each thread does both branches
     {
       unsigned long long ksmp;  // kstart mod (current small prime)
       unsigned long long qsmp;  // qstart mod (current small prime)
@@ -270,7 +271,7 @@ __kernel void rcv_init_class(
         p9240mpinv += d_plist[i];
 
       // primes can exceed 65535, so use 64-bit multiply
-      j = (0llu+d_plist[i]-q0mp)*(0llu+p9240mpinv) % d_plist[i];
+      j = ((unsigned long long)d_plist[i]-q0mp)*((unsigned long long)p9240mpinv) % d_plist[i];
       d_bdelta[i] = j;
     }
   }
@@ -326,7 +327,7 @@ __kernel void rcv_build_prime_tree(
   __syncthreads();      // Does this speed things?
 
   unsigned int pcountpow2;      /* next power of 2 >= pcount */
-
+  // PERF: use clz here
   for (pcountpow2=1; pcountpow2 < pcount; pcountpow2 = pcountpow2+pcountpow2)
     ;
 
@@ -334,10 +335,8 @@ __kernel void rcv_build_prime_tree(
   ndeeper = pcount+pcount - pcountpow2;
 
 #ifdef DEBUGTREE
-#if (__CUDA_ARCH__ >= 200) && (CUDART_VERSION >= 4010)
-  if (threadIdx.x == 0)
+  if (get_local_id(0) == 0)
     printf("pcount = %u; pcountpow2 = %u; ndeeper = %u\n", pcount, pcountpow2, ndeeper);
-#endif
 #endif
 
   // When building the tree, we must work within a single block,
@@ -375,7 +374,7 @@ __kernel void rcv_build_prime_tree(
     }
 
     // Let a single thread finish the tree
-    if (threadIdx.x == 0)
+    if (get_local_id(0) == 0)
       for ( ; i>0; i-=1)
         d_ktree[i] = d_ktree[2*i] + d_ktree[2*i+1];
   }
@@ -388,7 +387,7 @@ __kernel void rcv_set_sieve_bits(
         )
 {
   /* One thread, per 32-bit word of bitmap, please */
-  unsigned int i;
+  unsigned int i; // PERF: stride?
   i = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0));
   if (i < (kcount>>5))	// Excess threads don't participate
     d_bitmapw[i] = 0xffffffff;
@@ -603,13 +602,13 @@ __kernel void rcv_sieve_small_67_127(
 
   // We let the first 13 threads of each thread block simultaneously transfer
   // kdelta values from global memory to shared memory
-  if (threadIdx.x < 13)
-    s_bdelta[threadIdx.x] = d_bdelta67[threadIdx.x];
+  if (get_local_id(0) < 13)
+    s_bdelta[get_local_id(0)] = d_bdelta67[get_local_id(0)];
 
   __syncthreads();
 
   // One thread, per 64-bit word of bitmap should be launched for this kernel, please.)
-  i = blockDim.x * blockIdx.x + threadIdx.x;
+  i = blockDim.x * blockIdx.x + get_local_id(0);
 
   // All threads *must* participate, since they write each other's results to global memory
   {
@@ -621,14 +620,14 @@ __kernel void rcv_sieve_small_67_127(
     // find one or zero bits to sieve.
 
     // The bits we sieve will be ORed into one of these two 32-bit words.
-    smap[2*threadIdx.x  ] = 0;
-    smap[2*threadIdx.x+1] = 0;
+    smap[2*get_local_id(0)  ] = 0;
+    smap[2*get_local_id(0)+1] = 0;
 
 #define SIEVE_64_BIT(p, kdeltap) { \
     j = (i * 64 + p-1 - kdeltap) / p; \
     k = kdeltap + j*p; \
     if ((k>>6) == i) \
-      smap[2*threadIdx.x+((k>>5)&1)] |= 1<<(k&31); \
+      smap[2*get_local_id(0)+((k>>5)&1)] |= 1<<(k&31); \
     }
 
     SIEVE_64_BIT( 67, kdelta67);
@@ -646,8 +645,8 @@ __kernel void rcv_sieve_small_67_127(
     SIEVE_64_BIT(127, kdelta127);
 
     __syncthreads();                    // Make sure everybody has stored their results
-    d_bitmapw[2*i-2*threadIdx.x+           threadIdx.x] &= ~smap[           threadIdx.x];
-    d_bitmapw[2*i-2*threadIdx.x+blockDim.x+threadIdx.x] &= ~smap[blockDim.x+threadIdx.x];
+    d_bitmapw[2*i-2*get_local_id(0)+           get_local_id(0)] &= ~smap[           get_local_id(0)];
+    d_bitmapw[2*i-2*get_local_id(0)+blockDim.x+get_local_id(0)] &= ~smap[blockDim.x+get_local_id(0)];
   }
 }
 
@@ -688,13 +687,13 @@ __kernel void rcv_sieve_small_131_251(
 
   // We let the first 23 threads of each thread block simultaneously transfer
   // kdelta values from global memory to shared memory
-  if (threadIdx.x < 23)
-    s_bdelta[threadIdx.x] = d_bdelta131[threadIdx.x];
+  if (get_local_id(0) < 23)
+    s_bdelta[get_local_id(0)] = d_bdelta131[get_local_id(0)];
 
   __syncthreads();
 
   // One thread, per 128-bit word of bitmap should be launched for this kernel, please.)
-  i = blockDim.x * blockIdx.x + threadIdx.x;
+  i = blockDim.x * blockIdx.x + get_local_id(0);
 
   // All threads *must* participate, since they write each other's results to global memory
   {
@@ -706,16 +705,16 @@ __kernel void rcv_sieve_small_131_251(
     // find one or zero bits to sieve per thread.
 
     // The bits we sieve will be ORed into one of these four 32-bit words.
-    smap[4*threadIdx.x  ] = 0;
-    smap[4*threadIdx.x+1] = 0;
-    smap[4*threadIdx.x+2] = 0;
-    smap[4*threadIdx.x+3] = 0;
+    smap[4*get_local_id(0)  ] = 0;
+    smap[4*get_local_id(0)+1] = 0;
+    smap[4*get_local_id(0)+2] = 0;
+    smap[4*get_local_id(0)+3] = 0;
 
 #define SIEVE_128_BIT(p, kdeltap) { \
     j = (i * 128 + p-1 - kdeltap) / p; \
     k = kdeltap + j*p; \
     if ((k>>7) == i) \
-      smap[4*threadIdx.x+((k>>5)&3)] |= 1<<(k&31); \
+      smap[4*get_local_id(0)+((k>>5)&3)] |= 1<<(k&31); \
     }
 
     SIEVE_128_BIT(131, kdelta131);
@@ -749,10 +748,10 @@ __kernel void rcv_sieve_small_131_251(
 // Straightforward copy reports 25% global load/store efficiency, but isn't much slower.
 
     __syncthreads();    // Make sure everybody has stored their results
-    d_bitmapw[4*i-4*threadIdx.x+             threadIdx.x] &= ~smap[             threadIdx.x];
-    d_bitmapw[4*i-4*threadIdx.x+  blockDim.x+threadIdx.x] &= ~smap[  blockDim.x+threadIdx.x];
-    d_bitmapw[4*i-4*threadIdx.x+2*blockDim.x+threadIdx.x] &= ~smap[2*blockDim.x+threadIdx.x];
-    d_bitmapw[4*i-4*threadIdx.x+3*blockDim.x+threadIdx.x] &= ~smap[3*blockDim.x+threadIdx.x];
+    d_bitmapw[4*i-4*get_local_id(0)+             get_local_id(0)] &= ~smap[             get_local_id(0)];
+    d_bitmapw[4*i-4*get_local_id(0)+  blockDim.x+get_local_id(0)] &= ~smap[  blockDim.x+get_local_id(0)];
+    d_bitmapw[4*i-4*get_local_id(0)+2*blockDim.x+get_local_id(0)] &= ~smap[2*blockDim.x+get_local_id(0)];
+    d_bitmapw[4*i-4*get_local_id(0)+3*blockDim.x+get_local_id(0)] &= ~smap[3*blockDim.x+get_local_id(0)];
   }
 }
 
@@ -812,13 +811,13 @@ __kernel void rcv_sieve_small_257_509(
 
   // We let the first 43 threads of each thread block simultaneously transfer
   // kdelta values from global memory to shared memory
-  if (threadIdx.x < 43)
-    s_bdelta[threadIdx.x] = d_bdelta257[threadIdx.x];
+  if (get_local_id(0) < 43)
+    s_bdelta[get_local_id(0)] = d_bdelta257[get_local_id(0)];
 
   __syncthreads();
 
   // One thread, per 256-bit word of bitmap should be launched for this kernel, please.)
-  i = blockDim.x * blockIdx.x + threadIdx.x;
+  i = blockDim.x * blockIdx.x + get_local_id(0);
 
   // All threads *must* participate, since they write each other's results to global memory
   {
@@ -830,20 +829,20 @@ __kernel void rcv_sieve_small_257_509(
     // find one or zero bits to sieve per thread per prime.
 
     // The bits we sieve will be ORed into one of these eight 32-bit words.
-    smap[8*threadIdx.x  ] = 0;
-    smap[8*threadIdx.x+1] = 0;
-    smap[8*threadIdx.x+2] = 0;
-    smap[8*threadIdx.x+3] = 0;
-    smap[8*threadIdx.x+4] = 0;
-    smap[8*threadIdx.x+5] = 0;
-    smap[8*threadIdx.x+6] = 0;
-    smap[8*threadIdx.x+7] = 0;
+    smap[8*get_local_id(0)  ] = 0;
+    smap[8*get_local_id(0)+1] = 0;
+    smap[8*get_local_id(0)+2] = 0;
+    smap[8*get_local_id(0)+3] = 0;
+    smap[8*get_local_id(0)+4] = 0;
+    smap[8*get_local_id(0)+5] = 0;
+    smap[8*get_local_id(0)+6] = 0;
+    smap[8*get_local_id(0)+7] = 0;
 
 #define SIEVE_256_BIT(p, kdeltap) { \
     j = (i * 256 + p-1 - kdeltap) / p; \
     k = kdeltap + j*p; \
     if ((k>>8) == i) \
-      smap[8*threadIdx.x+((k>>5)&7)] |= 1<<(k&31); \
+      smap[8*get_local_id(0)+((k>>5)&7)] |= 1<<(k&31); \
     }
 
     SIEVE_256_BIT(257, kdelta257);
@@ -897,14 +896,14 @@ __kernel void rcv_sieve_small_257_509(
 // Straightforward copy reports 25% global load/store efficiency, and is only a little slower.
 
     __syncthreads();    // Make sure everybody has stored their results
-    d_bitmapw[8*i-8*threadIdx.x+             threadIdx.x] &= ~smap[             threadIdx.x];
-    d_bitmapw[8*i-8*threadIdx.x+  blockDim.x+threadIdx.x] &= ~smap[  blockDim.x+threadIdx.x];
-    d_bitmapw[8*i-8*threadIdx.x+2*blockDim.x+threadIdx.x] &= ~smap[2*blockDim.x+threadIdx.x];
-    d_bitmapw[8*i-8*threadIdx.x+3*blockDim.x+threadIdx.x] &= ~smap[3*blockDim.x+threadIdx.x];
-    d_bitmapw[8*i-8*threadIdx.x+4*blockDim.x+threadIdx.x] &= ~smap[4*blockDim.x+threadIdx.x];
-    d_bitmapw[8*i-8*threadIdx.x+5*blockDim.x+threadIdx.x] &= ~smap[5*blockDim.x+threadIdx.x];
-    d_bitmapw[8*i-8*threadIdx.x+6*blockDim.x+threadIdx.x] &= ~smap[6*blockDim.x+threadIdx.x];
-    d_bitmapw[8*i-8*threadIdx.x+7*blockDim.x+threadIdx.x] &= ~smap[7*blockDim.x+threadIdx.x];
+    d_bitmapw[8*i-8*get_local_id(0)+             get_local_id(0)] &= ~smap[             get_local_id(0)];
+    d_bitmapw[8*i-8*get_local_id(0)+  blockDim.x+get_local_id(0)] &= ~smap[  blockDim.x+get_local_id(0)];
+    d_bitmapw[8*i-8*get_local_id(0)+2*blockDim.x+get_local_id(0)] &= ~smap[2*blockDim.x+get_local_id(0)];
+    d_bitmapw[8*i-8*get_local_id(0)+3*blockDim.x+get_local_id(0)] &= ~smap[3*blockDim.x+get_local_id(0)];
+    d_bitmapw[8*i-8*get_local_id(0)+4*blockDim.x+get_local_id(0)] &= ~smap[4*blockDim.x+get_local_id(0)];
+    d_bitmapw[8*i-8*get_local_id(0)+5*blockDim.x+get_local_id(0)] &= ~smap[5*blockDim.x+get_local_id(0)];
+    d_bitmapw[8*i-8*get_local_id(0)+6*blockDim.x+get_local_id(0)] &= ~smap[6*blockDim.x+get_local_id(0)];
+    d_bitmapw[8*i-8*get_local_id(0)+7*blockDim.x+get_local_id(0)] &= ~smap[7*blockDim.x+get_local_id(0)];
   }
 }
 
@@ -998,15 +997,15 @@ __kernel void rcv_sieve_small_521_1021(
   // CAUTION:  Following code will not work if threadsPerBlock is less than 64
 
   // Simultaneously transfer maximum number of kdelta values
-  if (threadIdx.x < 64)
-    s_bdelta[threadIdx.x   ] = d_bdelta521[threadIdx.x   ];
-  if (threadIdx.x < 75-64)
-    s_bdelta[threadIdx.x+64] = d_bdelta521[threadIdx.x+64];
+  if (get_local_id(0) < 64)
+    s_bdelta[get_local_id(0)   ] = d_bdelta521[get_local_id(0)   ];
+  if (get_local_id(0) < 75-64)
+    s_bdelta[get_local_id(0)+64] = d_bdelta521[get_local_id(0)+64];
 
   __syncthreads();
 
   // One thread, per 512-bit word of bitmap should be launched for this kernel, please.)
-  i = blockDim.x * blockIdx.x + threadIdx.x;
+  i = blockDim.x * blockIdx.x + get_local_id(0);
 
   if (i < ((kcount+511)>>9))  // Excess threads don't participate.
   // All threads *must* participate, since they write each other's results to global memory
@@ -1019,28 +1018,28 @@ __kernel void rcv_sieve_small_521_1021(
     // find one or zero bits to sieve per thread per prime.
 
     // The bits we sieve will be ORed into one of these sixteen 32-bit words.
-    smap[16*threadIdx.x   ] = 0;
-    smap[16*threadIdx.x+ 1] = 0;
-    smap[16*threadIdx.x+ 2] = 0;
-    smap[16*threadIdx.x+ 3] = 0;
-    smap[16*threadIdx.x+ 4] = 0;
-    smap[16*threadIdx.x+ 5] = 0;
-    smap[16*threadIdx.x+ 6] = 0;
-    smap[16*threadIdx.x+ 7] = 0;
-    smap[16*threadIdx.x+ 8] = 0;
-    smap[16*threadIdx.x+ 9] = 0;
-    smap[16*threadIdx.x+10] = 0;
-    smap[16*threadIdx.x+11] = 0;
-    smap[16*threadIdx.x+12] = 0;
-    smap[16*threadIdx.x+13] = 0;
-    smap[16*threadIdx.x+14] = 0;
-    smap[16*threadIdx.x+15] = 0;
+    smap[16*get_local_id(0)   ] = 0;
+    smap[16*get_local_id(0)+ 1] = 0;
+    smap[16*get_local_id(0)+ 2] = 0;
+    smap[16*get_local_id(0)+ 3] = 0;
+    smap[16*get_local_id(0)+ 4] = 0;
+    smap[16*get_local_id(0)+ 5] = 0;
+    smap[16*get_local_id(0)+ 6] = 0;
+    smap[16*get_local_id(0)+ 7] = 0;
+    smap[16*get_local_id(0)+ 8] = 0;
+    smap[16*get_local_id(0)+ 9] = 0;
+    smap[16*get_local_id(0)+10] = 0;
+    smap[16*get_local_id(0)+11] = 0;
+    smap[16*get_local_id(0)+12] = 0;
+    smap[16*get_local_id(0)+13] = 0;
+    smap[16*get_local_id(0)+14] = 0;
+    smap[16*get_local_id(0)+15] = 0;
 
 #define SIEVE_512_BIT(p, kdeltap) { \
     j = (i * 512 + p-1 - kdeltap) / p; \
     k = kdeltap + j*p; \
     if ((k>>9) == i) \
-      smap[16*threadIdx.x+((k>>5)&15)] |= 1<<(k&31); \
+      smap[16*get_local_id(0)+((k>>5)&15)] |= 1<<(k&31); \
     }
 
     SIEVE_512_BIT( 521, kdelta521 );
@@ -1126,22 +1125,22 @@ __kernel void rcv_sieve_small_521_1021(
 // Straightforward copy reports 6.25% global load/store efficiency.
 
     __syncthreads();    // Make sure everybody has stored their results
-    d_bitmapw[16*i-16*threadIdx.x+              threadIdx.x] &= ~smap[              threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+   blockDim.x+threadIdx.x] &= ~smap[   blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+ 2*blockDim.x+threadIdx.x] &= ~smap[ 2*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+ 3*blockDim.x+threadIdx.x] &= ~smap[ 3*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+ 4*blockDim.x+threadIdx.x] &= ~smap[ 4*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+ 5*blockDim.x+threadIdx.x] &= ~smap[ 5*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+ 6*blockDim.x+threadIdx.x] &= ~smap[ 6*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+ 7*blockDim.x+threadIdx.x] &= ~smap[ 7*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+ 8*blockDim.x+threadIdx.x] &= ~smap[ 8*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+ 9*blockDim.x+threadIdx.x] &= ~smap[ 9*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+10*blockDim.x+threadIdx.x] &= ~smap[10*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+11*blockDim.x+threadIdx.x] &= ~smap[11*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+12*blockDim.x+threadIdx.x] &= ~smap[12*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+13*blockDim.x+threadIdx.x] &= ~smap[13*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+14*blockDim.x+threadIdx.x] &= ~smap[14*blockDim.x+threadIdx.x];
-    d_bitmapw[16*i-16*threadIdx.x+15*blockDim.x+threadIdx.x] &= ~smap[15*blockDim.x+threadIdx.x];
+    d_bitmapw[16*i-16*get_local_id(0)+              get_local_id(0)] &= ~smap[              get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+   blockDim.x+get_local_id(0)] &= ~smap[   blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+ 2*blockDim.x+get_local_id(0)] &= ~smap[ 2*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+ 3*blockDim.x+get_local_id(0)] &= ~smap[ 3*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+ 4*blockDim.x+get_local_id(0)] &= ~smap[ 4*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+ 5*blockDim.x+get_local_id(0)] &= ~smap[ 5*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+ 6*blockDim.x+get_local_id(0)] &= ~smap[ 6*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+ 7*blockDim.x+get_local_id(0)] &= ~smap[ 7*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+ 8*blockDim.x+get_local_id(0)] &= ~smap[ 8*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+ 9*blockDim.x+get_local_id(0)] &= ~smap[ 9*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+10*blockDim.x+get_local_id(0)] &= ~smap[10*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+11*blockDim.x+get_local_id(0)] &= ~smap[11*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+12*blockDim.x+get_local_id(0)] &= ~smap[12*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+13*blockDim.x+get_local_id(0)] &= ~smap[13*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+14*blockDim.x+get_local_id(0)] &= ~smap[14*blockDim.x+get_local_id(0)];
+    d_bitmapw[16*i-16*get_local_id(0)+15*blockDim.x+get_local_id(0)] &= ~smap[15*blockDim.x+get_local_id(0)];
     return;
   }
 }
@@ -1302,20 +1301,20 @@ __kernel void rcv_sieve_small_1031_2039(
   // CAUTION:  Following code will not work if threadsPerBlock is less than 32
 
   // Simultaneously transfer maximum number of kdelta values
-  if (threadIdx.x < 32)
+  if (get_local_id(0) < 32)
   {
-    s_kdelta[threadIdx.x    ] = d_kdelta1031[threadIdx.x    ];
-    s_kdelta[threadIdx.x+ 32] = d_kdelta1031[threadIdx.x+ 32];
-    s_kdelta[threadIdx.x+ 64] = d_kdelta1031[threadIdx.x+ 64];
-    s_kdelta[threadIdx.x+ 96] = d_kdelta1031[threadIdx.x+ 96];
+    s_kdelta[get_local_id(0)    ] = d_kdelta1031[get_local_id(0)    ];
+    s_kdelta[get_local_id(0)+ 32] = d_kdelta1031[get_local_id(0)+ 32];
+    s_kdelta[get_local_id(0)+ 64] = d_kdelta1031[get_local_id(0)+ 64];
+    s_kdelta[get_local_id(0)+ 96] = d_kdelta1031[get_local_id(0)+ 96];
   }
-  if (threadIdx.x < 137-128)
-    s_kdelta[threadIdx.x+128] = d_kdelta1031[threadIdx.x+128];
+  if (get_local_id(0) < 137-128)
+    s_kdelta[get_local_id(0)+128] = d_kdelta1031[get_local_id(0)+128];
 
   __syncthreads();              // Is this necessary?
 
   // One thread, per 1024-bit word of bitmap should be launched for this kernel, please.)
-  i = blockDim.x * blockIdx.x + threadIdx.x;
+  i = blockDim.x * blockIdx.x + get_local_id(0);
 
   if (i < ((kcount+1023)>>10))  // Excess threads don't participate.
   // All threads participate.
@@ -1328,44 +1327,44 @@ __kernel void rcv_sieve_small_1031_2039(
     // find one or zero bits to sieve per thread per prime.
 
     // The bits we sieve will be ORed into one of these thirty-two 32-bit words.
-    smap[32*threadIdx.x   ] = 0;
-    smap[32*threadIdx.x+ 1] = 0;
-    smap[32*threadIdx.x+ 2] = 0;
-    smap[32*threadIdx.x+ 3] = 0;
-    smap[32*threadIdx.x+ 4] = 0;
-    smap[32*threadIdx.x+ 5] = 0;
-    smap[32*threadIdx.x+ 6] = 0;
-    smap[32*threadIdx.x+ 7] = 0;
-    smap[32*threadIdx.x+ 8] = 0;
-    smap[32*threadIdx.x+ 9] = 0;
-    smap[32*threadIdx.x+10] = 0;
-    smap[32*threadIdx.x+11] = 0;
-    smap[32*threadIdx.x+12] = 0;
-    smap[32*threadIdx.x+13] = 0;
-    smap[32*threadIdx.x+14] = 0;
-    smap[32*threadIdx.x+15] = 0;
-    smap[32*threadIdx.x+16] = 0;
-    smap[32*threadIdx.x+17] = 0;
-    smap[32*threadIdx.x+18] = 0;
-    smap[32*threadIdx.x+19] = 0;
-    smap[32*threadIdx.x+20] = 0;
-    smap[32*threadIdx.x+21] = 0;
-    smap[32*threadIdx.x+22] = 0;
-    smap[32*threadIdx.x+23] = 0;
-    smap[32*threadIdx.x+24] = 0;
-    smap[32*threadIdx.x+25] = 0;
-    smap[32*threadIdx.x+26] = 0;
-    smap[32*threadIdx.x+27] = 0;
-    smap[32*threadIdx.x+28] = 0;
-    smap[32*threadIdx.x+29] = 0;
-    smap[32*threadIdx.x+30] = 0;
-    smap[32*threadIdx.x+31] = 0;
+    smap[32*get_local_id(0)   ] = 0;
+    smap[32*get_local_id(0)+ 1] = 0;
+    smap[32*get_local_id(0)+ 2] = 0;
+    smap[32*get_local_id(0)+ 3] = 0;
+    smap[32*get_local_id(0)+ 4] = 0;
+    smap[32*get_local_id(0)+ 5] = 0;
+    smap[32*get_local_id(0)+ 6] = 0;
+    smap[32*get_local_id(0)+ 7] = 0;
+    smap[32*get_local_id(0)+ 8] = 0;
+    smap[32*get_local_id(0)+ 9] = 0;
+    smap[32*get_local_id(0)+10] = 0;
+    smap[32*get_local_id(0)+11] = 0;
+    smap[32*get_local_id(0)+12] = 0;
+    smap[32*get_local_id(0)+13] = 0;
+    smap[32*get_local_id(0)+14] = 0;
+    smap[32*get_local_id(0)+15] = 0;
+    smap[32*get_local_id(0)+16] = 0;
+    smap[32*get_local_id(0)+17] = 0;
+    smap[32*get_local_id(0)+18] = 0;
+    smap[32*get_local_id(0)+19] = 0;
+    smap[32*get_local_id(0)+20] = 0;
+    smap[32*get_local_id(0)+21] = 0;
+    smap[32*get_local_id(0)+22] = 0;
+    smap[32*get_local_id(0)+23] = 0;
+    smap[32*get_local_id(0)+24] = 0;
+    smap[32*get_local_id(0)+25] = 0;
+    smap[32*get_local_id(0)+26] = 0;
+    smap[32*get_local_id(0)+27] = 0;
+    smap[32*get_local_id(0)+28] = 0;
+    smap[32*get_local_id(0)+29] = 0;
+    smap[32*get_local_id(0)+30] = 0;
+    smap[32*get_local_id(0)+31] = 0;
 
 #define SIEVE_1024_BIT(p, kdeltap) { \
     j = (i * 1024 + p-1 - kdeltap) / p; \
     k = kdeltap + j*p; \
     if ((k>>10) == i) \
-      smap[32*threadIdx.x+((k>>5)&31)] |= 1<<(k&31); \
+      smap[32*get_local_id(0)+((k>>5)&31)] |= 1<<(k&31); \
     }
 
 #define SIEVE_1024_BIT_DEBUG(p, kdeltap) { \
@@ -1373,11 +1372,11 @@ __kernel void rcv_sieve_small_1031_2039(
     k = kdeltap + j*p; \
     if ((k>>10) == i) \
       { \
-      smap[32*threadIdx.x+((k>>5)&31)] |= 1<<(k&31); \
+      smap[32*get_local_id(0)+((k>>5)&31)] |= 1<<(k&31); \
       if (k<10000 || k>3140000) \
         printf("p=%u, kdeltap=%u, i=%u, j=%u, k=%u=%8.8X, smap[.]=%8.8X\n", \
                  p, kdeltap, i, j, k, k, \
-                 smap[32*threadIdx.x+((k>>5)&31)]); \
+                 smap[32*get_local_id(0)+((k>>5)&31)]); \
       } \
     }
 
@@ -1526,73 +1525,73 @@ __kernel void rcv_sieve_small_1031_2039(
 // Straightforward copy reports 6.25% global load/store efficiency.
 
 #if 0                                            // NVVP reported 211.773 us, 4.6%/12.5% global load/store efficiency
-    d_bitmapw[32*i   ] &= ~smap[32*threadIdx.x   ];
-    d_bitmapw[32*i+ 1] &= ~smap[32*threadIdx.x+ 1];
-    d_bitmapw[32*i+ 2] &= ~smap[32*threadIdx.x+ 2];
-    d_bitmapw[32*i+ 3] &= ~smap[32*threadIdx.x+ 3];
-    d_bitmapw[32*i+ 4] &= ~smap[32*threadIdx.x+ 4];
-    d_bitmapw[32*i+ 5] &= ~smap[32*threadIdx.x+ 5];
-    d_bitmapw[32*i+ 6] &= ~smap[32*threadIdx.x+ 6];
-    d_bitmapw[32*i+ 7] &= ~smap[32*threadIdx.x+ 7];
-    d_bitmapw[32*i+ 8] &= ~smap[32*threadIdx.x+ 8];
-    d_bitmapw[32*i+ 9] &= ~smap[32*threadIdx.x+ 9];
-    d_bitmapw[32*i+10] &= ~smap[32*threadIdx.x+10];
-    d_bitmapw[32*i+11] &= ~smap[32*threadIdx.x+11];
-    d_bitmapw[32*i+12] &= ~smap[32*threadIdx.x+12];
-    d_bitmapw[32*i+13] &= ~smap[32*threadIdx.x+13];
-    d_bitmapw[32*i+14] &= ~smap[32*threadIdx.x+14];
-    d_bitmapw[32*i+15] &= ~smap[32*threadIdx.x+15];
-    d_bitmapw[32*i+16] &= ~smap[32*threadIdx.x+16];
-    d_bitmapw[32*i+17] &= ~smap[32*threadIdx.x+17];
-    d_bitmapw[32*i+18] &= ~smap[32*threadIdx.x+18];
-    d_bitmapw[32*i+19] &= ~smap[32*threadIdx.x+19];
-    d_bitmapw[32*i+20] &= ~smap[32*threadIdx.x+20];
-    d_bitmapw[32*i+21] &= ~smap[32*threadIdx.x+21];
-    d_bitmapw[32*i+22] &= ~smap[32*threadIdx.x+22];
-    d_bitmapw[32*i+23] &= ~smap[32*threadIdx.x+23];
-    d_bitmapw[32*i+24] &= ~smap[32*threadIdx.x+24];
-    d_bitmapw[32*i+25] &= ~smap[32*threadIdx.x+25];
-    d_bitmapw[32*i+26] &= ~smap[32*threadIdx.x+26];
-    d_bitmapw[32*i+27] &= ~smap[32*threadIdx.x+27];
-    d_bitmapw[32*i+28] &= ~smap[32*threadIdx.x+28];
-    d_bitmapw[32*i+29] &= ~smap[32*threadIdx.x+29];
-    d_bitmapw[32*i+30] &= ~smap[32*threadIdx.x+30];
-    d_bitmapw[32*i+31] &= ~smap[32*threadIdx.x+31];
+    d_bitmapw[32*i   ] &= ~smap[32*get_local_id(0)   ];
+    d_bitmapw[32*i+ 1] &= ~smap[32*get_local_id(0)+ 1];
+    d_bitmapw[32*i+ 2] &= ~smap[32*get_local_id(0)+ 2];
+    d_bitmapw[32*i+ 3] &= ~smap[32*get_local_id(0)+ 3];
+    d_bitmapw[32*i+ 4] &= ~smap[32*get_local_id(0)+ 4];
+    d_bitmapw[32*i+ 5] &= ~smap[32*get_local_id(0)+ 5];
+    d_bitmapw[32*i+ 6] &= ~smap[32*get_local_id(0)+ 6];
+    d_bitmapw[32*i+ 7] &= ~smap[32*get_local_id(0)+ 7];
+    d_bitmapw[32*i+ 8] &= ~smap[32*get_local_id(0)+ 8];
+    d_bitmapw[32*i+ 9] &= ~smap[32*get_local_id(0)+ 9];
+    d_bitmapw[32*i+10] &= ~smap[32*get_local_id(0)+10];
+    d_bitmapw[32*i+11] &= ~smap[32*get_local_id(0)+11];
+    d_bitmapw[32*i+12] &= ~smap[32*get_local_id(0)+12];
+    d_bitmapw[32*i+13] &= ~smap[32*get_local_id(0)+13];
+    d_bitmapw[32*i+14] &= ~smap[32*get_local_id(0)+14];
+    d_bitmapw[32*i+15] &= ~smap[32*get_local_id(0)+15];
+    d_bitmapw[32*i+16] &= ~smap[32*get_local_id(0)+16];
+    d_bitmapw[32*i+17] &= ~smap[32*get_local_id(0)+17];
+    d_bitmapw[32*i+18] &= ~smap[32*get_local_id(0)+18];
+    d_bitmapw[32*i+19] &= ~smap[32*get_local_id(0)+19];
+    d_bitmapw[32*i+20] &= ~smap[32*get_local_id(0)+20];
+    d_bitmapw[32*i+21] &= ~smap[32*get_local_id(0)+21];
+    d_bitmapw[32*i+22] &= ~smap[32*get_local_id(0)+22];
+    d_bitmapw[32*i+23] &= ~smap[32*get_local_id(0)+23];
+    d_bitmapw[32*i+24] &= ~smap[32*get_local_id(0)+24];
+    d_bitmapw[32*i+25] &= ~smap[32*get_local_id(0)+25];
+    d_bitmapw[32*i+26] &= ~smap[32*get_local_id(0)+26];
+    d_bitmapw[32*i+27] &= ~smap[32*get_local_id(0)+27];
+    d_bitmapw[32*i+28] &= ~smap[32*get_local_id(0)+28];
+    d_bitmapw[32*i+29] &= ~smap[32*get_local_id(0)+29];
+    d_bitmapw[32*i+30] &= ~smap[32*get_local_id(0)+30];
+    d_bitmapw[32*i+31] &= ~smap[32*get_local_id(0)+31];
     return;
 #else                                            // NVVP reported        us,    % global load/store efficiency
     __syncthreads();    // Make sure everybody has stored their results
-    d_bitmapw[32*i-32*threadIdx.x+              threadIdx.x] &= ~smap[              threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+   blockDim.x+threadIdx.x] &= ~smap[   blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+ 2*blockDim.x+threadIdx.x] &= ~smap[ 2*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+ 3*blockDim.x+threadIdx.x] &= ~smap[ 3*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+ 4*blockDim.x+threadIdx.x] &= ~smap[ 4*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+ 5*blockDim.x+threadIdx.x] &= ~smap[ 5*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+ 6*blockDim.x+threadIdx.x] &= ~smap[ 6*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+ 7*blockDim.x+threadIdx.x] &= ~smap[ 7*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+ 8*blockDim.x+threadIdx.x] &= ~smap[ 8*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+ 9*blockDim.x+threadIdx.x] &= ~smap[ 9*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+10*blockDim.x+threadIdx.x] &= ~smap[10*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+11*blockDim.x+threadIdx.x] &= ~smap[11*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+12*blockDim.x+threadIdx.x] &= ~smap[12*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+13*blockDim.x+threadIdx.x] &= ~smap[13*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+14*blockDim.x+threadIdx.x] &= ~smap[14*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+15*blockDim.x+threadIdx.x] &= ~smap[15*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+16*blockDim.x+threadIdx.x] &= ~smap[16*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+17*blockDim.x+threadIdx.x] &= ~smap[17*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+18*blockDim.x+threadIdx.x] &= ~smap[18*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+19*blockDim.x+threadIdx.x] &= ~smap[19*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+20*blockDim.x+threadIdx.x] &= ~smap[20*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+21*blockDim.x+threadIdx.x] &= ~smap[21*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+22*blockDim.x+threadIdx.x] &= ~smap[22*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+23*blockDim.x+threadIdx.x] &= ~smap[23*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+24*blockDim.x+threadIdx.x] &= ~smap[24*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+25*blockDim.x+threadIdx.x] &= ~smap[25*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+26*blockDim.x+threadIdx.x] &= ~smap[26*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+27*blockDim.x+threadIdx.x] &= ~smap[27*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+28*blockDim.x+threadIdx.x] &= ~smap[28*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+29*blockDim.x+threadIdx.x] &= ~smap[29*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+30*blockDim.x+threadIdx.x] &= ~smap[30*blockDim.x+threadIdx.x];
-    d_bitmapw[32*i-32*threadIdx.x+31*blockDim.x+threadIdx.x] &= ~smap[31*blockDim.x+threadIdx.x];
+    d_bitmapw[32*i-32*get_local_id(0)+              get_local_id(0)] &= ~smap[              get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+   blockDim.x+get_local_id(0)] &= ~smap[   blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+ 2*blockDim.x+get_local_id(0)] &= ~smap[ 2*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+ 3*blockDim.x+get_local_id(0)] &= ~smap[ 3*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+ 4*blockDim.x+get_local_id(0)] &= ~smap[ 4*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+ 5*blockDim.x+get_local_id(0)] &= ~smap[ 5*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+ 6*blockDim.x+get_local_id(0)] &= ~smap[ 6*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+ 7*blockDim.x+get_local_id(0)] &= ~smap[ 7*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+ 8*blockDim.x+get_local_id(0)] &= ~smap[ 8*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+ 9*blockDim.x+get_local_id(0)] &= ~smap[ 9*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+10*blockDim.x+get_local_id(0)] &= ~smap[10*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+11*blockDim.x+get_local_id(0)] &= ~smap[11*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+12*blockDim.x+get_local_id(0)] &= ~smap[12*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+13*blockDim.x+get_local_id(0)] &= ~smap[13*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+14*blockDim.x+get_local_id(0)] &= ~smap[14*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+15*blockDim.x+get_local_id(0)] &= ~smap[15*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+16*blockDim.x+get_local_id(0)] &= ~smap[16*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+17*blockDim.x+get_local_id(0)] &= ~smap[17*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+18*blockDim.x+get_local_id(0)] &= ~smap[18*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+19*blockDim.x+get_local_id(0)] &= ~smap[19*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+20*blockDim.x+get_local_id(0)] &= ~smap[20*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+21*blockDim.x+get_local_id(0)] &= ~smap[21*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+22*blockDim.x+get_local_id(0)] &= ~smap[22*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+23*blockDim.x+get_local_id(0)] &= ~smap[23*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+24*blockDim.x+get_local_id(0)] &= ~smap[24*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+25*blockDim.x+get_local_id(0)] &= ~smap[25*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+26*blockDim.x+get_local_id(0)] &= ~smap[26*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+27*blockDim.x+get_local_id(0)] &= ~smap[27*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+28*blockDim.x+get_local_id(0)] &= ~smap[28*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+29*blockDim.x+get_local_id(0)] &= ~smap[29*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+30*blockDim.x+get_local_id(0)] &= ~smap[30*blockDim.x+get_local_id(0)];
+    d_bitmapw[32*i-32*get_local_id(0)+31*blockDim.x+get_local_id(0)] &= ~smap[31*blockDim.x+get_local_id(0)];
     return;
 #endif
 
@@ -1626,7 +1625,7 @@ __kernel void rcv_sieve_primes(
   unsigned int ndeeper;         /* number of elements 1 level deeper in tree */
   ndeeper = pcount+pcount - pcountpow2;
 
-  i = blockDim.x * blockIdx.x + threadIdx.x;
+  i = blockDim.x * blockIdx.x + get_local_id(0);
   i += tidoffseta;              /* Work the tree starting at this offset */
 
   if ((i < d_ktree[1]) && (i < tidoffsetz))  // Root of tree contains total threads.
@@ -1702,7 +1701,7 @@ __kernel void rcv_reset_atomic_indexes(
   
   // One thread, per index should be launched for this kernel, please.)
   // Note:  As implemented in this program, the array is 1 column wide
-  i = blockDim.x * blockIdx.x + threadIdx.x;
+  i = blockDim.x * blockIdx.x + get_local_id(0);
   if (i < width)                /* Excess threads do not participate */
     d_xaindexes[i] = 0;         /* each atomic index is initialized to zero */
 }
@@ -1729,7 +1728,7 @@ __kernel void rcv_linearize_sieve(
   __local unsigned int   kaix;                    // Index into caller's array for our candidates
 
   // One thread, per 32-bit word of bitmap should be launched for this kernel, please.)
-  i = blockDim.x * blockIdx.x + threadIdx.x;
+  i = blockDim.x * blockIdx.x + get_local_id(0);
 
 #if 0
   if (i==0)
@@ -1749,7 +1748,7 @@ __kernel void rcv_linearize_sieve(
       t = (t&0x000f000f) + ((t>> 8)&0x000f000f);  // Generate two 5-bit sums
       t = (t&0x0000001f) + ((t>>16)&0x0000001f);  // Generate one 6-bit sum
 
-      bitcount[threadIdx.x] = t;	// Tell everybody how much space my thread needs
+      bitcount[get_local_id(0)] = t;	// Tell everybody how much space my thread needs
     }
 
     __syncthreads();    // Synchronization required!
@@ -1758,32 +1757,32 @@ __kernel void rcv_linearize_sieve(
 
     // First five tallies remain within one warp.  Should be in lock-step.
     if (!(i&1))       // If we are running on any thread 0bxxxxxxx1, tally neighbor's count.
-      bitcount[threadIdx.x] += bitcount[threadIdx.x + 1];
+      bitcount[get_local_id(0)] += bitcount[get_local_id(0) + 1];
 
     if (!(i&2))        // If we are running on any thread 0bxxxxxx1x, tally neighbor's count.
-      bitcount[threadIdx.x] += bitcount[threadIdx.x + 2 & ~1];
+      bitcount[get_local_id(0)] += bitcount[get_local_id(0) + 2 & ~1];
 
     if (!(i&4))        // If we are running on any thread 0bxxxxx1xx, tally neighbor's count.
-      bitcount[threadIdx.x] += bitcount[threadIdx.x + 4 & ~3];
+      bitcount[get_local_id(0)] += bitcount[get_local_id(0) + 4 & ~3];
 
     if (!(i&8))        // If we are running on any thread 0bxxxx1xxx, tally neighbor's count.
-      bitcount[threadIdx.x] += bitcount[threadIdx.x + 8 & ~7];
+      bitcount[get_local_id(0)] += bitcount[get_local_id(0) + 8 & ~7];
 
     if (!(i&16))       // If we are running on any thread 0bxxx1xxxx, tally neighbor's count.
-      bitcount[threadIdx.x] += bitcount[threadIdx.x + 16 & ~15];
+      bitcount[get_local_id(0)] += bitcount[get_local_id(0) + 16 & ~15];
 
     // Further tallies are across warps.  Must synchronize
     __syncthreads();   // Synchronization required!
     if (!(i&32))       // If we are running on any thread 0bxx1xxxxx, tally neighbor's count.
-      bitcount[threadIdx.x] += bitcount[threadIdx.x + 32 & ~31];
+      bitcount[get_local_id(0)] += bitcount[get_local_id(0) + 32 & ~31];
 
     __syncthreads();   // Synchronization required!
     if (!(i&64))       // If we are running on any thread 0bx1xxxxxx, tally neighbor's count.
-      bitcount[threadIdx.x] += bitcount[threadIdx.x + 64 & ~63];
+      bitcount[get_local_id(0)] += bitcount[get_local_id(0) + 64 & ~63];
 
     __syncthreads();   // Synchronization required!
     if (!(i&128))       // If we are running on any thread 0b1xxxxxxx, tally neighbor's count.
-      bitcount[threadIdx.x] += bitcount[threadIdx.x + 128 & ~127];
+      bitcount[get_local_id(0)] += bitcount[get_local_id(0) + 128 & ~127];
 
     // At this point, bitcount[...] should contain the total number of bits for the indexed
     // thread plus all high-numbered threads.  I.e., bitcount[0] is the total count.
@@ -1792,7 +1791,7 @@ __kernel void rcv_linearize_sieve(
     // Atomically allocate space in final array for list of k-values
     // One thread allocates space for entire thread block.  Should minimize contention.
     {
-      if (threadIdx.x == 0)     // First thread of the thread block?
+      if (get_local_id(0) == 0)     // First thread of the thread block?
       {
         kaix = atomicAdd(d_kaindex, bitcount[0]);  // Obtain space in final array for our k-values
         if (kaix + bitcount[0] >= kasize)
@@ -1813,7 +1812,7 @@ __kernel void rcv_linearize_sieve(
 
       k = 32*i;                   // This thread's starting k-value
       bitmapw = d_bitmapw[i];     // 32-bit word containing this thread's bits
-      mykaix = kaix + bitcount[0] - bitcount[threadIdx.x];  // Storage index to hold this thread's k-values
+      mykaix = kaix + bitcount[0] - bitcount[get_local_id(0)];  // Storage index to hold this thread's k-values
 
       for (int j=0; j<32; j+=1)
       {
@@ -1834,9 +1833,9 @@ __kernel void rcv_linearize_sieve(
 
       __syncthreads();
       // k = 32*i;                 // This thread's starting k-value
-      k = 32*threadIdx.x;          // This thread's starting k-value
+      k = 32*get_local_id(0);          // This thread's starting k-value
       bitmapw = d_bitmapw[i];   // 32-bit word containing this thread's bits
-      six = bitcount[0] - bitcount[threadIdx.x];  // Storage index to hold this thread's k-values
+      six = bitcount[0] - bitcount[get_local_id(0)];  // Storage index to hold this thread's k-values
 
       // Unroll this loop, please
       for (int j=0; j<32; j+=1)
@@ -1858,14 +1857,14 @@ __kernel void rcv_linearize_sieve(
       unsigned int mykaix;        // karray index for this thread
                int six;           // smem index for this thread
 
-      mykaix = (kaix/32)*32 + threadIdx.x;    // Align our threads to karray alignment
+      mykaix = (kaix/32)*32 + get_local_id(0);    // Align our threads to karray alignment
                                               // (thread 32n+5 will access word 32m+5)
       six = mykaix - kaix;    // six==0 where mykaix==kaix
 
       // First set of transfers may not involve lowest thread IDs
       if ((six >= 0) && (six < bitcount[0]))
       {
-        d_karray[mykaix] = smem[six]+32*(i-threadIdx.x);    // Copy a candidate
+        d_karray[mykaix] = smem[six]+32*(i-get_local_id(0));    // Copy a candidate
       }
 
       mykaix += blockDim.x;
@@ -1874,7 +1873,7 @@ __kernel void rcv_linearize_sieve(
       // Copy any additional candidates
       for ( ; six < bitcount[0]; six += blockDim.x, mykaix += blockDim.x)
       {
-        d_karray[mykaix] = smem[six]+32*(i-threadIdx.x);    // Copy a candidate
+        d_karray[mykaix] = smem[six]+32*(i-get_local_id(0));    // Copy a candidate
       }
 
     }
