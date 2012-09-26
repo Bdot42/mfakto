@@ -582,7 +582,7 @@ RET_ERROR we might have a serios problem
   int f_class, selftests_to_run;
   int retval=1, ind;
   enum GPUKernels kernels[16];
-  unsigned int index[] = {    2598, 2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+  unsigned int index[] = {    2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
                              70,   72,   73,  82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
                            1547, 1552, 1556, 1557    // some factors below 2^95 (test 95 bit kernel)

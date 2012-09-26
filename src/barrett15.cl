@@ -197,6 +197,56 @@ too. So the digits res.d{3-9} might differ from mul_75_150().
   res->d8 &= 0x7FFF;
 }
 
+void mul_75_150_no_low5(int150_v * const res, const int75_v a, const int75_v b)
+/*
+res ~= a * b
+res.d0 to res.d3 are NOT computed. res.d4 is computed only to have the upper half
+carried into res.d5. The carries from res.d3 to res.d4 are ignored.
+ */
+{
+  // assume we have enough spare bits and can do all the carries at the very end:
+  // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
+  // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
+  // one (almost two) carry of 17 bit (32-bit >> 15)
+  // this optimized mul 5x5 requires: 19 mul/mad24, 7 shift, 6 and, 1 add
+  /*
+  res->d3 = mul24(a.d3, b.d0);
+  res->d3 = mad24(a.d2, b.d1, res->d3);
+  res->d3 = mad24(a.d1, b.d2, res->d3);
+  res->d3 = mad24(a.d0, b.d3, res->d3);*/
+
+  res->d4 = mul24(a.d4, b.d0);
+  // res->d3 &= 0x7FFF;
+  res->d4 = mad24(a.d3, b.d1, res->d4);
+  res->d4 = mad24(a.d2, b.d2, res->d4);
+  res->d4 = mad24(a.d1, b.d3, res->d4);
+   // 5th mad24 can overflow d4, need to handle carry before: pull in the first d5 line
+  res->d5 = mad24(a.d4, b.d1, res->d4 >> 15);
+  // res->d4 &= 0x7FFF;  // d4 itself is not used, only its carry to d5 is required
+  res->d4 = mad24(a.d0, b.d4, res->d4);  // 31-bit at most
+
+  res->d5 = mad24(a.d3, b.d2, res->d4 >> 15) + res->d5;
+  res->d5 = mad24(a.d2, b.d3, res->d5);
+  res->d5 = mad24(a.d1, b.d4, res->d5);
+  res->d4 &= 0x7FFF;
+  // now we have in d5: 4x mad24() + 1x 17-bit carry + 1x 16-bit carry: still fits into 32 bits
+
+  res->d6 = mad24(a.d2, b.d4, res->d5 >> 15);
+  res->d6 = mad24(a.d3, b.d3, res->d6);
+  res->d6 = mad24(a.d4, b.d2, res->d6);
+  res->d5 &= 0x7FFF;
+
+  res->d7 = mad24(a.d3, b.d4, res->d6 >> 15);
+  res->d7 = mad24(a.d4, b.d3, res->d7);
+  res->d6 &= 0x7FFF;
+
+  res->d8 = mad24(a.d4, b.d4, res->d7 >> 15);
+  res->d7 &= 0x7FFF;
+
+  res->d9 = res->d8 >> 15;
+  res->d8 &= 0x7FFF;
+}
+
 
 void mul_75_150(int150_v * const res, const int75_v a, const int75_v b)
 /*
@@ -1008,7 +1058,7 @@ Precalculated here since it is the same for all steps in the following loop */
   a.d3 = mad24(bb.d8, bit_max75_mult, (bb.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
   a.d4 = mad24(bb.d9, bit_max75_mult, (bb.d8 >> bit_max_60));		        	// a = b / (2^bit_max)
 
-  mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
+  mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett15_73: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:...\n",
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
@@ -1091,7 +1141,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d3 = mad24(b.d8, bit_max75_mult, (b.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
     a.d4 = mad24(b.d9, bit_max75_mult, (b.d8 >> bit_max_60));       			// a = b / (2^bit_max)
 
-    mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
+    mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:...\n",
@@ -1350,7 +1400,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffd) / ff;   // we rounded ff towards plus infinity, and round all other results towards zero. 
         
-  tmp = 1 << (bit_max - 61);	// tmp150 = 2^(74 + bits in f)
+  tmp = 1 << bit_max_60;	// tmp150 = 2^(74 + bits in f)
   
   // tmp150.d0 .. d8 =0
   // PERF: as div is only used here, use all those zeros directly in there
@@ -1377,7 +1427,7 @@ Precalculated here since it is the same for all steps in the following loop */
   a.d3 = mad24(bb.d8, bit_max75_mult, (bb.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
   a.d4 = mad24(bb.d9, bit_max75_mult, (bb.d8 >> bit_max_60));		        	// a = b / (2^bit_max)
 
-  mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
+  mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett15_68: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
@@ -1424,7 +1474,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d3 = mad24(b.d8, bit_max75_mult, (b.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
     a.d4 = mad24(b.d9, bit_max75_mult, (b.d8 >> bit_max_60));       			// a = b / (2^bit_max)
 
-    mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
+    mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
@@ -1670,7 +1720,7 @@ too. So the digits res.d{3-b} might differ from mul_90_180().
   // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
   // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
   // one (almost two) carry of 17 bit (32-bit >> 15)
-  // this optimized mul 5x5 requires: 19 mul/mad24, 7 shift, 6 and, 1 add
+  // this optimized mul 6x6 requires: 30 mul/mad24, 11 shift, 10 and, 3 add
 
   res->d3 = mul24(a.d3, b.d0);
   res->d3 = mad24(a.d2, b.d1, res->d3);
@@ -1729,6 +1779,58 @@ too. So the digits res.d{3-b} might differ from mul_90_180().
   res->da &= 0x7FFF;
 }
 
+void mul_90_180_no_low6(int180_v * const res, const int90_v a, const int90_v b)
+/*
+res ~= a * b
+res.d0 to res.d4 are NOT computed. res.d5 is computed only to provide the upper half as carry for res.d6
+ */
+{
+  // assume we have enough spare bits and can do all the carries at the very end:
+  // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
+  // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
+  // one (almost two) carry of 17 bit (32-bit >> 15)
+  // this optimized mul 6x6 requires: 21 mul/mad24, 8 shift, 7 and, 2 add
+
+  res->d5 = mul24(a.d5, b.d0);
+  res->d5 = mad24(a.d4, b.d1, res->d5);
+  res->d5 = mad24(a.d3, b.d2, res->d5);
+  // handle carry after 3 of 6 mad's for d5: pull in the first d6 line
+  res->d6 = mad24(a.d1, b.d5, res->d5 >> 15);
+  res->d5 &= 0x7FFF;
+
+  res->d5 = mad24(a.d2, b.d3, res->d5);
+  res->d5 = mad24(a.d1, b.d4, res->d5);
+  res->d5 = mad24(a.d0, b.d5, res->d5);
+
+  res->d6 = mad24(a.d2, b.d4, res->d5 >> 15) + res->d6;
+  res->d6 = mad24(a.d3, b.d3, res->d6);
+   // handle carry after 3 of 5 mad's for d6: pull in the first d7 line
+  res->d7 = mad24(a.d2, b.d5, res->d6 >> 15);
+  res->d6 &= 0x7FFF;
+
+  res->d6 = mad24(a.d4, b.d2, res->d6);
+  res->d6 = mad24(a.d5, b.d1, res->d6);
+
+  res->d7 = mad24(a.d3, b.d4, res->d6 >> 15) + res->d7;
+  res->d7 = mad24(a.d4, b.d3, res->d7);
+  res->d7 = mad24(a.d5, b.d2, res->d7);  // in d7 we have 4 mad's, and 2 carries (both not full 17 bits)
+  res->d6 &= 0x7FFF;
+
+  res->d8 = mad24(a.d5, b.d3, res->d7 >> 15);
+  res->d8 = mad24(a.d4, b.d4, res->d8);
+  res->d8 = mad24(a.d3, b.d5, res->d8);
+  res->d7 &= 0x7FFF;
+
+  res->d9 = mad24(a.d5, b.d4, res->d8 >> 15);
+  res->d9 = mad24(a.d4, b.d5, res->d9);
+  res->d8 &= 0x7FFF;
+
+  res->da = mad24(a.d5, b.d5, res->d9 >> 15);
+  res->d9 &= 0x7FFF;
+
+  res->db = res->da >> 15;
+  res->da &= 0x7FFF;
+}
 
 void mul_90_180(int180_v * const res, const int90_v a, const int90_v b)
 /*
@@ -2686,7 +2788,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d5 = mad24(bb.da, bit_max_mult, (bb.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
   }
       // PERF: could be no_low_5
-  mul_90_180_no_low3(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
+  mul_90_180_no_low6(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("cl_barrett15_88: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
@@ -2778,7 +2880,7 @@ Precalculated here since it is the same for all steps in the following loop */
       a.d5 = mad24(b.da, bit_max_mult, (b.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
     }
       // PERF: could be no_low_5
-    mul_90_180_no_low3(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
+    mul_90_180_no_low6(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
@@ -3105,7 +3207,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d5 = mad24(bb.da, bit_max_mult, (bb.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
   }
       // PERF: could be no_low_5
-  mul_90_180_no_low3(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
+  mul_90_180_no_low6(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett15_83: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
@@ -3184,7 +3286,7 @@ Precalculated here since it is the same for all steps in the following loop */
       a.d5 = mad24(b.da, bit_max_mult, (b.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
     }
       // PERF: could be no_low_5
-    mul_90_180_no_low3(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
+    mul_90_180_no_low6(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
@@ -3504,7 +3606,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d5 = mad24(bb.da, bit_max_mult, (bb.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
   }
       // PERF: could be no_low_5
-  mul_90_180_no_low3(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
+  mul_90_180_no_low6(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett15_82: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
@@ -3575,7 +3677,7 @@ Precalculated here since it is the same for all steps in the following loop */
       a.d5 = mad24(b.da, bit_max_mult, (b.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
     }
       // PERF: could be no_low_5
-    mul_90_180_no_low3(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
+    mul_90_180_no_low6(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loopl: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",

@@ -538,7 +538,7 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
   res->d2 = res->d2 + (qi >> 29) + AS_UINT_V((tmp > res->d1)? 1 : 0);
 
 // shiftleft qi 3 bits to avoid "long shiftleft" after multiplication
-  qi <<= 3;
+  qi = tmp;
 
 // nn = n * qi
   
