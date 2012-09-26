@@ -73,7 +73,9 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL32,     "cl_barrett32_88",      65,     88,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT87_MUL32,     "cl_barrett32_87",      65,     87,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT73_MUL15,     "cl_barrett15_73",      60,     73,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT68_MUL15,     "cl_barrett15_68",      60,     68,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT69_MUL15,     "cl_barrett15_69",      60,     69,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT70_MUL15,     "cl_barrett15_70",      60,     70,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT71_MUL15,     "cl_barrett15_71",      60,     71,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     88,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL}, // one kernel for all vector sizes

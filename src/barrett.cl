@@ -108,15 +108,12 @@ void mul_96(int96_t * const res, const int96_t a, const int96_t b)
   __private uint_v tmp;
 
   res->d0  = a.d0 * b.d0;
-  res->d1  = mul_hi(a.d0, b.d0);
-
-  res->d2  = mul_hi(a.d1, b.d0);
 
   tmp = a.d1 * b.d0;
-  res->d1 += tmp;
-  res->d2 += AS_UINT_V((tmp > res->d1)? 1 : 0);
+  res->d1  = mad_hi(a.d0, b.d0, tmp);
 
-  res->d2 += mul_hi(a.d0, b.d1);
+  res->d2  = mad_hi(a.d1, b.d0, AS_UINT_V((tmp > res->d1)? 1 : 0));
+  res->d2  = mad_hi(a.d0, b.d1, res->d2);
 
   tmp = a.d0 * b.d1;
   res->d1 += tmp;
@@ -126,15 +123,15 @@ void mul_96(int96_t * const res, const int96_t a, const int96_t b)
 }
 
 
-void mul_96_192_no_low2(int192_t * const res, const int96_t a, const int96_t b)
 /*
+   not used anymore
+void mul_96_192_no_low2(int192_t * const res, const int96_t a, const int96_t b)
 res ~= a * b
 res.d0 and res.d1 are NOT computed. Carry from res.d1 to res.d2 is ignored,
 too. So the digits res.d{2-5} might differ from mul_96_192(). In
 mul_96_192() are two carries from res.d1 to res.d2. So ignoring the digits
 res.d0 and res.d1 the result of mul_96_192_no_low() is 0 to 2 lower than
 of mul_96_192().
- */
 {
   
   __private uint_v tmp;
@@ -192,8 +189,9 @@ of mul_96_192().
   res->d5 += AS_UINT_V((tmp > res->d4)? 1 : 0);
 
 
-  res->d5 += mul_hi(a.d2, b.d2);
+  res->d5  = mad_hi(a.d2, b.d2, res->d5);
 }
+ */
 
 
 void mul_96_192_no_low3(int192_t * const res, const int96_t a, const int96_t b)
@@ -209,18 +207,15 @@ than of mul_96_192().
   
   __private uint_v tmp;
 
-  res->d3  = mul_hi(a.d2, b.d0);
-
-  tmp      = mul_hi(a.d1, b.d1);
-  res->d3 += tmp;
+  tmp      = a.d2 * b.d1;
+  res->d3  = mad_hi(a.d2, b.d0, tmp);
   res->d4  = AS_UINT_V((tmp > res->d3)? 1 : 0);
 
-  tmp      = mul_hi(a.d0, b.d2);
-  res->d3 += tmp;
-  res->d4 += AS_UINT_V((tmp > res->d3)? 1 : 0);
+  tmp      = mad_hi(a.d0, b.d2, res->d3);
+  // tmp now has the new sum for d3, d3 contains one summand
+  res->d4 += AS_UINT_V((res->d3 > tmp)? 1 : 0);
 
-  tmp      = a.d2 * b.d1;
-  res->d3 += tmp;
+  res->d3  = mad_hi(a.d1, b.d1, tmp);
   res->d4 += AS_UINT_V((tmp > res->d3)? 1 : 0);
 
   tmp      = a.d1 * b.d2;
@@ -228,12 +223,10 @@ than of mul_96_192().
   res->d4 += AS_UINT_V((tmp > res->d3)? 1 : 0);
 
 
-  tmp      = mul_hi(a.d2, b.d1);
-  res->d4 += tmp;
-  res->d5  = AS_UINT_V((tmp > res->d4)? 1 : 0);
+  tmp      = mad_hi(a.d2, b.d1, res->d4); // 32bitx32bit+4 carries cannot overflow. Hmm, if both operands are 0xffffffff, the second carry will.
+  res->d5  = AS_UINT_V((res->d4 > tmp)? 1 : 0); // so better handle the carry. costs 3 operations.
 
-  tmp      = mul_hi(a.d1, b.d2);
-  res->d4 += tmp;
+  res->d4  = mad_hi(a.d1, b.d2, tmp);
   res->d5 += AS_UINT_V((tmp > res->d4)? 1 : 0);
 
   tmp      = a.d2 * b.d2;
@@ -241,7 +234,7 @@ than of mul_96_192().
   res->d5 += AS_UINT_V((tmp > res->d4)? 1 : 0);
 
 
-  res->d5 += mul_hi(a.d2, b.d2);
+  res->d5  = mad_hi(a.d2, b.d2, res->d5);
 }
 
 
@@ -278,11 +271,10 @@ Adding x*x to a few carries will not cascade the carry
   res->d2 += tmp;
   res->d3 += AS_UINT_V((tmp > res->d2)? 1 : 0);
   res->d2 += tmp;
-  res->d3 += AS_UINT_V((tmp > res->d2)? 1 : 0);
+  tmp      = res->d3 + AS_UINT_V((tmp > res->d2)? 1 : 0);
 
 
-  tmp      = mul_hi(a.d1, a.d1);
-  res->d3 += tmp;
+  res->d3  = mad_hi(a.d1, a.d1, tmp);
   res->d4  = AS_UINT_V((tmp > res->d3)? 1 : 0);
 
   tmp      = mul_hi(a.d0, a.d2);
@@ -307,7 +299,7 @@ Adding x*x to a few carries will not cascade the carry
   res->d5 += AS_UINT_V((tmp > res->d4)? 1 : 0);
 
 
-  res->d5 += mul_hi(a.d2, a.d2);
+  res->d5  = mad_hi(a.d2, a.d2, res->d5);
 }
 
 
@@ -348,12 +340,10 @@ Adding x*x to a few carries will not cascade the carry
   res->d3 += AS_UINT_V((tmp > res->d2)? 1 : 0);
 
 
-  tmp      = mul_hi(a.d1, a.d1);
-  res->d3 += tmp;
-  res->d4  = AS_UINT_V((tmp > res->d3)? 1 : 0);
+  tmp      = mad_hi(a.d1, a.d1, res->d3);  // now tmp contains the sum for d3
+  res->d4  = AS_UINT_V((res->d3 > tmp)? 1 : 0);
 
-  tmp      = mul_hi(a.d0, TWOad2);
-  res->d3 += tmp;
+  res->d3  = mad_hi(a.d0, TWOad2, tmp);
   res->d4 += AS_UINT_V((tmp > res->d3)? 1 : 0);
 
   tmp      = a.d1 * TWOad2;
@@ -363,26 +353,26 @@ Adding x*x to a few carries will not cascade the carry
 
   res->d4 += a.d2 * a.d2; // no carry possible
 
-  res->d4 += mul_hi(a.d1, TWOad2);
+  res->d4  = mad_hi(a.d1, TWOad2, res->d4);
 }
 
 
 void shl_96(int96_t * const a)
 /* shiftleft a one bit */
 {
-  a->d2 = (a->d2 << 1) + (a->d1 >> 31);
-  a->d1 = (a->d1 << 1) + (a->d0 >> 31);
+  a->d2 = (a->d2 << 1) | (a->d1 >> 31);
+  a->d1 = (a->d1 << 1) | (a->d0 >> 31);
   a->d0 = a->d0 << 1;
 }
 
 void shl_192(int192_t * const a)
 /* shiftleft a one bit */
 {
-  a->d5 = (a->d5 << 1) + (a->d4 >> 31);
-  a->d4 = (a->d4 << 1) + (a->d3 >> 31);
-  a->d3 = (a->d3 << 1) + (a->d2 >> 31);
-  a->d2 = (a->d2 << 1) + (a->d1 >> 31);
-  a->d1 = (a->d1 << 1) + (a->d0 >> 31);
+  a->d5 = (a->d5 << 1) | (a->d4 >> 31);
+  a->d4 = (a->d4 << 1) | (a->d3 >> 31);
+  a->d3 = (a->d3 << 1) | (a->d2 >> 31);
+  a->d2 = (a->d2 << 1) | (a->d1 >> 31);
+  a->d1 = (a->d1 << 1) | (a->d0 >> 31);
   a->d0 = a->d0 << 1;
 }
 
@@ -398,7 +388,6 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
   __private float_v qf;
   __private uint_v qi, tmp, carry;
   __private int192_t nn;
-  __private int96_t tmp96;
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
@@ -420,18 +409,13 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
 
 // nn = n * qi
   nn.d2  = n.d0 * qi;
-  nn.d3  = mul_hi(n.d0, qi);
   tmp    = n.d1 * qi;
-  nn.d3 += tmp;
-  nn.d4  = AS_UINT_V((tmp > nn.d3)? 1 : 0);
-  tmp    = mul_hi(n.d1, qi);
-  nn.d4 += tmp;
+  nn.d3  = mad_hi(n.d0, qi, tmp);
+  nn.d4  = mad_hi(n.d1, qi, AS_UINT_V((tmp > nn.d3)? 1 : 0)); // cannot overflow
 #ifndef DIV_160_96
-  nn.d5  = AS_UINT_V((tmp > nn.d4)? 1 : 0);
   tmp    = n.d2 * qi;
   nn.d4 += tmp;
-  nn.d5 += AS_UINT_V((tmp > nn.d4)? 1 : 0);
-  nn.d5 += mul_hi(n.d2, qi);
+  nn.d5  = mad_hi(n.d2, qi, AS_UINT_V((tmp > nn.d4)? 1 : 0));
 #else
   nn.d4 += n.d2 * qi;
 #endif
@@ -478,18 +462,13 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
   res->d2 += qi >>  9;
 
 // nn = n * qi
-  nn.d1 = n.d0 * qi;
-  nn.d2  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d2 += tmp;
-  nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  tmp    = mul_hi(n.d1, qi);
+  nn.d1  = n.d0 * qi;
+  tmp    = n.d1 * qi;
+  nn.d2  = mad_hi(n.d0, qi, tmp);
+  nn.d3  = mad_hi(n.d1, qi, AS_UINT_V((tmp > nn.d2)? 1 : 0)); // cannot overflow
+  tmp    = n.d2 * qi;
   nn.d3 += tmp;
-  nn.d4  = AS_UINT_V((tmp > nn.d3)? 1 : 0);
-  tmp    = n.d2* qi;
-  nn.d3 += tmp;
-  nn.d4 += AS_UINT_V((tmp > nn.d3)? 1 : 0);
-  nn.d4 += mul_hi(n.d2, qi);
+  nn.d4  = mad_hi(n.d2, qi, AS_UINT_V((tmp > nn.d3)? 1 : 0));
 
   // shiftleft nn 23 bits
 #ifdef CHECKS_MODBASECASE
@@ -500,9 +479,9 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
   nn.d2 = (nn.d2 << 23) + (nn.d1 >> 9);
   nn.d1 =  nn.d1 << 23;
 
-// q = q - nn
-  carry= AS_UINT_V((nn.d1 > q.d1) ? 1 : 0);
-  q.d1 = q.d1 - nn.d1;
+// q = q - nn, q.d0 and q.d1 are 0
+  carry= AS_UINT_V((nn.d1 > 0) ? 1 : 0);
+  q.d1 = -nn.d1;
 
   tmp  = q.d2 - nn.d2 - carry;
   carry= AS_UINT_V(((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2)))? 1 : 0);
@@ -542,18 +521,13 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
 
 // nn = n * qi
   
-  nn.d1 = n.d0 * qi;
-  nn.d2  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d2 += tmp;
-  nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  tmp    = mul_hi(n.d1, qi);
+  nn.d1  = n.d0 * qi;
+  tmp    = n.d1 * qi;
+  nn.d2  = mad_hi(n.d0, qi, tmp);
+  nn.d3  = mad_hi(n.d1, qi, AS_UINT_V((tmp > nn.d2)? 1 : 0));
+  tmp    = n.d2 * qi;
   nn.d3 += tmp;
-  nn.d4  = AS_UINT_V((tmp > nn.d3)? 1 : 0);
-  tmp    = n.d2* qi;
-  nn.d3 += tmp;
-  nn.d4 += AS_UINT_V((tmp > nn.d3)? 1 : 0);
-  nn.d4 += mul_hi(n.d2, qi);
+  nn.d4  = mad_hi(n.d2, qi, AS_UINT_V((tmp > nn.d3)? 1 : 0));
 
 //  q = q - nn
   carry= AS_UINT_V((nn.d1 > q.d1) ? 1 : 0);
@@ -588,17 +562,12 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
   
 // nn = n * qi
   nn.d0  = n.d0 * qi;
-  nn.d1  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d1 += tmp;
-  nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
-  tmp    = mul_hi(n.d1, qi);
+  tmp    = n.d1 * qi;
+  nn.d1  = mad_hi(n.d0, qi, tmp);
+  nn.d2  = mad_hi(n.d1, qi, AS_UINT_V((tmp > nn.d1)? 1 : 0));
+  tmp    = n.d2 * qi;
   nn.d2 += tmp;
-  nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  tmp    = n.d2* qi;
-  nn.d2 += tmp;
-  nn.d3 += AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  nn.d3 += mul_hi(n.d2, qi);
+  nn.d3  = mad_hi(n.d2, qi, AS_UINT_V((tmp > nn.d2)? 1 : 0));
 
 // shiftleft nn 15 bits
 #ifdef CHECKS_MODBASECASE
@@ -650,7 +619,7 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
 
   // skip the last part - it will change the result by one at most - we can live with a result that is off by one
   return;
-
+/*
   // nn = n * qi
   nn.d0  = n.d0 * qi;
   nn.d1  = mul_hi(n.d0, qi);
@@ -697,12 +666,12 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
   MODBASECASE_NONZERO_ERROR(q.d5, 6, 5, 9);
   MODBASECASE_NONZERO_ERROR(q.d4, 6, 4, 10);
   MODBASECASE_NONZERO_ERROR(q.d3, 6, 3, 11);
-
+*/
 /*
 qi is allways a little bit too small, this is OK for all steps except the last
 one. Sometimes the result is a little bit bigger than n
-*/
   inc_if_ge_96(res, tmp96, n);
+*/
 }
 
 
@@ -721,7 +690,6 @@ DIV_160_96 here. */
   __private float_v qf;
   __private uint_v qi, tmp, carry;
   __private int192_t nn;
-  __private int96_t tmp96;
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
@@ -743,18 +711,13 @@ DIV_160_96 here. */
 
 // nn = n * qi
   nn.d2  = n.d0 * qi;
-  nn.d3  = mul_hi(n.d0, qi);
   tmp    = n.d1 * qi;
-  nn.d3 += tmp;
-  nn.d4  = AS_UINT_V((tmp > nn.d3)? 1 : 0);
-  tmp    = mul_hi(n.d1, qi);
-  nn.d4 += tmp;
+  nn.d3  = mad_hi(n.d0, qi, tmp);
+  nn.d4  = mad_hi(n.d1, qi, AS_UINT_V((tmp > nn.d3)? 1 : 0)); // cannot overflow
 #ifndef DIV_160_96
-  nn.d5  = AS_UINT_V((tmp > nn.d4)? 1 : 0);
   tmp    = n.d2 * qi;
   nn.d4 += tmp;
-  nn.d5 += AS_UINT_V((tmp > nn.d4)? 1 : 0);
-  nn.d5 += mul_hi(n.d2, qi);
+  nn.d5  = mad_hi(n.d2, qi, AS_UINT_V((tmp > nn.d4)? 1 : 0));
 #else
   nn.d4 += n.d2 * qi;
 #endif
@@ -801,18 +764,13 @@ DIV_160_96 here. */
   res->d2 += qi >>  9;
 
 // nn = n * qi
-  nn.d1 = n.d0 * qi;
-  nn.d2  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d2 += tmp;
-  nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  tmp    = mul_hi(n.d1, qi);
+  nn.d1  = n.d0 * qi;
+  tmp    = n.d1 * qi;
+  nn.d2  = mad_hi(n.d0, qi, tmp);
+  nn.d3  = mad_hi(n.d1, qi, AS_UINT_V((tmp > nn.d2)? 1 : 0)); // cannot overflow
+  tmp    = n.d2 * qi;
   nn.d3 += tmp;
-  nn.d4  = AS_UINT_V((tmp > nn.d3)? 1 : 0);
-  tmp    = n.d2* qi;
-  nn.d3 += tmp;
-  nn.d4 += AS_UINT_V((tmp > nn.d3)? 1 : 0);
-  nn.d4 += mul_hi(n.d2, qi);
+  nn.d4  = mad_hi(n.d2, qi, AS_UINT_V((tmp > nn.d3)? 1 : 0));
 
   // shiftleft nn 23 bits
 #ifdef CHECKS_MODBASECASE
@@ -823,9 +781,9 @@ DIV_160_96 here. */
   nn.d2 = (nn.d2 << 23) + (nn.d1 >> 9);
   nn.d1 =  nn.d1 << 23;
 
-// q = q - nn
-  carry= AS_UINT_V((nn.d1 > q.d1) ? 1 : 0);
-  q.d1 = q.d1 - nn.d1;
+// q = q - nn, q.d0 and q.d1 are 0
+  carry= AS_UINT_V((nn.d1 > 0) ? 1 : 0);
+  q.d1 = -nn.d1;
 
   tmp  = q.d2 - nn.d2 - carry;
   carry= AS_UINT_V(((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2)))? 1 : 0);
@@ -865,18 +823,13 @@ DIV_160_96 here. */
 
 // nn = n * qi
   
-  nn.d1 = n.d0 * qi;
-  nn.d2  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d2 += tmp;
-  nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  tmp    = mul_hi(n.d1, qi);
+  nn.d1  = n.d0 * qi;
+  tmp    = n.d1 * qi;
+  nn.d2  = mad_hi(n.d0, qi, tmp);
+  nn.d3  = mad_hi(n.d1, qi, AS_UINT_V((tmp > nn.d2)? 1 : 0));
+  tmp    = n.d2 * qi;
   nn.d3 += tmp;
-  nn.d4  = AS_UINT_V((tmp > nn.d3)? 1 : 0);
-  tmp    = n.d2* qi;
-  nn.d3 += tmp;
-  nn.d4 += AS_UINT_V((tmp > nn.d3)? 1 : 0);
-  nn.d4 += mul_hi(n.d2, qi);
+  nn.d4  = mad_hi(n.d2, qi, AS_UINT_V((tmp > nn.d3)? 1 : 0));
 
 //  q = q - nn
   carry= AS_UINT_V((nn.d1 > q.d1) ? 1 : 0);
@@ -911,17 +864,12 @@ DIV_160_96 here. */
   
 // nn = n * qi
   nn.d0  = n.d0 * qi;
-  nn.d1  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d1 += tmp;
-  nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
-  tmp    = mul_hi(n.d1, qi);
+  tmp    = n.d1 * qi;
+  nn.d1  = mad_hi(n.d0, qi, tmp);
+  nn.d2  = mad_hi(n.d1, qi, AS_UINT_V((tmp > nn.d1)? 1 : 0));
+  tmp    = n.d2 * qi;
   nn.d2 += tmp;
-  nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  tmp    = n.d2* qi;
-  nn.d2 += tmp;
-  nn.d3 += AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  nn.d3 += mul_hi(n.d2, qi);
+  nn.d3  = mad_hi(n.d2, qi, AS_UINT_V((tmp > nn.d2)? 1 : 0));
 
 // shiftleft nn 15 bits
 #ifdef CHECKS_MODBASECASE
@@ -970,11 +918,11 @@ DIV_160_96 here. */
   carry    = AS_UINT_V((qi > res->d0)? 1 : 0);
   res->d1 += carry;
   res->d2 += AS_UINT_V((carry > res->d1)? 1 : 0);
-  
+
   // skip the last part - it will change the result by one at most - we can live with a result that is off by one
   return;
-
-// nn = n * qi
+/*
+  // nn = n * qi
   nn.d0  = n.d0 * qi;
   nn.d1  = mul_hi(n.d0, qi);
   tmp    = n.d1* qi;
@@ -1016,18 +964,17 @@ DIV_160_96 here. */
   tmp96.d0=q.d0;
   tmp96.d1=q.d1;
   tmp96.d2=q.d2;
-  
+
   MODBASECASE_NONZERO_ERROR(q.d5, 6, 5, 9);
   MODBASECASE_NONZERO_ERROR(q.d4, 6, 4, 10);
   MODBASECASE_NONZERO_ERROR(q.d3, 6, 3, 11);
-
+*/
 /*
 qi is allways a little bit too small, this is OK for all steps except the last
 one. Sometimes the result is a little bit bigger than n
-*/
   inc_if_ge_96(res, tmp96, n);
+*/
 }
-
 #undef DIV_160_96
 
 
@@ -1057,7 +1004,7 @@ assumes q < 6n (6n includes "optional mul 2")
   qi = CONVERT_UINT_V(qf*nf);
 
 #ifdef CHECKS_MODBASECASE
-/* both barrett based kernels are made for factor candidates above 2^64,
+/* all barrett based kernels are made for factor candidates above 2^64,
 atleast the 79bit variant fails on factor candidates less than 2^64!
 Lets ignore those errors...
 Factor candidates below 2^64 can occur when TFing from 2^64 to 2^65, the
@@ -1087,11 +1034,10 @@ are "out of range".
 #endif
 
   nn.d0  = n.d0 * qi;
-  nn.d1  = mul_hi(n.d0, qi);
   tmp    = n.d1* qi;
-  nn.d1 += tmp;
+  nn.d1  = mad_hi(n.d0, qi, tmp);
   nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
-  nn.d2 += mul_hi(n.d1, qi) + n.d2* qi;
+  nn.d2 += mad_hi(n.d1, qi, n.d2* qi);
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("mod_simple_96: nn=%x:%x:%x\n",
@@ -1145,7 +1091,7 @@ bit_max64 is bit_max - 64!
 
   exp96.d1=exp>>31;exp96.d0=exp+exp;	// exp96 = 2 * exp
 
-#if (TRACE_KERNEL > 1)
+#if (TRACE_KERNEL > 0)
   if (tid==TRACE_TID) printf("cl_barrett32_92: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, bit_max=%d\n",
         exp, exp96.d1, exp96.d0, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, bit_max64+64);
 #endif
@@ -1206,17 +1152,16 @@ bit_max64 is bit_max - 64!
 
   f.d0  = k.d0 * exp96.d0 + 1;
 
-  f.d1  = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
+  tmp   = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
   f.d2  = exp96.d1 ? k.d1 : 0;
 
-  tmp   = mul_hi(k.d0, exp96.d0);
-  f.d1 += tmp;
-  f.d2 +=  AS_UINT_V((tmp > f.d1)? 1 : 0);
+  f.d1  = mad_hi(k.d0, exp96.d0, tmp);
+  f.d2 += AS_UINT_V((tmp > f.d1)? 1 : 0);
 
   tmp   = k.d1 * exp96.d0;
   f.d1 += tmp;
 
-  f.d2 += mul_hi(k.d1, exp96.d0) + AS_UINT_V((tmp > f.d1)? 1 : 0); 	// f = 2 * k * exp + 1
+  f.d2 += mad_hi(k.d1, exp96.d0, AS_UINT_V((tmp > f.d1)? 1 : 0)); 	// f = 2 * k * exp + 1
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("cl_barrett32_92: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
@@ -1228,7 +1173,8 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
+//  ff= 1.0f / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
         
         
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
@@ -1266,9 +1212,9 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
   // bb.d0-bb.d1 are all zero due to preprocessing on the host
   // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
-  tmp96.d0 = -tmp96.d0;                // Compute the remainder
+  tmp96.d0 = -tmp96.d0;                // Compute the remainder, we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
   tmp96.d1 = -tmp96.d1 - AS_UINT_V((tmp96.d0 > 0) ? 1 : 0 );
-  tmp96.d2 = bb.d2-tmp96.d2 - AS_UINT_V((tmp96.d1 > 0) || (tmp96.d0 > 0) ? 1 : 0 );	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+  tmp96.d2 = bb.d2-tmp96.d2 - AS_UINT_V(((tmp96.d1 | tmp96.d0) > 0) ? 1 : 0 );	 // if any bit of d0 or d1 is set, we'll have a borrow here
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett32_92: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
@@ -1336,9 +1282,8 @@ Precalculated here since it is the same for all steps in the following loop */
     carry= AS_UINT_V((tmp96.d0 > b.d0) ? 1 : 0);
     tmp96.d0 = b.d0 - tmp96.d0;
 
-    tmp  = b.d1 - tmp96.d1 - carry;
-    carry= AS_UINT_V(((tmp > b.d1) || (carry && AS_UINT_V(tmp == b.d1))) ? 1 : 0);
-    tmp96.d1 = tmp;
+    tmp96.d1 = b.d1 - tmp96.d1 - carry;
+    carry    = AS_UINT_V(((tmp96.d1 > b.d1) || (carry && AS_UINT_V(tmp96.d1 == b.d1))) ? 1 : 0);
 
     tmp96.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
     
@@ -1387,11 +1332,10 @@ Precalculated here since it is the same for all steps in the following loop */
   }
 #endif
 
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("after sub: a = %x:%x:%x \n",
-         a.d2.s0, a.d1.s0, a.d0.s0 );
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf("cl_barrett32_92: f=%x:%x:%x, final a = %x:%x:%x \n",
+         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
-  
 
 /* finally check if we found a factor and write the factor to RES[] */
 #if (BARRETT_VECTOR_SIZE == 1)
@@ -1487,7 +1431,7 @@ bit_max64 is bit_max - 64!
 
   exp96.d1=exp>>31;exp96.d0=exp+exp;	// exp96 = 2 * exp
 
-#if (TRACE_KERNEL > 1)
+#if (TRACE_KERNEL > 0)
   if (tid==TRACE_TID) printf("cl_barrett32_87: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, bit_max=%d\n",
         exp, exp96.d1, exp96.d0, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, bit_max64+64);
 #endif
@@ -1548,17 +1492,16 @@ bit_max64 is bit_max - 64!
 
   f.d0  = k.d0 * exp96.d0 + 1;
 
-  f.d1  = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
+  tmp   = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
   f.d2  = exp96.d1 ? k.d1 : 0;
 
-  tmp   = mul_hi(k.d0, exp96.d0);
-  f.d1 += tmp;
-  f.d2 +=  AS_UINT_V((tmp > f.d1)? 1 : 0);
+  f.d1  = mad_hi(k.d0, exp96.d0, tmp);
+  f.d2 += AS_UINT_V((tmp > f.d1)? 1 : 0);
 
   tmp   = k.d1 * exp96.d0;
   f.d1 += tmp;
 
-  f.d2 += mul_hi(k.d1, exp96.d0) + AS_UINT_V((tmp > f.d1)? 1 : 0); 	// f = 2 * k * exp + 1
+  f.d2 += mad_hi(k.d1, exp96.d0, AS_UINT_V((tmp > f.d1)? 1 : 0)); 	// f = 2 * k * exp + 1
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("cl_barrett32_87: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
@@ -1570,8 +1513,8 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-        
+//  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
         
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
@@ -1710,11 +1653,10 @@ Precalculated here since it is the same for all steps in the following loop */
   }
 #endif
 
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("after sub: a = %x:%x:%x \n",
-         a.d2.s0, a.d1.s0, a.d0.s0 );
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf("cl_barrett32_87: f=%x:%x:%x, final a = %x:%x:%x \n",
+         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
-  
 
 /* finally check if we found a factor and write the factor to RES[] */
 #if (BARRETT_VECTOR_SIZE == 1)
@@ -1810,7 +1752,7 @@ bit_max64 is bit_max - 64!
 
   exp96.d1=exp>>31;exp96.d0=exp+exp;	// exp96 = 2 * exp
 
-#if (TRACE_KERNEL > 1)
+#if (TRACE_KERNEL > 0)
   if (tid==TRACE_TID) printf("cl_barrett32_88: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, bit_max=%d\n",
         exp, exp96.d1, exp96.d0, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, bit_max64+64);
 #endif
@@ -1871,17 +1813,16 @@ bit_max64 is bit_max - 64!
 
   f.d0  = k.d0 * exp96.d0 + 1;
 
-  f.d1  = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
+  tmp   = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
   f.d2  = exp96.d1 ? k.d1 : 0;
 
-  tmp   = mul_hi(k.d0, exp96.d0);
-  f.d1 += tmp;
-  f.d2 +=  AS_UINT_V((tmp > f.d1)? 1 : 0);
+  f.d1  = mad_hi(k.d0, exp96.d0, tmp);
+  f.d2 += AS_UINT_V((tmp > f.d1)? 1 : 0);
 
   tmp   = k.d1 * exp96.d0;
   f.d1 += tmp;
 
-  f.d2 += mul_hi(k.d1, exp96.d0) + AS_UINT_V((tmp > f.d1)? 1 : 0); 	// f = 2 * k * exp + 1
+  f.d2 += mad_hi(k.d1, exp96.d0, AS_UINT_V((tmp > f.d1)? 1 : 0)); 	// f = 2 * k * exp + 1
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("cl_barrett32_88: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
@@ -1893,8 +1834,8 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-        
+//  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
         
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
@@ -2029,11 +1970,10 @@ Precalculated here since it is the same for all steps in the following loop */
   }
 #endif
 
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("after sub: a = %x:%x:%x \n",
-         a.d2.s0, a.d1.s0, a.d0.s0 );
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf("cl_barrett32_88: f=%x:%x:%x, final a = %x:%x:%x \n",
+         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
-  
 
 /* finally check if we found a factor and write the factor to RES[] */
 #if (BARRETT_VECTOR_SIZE == 1)
@@ -2126,7 +2066,7 @@ a is precomputed on host ONCE.
 
   exp96.d1=exp>>31;exp96.d0=exp+exp;	// exp96 = 2 * exp
 
-#if (TRACE_KERNEL > 1)
+#if (TRACE_KERNEL > 0)
   if (tid==TRACE_TID) printf("cl_barrett32_79: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x\n",
         exp, exp96.d1, exp96.d0, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0);
 #endif
@@ -2181,24 +2121,18 @@ a is precomputed on host ONCE.
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 
-//  mul_96(&f,k,exp96);				// f = 2 * k * exp
-//  f.d0 += 1;					// f = 2 * k * exp + 1
-//MAD
   f.d0  = k.d0 * exp96.d0 + 1;
-//  f.d0  = mad(k.d0, exp96.d0, 1u);
 
-  f.d1  = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
+  tmp   = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
   f.d2  = exp96.d1 ? k.d1 : 0;
 
-  tmp   = mul_hi(k.d0, exp96.d0);
-  f.d1 += tmp;
+  f.d1  = mad_hi(k.d0, exp96.d0, tmp);
   f.d2 += AS_UINT_V((tmp > f.d1)? 1 : 0);
 
   tmp   = k.d1 * exp96.d0;
   f.d1 += tmp;
-//MAD
-  f.d2 += mul_hi(k.d1, exp96.d0) + AS_UINT_V((tmp > f.d1)? 1 : 0); 	// f = 2 * k * exp + 1
-//  f.d2 = mad_hi(k.d1, exp96.d0, f.d2) + AS_UINT_V((tmp > f.d1)? 1 : 0); 	// f = 2 * k * exp + 1
+
+  f.d2 += mad_hi(k.d1, exp96.d0, AS_UINT_V((tmp > f.d1)? 1 : 0)); 	// f = 2 * k * exp + 1
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("cl_barrett32_79: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
@@ -2211,7 +2145,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
 
   tmp192.d4 = 0xFFFFFFFF;						// tmp is nearly 2^(81)
   tmp192.d3 = 0xFFFFFFFF;
@@ -2356,18 +2290,17 @@ Precalculated here since it is the same for all steps in the following loop */
   }
 
   a = sub_if_gte_96(a,f);	// final adjustment in case a >= f
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("after sub: a = %x:%x:%x \n",
-         a.d2.s0, a.d1.s0, a.d0.s0 );
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf("cl_barrett32_79: f=%x:%x:%x, final a = %x:%x:%x \n",
+         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
-
   
 /* finally check if we found a factor and write the factor to RES[] */
 #if (BARRETT_VECTOR_SIZE == 1)
   if( ((a.d2|a.d1)==0 && a.d0==1) )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-    printf("cl_barrett32_88: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+    printf("cl_barrett32_79: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
     tid=ATOMIC_INC(RES[0]);
@@ -2452,7 +2385,7 @@ a is precomputed on host ONCE.
 
   exp96.d1=exp>>31;exp96.d0=exp+exp;	// exp96 = 2 * exp
 
-#if (TRACE_KERNEL > 1)
+#if (TRACE_KERNEL > 0)
   if (tid==TRACE_TID) printf("cl_barrett32_76: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x\n",
         exp, exp96.d1, exp96.d0, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0);
 #endif
@@ -2507,24 +2440,18 @@ a is precomputed on host ONCE.
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 
-//  mul_96(&f,k,exp96);				// f = 2 * k * exp
-//  f.d0 += 1;					// f = 2 * k * exp + 1
-//MAD
   f.d0  = k.d0 * exp96.d0 + 1;
-//  f.d0  = mad(k.d0, exp96.d0, 1u);
 
-  f.d1  = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
+  tmp   = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
   f.d2  = exp96.d1 ? k.d1 : 0;
 
-  tmp   = mul_hi(k.d0, exp96.d0);
-  f.d1 += tmp;
+  f.d1  = mad_hi(k.d0, exp96.d0, tmp);
   f.d2 += AS_UINT_V((tmp > f.d1)? 1 : 0);
 
   tmp   = k.d1 * exp96.d0;
   f.d1 += tmp;
-//MAD
-  f.d2 += mul_hi(k.d1, exp96.d0) + AS_UINT_V((tmp > f.d1)? 1 : 0); 	// f = 2 * k * exp + 1
-//  f.d2 = mad_hi(k.d1, exp96.d0, f.d2) + AS_UINT_V((tmp > f.d1)? 1 : 0); 	// f = 2 * k * exp + 1
+
+  f.d2 += mad_hi(k.d1, exp96.d0, AS_UINT_V((tmp > f.d1)? 1 : 0)); 	// f = 2 * k * exp + 1
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("cl_barrett32_76: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
@@ -2537,7 +2464,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
 
   tmp192.d4 = 0xFFFFFFFF;						// tmp is nearly 2^(81)
   tmp192.d3 = 0xFFFFFFFF;
@@ -2659,12 +2586,11 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 
   a = sub_if_gte_96(a,f);	// final adjustment in case a >= f
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("after sub: a = %x:%x:%x \n",
-         a.d2.s0, a.d1.s0, a.d0.s0 );
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf("cl_barrett32_76: f=%x:%x:%x, final a = %x:%x:%x \n",
+         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
 
-  
 /* finally check if we found a factor and write the factor to RES[] */
 #if (BARRETT_VECTOR_SIZE == 1)
   if( ((a.d2|a.d1)==0 && a.d0==1) )
@@ -2755,7 +2681,7 @@ a is precomputed on host ONCE.
 
   exp96.d1=exp>>31;exp96.d0=exp+exp;	// exp96 = 2 * exp
 
-#if (TRACE_KERNEL > 1)
+#if (TRACE_KERNEL > 0)
   if (tid==TRACE_TID) printf("cl_barrett32_77: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x\n",
         exp, exp96.d1, exp96.d0, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0);
 #endif
@@ -2810,24 +2736,18 @@ a is precomputed on host ONCE.
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 
-//  mul_96(&f,k,exp96);				// f = 2 * k * exp
-//  f.d0 += 1;					// f = 2 * k * exp + 1
-//MAD
   f.d0  = k.d0 * exp96.d0 + 1;
-//  f.d0  = mad(k.d0, exp96.d0, 1u);
 
-  f.d1  = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
+  tmp   = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
   f.d2  = exp96.d1 ? k.d1 : 0;
 
-  tmp   = mul_hi(k.d0, exp96.d0);
-  f.d1 += tmp;
+  f.d1  = mad_hi(k.d0, exp96.d0, tmp);
   f.d2 += AS_UINT_V((tmp > f.d1)? 1 : 0);
 
   tmp   = k.d1 * exp96.d0;
   f.d1 += tmp;
-//MAD
-  f.d2 += mul_hi(k.d1, exp96.d0) + AS_UINT_V((tmp > f.d1)? 1 : 0); 	// f = 2 * k * exp + 1
-//  f.d2 = mad_hi(k.d1, exp96.d0, f.d2) + AS_UINT_V((tmp > f.d1)? 1 : 0); 	// f = 2 * k * exp + 1
+
+  f.d2 += mad_hi(k.d1, exp96.d0, AS_UINT_V((tmp > f.d1)? 1 : 0)); 	// f = 2 * k * exp + 1
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("cl_barrett32_77: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
@@ -2840,7 +2760,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d4 = 0xFFFFFFFF;						// tmp is nearly 2^(81)
   tmp192.d3 = 0xFFFFFFFF;
@@ -2962,12 +2882,11 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 
   a = sub_if_gte_96(a,f);	// final adjustment in case a >= f
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("after sub: a = %x:%x:%x \n",
-         a.d2.s0, a.d1.s0, a.d0.s0 );
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf("cl_barrett32_77: f=%x:%x:%x, final a = %x:%x:%x \n",
+         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
 
-  
 /* finally check if we found a factor and write the factor to RES[] */
 #if (BARRETT_VECTOR_SIZE == 1)
   if( ((a.d2|a.d1)==0 && a.d0==1) )
@@ -3069,9 +2988,9 @@ a is precomputed on host ONCE.
   t.x  = tid;
   t.y  = tid+1;
 #elif (BARRETT_VECTOR_SIZE == 3)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
+  t.x  = tid];
+  t.y  = tid+1;
+  t.z  = tid+2;
 #elif (BARRETT_VECTOR_SIZE == 4)
   t.x  = tid;
   t.y  = tid+1;
@@ -3112,22 +3031,18 @@ a is precomputed on host ONCE.
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 
-//  mul_96(&f,k,exp96);				// f = 2 * k * exp
-//  f.d0 += 1;					// f = 2 * k * exp + 1
-
   f.d0  = k.d0 * exp96.d0 + 1;
 
-  f.d1  = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
+  tmp   = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
   f.d2  = exp96.d1 ? k.d1 : 0;
 
-  tmp   = mul_hi(k.d0, exp96.d0);
-  f.d1 += tmp;
+  f.d1  = mad_hi(k.d0, exp96.d0, tmp);
   f.d2 += AS_UINT_V((tmp > f.d1)? 1 : 0);
 
   tmp   = k.d1 * exp96.d0;
   f.d1 += tmp;
 
-  f.d2 += mul_hi(k.d1, exp96.d0) + AS_UINT_V((tmp > f.d1)? 1 : 0); 	// f = 2 * k * exp + 1
+  f.d2 += mad_hi(k.d1, exp96.d0, AS_UINT_V((tmp > f.d1)? 1 : 0)); 	// f = 2 * k * exp + 1
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("cl_barrett32_79_ns: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
@@ -3140,7 +3055,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d4 = 0xFFFFFFFF;						// tmp is nearly 2^(81)
   tmp192.d3 = 0xFFFFFFFF;

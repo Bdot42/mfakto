@@ -217,7 +217,6 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
   __private float_v qf;
   __private uint_v qi, tmp;
   __private int144_v nn;
-  __private int72_v tmp72;
 
 /********** Step 1, Offset 2^51 (2*24 + 3) **********/
   qf= CONVERT_FLOAT_V(q.d5);
@@ -539,7 +538,7 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
   res->d2 += res->d1 >> 24;
   res->d1 &= 0xFFFFFF;
   return;
-
+/*
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf("div_144_72#4.0: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
@@ -580,17 +579,6 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
-/* q = q - nn */
-/* subtraction using sub.cc.u32, subc.cc.u32 and subc.u32 instructions
-  q.d0 = __sub_cc (q.d0, nn.d0) & 0xFFFFFF;
-  q.d1 = __subc_cc(q.d1, nn.d1) & 0xFFFFFF;
-#ifndef CHECKS_MODBASECASE  
-  q.d2 = __subc   (q.d2, nn.d2) & 0xFFFFFF;
-#else
-  q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
-  q.d3 = __subc   (q.d3, nn.d3);
-#endif */
-
   q.d0 = q.d0 - nn.d0;
   q.d1 = q.d1 - nn.d1 - AS_UINT_V((q.d0 > 0xFFFFFF)?1:0);
   q.d2 = q.d2 - nn.d2 - AS_UINT_V((q.d1 > 0xFFFFFF)?1:0);
@@ -610,13 +598,13 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
   MODBASECASE_NONZERO_ERROR(q.d5, 6, 5, 9);
   MODBASECASE_NONZERO_ERROR(q.d4, 6, 4, 10);
   MODBASECASE_NONZERO_ERROR(q.d3, 6, 3, 11);
-
+*/
 /*
 qi is allways a little bit too small, this is OK for all steps except the last
 one. Sometimes the result is a little bit bigger than n
 This function also handles the carries for res.
-*/
   inc_if_ge_72(res, tmp72, n);
+*/
 }
 
 
@@ -734,9 +722,9 @@ bit_max64 is bit_max - 64! (1 .. 8)
 
   exp72.d2=0;exp72.d1=exp>>23;exp72.d0=(exp+exp)&0xFFFFFF;	// exp72 = 2 * exp
 
-#if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf("cl_barrett24_70: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x\n",
-        exp, exp72.d1, exp72.d0, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0);
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf("cl_barrett24_70: exp=%d, x2=%x:%x, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, shift=%d\n",
+        exp, exp72.d1, exp72.d0, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, shiftcount);
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -957,11 +945,10 @@ Precalculated here since it is the same for all steps in the following loop */
   }
 #endif
 
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("after sub: a = %x:%x:%x \n",
-         a.d2.s0, a.d1.s0, a.d0.s0 );
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf("cl_barrett24_70: f=%x:%x:%x, final a = %x:%x:%x \n",
+         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
-  
 
 /* finally check if we found a factor and write the factor to RES[] */
 #if (VECTOR_SIZE == 1)
