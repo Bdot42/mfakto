@@ -392,14 +392,14 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
   qf= CONVERT_FLOAT_V(q.d5);
-  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d4);
+  qf= qf * 9007199254740992.0f;
 #else
   #ifdef CHECKS_MODBASECASE
     q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
   #endif
   qf= CONVERT_FLOAT_V(q.d4);
-#endif  
   qf*= 2097152.0f;
+#endif  
 
   qi=CONVERT_UINT_V(qf*nf);
 
@@ -694,14 +694,14 @@ DIV_160_96 here. */
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
   qf= CONVERT_FLOAT_V(q.d5);
-  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d4);
+  qf= qf * 9007199254740992.0f;
 #else
   #ifdef CHECKS_MODBASECASE
     q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
   #endif
   qf= CONVERT_FLOAT_V(q.d4);
-#endif  
   qf*= 2097152.0f;
+#endif  
 
   qi=CONVERT_UINT_V(qf*nf);
 
@@ -1551,9 +1551,9 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
   // bb.d0-bb.d1 are all zero due to preprocessing on the host
   // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
-  a.d0 = -tmp96.d0;                // Compute the remainder
+  a.d0 = -tmp96.d0;                // Compute the remainder, we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
   a.d1 = -tmp96.d1 - AS_UINT_V((tmp96.d0 > 0) ? 1 : 0 );
-  a.d2 = bb.d2-tmp96.d2 - AS_UINT_V((tmp96.d1 > 0) || (tmp96.d0 > 0) ? 1 : 0 );	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+  a.d2 = bb.d2-tmp96.d2 - AS_UINT_V(((tmp96.d1 | tmp96.d0) > 0) ? 1 : 0 );	 // if any bit of d0 or d1 is set, we'll have a borrow here
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett32_87: b=%x:%x:%x - tmp = %x:%x:%x (a)\n",
@@ -1872,9 +1872,9 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
   // bb.d0-bb.d1 are all zero due to preprocessing on the host
   // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
-  a.d0 = -tmp96.d0;                // Compute the remainder
+  a.d0 = -tmp96.d0;                // Compute the remainder, we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
   a.d1 = -tmp96.d1 - AS_UINT_V((tmp96.d0 > 0) ? 1 : 0 );
-  a.d2 = bb.d2-tmp96.d2 - AS_UINT_V((tmp96.d1 > 0) || (tmp96.d0 > 0) ? 1 : 0 );	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+  a.d2 = bb.d2-tmp96.d2 - AS_UINT_V(((tmp96.d1 | tmp96.d0) > 0) ? 1 : 0 );	 // if any bit of d0 or d1 is set, we'll have a borrow here
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett32_88: b=%x:%x:%x - tmp = %x:%x:%x (a)\n",
@@ -2187,9 +2187,9 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
   // bb.d0-bb.d1 are all zero due to preprocessing on the host
   // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
-  tmp96.d0 = -tmp96.d0;
-  tmp96.d1 = -tmp96.d1 - 1;
-  tmp96.d2 = bb.d2-tmp96.d2 - 1;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+  tmp96.d0 = -tmp96.d0;                // Compute the remainder, we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+  tmp96.d1 = -tmp96.d1 - AS_UINT_V((tmp96.d0 > 0) ? 1 : 0 );
+  tmp96.d2 = bb.d2-tmp96.d2 - AS_UINT_V(((tmp96.d1 | tmp96.d0) > 0) ? 1 : 0 );	 // if any bit of d0 or d1 is set, we'll have a borrow here
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("cl_barrett32_79: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
@@ -2506,9 +2506,9 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
   // bb.d0-bb.d1 are all zero due to preprocessing on the host
   // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
-  a.d0 = -tmp96.d0;
-  a.d1 = -tmp96.d1 - 1;
-  a.d2 = bb.d2-tmp96.d2 - 1;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+  a.d0 = -tmp96.d0;                // Compute the remainder, we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+  a.d1 = -tmp96.d1 - AS_UINT_V((tmp96.d0 > 0) ? 1 : 0 );
+  a.d2 = bb.d2-tmp96.d2 - AS_UINT_V(((tmp96.d1 | tmp96.d0) > 0) ? 1 : 0 );	 // if any bit of d0 or d1 is set, we'll have a borrow here
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("cl_barrett32_76: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
@@ -2802,9 +2802,9 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
   // bb.d0-bb.d1 are all zero due to preprocessing on the host
   // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
-  a.d0 = -tmp96.d0;
-  a.d1 = -tmp96.d1 - 1;
-  a.d2 = bb.d2-tmp96.d2 - 1;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+  a.d0 = -tmp96.d0;                // Compute the remainder, we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+  a.d1 = -tmp96.d1 - AS_UINT_V((tmp96.d0 > 0) ? 1 : 0 );
+  a.d2 = bb.d2-tmp96.d2 - AS_UINT_V(((tmp96.d1 | tmp96.d0) > 0) ? 1 : 0 );	 // if any bit of d0 or d1 is set, we'll have a borrow here
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("cl_barrett32_77: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
@@ -2988,7 +2988,7 @@ a is precomputed on host ONCE.
   t.x  = tid;
   t.y  = tid+1;
 #elif (BARRETT_VECTOR_SIZE == 3)
-  t.x  = tid];
+  t.x  = tid;
   t.y  = tid+1;
   t.z  = tid+2;
 #elif (BARRETT_VECTOR_SIZE == 4)
@@ -3096,14 +3096,11 @@ Precalculated here since it is the same for all steps in the following loop */
         a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
 
-  carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
-  tmp96.d0 = bb.d0 - tmp96.d0;
-
-  tmp  = bb.d1 - tmp96.d1 - carry;
-  carry= AS_UINT_V(((tmp > bb.d1) || (carry && AS_UINT_V(tmp == bb.d1))) ? 1 : 0);
-  tmp96.d1 = tmp;
-
-  tmp96.d2 = bb.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+  // bb.d0-bb.d1 are all zero due to preprocessing on the host
+  // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
+  tmp96.d0 = -tmp96.d0;                // Compute the remainder, we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+  tmp96.d1 = -tmp96.d1 - AS_UINT_V((tmp96.d0 > 0) ? 1 : 0 );
+  tmp96.d2 = bb.d2-tmp96.d2 - AS_UINT_V(((tmp96.d1 | tmp96.d0) > 0) ? 1 : 0 );	 // if any bit of d0 or d1 is set, we'll have a borrow here
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("cl_barrett32_79_ns: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",

@@ -401,7 +401,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 #endif
 
 /********** Step 1, Offset 2^60 (4*15 + 0) **********/
-  qf_1= convert_float_rtz(qhi) * 32768.0f * 32768.0f * 32768.0f; // no vector yet
+  qf_1= convert_float_rtz(qhi) * 35184372088832.0f; // =32768.0f * 32768.0f * 32768.0f; // no vector yet
 
   qi=CONVERT_UINT_V(qf_1*nf);  // vectorize just here
 
@@ -488,7 +488,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   /********** Step 2, Offset 2^40 (2*15 + 10) **********/
 
   qf= CONVERT_FLOAT_V(mad24(q.d8, 32768u, q.d7));
-  qf= qf * 32768.0f * 32768.0f + CONVERT_FLOAT_V(mad24(q.d6, 32768u, q.d5));
+  qf= qf * 1073741824.0f + CONVERT_FLOAT_V(mad24(q.d6, 32768u, q.d5));
   qf*= 32.0f;
 
   qi=CONVERT_UINT_V(qf*nf);
@@ -591,7 +591,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   /********** Step 3, Offset 2^20 (1*15 + 5) **********/
 
   qf= CONVERT_FLOAT_V(mad24(q.d7, 32768u, q.d6)); 
-  qf= qf * 32768.0f * 32768.0f + CONVERT_FLOAT_V(mad24(q.d5, 32768u, q.d4));
+  qf= qf * 1073741824.0f + CONVERT_FLOAT_V(mad24(q.d5, 32768u, q.d4));
   qf*= 32768.0f;
 
   qi=CONVERT_UINT_V(qf*nf);
@@ -693,7 +693,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   /********** Step 4, Offset 2^0 (0*15 + 0) **********/
 
   qf= CONVERT_FLOAT_V(mad24(q.d6, 32768u, q.d5));
-  qf= qf * 32768.0f * 32768.0f + CONVERT_FLOAT_V(mad24(q.d4, 32768u, q.d3));
+  qf= qf * 1073741824.0f + CONVERT_FLOAT_V(mad24(q.d4, 32768u, q.d3));
   qf*= 32768.0f;
 
   qi=CONVERT_UINT_V(qf*nf);
@@ -2388,7 +2388,7 @@ too. So the digits res.d{3-b} might differ from mul_90_180().
   // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
   // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
   // one (almost two) carry of 17 bit (32-bit >> 15)
-  // this optimized mul 5x5 requires: 19 mul/mad24, 7 shift, 6 and, 1 add
+  // this optimized mul 6x6 requires: 30 mul/mad24, 11 shift, 10 and, 3 add
 
   res->d3 = mul24(a.d3, b.d0);
   res->d3 = mad24(a.d2, b.d1, res->d3);
@@ -2447,14 +2447,69 @@ too. So the digits res.d{3-b} might differ from mul_90_180().
   res->da &= 0x7FFF;
 }
 
-
-void mul_90_180(int180_v * const res, const int90_v a, const int90_v b)
+void mul_90_180_no_low5(int180_v * const res, const int90_v a, const int90_v b)
 /*
-res = a * b
+res ~= a * b
+res.d0 to res.d4 are NOT computed. res.d5 is computed only to provide carries to res.d6.
  */
 {
-  /* this is the complete implementation, no longer used, but was the basis for
-     the _no_low3 and square functions */
+  // assume we have enough spare bits and can do all the carries at the very end:
+  // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
+  // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
+  // one (almost two) carry of 17 bit (32-bit >> 15)
+  // this optimized mul 6x6 requires: 21 mul/mad24, 8 shift, 7 and, 2 add
+
+   // 5th mad24 can overflow d4, need to handle carry before: pull in the first d5 line
+
+  res->d5 = mul24(a.d5, b.d0);
+  res->d5 = mad24(a.d4, b.d1, res->d5);
+  res->d5 = mad24(a.d3, b.d2, res->d5);
+  // handle carry after 3 of 6 mad's for d5: pull in the first d6 line
+  res->d6 = mad24(a.d1, b.d5, res->d5 >> 15);
+  res->d5 &= 0x7FFF;
+
+  res->d5 = mad24(a.d2, b.d3, res->d5);
+  res->d5 = mad24(a.d1, b.d4, res->d5);
+  res->d5 = mad24(a.d0, b.d5, res->d5);
+
+  res->d6 = mad24(a.d2, b.d4, res->d5 >> 15) + res->d6;
+//  res->d5 &= 0x7FFF;
+  res->d6 = mad24(a.d3, b.d3, res->d6);
+   // handle carry after 3 of 5 mad's for d6: pull in the first d7 line
+  res->d7 = mad24(a.d2, b.d5, res->d6 >> 15);
+  res->d6 &= 0x7FFF;
+
+  res->d6 = mad24(a.d4, b.d2, res->d6);
+  res->d6 = mad24(a.d5, b.d1, res->d6);
+
+  res->d7 = mad24(a.d3, b.d4, res->d6 >> 15) + res->d7;
+  res->d7 = mad24(a.d4, b.d3, res->d7);
+  res->d7 = mad24(a.d5, b.d2, res->d7);  // in d7 we have 4 mad's, and 2 carries (both not full 17 bits)
+  res->d6 &= 0x7FFF;
+
+  res->d8 = mad24(a.d5, b.d3, res->d7 >> 15);
+  res->d8 = mad24(a.d4, b.d4, res->d8);
+  res->d8 = mad24(a.d3, b.d5, res->d8);
+  res->d7 &= 0x7FFF;
+
+  res->d9 = mad24(a.d5, b.d4, res->d8 >> 15);
+  res->d9 = mad24(a.d4, b.d5, res->d9);
+  res->d8 &= 0x7FFF;
+
+  res->da = mad24(a.d5, b.d5, res->d9 >> 15);
+  res->d9 &= 0x7FFF;
+
+  res->db = res->da >> 15;
+  res->da &= 0x7FFF;
+}
+
+
+/*void mul_90_180(int180_v * const res, const int90_v a, const int90_v b)
+
+//  res = a * b
+{
+  // this is the complete implementation, no longer used, but was the basis for
+  // the _no_low3 and square functions
   // assume we have enough spare bits and can do all the carries at the very end:
   // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
   // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
@@ -2529,7 +2584,7 @@ res = a * b
   res->db = res->da >> 15;
   res->da &= 0x7FFF;
 }
-
+*/
 
 void square_90_180(int180_v * const res, const int90_v a)
 /* res = a^2 = d0^2 + 2d0d1 + d1^2 + 2d0d2 + 2(d1d2 + d0d3) + d2^2 +
@@ -2540,7 +2595,7 @@ void square_90_180(int180_v * const res, const int90_v a)
   // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
   // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
   // one (almost two) carry of 17 bit (32-bit >> 15)
-  // square 5x5 requires: 15 mul/mad24, 14 shift, 10 and, 1 add
+  // square 6x6 requires: 21 mul/mad24, 28 shift (9 of them cacheable), 14 and, 3 add
 
   res->d0 = mul24(a.d0, a.d0);
 
@@ -2645,8 +2700,9 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
 #endif
 
 /********** Step 1, Offset 2^67 (4*15 + 7) **********/
-  qf_1 = convert_float_rtz(qhi) * 4294967296.0f; // no vector yet, saving a few conversions!
-  qf_1 = qf_1 * 32768.0f * 64.0f;
+//  qf_1 = convert_float_rtz(qhi) * 4294967296.0f; // no vector yet, saving a few conversions!
+//  qf_1 = qf_1 * 32768.0f * 64.0f;
+  qf_1 = convert_float_rtz(qhi) * 9007199254740992.0f; // no vector yet, saving a few conversions! 9007199254740992=4294967296*32768*64, which the compiler does not combine automatically
 
   qi=CONVERT_UINT_V(qf_1*nf);  // vectorize just here
 
@@ -2753,8 +2809,8 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   /********** Step 2, Offset 2^45 (3*15 + 0) **********/
 
   qf= CONVERT_FLOAT_V(mad24(q.da, 32768u, q.d9));
-  qf= qf * 32768.0f * 32768.0f + CONVERT_FLOAT_V(mad24(q.d8, 32768u, q.d7));
-  qf*= 32768.0f * 32768.0f * 4.0f;
+  qf= qf * 1073741824.0f + CONVERT_FLOAT_V(mad24(q.d8, 32768u, q.d7));
+  qf*= 4294967296.0f;
 
   qi=CONVERT_UINT_V(qf*nf);
 
@@ -2874,8 +2930,8 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   /********** Step 3, Offset 2^22 (1*15 + 7) **********/
 
   qf= CONVERT_FLOAT_V(mad24(q.d8, 32768u, q.d7)); 
-  qf= qf * 32768.0f * 32768.0f + CONVERT_FLOAT_V(mad24(q.d6, 32768u, q.d5));
-  qf*= 32768.0f * 256.0f;
+  qf= qf * 1073741824.0f + CONVERT_FLOAT_V(mad24(q.d6, 32768u, q.d5));
+  qf*= 8388608.0f;
 
   qi=CONVERT_UINT_V(qf*nf);
 
@@ -2985,8 +3041,8 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   /********** Step 4, Offset 2^0 (0*15 + 0) **********/
 
   qf= CONVERT_FLOAT_V(mad24(q.d7, 32768u, q.d6));
-  qf= qf * 32768.0f * 32768.0f + CONVERT_FLOAT_V(mad24(q.d5, 32768u, q.d4));
-  qf*= 32768.0f * 32768.0f;
+  qf= qf * 1073741824.0f + CONVERT_FLOAT_V(mad24(q.d5, 32768u, q.d4));
+  qf*= 1073741824.0f;
 
   qi=CONVERT_UINT_V(qf*nf);
 
@@ -3144,7 +3200,7 @@ assumes q < 12n (12n includes "optional mul 2")
   __private int90_v nn;
 
   qf = CONVERT_FLOAT_V(mad24(q.d5, 32768u, q.d4));  // q.d3 needed?
-  qf = qf * 32768.0f * 32768.0f;
+  qf = qf * 1073741824.0f;
   
   qi = CONVERT_UINT_V(qf*nf);
 
@@ -3341,7 +3397,7 @@ a is precomputed on host ONCE.
 ff = f as float, needed in mod_192_96() and div_192_96().
 Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
-  ff= ff * 32768.0f * 32768.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // at factor size 60 bits, this gives 30 significant bits
+  ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // at factor size 60 bits, this gives 30 significant bits
 
   //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
   //ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
@@ -3403,7 +3459,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d5 = mad24(bb.da, bit_max_mult, (bb.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
   }
       // PERF: could be no_low_5
-  mul_90_180_no_low3(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
+  mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf("cl_barrett15_88: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
@@ -3495,7 +3551,7 @@ Precalculated here since it is the same for all steps in the following loop */
       a.d5 = mad24(b.da, bit_max_mult, (b.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
     }
       // PERF: could be no_low_5
-    mul_90_180_no_low3(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
+    mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
@@ -3760,7 +3816,7 @@ a is precomputed on host ONCE.
 ff = f as float, needed in mod_192_96() and div_192_96().
 Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
-  ff= ff * 32768.0f * 32768.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // f.d1 needed?
+  ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // f.d1 needed?
 
   //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
   //ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
@@ -3822,7 +3878,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d5 = mad24(bb.da, bit_max_mult, (bb.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
   }
       // PERF: could be no_low_5
-  mul_90_180_no_low3(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
+  mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett15_83: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
@@ -3901,7 +3957,7 @@ Precalculated here since it is the same for all steps in the following loop */
       a.d5 = mad24(b.da, bit_max_mult, (b.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
     }
       // PERF: could be no_low_5
-    mul_90_180_no_low3(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
+    mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
@@ -4160,7 +4216,7 @@ a is precomputed on host ONCE.
 ff = f as float, needed in mod_192_96() and div_192_96().
 Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
-  ff= ff * 32768.0f * 32768.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // f.d1 needed?
+  ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // f.d1 needed?
 
   //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
   //ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
@@ -4222,7 +4278,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d5 = mad24(bb.da, bit_max_mult, (bb.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
   }
       // PERF: could be no_low_5
-  mul_90_180_no_low3(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
+  mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett15_82: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
@@ -4293,7 +4349,7 @@ Precalculated here since it is the same for all steps in the following loop */
       a.d5 = mad24(b.da, bit_max_mult, (b.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
     }
       // PERF: could be no_low_5
-    mul_90_180_no_low3(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
+    mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loopl: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
