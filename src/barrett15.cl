@@ -401,7 +401,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 #endif
 
 /********** Step 1, Offset 2^60 (4*15 + 0) **********/
-  qf_1= convert_float_rtz(qhi) * 35184372088832.0f; // =32768.0f * 32768.0f * 32768.0f; // no vector yet
+  qf_1= convert_float(qhi) * 35184372088832.0f; // =32768.0f * 32768.0f * 32768.0f; // no vector yet
 
   qi=CONVERT_UINT_V(qf_1*nf);  // vectorize just here
 
@@ -720,94 +720,6 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   res->d3 &= 0x7FFF;
 
   // skip the last part as it would change the result by one at most
-  return;
-
-  /*******************************************************/
-/*
-// nn = n * qi
-  nn.d0  = mul24(n.d0, qil);
-  nn.d1  = mad24(n.d0, qih, nn.d0 >> 15);
-  nn.d0 &= 0x7FFF;
-#if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_150_75#4.1: nn=..:..:..:..:%x:%x\n",
-        nn.d1.s0, nn.d0.s0);
-#endif
-
-  nn.d1  = mad24(n.d1, qil, nn.d1);
-  nn.d2  = mad24(n.d1, qih, nn.d1 >> 15);
-  nn.d1 &= 0x7FFF;
-#if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_150_75#4.2: nn=..:..:..:%x:%x:%x\n",
-        nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-  nn.d2  = mad24(n.d2, qil, nn.d2);
-  nn.d3  = mad24(n.d2, qih, nn.d2 >> 15);
-  nn.d2 &= 0x7FFF;
-#if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_150_75#4.3: nn=..:..:%x:%x:%x:%x\n",
-        nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-  nn.d3  = mad24(n.d3, qil, nn.d3);
-  nn.d4  = mad24(n.d3, qih, nn.d3 >> 15);
-  nn.d3 &= 0x7FFF;
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("div_150_75#4.4: nn=..:%x:%x:%x:%x:%x\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-  nn.d4  = mad24(n.d4, qil, nn.d4);
-#ifdef CHECKS_MODBASECASE
-  nn.d5  = mad24(n.d4, qih, nn.d4 >> 15);
-#endif
-  nn.d4 &= 0x7FFF;
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("div_150_75#4.5: nn=..:%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-// no shift-left required
-
-//  q = q - nn
-  q.d0 = q.d0 - nn.d0;
-  q.d1 = q.d1 - nn.d1 - AS_UINT_V((q.d0 > 0x7FFF)?1:0);
-  q.d2 = q.d2 - nn.d2 - AS_UINT_V((q.d1 > 0x7FFF)?1:0);
-  q.d3 = q.d3 - nn.d3 - AS_UINT_V((q.d2 > 0x7FFF)?1:0);
-  q.d4 = q.d4 - nn.d4 - AS_UINT_V((q.d3 > 0x7FFF)?1:0);
-#ifdef CHECKS_MODBASECASE
-  q.d5 = q.d5 - nn.d5 - AS_UINT_V((q.d4 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
-  q.d5 &= 0x7FFF;// PERF: not needed: should be zero anyway
-#endif
-  q.d0 &= 0x7FFF;
-  q.d1 &= 0x7FFF;
-  q.d2 &= 0x7FFF;
-  q.d3 &= 0x7FFF;
-  q.d4 &= 0x7FFF;
-#if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf("div_150_75#4.7: q=..:%x:%x:%x:%x!%x:%x:%x:%x:%x\n",
-        q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0);
-#endif
- MODBASECASE_NONZERO_ERROR(q.d5, 3, 5, 8);
-*/
-/********** Step 5, final compare **********/
-/*
-
-//  res->d0=q.d0;
-//  res->d1=q.d1;
-//  res->d2=q.d2;
-
-  tmp75.d0=q.d0;
-  tmp75.d1=q.d1;
-  tmp75.d2=q.d2;
-  tmp75.d3=q.d3;
-  tmp75.d4=q.d4;
-*/
-/*
-qi is allways a little bit too small, this is OK for all steps except the last
-one. Sometimes the result is a little bit bigger than n
-This function also handles outstanding carries in res.
-  inc_if_ge_75(res, tmp75, n);
-*/
 }
 
 
@@ -2700,9 +2612,9 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
 #endif
 
 /********** Step 1, Offset 2^67 (4*15 + 7) **********/
-//  qf_1 = convert_float_rtz(qhi) * 4294967296.0f; // no vector yet, saving a few conversions!
+//  qf_1 = convert_float(qhi) * 4294967296.0f; // no vector yet, saving a few conversions!
 //  qf_1 = qf_1 * 32768.0f * 64.0f;
-  qf_1 = convert_float_rtz(qhi) * 9007199254740992.0f; // no vector yet, saving a few conversions! 9007199254740992=4294967296*32768*64, which the compiler does not combine automatically
+  qf_1 = convert_float(qhi) * 9007199254740992.0f; // no vector yet, saving a few conversions! 9007199254740992=4294967296*32768*64, which the compiler does not combine automatically
 
   qi=CONVERT_UINT_V(qf_1*nf);  // vectorize just here
 
@@ -3068,116 +2980,6 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   res->d3 &= 0x7FFF;
   res->d5 += res->d4 >> 15;
   res->d4 &= 0x7FFF;
-  return;
-
-  /*******************************************************/
-/*
-// nn = n * qi
-  nn.d0  = mul24(n.d0, qil);
-  nn.d1  = mad24(n.d0, qih, nn.d0 >> 15);
-  nn.d0 &= 0x7FFF;
-#if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_180_90#4.1: nn=..:..:..:..:%x:%x\n",
-        nn.d1.s0, nn.d0.s0);
-#endif
-
-  nn.d1  = mad24(n.d1, qil, nn.d1);
-  nn.d2  = mad24(n.d1, qih, nn.d1 >> 15);
-  nn.d1 &= 0x7FFF;
-#if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_180_90#4.2: nn=..:..:..:%x:%x:%x\n",
-        nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-  nn.d2  = mad24(n.d2, qil, nn.d2);
-  nn.d3  = mad24(n.d2, qih, nn.d2 >> 15);
-  nn.d2 &= 0x7FFF;
-#if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_180_90#4.3: nn=..:..:%x:%x:%x:%x\n",
-        nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-  nn.d3  = mad24(n.d3, qil, nn.d3);
-  nn.d4  = mad24(n.d3, qih, nn.d3 >> 15);
-  nn.d3 &= 0x7FFF;
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("div_180_90#4.4: nn=..:%x:%x:%x:%x:%x\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-  nn.d4  = mad24(n.d4, qil, nn.d4);
-  nn.d5  = mad24(n.d4, qih, nn.d4 >> 15);
-  nn.d4 &= 0x7FFF;
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("div_180_90#4.5: nn=..:%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-  nn.d5  = mad24(n.d5, qil, nn.d5);
-//#ifdef CHECKS_MODBASECASE
-  nn.d6  = mad24(n.d5, qih, nn.d5 >> 15);
-//#endif
-  nn.d5 &= 0x7FFF;
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("div_180_90#4.6: nn=..:%x:%x:%x:%x:%x:%x:%x\n",
-        nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-  nn.d7  = nn.d6 >> 15;
-  nn.d6 &= 0x7FFF;
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("div_180_90#4.7: nn=..:%x:%x:%x:%x:%x:%x:%x:%x\n",
-        nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-// no shift-left required
-
-//  q = q - nn ; q.d0 still 0
-  q.d0 = (-nn.d0) & 0x7FFF;
-  q.d1 = q.d1 - nn.d1 - AS_UINT_V((nn.d0 > 0)?1:0);
-  q.d2 = q.d2 - nn.d2 - AS_UINT_V((q.d1 > 0x7FFF)?1:0);
-  q.d3 = q.d3 - nn.d3 - AS_UINT_V((q.d2 > 0x7FFF)?1:0);
-  q.d4 = q.d4 - nn.d4 - AS_UINT_V((q.d3 > 0x7FFF)?1:0);
-  q.d5 = q.d5 - nn.d5 - AS_UINT_V((q.d4 > 0x7FFF)?1:0);
-//#ifdef CHECKS_MODBASECASE
-  q.d6 = q.d6 - nn.d6 - AS_UINT_V((q.d5 > 0x7FFF)?1:0); // PERF: not needed: should be zero anyway
-  q.d6 &= 0x7FFF;// PERF: not needed: should be zero anyway
-//#endif
-  q.d1 &= 0x7FFF;
-  q.d2 &= 0x7FFF;
-  q.d3 &= 0x7FFF;
-  q.d4 &= 0x7FFF;
-  q.d5 &= 0x7FFF;// PERF: not needed: should be zero anyway
-#if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf("div_180_90#4.8: q=..:%x:%x:%x!%x:%x:%x:%x:%x:%x\n",
-        q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0);
-#endif
- MODBASECASE_NONZERO_ERROR(q.d5, 3, 5, 8);
-*/
-/********** Step 5, final compare **********/
-/*
-
-//  res->d0=q.d0;
-//  res->d1=q.d1;
-//  res->d2=q.d2;
-
-  tmp90.d0=q.d0;
-  tmp90.d1=q.d1;
-  tmp90.d2=q.d2;
-  tmp90.d3=q.d3;
-  tmp90.d4=q.d4;
-  tmp90.d5=q.d5;
-*/
-/*
-qi is allways a little bit too small, this is OK for all steps except the last
-one. Sometimes the result is a little bit bigger than n
-
-  inc_if_ge_90(res, tmp90, n);
-#if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf("div_180_90: final res=%x:%x:%x:%x:%x:%x\n",
-        res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
-#endif
-*/
 }
 
 

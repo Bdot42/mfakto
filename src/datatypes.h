@@ -123,9 +123,9 @@ typedef struct _int180_v
 #define int_v int
 #define uint_v uint
 #define float_v float
-#define CONVERT_FLOAT_V convert_float_rtz
-#define CONVERT_FLOAT_RTP_V convert_float_rtp
-#define CONVERT_UINT_V convert_uint_rtz
+#define CONVERT_FLOAT_V convert_float
+#define CONVERT_FLOAT_RTP_V convert_float
+#define CONVERT_UINT_V convert_uint
 #define AS_UINT_V as_uint
 
 #else
@@ -172,9 +172,13 @@ typedef struct _int180_v
 #define int_v CONC(int,BARRETT_VECTOR_SIZE)
 #define uint_v CONC(uint,BARRETT_VECTOR_SIZE)
 #define float_v CONC(float,BARRETT_VECTOR_SIZE)
-#define CONVERT_FLOAT_V CONC(CONC(convert_float,BARRETT_VECTOR_SIZE), _rtz)
-#define CONVERT_FLOAT_RTP_V CONC(CONC(convert_float,BARRETT_VECTOR_SIZE), _rtp)
-#define CONVERT_UINT_V CONC(CONC(convert_uint,BARRETT_VECTOR_SIZE), _rtz)
+// _rtp/_rtz are MUCH slower than the default
+//#define CONVERT_FLOAT_V CONC(CONC(convert_float,BARRETT_VECTOR_SIZE), _rtz)
+//#define CONVERT_FLOAT_RTP_V CONC(CONC(convert_float,BARRETT_VECTOR_SIZE), _rtp)
+//#define CONVERT_UINT_V CONC(CONC(convert_uint,BARRETT_VECTOR_SIZE), _rtz)
+#define CONVERT_FLOAT_V CONC(convert_float,BARRETT_VECTOR_SIZE)
+#define CONVERT_FLOAT_RTP_V CONC(convert_float,BARRETT_VECTOR_SIZE)
+#define CONVERT_UINT_V CONC(convert_uint,BARRETT_VECTOR_SIZE)
 #define AS_UINT_V CONC(as_uint,BARRETT_VECTOR_SIZE)
 #endif
 

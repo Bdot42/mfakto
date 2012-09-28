@@ -618,60 +618,6 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
   res->d2 += AS_UINT_V((carry > res->d1)? 1 : 0);
 
   // skip the last part - it will change the result by one at most - we can live with a result that is off by one
-  return;
-/*
-  // nn = n * qi
-  nn.d0  = n.d0 * qi;
-  nn.d1  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d1 += tmp;
-  nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
-#ifndef CHECKS_MODBASECASE
-  nn.d2 += mul_hi(n.d1, qi) + n.d2* qi;
-#else
-  tmp    = mul_hi(n.d1, qi);
-  nn.d2 += tmp;
-  nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  tmp    = n.d2* qi;
-  nn.d2 += tmp;
-  nn.d3 += AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  nn.d3 += mul_hi(n.d2, qi);
-#endif  
-
-//  q = q - nn
-  carry= AS_UINT_V((nn.d0 > q.d0) ? 1 : 0);
-  q.d0 = q.d0 - nn.d0;
-
-  tmp  = q.d1 - nn.d1 - carry;
-  carry= AS_UINT_V(((tmp > q.d1) || (carry && AS_UINT_V(tmp == q.d1))) ? 1 : 0);
-  q.d1 = tmp;
-
-#ifndef CHECKS_MODBASECASE
-  q.d2 = q.d2 - nn.d2 - carry;
-#else
-  tmp  = q.d2 - nn.d2 - carry;
-  carry= AS_UINT_V(((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2))) ? 1 : 0);
-  q.d2 = tmp;
-
-  q.d3 = q.d3 - nn.d3 - carry;
-#endif
-
-//  res->d0=q.d0;
-//  res->d1=q.d1;
-//  res->d2=q.d2;
-  tmp96.d0=q.d0;
-  tmp96.d1=q.d1;
-  tmp96.d2=q.d2;
-
-  MODBASECASE_NONZERO_ERROR(q.d5, 6, 5, 9);
-  MODBASECASE_NONZERO_ERROR(q.d4, 6, 4, 10);
-  MODBASECASE_NONZERO_ERROR(q.d3, 6, 3, 11);
-*/
-/*
-qi is allways a little bit too small, this is OK for all steps except the last
-one. Sometimes the result is a little bit bigger than n
-  inc_if_ge_96(res, tmp96, n);
-*/
 }
 
 
@@ -920,60 +866,6 @@ DIV_160_96 here. */
   res->d2 += AS_UINT_V((carry > res->d1)? 1 : 0);
 
   // skip the last part - it will change the result by one at most - we can live with a result that is off by one
-  return;
-/*
-  // nn = n * qi
-  nn.d0  = n.d0 * qi;
-  nn.d1  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d1 += tmp;
-  nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
-#ifndef CHECKS_MODBASECASE
-  nn.d2 += mul_hi(n.d1, qi) + n.d2* qi;
-#else
-  tmp    = mul_hi(n.d1, qi);
-  nn.d2 += tmp;
-  nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  tmp    = n.d2* qi;
-  nn.d2 += tmp;
-  nn.d3 += AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  nn.d3 += mul_hi(n.d2, qi);
-#endif  
-
-//  q = q - nn
-  carry= AS_UINT_V((nn.d0 > q.d0) ? 1 : 0);
-  q.d0 = q.d0 - nn.d0;
-
-  tmp  = q.d1 - nn.d1 - carry;
-  carry= AS_UINT_V(((tmp > q.d1) || (carry && AS_UINT_V(tmp == q.d1))) ? 1 : 0);
-  q.d1 = tmp;
-
-#ifndef CHECKS_MODBASECASE
-  q.d2 = q.d2 - nn.d2 - carry;
-#else
-  tmp  = q.d2 - nn.d2 - carry;
-  carry= AS_UINT_V(((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2))) ? 1 : 0);
-  q.d2 = tmp;
-
-  q.d3 = q.d3 - nn.d3 - carry;
-#endif
-
-//  res->d0=q.d0;
-//  res->d1=q.d1;
-//  res->d2=q.d2;
-  tmp96.d0=q.d0;
-  tmp96.d1=q.d1;
-  tmp96.d2=q.d2;
-
-  MODBASECASE_NONZERO_ERROR(q.d5, 6, 5, 9);
-  MODBASECASE_NONZERO_ERROR(q.d4, 6, 4, 10);
-  MODBASECASE_NONZERO_ERROR(q.d3, 6, 3, 11);
-*/
-/*
-qi is allways a little bit too small, this is OK for all steps except the last
-one. Sometimes the result is a little bit bigger than n
-  inc_if_ge_96(res, tmp96, n);
-*/
 }
 #undef DIV_160_96
 

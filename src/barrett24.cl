@@ -537,74 +537,6 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
   res->d0 &= 0xFFFFFF;
   res->d2 += res->d1 >> 24;
   res->d1 &= 0xFFFFFF;
-  return;
-/*
-#if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_144_72#4.0: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-  tmp   = mul24(n.d0, qi);
-  nn.d1 = mad24(mul_hi(n.d0, qi), 256u, tmp >> 24);
-  nn.d0 = tmp & 0xFFFFFF;
-
-#if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_144_72#4.1: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-  tmp   = mul24(n.d1, qi);
-  nn.d2 = mad24(mul_hi(n.d1, qi), 256u, tmp >> 24);
-  nn.d1 += tmp & 0xFFFFFF;
-
-#if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("div_144_72#4.2: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-#ifndef CHECKS_MODBASECASE  
-  nn.d2 = mad24(n.d2, qi, nn.d2);
-  nn.d2 += nn.d1 >> 24; nn.d1 &= 0xFFFFFF;  // carry
-#else
-  tmp   = mul24(n.d2, qi);
-  nn.d3 = mad24(mul_hi(n.d2, qi), 256u, tmp >> 24);
-  nn.d2 += tmp & 0xFFFFFF;
-// do carry
-  nn.d2 += nn.d1 >> 24; nn.d1 &= 0xFFFFFF;
-  nn.d3 += nn.d2 >> 24; nn.d2 &= 0xFFFFFF;
-#endif
-
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("div_144_72#4.3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
-#endif
-
-  q.d0 = q.d0 - nn.d0;
-  q.d1 = q.d1 - nn.d1 - AS_UINT_V((q.d0 > 0xFFFFFF)?1:0);
-  q.d2 = q.d2 - nn.d2 - AS_UINT_V((q.d1 > 0xFFFFFF)?1:0);
-#ifdef CHECKS_MODBASECASE  
-  q.d3 = q.d3 - nn.d3 - ((q.d2 > 0xFFFFFF)?1:0);
-#endif
-
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf("div_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, res=%x:%x:%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, res->d2.s0, res->d1.s0, res->d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, res->d2.s0, res->d1.s0, res->d0.s0);
-#endif
-
-  tmp72.d0=q.d0 & 0xFFFFFF;
-  tmp72.d1=q.d1 & 0xFFFFFF;
-  tmp72.d2=q.d2 & 0xFFFFFF;
-  
-  MODBASECASE_NONZERO_ERROR(q.d5, 6, 5, 9);
-  MODBASECASE_NONZERO_ERROR(q.d4, 6, 4, 10);
-  MODBASECASE_NONZERO_ERROR(q.d3, 6, 3, 11);
-*/
-/*
-qi is allways a little bit too small, this is OK for all steps except the last
-one. Sometimes the result is a little bit bigger than n
-This function also handles the carries for res.
-  inc_if_ge_72(res, tmp72, n);
-*/
 }
 
 
@@ -838,8 +770,8 @@ Precalculated here since it is the same for all steps in the following loop */
   // bb.d0-bb.d1 are zero due to preprocessing on the host
   // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
   tmp72.d0 = ( -tmp72.d0) & 0xFFFFFF;
-  tmp72.d1 = ( -tmp72.d1 - 1) & 0xFFFFFF;
-  tmp72.d2 = ( bb.d2-tmp72.d2 - 1) & 0xFFFFFF;
+  tmp72.d1 = ( -tmp72.d1 - AS_UINT_V((tmp72.d0 > 0) ? 1 : 0)) & 0xFFFFFF;
+  tmp72.d2 = ( bb.d2-tmp72.d2 - AS_UINT_V(((tmp72.d0 > 0)|(tmp72.d1 > 0)) ? 1 : 0)) & 0xFFFFFF; // if either d0 or d1 are non-zero we'll have to borrow
 
 	 // we do not need the upper digits of b and tmp72 because they are 0 after this subtraction!
 
