@@ -172,7 +172,7 @@ typedef struct _int180_v
 #define int_v CONC(int,BARRETT_VECTOR_SIZE)
 #define uint_v CONC(uint,BARRETT_VECTOR_SIZE)
 #define float_v CONC(float,BARRETT_VECTOR_SIZE)
-// _rtp/_rtz are MUCH slower than the default
+// _rtp/_rtz are MUCH slower than the default (at least on HD5770)
 //#define CONVERT_FLOAT_V CONC(CONC(convert_float,BARRETT_VECTOR_SIZE), _rtz)
 //#define CONVERT_FLOAT_RTP_V CONC(CONC(convert_float,BARRETT_VECTOR_SIZE), _rtp)
 //#define CONVERT_UINT_V CONC(CONC(convert_uint,BARRETT_VECTOR_SIZE), _rtz)

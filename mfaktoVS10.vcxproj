@@ -42,6 +42,7 @@
     <ClInclude Include="src/signal_handler.h" />
     <ClInclude Include="src/timer.h" />
     <ClInclude Include="src/timeval.h" />
+    <ClInclude Include="src\datatypes.h" />
     <ClInclude Include="src\gpusieve.h" />
     <ClInclude Include="src\tf_debug.h" />
     <ClInclude Include="src\filelocking.h" />
