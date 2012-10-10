@@ -369,15 +369,22 @@ Adding x*x to a few carries will not cascade the carry
 
 void shl_96(int96_t * const a)
 /* shiftleft a one bit */
-{
-  a->d2 = (a->d2 << 1) | (a->d1 >> 31);
-  a->d1 = (a->d1 << 1) | (a->d0 >> 31);
+{ /* here, bitalign improves the 92-bit kernel, and slows down 76-bit */
+  a->d2 = amd_bitalign(a->d2, a->d1, 31);
+  a->d1 = amd_bitalign(a->d1, a->d0, 31);
+//  a->d2 = (a->d2 << 1) | (a->d1 >> 31);
+//  a->d1 = (a->d1 << 1) | (a->d0 >> 31);
   a->d0 = a->d0 << 1;
 }
 
 void shl_192(int192_t * const a)
 /* shiftleft a one bit */
-{
+{ /* in this function, bitalign slows down all kernels */
+//  a->d5 = amd_bitalign(a->d5, a->d4, 31);
+//  a->d4 = amd_bitalign(a->d4, a->d3, 31);
+//  a->d3 = amd_bitalign(a->d3, a->d2, 31);
+//  a->d2 = amd_bitalign(a->d2, a->d1, 31);
+//  a->d1 = amd_bitalign(a->d1, a->d0, 31);
   a->d5 = (a->d5 << 1) | (a->d4 >> 31);
   a->d4 = (a->d4 << 1) | (a->d3 >> 31);
   a->d3 = (a->d3 << 1) | (a->d2 >> 31);
@@ -419,46 +426,48 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
   res->d2 = qi << 11;
 
 // nn = n * qi
-  nn.d2  = n.d0 * qi;
-  nn.d3  = mul_hi(n.d0, qi);
+  nn.d0  = n.d0 * qi;
+  nn.d1  = mul_hi(n.d0, qi);
   tmp    = n.d1 * qi;
-  nn.d3 += tmp;
-  nn.d4  = AS_UINT_V((tmp > nn.d3)? 1 : 0);
+  nn.d1 += tmp;
+  nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
   tmp    = mul_hi(n.d1, qi);
-  nn.d4 += tmp;
+  nn.d2 += tmp;
 #ifndef DIV_160_96
-  nn.d5  = AS_UINT_V((tmp > nn.d4)? 1 : 0);
+  nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
   tmp    = n.d2 * qi;
-  nn.d4 += tmp;
-  nn.d5 += AS_UINT_V((tmp > nn.d4)? 1 : 0);
-  nn.d5 += mul_hi(n.d2, qi);
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V((tmp > nn.d2)? 1 : 0);
+  nn.d3 += mul_hi(n.d2, qi);
 #else
-  nn.d4 += n.d2 * qi;
+  nn.d2 += n.d2 * qi;
 #endif
 
 // shiftleft nn 11 bits
 #ifndef DIV_160_96
-  nn.d5 = (nn.d5 << 11) + (nn.d4 >> 21);
-#endif
-  nn.d4 = (nn.d4 << 11) + (nn.d3 >> 21);
   nn.d3 = (nn.d3 << 11) + (nn.d2 >> 21);
-  nn.d2 =  nn.d2 << 11;
+#endif
+  nn.d2 = amd_bitalign(nn.d2, nn.d1, 21);
+  nn.d1 = amd_bitalign(nn.d1, nn.d0, 21);
+//  nn.d2 = (nn.d2 << 11) + (nn.d1 >> 21);
+//  nn.d1 = (nn.d1 << 11) + (nn.d0 >> 21);
+  nn.d0 =  nn.d0 << 11;
 
 //  q = q - nn
-  carry= AS_UINT_V((nn.d2 > q.d2)? 1 : 0);
-  q.d2 = q.d2 - nn.d2;
+  carry= AS_UINT_V((nn.d0 > q.d2)? 1 : 0);
+  q.d2 = q.d2 - nn.d0;
 
-  tmp  = q.d3 - nn.d3 - carry ;
+  tmp  = q.d3 - nn.d1 - carry ;
   carry= AS_UINT_V(((tmp > q.d3) || (carry && AS_UINT_V(tmp == q.d3)))? 1 : 0);
   q.d3 = tmp;
 
 #ifndef DIV_160_96
-  tmp  = q.d4 - nn.d4 - carry;
+  tmp  = q.d4 - nn.d2 - carry;
   carry= AS_UINT_V(((tmp > q.d4) || (carry && AS_UINT_V(tmp == q.d4)))? 1 : 0);
   q.d4 = tmp;
-  q.d5 = q.d5 - nn.d5 - carry;
+  q.d5 = q.d5 - nn.d3 - carry;
 #else
-  q.d4 = q.d4 - nn.d4 - carry;
+  q.d4 = q.d4 - nn.d2 - carry;
 #endif
 /********** Step 2, Offset 2^55 (1*32 + 23) **********/
 #ifndef DIV_160_96
@@ -478,47 +487,50 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
   res->d2 += qi >>  9;
 
 // nn = n * qi
-  nn.d1 = n.d0 * qi;
-  nn.d2  = mul_hi(n.d0, qi);
+  nn.d0 = n.d0 * qi;
+  nn.d1  = mul_hi(n.d0, qi);
   tmp    = n.d1* qi;
+  nn.d1 += tmp;
+  nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
+  tmp    = mul_hi(n.d1, qi);
   nn.d2 += tmp;
   nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  tmp    = mul_hi(n.d1, qi);
-  nn.d3 += tmp;
-  nn.d4  = AS_UINT_V((tmp > nn.d3)? 1 : 0);
   tmp    = n.d2* qi;
-  nn.d3 += tmp;
-  nn.d4 += AS_UINT_V((tmp > nn.d3)? 1 : 0);
-  nn.d4 += mul_hi(n.d2, qi);
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V((tmp > nn.d2)? 1 : 0);
+  nn.d3 += mul_hi(n.d2, qi);
 
   // shiftleft nn 23 bits
 #ifdef CHECKS_MODBASECASE
-  nn.d5 =                  nn.d4 >> 9;
+  nn.d4 =                  nn.d3 >> 9;
 #endif  
-  nn.d4 = (nn.d4 << 23) + (nn.d3 >> 9);
+//  nn.d3 = amd_bitalign(nn.d3, nn.d2, 9);
   nn.d3 = (nn.d3 << 23) + (nn.d2 >> 9);
-  nn.d2 = (nn.d2 << 23) + (nn.d1 >> 9);
-  nn.d1 =  nn.d1 << 23;
+  nn.d2 = amd_bitalign(nn.d2, nn.d1, 9);
+//  nn.d2 = (nn.d2 << 23) + (nn.d1 >> 9);
+//  nn.d1 = amd_bitalign(nn.d1, nn.d0, 9);
+  nn.d1 = (nn.d1 << 23) + (nn.d0 >> 9);
+  nn.d0 =  nn.d0 << 23;
 
 // q = q - nn
-  carry= AS_UINT_V((nn.d1 > q.d1) ? 1 : 0);
-  q.d1 = q.d1 - nn.d1;
+  carry= AS_UINT_V((nn.d0 > q.d1) ? 1 : 0);
+  q.d1 = q.d1 - nn.d0;
 
-  tmp  = q.d2 - nn.d2 - carry;
+  tmp  = q.d2 - nn.d1 - carry;
   carry= AS_UINT_V(((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2)))? 1 : 0);
   q.d2 = tmp;
 
-  tmp  = q.d3 - nn.d3 - carry;
+  tmp  = q.d3 - nn.d2 - carry;
   carry= AS_UINT_V(((tmp > q.d3) || (carry && AS_UINT_V(tmp == q.d3)))? 1 : 0);
   q.d3 = tmp;
 
 #ifdef CHECKS_MODBASECASE
-  tmp  = q.d4 - nn.d4 - carry;
+  tmp  = q.d4 - nn.d3 - carry;
   carry= AS_UINT_V(((tmp > q.d4) || (carry && AS_UINT_V(tmp == q.d4)))? 1 : 0);
   q.d4 = tmp;
-  q.d5 = q.d5 - nn.d5 - carry;
+  q.d5 = q.d5 - nn.d4 - carry;
 #else
-  q.d4 = q.d4 - nn.d4 - carry;
+  q.d4 = q.d4 - nn.d3 - carry;
 #endif
 
 /********** Step 3, Offset 2^35 (1*32 + 3) **********/
@@ -542,32 +554,32 @@ void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, cons
 
 // nn = n * qi
   
-  nn.d1 = n.d0 * qi;
-  nn.d2  = mul_hi(n.d0, qi);
+  nn.d0 = n.d0 * qi;
+  nn.d1  = mul_hi(n.d0, qi);
   tmp    = n.d1* qi;
+  nn.d1 += tmp;
+  nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
+  tmp    = mul_hi(n.d1, qi);
   nn.d2 += tmp;
   nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  tmp    = mul_hi(n.d1, qi);
-  nn.d3 += tmp;
-  nn.d4  = AS_UINT_V((tmp > nn.d3)? 1 : 0);
   tmp    = n.d2* qi;
-  nn.d3 += tmp;
-  nn.d4 += AS_UINT_V((tmp > nn.d3)? 1 : 0);
-  nn.d4 += mul_hi(n.d2, qi);
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V((tmp > nn.d2)? 1 : 0);
+  nn.d3 += mul_hi(n.d2, qi);
 
 //  q = q - nn
-  carry= AS_UINT_V((nn.d1 > q.d1) ? 1 : 0);
-  q.d1 = q.d1 - nn.d1;
+  carry= AS_UINT_V((nn.d0 > q.d1) ? 1 : 0);
+  q.d1 = q.d1 - nn.d0;
 
-  tmp  = q.d2 - nn.d2 - carry;
+  tmp  = q.d2 - nn.d1 - carry;
   carry= AS_UINT_V(((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2)))? 1 : 0);
   q.d2 = tmp;
 
-  tmp  = q.d3 - nn.d3 - carry;
+  tmp  = q.d3 - nn.d2 - carry;
   carry= AS_UINT_V(((tmp > q.d3) || (carry && AS_UINT_V(tmp == q.d3)))? 1 : 0);
   q.d3 = tmp;
 
-  q.d4 = q.d4 - nn.d4 - carry;
+  q.d4 = q.d4 - nn.d3 - carry;
 
 /********** Step 4, Offset 2^15 (0*32 + 15) **********/
   MODBASECASE_NONZERO_ERROR(q.d5, 4, 5, 4);
@@ -3366,4 +3378,3 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_b(sf)
 #endif
 }
-

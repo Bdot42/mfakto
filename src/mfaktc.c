@@ -181,9 +181,12 @@ other return value
     }
     else if (mystuff->gpu_type == GPU_VLIW5)
     {  // this is the speed order for VLIW5, HD5770, for instance
-      if      ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  //                   192M/s
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 321M/s on HD5870, 161M/s on HD5770
-      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 288M/s            152M/s
+      if      ((bit_min >= 60) && (bit_max <= 69) && (bit_max - bit_min == 1))  use_kernel = BARRETT69_MUL15;  //                   244M/s  vec=4  on HD5770
+      else if ((bit_min >= 60) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL15;  //                   240M/s  vec=4
+      else if ((bit_min >= 60) && (bit_max <= 71) && (bit_max - bit_min == 1))  use_kernel = BARRETT71_MUL15;  //                   226M/s  vec=4
+      else if ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  //                   203M/s  vec=2
+      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 288M/s            196M/s  vec=4
+      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 321M/s on HD5870, 183M/s  vec=4
       else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 258M/s            130M/s
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 255M/s            128M/s
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 236M/s

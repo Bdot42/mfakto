@@ -67,6 +67,17 @@ Version 0.13
 #define ATOMIC_INC(x) ((x)++)
 #endif
 
+#ifdef cl_amd_media_ops
+#pragma OPENCL EXTENSION cl_amd_media_ops : enable
+#else
+// we should define something for bitalign() ...
+//     Build-in Function   
+//      uintn  amd_bitalign (uintn src0, uintn src1, uintn src2)
+//    Description
+//      dst.s0 =  (uint) (((((long)src0.s0) << 32) | (long)src1.s0) >> (src2.s0 & 31))
+//      similar operation applied to other components of the vectors.
+#define amd_bitalign (src0, src1, src2) (src0  << (32-src2)) | (src1 >> src2)
+#endif
 
 #ifdef CHECKS_MODBASECASE
 // this check only works for single vector (i.e. no vector)
