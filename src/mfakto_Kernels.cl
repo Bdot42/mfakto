@@ -71,12 +71,21 @@ Version 0.13
 #pragma OPENCL EXTENSION cl_amd_media_ops : enable
 #else
 // we should define something for bitalign() ...
-//     Build-in Function   
+//     Build-in Function
 //      uintn  amd_bitalign (uintn src0, uintn src1, uintn src2)
 //    Description
 //      dst.s0 =  (uint) (((((long)src0.s0) << 32) | (long)src1.s0) >> (src2.s0 & 31))
 //      similar operation applied to other components of the vectors.
-#define amd_bitalign (src0, src1, src2) (src0  << (32-src2)) | (src1 >> src2)
+#define amd_bitalign(src0, src1, src2) (src0  << (32-src2)) | (src1 >> src2)
+#endif
+
+#ifdef cl_amd_media_ops2
+#pragma OPENCL EXTENSION cl_amd_media_ops2 : enable
+#else
+// we need to define what we need:
+//     Build-in Function
+//      uintn amd_max3 (uintn src0, uintn src1, uintn src2)
+#define amd_max3(src0, src1, src2)  max(src0, max(src1, src2))
 #endif
 
 #ifdef CHECKS_MODBASECASE

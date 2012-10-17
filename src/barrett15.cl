@@ -28,7 +28,7 @@ Version 0.13pre2
 
 // 75-bit
 #define EVAL_RES_d(comp) \
-  if((a.d4.comp|a.d3.comp|a.d2.comp|a.d1.comp)==0 && a.d0.comp==1) \
+  if(amd_max3(a.d4.comp, a.d3.comp, a.d2.comp|a.d1.comp)==0 && a.d0.comp==1) \
   { \
       tid=ATOMIC_INC(RES[0]); \
       if(tid<10) \
@@ -41,7 +41,7 @@ Version 0.13pre2
 
 // 90-bit
 #define EVAL_RES_90(comp) \
-  if((a.d5.comp|a.d4.comp|a.d3.comp|a.d2.comp|a.d1.comp)==0 && a.d0.comp==1) \
+  if(amd_max3(amd_max3(a.d5.comp, a.d4.comp, a.d3.comp), a.d2.comp, a.d1.comp)==0 && a.d0.comp==1) \
   { \
       tid=ATOMIC_INC(RES[0]); \
       if(tid<10) \
@@ -66,11 +66,12 @@ int75_v sub_if_gte_75(const int75_v a, const int75_v b)
   int75_v tmp;
   /* do the subtraction and use tmp.d4 to decide if the result is valid (if a was > b) */
 
-  tmp.d0 = (a.d0 - b.d0) & 0x7FFF;
-  tmp.d1 = (a.d1 - b.d1 - AS_UINT_V((b.d0 > a.d0) ? 1 : 0));
-  tmp.d2 = (a.d2 - b.d2 - AS_UINT_V((tmp.d1 > a.d1) ? 1 : 0));
-  tmp.d3 = (a.d3 - b.d3 - AS_UINT_V((tmp.d2 > a.d2) ? 1 : 0));
-  tmp.d4 = (a.d4 - b.d4 - AS_UINT_V((tmp.d3 > a.d3) ? 1 : 0));
+  tmp.d0 = (a.d0 - b.d0);
+  tmp.d1 = (a.d1 - b.d1 - AS_UINT_V((tmp.d0 > 0x7FFF) ? 1 : 0));
+  tmp.d2 = (a.d2 - b.d2 - AS_UINT_V((tmp.d1 > 0x7FFF) ? 1 : 0));
+  tmp.d3 = (a.d3 - b.d3 - AS_UINT_V((tmp.d2 > 0x7FFF) ? 1 : 0));
+  tmp.d4 = (a.d4 - b.d4 - AS_UINT_V((tmp.d3 > 0x7FFF) ? 1 : 0));
+  tmp.d0&= 0x7FFF;
   tmp.d1&= 0x7FFF;
   tmp.d2&= 0x7FFF;
   tmp.d3&= 0x7FFF;
@@ -168,7 +169,9 @@ too. So the digits res.d{3-9} might differ from mul_75_150().
 void mul_75_150_no_low5(int150_v * const res, const int75_v a, const int75_v b)
 /*
 res ~= a * b
-res.d0 to res.d3 are NOT computed. res.d4 is computed only to get its upper half carried to res.d5
+res.d0 to res.d3 are NOT computed. res.d4 is computed only to get its upper half carried to res.d5.
+Due to the missing carries from d3 into d4, at most a 17-bit value is missing in d4. This means,
+d4 >> 15 can be too low by up to 3, thus d5 can be low by 3.
  */
 {
   // assume we have enough spare bits and can do all the carries at the very end:
@@ -456,7 +459,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   res->d3 = (qi >> 5);
   res->d2 = (qi << 10) & 0x7FFF;
   qil = qi & 0x7FFF;
-  qih = (qi >> 15) & 0x7FFF;
+  qih = (qi >> 15);
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("div_150_75#2: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:..:..\n",
                                  qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d4.s0, res->d3.s0, res->d2.s0);
@@ -554,10 +557,9 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 
   MODBASECASE_QI_ERROR(1<<26, 3, qi, 5);  // very big qi, but then we can skip the bit-shifting later
 
-  qih = (qi >> 15) & 0x7FFF;
+  qih = (qi >> 15);
   qil = qi & 0x7FFF;
-  res->d2 += qih;
-  res->d1  = qil;
+  res->d1  = qi;  // carry to d2 is handled at the end anyway
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf("div_150_75#3: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:%x:..\n",
                                  qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0);
@@ -783,7 +785,7 @@ a is precomputed on host ONCE.
 	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
 
   // exp75.d4=0;exp75.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
-  exp75.d2=exp>>29;exp75.d1=(exp>>14)&0x7FFF;exp75.d0=(exp<<1)&0x7FFF;	// exp75 = 2 * exp
+  exp75.d2=exp>>29;exp75.d1=(exp>>14)&0x7FFF;exp75.d0=(exp<<1)&0x7FFF;	// exp75 = 2 * exp  // PERF: exp.d1=amd_bfe(exp, 15, 14)
 
 #if (TRACE_KERNEL > 0)
   if (tid==TRACE_TID) printf("cl_barrett15_73: exp=%d, x2=%x:%x:%x, b=%x:%x:%x:%x:%x:%x:%x:%x:0:0, k_base=%x:%x:%x:%x:%x, bit_max=%d\n",
@@ -930,10 +932,13 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
     // all those bb's are 0 due to preprocessing on the host, thus always require a borrow
   tmp75.d0 = (-tmp75.d0) & 0x7FFF;
-  tmp75.d1 = (-tmp75.d1 - 1) & 0x7FFF;
-  tmp75.d2 = (-tmp75.d2 - 1) & 0x7FFF;
-  tmp75.d3 = (-tmp75.d3 - 1) & 0x7FFF;
-  tmp75.d4 = (bb.d4-tmp75.d4 - 1) & 0x7FFF;
+  tmp75.d1 = (-tmp75.d1 - AS_UINT_V((tmp75.d0 > 0) ? 1 : 0 ));
+  tmp75.d2 = (-tmp75.d2 - AS_UINT_V((tmp75.d1 > 0x7FFF) ? 1 : 0 ));
+  tmp75.d3 = (-tmp75.d3 - AS_UINT_V((tmp75.d2 > 0x7FFF) ? 1 : 0 ));
+  tmp75.d4 = (bb.d4-tmp75.d4 - AS_UINT_V((tmp75.d3 > 0x7FFF) ? 1 : 0 )) & 0x7FFF;
+  tmp75.d1 &= 0x7FFF;
+  tmp75.d2 &= 0x7FFF;
+  tmp75.d3 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett15_73: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (tmp)\n",
@@ -1277,7 +1282,7 @@ Precalculated here since it is the same for all steps in the following loop */
   a.d3 = mad24(bb.d8, bit_max75_mult, (bb.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
   a.d4 = mad24(bb.d9, bit_max75_mult, (bb.d8 >> bit_max_60));		        	// a = b / (2^bit_max)
 
-  mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
+  mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett15_71: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
@@ -1298,10 +1303,13 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
     // bb.d0-bb.d3 are 0 due to preprocessing on the host, thus always require a borrow
   a.d0 = (-tmp75.d0) & 0x7FFF;
-  a.d1 = (-tmp75.d1 - 1) & 0x7FFF;
-  a.d2 = (-tmp75.d2 - 1) & 0x7FFF;
-  a.d3 = (-tmp75.d3 - 1) & 0x7FFF;
-  a.d4 = (bb.d4-tmp75.d4 - 1) & 0x7FFF;
+  a.d1 = (-tmp75.d1 - AS_UINT_V((a.d0 > 0) ? 1 : 0 ));
+  a.d2 = (-tmp75.d2 - AS_UINT_V((a.d1 > 0x7FFF) ? 1 : 0 ));
+  a.d3 = (-tmp75.d3 - AS_UINT_V((a.d2 > 0x7FFF) ? 1 : 0 ));
+  a.d4 = (bb.d4-tmp75.d4 - AS_UINT_V((a.d3 > 0x7FFF) ? 1 : 0 )) & 0x7FFF;
+  a.d1 &= 0x7FFF;
+  a.d2 &= 0x7FFF;
+  a.d3 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett15_71: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
@@ -1335,7 +1343,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d3 = mad24(b.d8, bit_max75_mult, (b.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
     a.d4 = mad24(b.d9, bit_max75_mult, (b.d8 >> bit_max_60));       			// a = b / (2^bit_max)
 
-    mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
+    mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
@@ -1618,7 +1626,7 @@ Precalculated here since it is the same for all steps in the following loop */
   a.d3 = mad24(bb.d8, bit_max75_mult, (bb.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
   a.d4 = mad24(bb.d9, bit_max75_mult, (bb.d8 >> bit_max_60));		        	// a = b / (2^bit_max)
 
-  mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
+  mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett15_70: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
@@ -1639,10 +1647,13 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
     // bb.d0-bb.d3 are 0 due to preprocessing on the host, thus always require a borrow
   a.d0 = (-tmp75.d0) & 0x7FFF;
-  a.d1 = (-tmp75.d1 - 1) & 0x7FFF;
-  a.d2 = (-tmp75.d2 - 1) & 0x7FFF;
-  a.d3 = (-tmp75.d3 - 1) & 0x7FFF;
-  a.d4 = (bb.d4-tmp75.d4 - 1) & 0x7FFF;
+  a.d1 = (-tmp75.d1 - AS_UINT_V((a.d0 > 0) ? 1 : 0 ));
+  a.d2 = (-tmp75.d2 - AS_UINT_V((a.d1 > 0x7FFF) ? 1 : 0 ));
+  a.d3 = (-tmp75.d3 - AS_UINT_V((a.d2 > 0x7FFF) ? 1 : 0 ));
+  a.d4 = (bb.d4-tmp75.d4 - AS_UINT_V((a.d3 > 0x7FFF) ? 1 : 0 )) & 0x7FFF;
+  a.d1 &= 0x7FFF;
+  a.d2 &= 0x7FFF;
+  a.d3 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett15_70: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
@@ -1665,7 +1676,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d3 = mad24(b.d8, bit_max75_mult, (b.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
     a.d4 = mad24(b.d9, bit_max75_mult, (b.d8 >> bit_max_60));       			// a = b / (2^bit_max)
 
-    mul_75_150_no_low3(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
+    mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
@@ -1700,6 +1711,10 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 
     if(exp&0x80000000)shl_75(&a);					// "optional multiply by 2" in Prime 95 documentation
+
+#ifdef CHECKS_MODBASECASE
+// a.d4 must not exceed 0x7fff, otherwise the following squaring may overflow
+#endif
 
     exp+=exp;
 #if (TRACE_KERNEL > 1)
@@ -1971,10 +1986,13 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
     // bb.d0-bb.d3 are 0 due to preprocessing on the host, thus always require a borrow
   a.d0 = (-tmp75.d0) & 0x7FFF;
-  a.d1 = (-tmp75.d1 - 1) & 0x7FFF;
-  a.d2 = (-tmp75.d2 - 1) & 0x7FFF;
-  a.d3 = (-tmp75.d3 - 1) & 0x7FFF;
-  a.d4 = (bb.d4-tmp75.d4 - 1) & 0x7FFF;
+  a.d1 = (-tmp75.d1 - AS_UINT_V((a.d0 > 0) ? 1 : 0 ));
+  a.d2 = (-tmp75.d2 - AS_UINT_V((a.d1 > 0x7FFF) ? 1 : 0 ));
+  a.d3 = (-tmp75.d3 - AS_UINT_V((a.d2 > 0x7FFF) ? 1 : 0 ));
+  a.d4 = (bb.d4-tmp75.d4 - AS_UINT_V((a.d3 > 0x7FFF) ? 1 : 0 )) & 0x7FFF;
+  a.d1 &= 0x7FFF;
+  a.d2 &= 0x7FFF;
+  a.d3 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf("cl_barrett15_69: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
@@ -2032,6 +2050,10 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 
     if(exp&0x80000000)shl_75(&a);					// "optional multiply by 2" in Prime 95 documentation
+
+#ifdef CHECKS_MODBASECASE
+// a.d4 must not exceed 0x7fff, otherwise the following squaring may overflow
+#endif
 
     exp+=exp;
 #if (TRACE_KERNEL > 1)
