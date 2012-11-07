@@ -79,6 +79,7 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     88,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL}, // one kernel for all vector sizes
+     {   MG64,                "cl_mg64",              10,     64,         1,      NULL}, // one kernel for all vector sizes
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         0,      NULL}, // end of automatic loading
      {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         0,      NULL}, // slow shift-cmp-sub kernel: removed
      {   BARRETT92_64_OpenCL, "cl_barrett32_92",      64,     92,         0,      NULL}, // mapped to 32-bit barrett so far
@@ -2198,7 +2199,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     else if(ln2b<165)b_in.s[6]=1<<(ln2b-150);
     else             b_in.s[7]=1<<(ln2b-165);
   }
-  else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL))
+  else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL) || (use_kernel == MG64))
   {
     if     (ln2b<32 )b_192.d0=1<< ln2b;       // should not happen
     else if(ln2b<64 )b_192.d1=1<<(ln2b-32);   // should not happen
@@ -2330,7 +2331,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
               k_base.d4 =  k_min_grid[i] >> 60;
               status = run_kernel15(kernel_info[use_kernel].kernel, exp, k_base, i, b_in, mystuff->d_RES, shiftcount, bit_max);
             }
-            else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL))
+            else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL) || (use_kernel == MG64))
             {
               int96 k;
               k.d0 = (cl_uint) k_min_grid[i];

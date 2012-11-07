@@ -122,10 +122,12 @@ typedef struct _int180_v
 
 #define int_v int
 #define uint_v uint
+#define ulong_v ulong
 #define float_v float
 #define CONVERT_FLOAT_V convert_float
 #define CONVERT_FLOAT_RTP_V convert_float
 #define CONVERT_UINT_V convert_uint
+#define CONVERT_ULONG_V convert_ulong
 #define AS_UINT_V as_uint
 
 #else
@@ -171,6 +173,7 @@ typedef struct _int180_v
 
 #define int_v CONC(int,BARRETT_VECTOR_SIZE)
 #define uint_v CONC(uint,BARRETT_VECTOR_SIZE)
+#define ulong_v CONC(ulong,BARRETT_VECTOR_SIZE)
 #define float_v CONC(float,BARRETT_VECTOR_SIZE)
 // _rtp/_rtz are MUCH slower than the default (at least on HD5770)
 //#define CONVERT_FLOAT_V CONC(CONC(convert_float,BARRETT_VECTOR_SIZE), _rtz)
@@ -179,6 +182,7 @@ typedef struct _int180_v
 #define CONVERT_FLOAT_V CONC(convert_float,BARRETT_VECTOR_SIZE)
 #define CONVERT_FLOAT_RTP_V CONC(convert_float,BARRETT_VECTOR_SIZE)
 #define CONVERT_UINT_V CONC(convert_uint,BARRETT_VECTOR_SIZE)
+#define CONVERT_ULONG_V CONC(convert_ulong,BARRETT_VECTOR_SIZE)
 #define AS_UINT_V CONC(as_uint,BARRETT_VECTOR_SIZE)
 #endif
 

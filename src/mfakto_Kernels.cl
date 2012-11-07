@@ -141,11 +141,24 @@ Version 0.13
     } \
   }
 
+#define EVAL_RES_l(comp) \
+  if(a.comp == 1) \
+  { \
+      tid=ATOMIC_INC(RES[0]); \
+      if(tid<10) \
+      { \
+        RES[tid*3 + 1]=0; \
+        RES[tid*3 + 2]=convert_uint(f.comp >> 32); \
+        RES[tid*3 + 3]=convert_uint(f.comp); \
+      } \
+  }
+
 #include "barrett15.cl"  // mul24-based barrett 73-bit kernel using a word size of 15 bit
 #include "barrett.cl"   // one kernel file for 32-bit-barrett of different vector sizes (1, 2, 4, 8, 16)
 #define EVAL_RES(x) EVAL_RES_b(x)  // no check for f==1 if running the "big" version
 #include "mul24.cl" // one kernel file for 24-bit-kernels of different vector sizes (1, 2, 4, 8, 16)
 #include "barrett24.cl"  // mul24-based barrett 72-bit kernel (all vector sizes)
+#include "montgomery.cl"  // montgomery kernels
 
 #define _63BIT_MUL24_K
 #undef EVAL_RES
