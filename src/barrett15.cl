@@ -2383,11 +2383,11 @@ res.d0 to res.d4 are NOT computed. res.d5 is computed only to provide carries to
 }
 
 
-/*void mul_90_180(int180_v * const res, const int90_v a, const int90_v b)
+void mul_90_180(int180_v * const res, const int90_v a, const int90_v b)
 
 //  res = a * b
 {
-  // this is the complete implementation, no longer used, but was the basis for
+  // this is the complete implementation, used in montgomery mul, and was the basis for
   // the _no_low3 and square functions
   // assume we have enough spare bits and can do all the carries at the very end:
   // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
@@ -2463,7 +2463,6 @@ res.d0 to res.d4 are NOT computed. res.d5 is computed only to provide carries to
   res->db = res->da >> 15;
   res->da &= 0x7FFF;
 }
-*/
 
 void square_90_180(int180_v * const res, const int90_v a)
 /* res = a^2 = d0^2 + 2d0d1 + d1^2 + 2d0d2 + 2(d1d2 + d0d3) + d2^2 +

@@ -156,7 +156,7 @@ other return value
     }
     // The following line is just for debugging: it makes sure that the factor to be found is the first k being tested (so the first trace should show finding the factor)
     // remove it for "normal" tests
-    // k_min = k_hint;
+    k_min = k_hint;
   }
 
   k_min -= k_min % NUM_CLASSES;	/* k_min is now 0 mod NUM_CLASSES */
@@ -473,7 +473,7 @@ k_max and k_min are used as 64bit temporary integers here...
         
         f_low  &= 0x00FFFFFF;
       }
-      else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15))
+      else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15) || (use_kernel == MG88))
       {
         // 30 bits per reported result int
         f_hi  <<= 4;
@@ -586,7 +586,7 @@ RET_ERROR we might have a serios problem
   unsigned int num_selftests=0, total_selftests=sizeof(st_data) / sizeof(st_data[0]);
   int f_class, selftests_to_run;
   int retval=1, ind;
-  enum GPUKernels kernels[20];
+  enum GPUKernels kernels[21];
   unsigned int index[] = {    46, 1518, 2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
                              70,   72,   73,  82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
@@ -624,23 +624,24 @@ RET_ERROR we might have a serios problem
 
 /* create a list which kernels can handle this testcase */
     j = 0;
-    if (st_data[ind].bit_min <= 63)                                    kernels[j++] = _63BIT_MUL24;
-/*    if ((st_data[ind].bit_min >= 61) && (st_data[ind].bit_min < 72))   kernels[j++] = _71BIT_MUL24;
+/*    if (st_data[ind].bit_min <= 63)                                    kernels[j++] = _63BIT_MUL24;
+    if ((st_data[ind].bit_min >= 61) && (st_data[ind].bit_min < 72))   kernels[j++] = _71BIT_MUL24;
     if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 76))   kernels[j++] = BARRETT76_MUL32; 
     if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 77))   kernels[j++] = BARRETT77_MUL32; 
     if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 79))   kernels[j++] = BARRETT79_MUL32; 
     if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 87))   kernels[j++] = BARRETT87_MUL32;
     if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL32;
     if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 92))   kernels[j++] = BARRETT92_MUL32;
-    if ((st_data[ind].bit_min >= 63) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL24;*/
+    if ((st_data[ind].bit_min >= 63) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL24;
     if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 69))   kernels[j++] = BARRETT69_MUL15;
-/*    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL15;
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL15;
     if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 71))   kernels[j++] = BARRETT71_MUL15;
     if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 73))   kernels[j++] = BARRETT73_MUL15;
     if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 82))   kernels[j++] = BARRETT82_MUL15;
     if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 83))   kernels[j++] = BARRETT83_MUL15;
     if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL15;*/
-    if ((st_data[ind].bit_min >= 10) && (st_data[ind].bit_min < 64))   kernels[j++] = MG64;
+    if ((st_data[ind].bit_min >= 10) && (st_data[ind].bit_min < 62))   kernels[j++] = MG62;
+    if ((st_data[ind].bit_min >= 76) && (st_data[ind].bit_min < 89))   kernels[j++] = MG88;
 //  CAREFUL when adding more kernels to the test: kernels is a fixed size array
 //      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
 

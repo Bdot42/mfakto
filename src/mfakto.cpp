@@ -79,7 +79,8 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     88,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL}, // one kernel for all vector sizes
-     {   MG64,                "cl_mg64",              10,     64,         1,      NULL}, // one kernel for all vector sizes
+     {   MG62,                "cl_mg62",              10,     62,         1,      NULL}, // one kernel for all vector sizes
+     {   MG88,                "cl_mg88",              10,     88,         1,      NULL}, // one kernel for all vector sizes
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         0,      NULL}, // end of automatic loading
      {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         0,      NULL}, // slow shift-cmp-sub kernel: removed
      {   BARRETT92_64_OpenCL, "cl_barrett32_92",      64,     92,         0,      NULL}, // mapped to 32-bit barrett so far
@@ -2187,7 +2188,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     else if(ln2b<120)b_preinit.d4=1<<(ln2b-96);
     else             b_preinit.d5=1<<(ln2b-120);	// b_preinit = 2^ln2b
   }
-  else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15))
+  else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15) || (use_kernel == MG88))
   { // skip the "lowest" 4 levels, so that uint8 is sufficient for 12 components of int180
     if     (ln2b<60 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
     else if(ln2b<75 )b_in.s[0]=1<<(ln2b-60);
@@ -2199,7 +2200,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     else if(ln2b<165)b_in.s[6]=1<<(ln2b-150);
     else             b_in.s[7]=1<<(ln2b-165);
   }
-  else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL) || (use_kernel == MG64))
+  else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL) || (use_kernel == MG62))
   {
     if     (ln2b<32 )b_192.d0=1<< ln2b;       // should not happen
     else if(ln2b<64 )b_192.d1=1<<(ln2b-32);   // should not happen
@@ -2321,7 +2322,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
               k_base.d2 =  k_min_grid[i] >> 48;
               status = run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount, bit_min-63);
             }
-            else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15))
+            else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15) || (use_kernel == MG88))
             {
               int75 k_base;
               k_base.d0 =  k_min_grid[i] & 0x7FFF;
@@ -2331,7 +2332,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
               k_base.d4 =  k_min_grid[i] >> 60;
               status = run_kernel15(kernel_info[use_kernel].kernel, exp, k_base, i, b_in, mystuff->d_RES, shiftcount, bit_max);
             }
-            else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL) || (use_kernel == MG64))
+            else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL) || (use_kernel == MG62))
             {
               int96 k;
               k.d0 = (cl_uint) k_min_grid[i];
@@ -2708,7 +2709,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
       int72 factor={factor_lo, factor_mid, factor_hi};
       print_dez72(factor,string);
     }
-    else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15))
+    else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15) || (use_kernel == MG88))
     {
       print_dez90(factor_hi, factor_mid, factor_lo, string);
     }
@@ -3045,11 +3046,8 @@ void CL_test(cl_int devnumber)
 	  std::cerr << "Error " << status << ": clCreateProgramWithSource\n";
 	}
 
-  status = clBuildProgram(program, 1, &devices[devnumber], "-Werror -O3 -I. -DBARRETT_VECTOR_SIZE=4 -DVECTOR_SIZE=4", NULL, NULL);
-  if(status != CL_SUCCESS) 
+  status = clBuildProgram(program, 1, &devices[devnumber], "-O3 -I. -DBARRETT_VECTOR_SIZE=4 -DVECTOR_SIZE=4", NULL, NULL);
   { 
-    if(status == CL_BUILD_PROGRAM_FAILURE)
-    {
       cl_int logstatus;
       char *buildLog = NULL;
       size_t buildLogSize = 0;
@@ -3077,7 +3075,6 @@ void CL_test(cl_int devnumber)
       std::cout << buildLog << std::endl;
       std::cout << " \tEND OF BUILD OUTPUT\n";
       free(buildLog);
-    }
 		std::cerr<<"Error " << status << ": clBuildProgram\n";
   }
 
@@ -3085,23 +3082,15 @@ void CL_test(cl_int devnumber)
 
   /* get kernel by name */
 
-  kernel_info[BARRETT92_64_OpenCL].kernel = clCreateKernel(program, kernel_info[BARRETT92_64_OpenCL].kernelname, &status);
-  if(status != CL_SUCCESS) 
-	{  
-		std::cerr<<"Error " << status << ": Creating Kernel mfakt_cl_barrett92 from program. (clCreateKernel)\n";
-	}
-
-  kernel_info[_TEST_MOD_].kernel = clCreateKernel(program, kernel_info[_TEST_MOD_].kernelname, &status);
-  if(status != CL_SUCCESS) 
-	{  
-		std::cerr<<"Error " << status << ": Creating Kernel mod_128_64_k from program. (clCreateKernel)\n";
-	}
-
-  kernel_info[_95BIT_64_OpenCL].kernel = clCreateKernel(program, kernel_info[_95BIT_64_OpenCL].kernelname, &status);
-  if(status != CL_SUCCESS) 
-	{  
-		std::cerr<<"Error " << status << ": Creating Kernel mfakto_cl_95 from program. (clCreateKernel)\n";
-	}
+  for (i=_TEST_MOD_; i<UNKNOWN_KERNEL; i++)
+  {
+    printf("."); fflush(stdout);
+    kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
+    if(status != CL_SUCCESS) 
+  	{  
+  		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
+  	}
+  }
 
   /* init_streams */
 

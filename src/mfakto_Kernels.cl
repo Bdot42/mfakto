@@ -174,7 +174,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 {
   __private uint i,f, tid;
   int180_v resv;
-  int90_v a, b, r;
+  int90_v a, as, b, r, m;
   tid = get_global_id(0);
   float_v ff;
 
@@ -183,14 +183,69 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 #if (TRACE_KERNEL > 0)
     printf("kernel tracing level %d enabled\n", TRACE_KERNEL);
 #endif
-  a.d0=0;
+  a.d0=1;
   a.d1=0;
   a.d2=0;
   a.d3=0x0003;
-  a.d4=0x0000;
-  a.d5=0x0000;
+  a.d4=0x7000;
+  a.d5=0x0010;
 
-  b.d0=1;
+  b=invmod2pow90(a);
+  r=neginvmod2pow90(a);
+
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf("test: a=%x:%x:%x:%x:%x:%x, invmod2pow90(a)=%x:%x:%x:%x:%x:%x(b)  neg= %x:%x:%x:%x:%x:%x(r)\n",
+        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
+        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
+        r.d5.s0, r.d4.s0, r.d3.s0, r.d2.s0, r.d1.s0, r.d0.s0);
+#endif
+
+  mul_90(&b, a, b);
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf("test: a*b= %x:%x:%x:%x:%x:%x\n",
+        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0);
+#endif
+  ff= CONVERT_FLOAT_RTP_V(mad24(a.d5, 32768u, a.d4));
+  ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(a.d3, 32768u, a.d2));
+
+  ff = as_float(0x3f7ffffd) / ff;
+  b = neg_90(a);
+#ifndef CHECKS_MODBASECASE
+  mod_simple_90(&as, b, a, ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+                 );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
+#else
+  mod_simple_90(&as, b, a, ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+                   , bit_max, 1 << (90-bit_max), modbasecase_debug);
+#endif
+
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf("test: as=%x:%x:%x:%x:%x:%x, -a=%x:%x:%x:%x:%x:%x\n",
+        as.d5.s0, as.d4.s0, as.d3.s0, as.d2.s0, as.d1.s0, as.d0.s0,
+        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0);
+#endif
+
+  m = mod_REDC90(as, a, r);
+
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf("test: mod_REDC90(as, a, r)=%x:%x:%x:%x:%x:%x\n",
+        m.d5.s0, m.d4.s0, m.d3.s0, m.d2.s0, m.d1.s0, m.d0.s0);
+#endif
+
+  m = squaremod_REDC90(as, a, r);
+
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf("test: mulmod_REDC90(as, as, a, r)=%x:%x:%x:%x:%x:%x\n",
+        m.d5.s0, m.d4.s0, m.d3.s0, m.d2.s0, m.d1.s0, m.d0.s0);
+#endif
+
+  b.d0=11;
   b.d1=0;
   b.d2=0x0;
   b.d3=0x0;
