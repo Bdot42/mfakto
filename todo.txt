@@ -129,3 +129,6 @@ TODO
 - Auto-adjust VectorSize per kernel
 - dummy kernel for performance testing of sieve and transfer
 - test a montgomery kernel
+- _getcwd / _chdir to avoid problems on temporary loss of the device
+- _kbhit + getchar to allow config changes at runtime
+- __kernel __attribute__((vec_type_hint(uintn)))

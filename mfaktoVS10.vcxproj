@@ -49,7 +49,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Changelog-mfakto.txt" />
-    <None Include="montgomery.cl" />
     <None Include="README-mfakto.txt" />
     <None Include="src/mfakto_Kernels.cl" />
     <None Include="src\barrett.cl" />
@@ -57,6 +56,7 @@
     <None Include="src\barrett24.cl" />
     <None Include="src\gpusieve.cl" />
     <None Include="src\mfakto.ini" />
+    <None Include="src\montgomery.cl" />
     <None Include="src\mul24.cl" />
     <None Include="src\sieve.cl" />
     <None Include="todo.txt" />

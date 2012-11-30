@@ -116,6 +116,8 @@ enum GPUKernels
   BARRETT88_MUL15,
   BARRETT83_MUL15,
   BARRETT82_MUL15,
+  MG62,
+  MG88,
   UNKNOWN_KERNEL, /* what comes after this one will not be loaded automatically*/
   _64BIT_64_OpenCL,
   BARRETT92_64_OpenCL,
@@ -197,6 +199,7 @@ typedef struct
 
   cl_uint sieve_primes, sieve_primes_adjust, sieve_primes_min, sieve_primes_max, sieve_primes_max_global, sieve_gpu, sieve_size;
   cl_uint num_streams;
+  cl_uint gpu_sieve_primes;
   
   enum MODES mode;
   cl_uint checkpoints, checkpointdelay, stages, stopafterfactor;

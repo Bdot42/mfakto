@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="src/checkpoint.c">
+      <Filter>source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/timer.c">
+      <Filter>source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/filelocking.c">
+      <Filter>source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/mfaktc.c">
+      <Filter>source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/mfakto.cpp">
+      <Filter>source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/parse.c">
+      <Filter>source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/read_config.c">
+      <Filter>source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/sieve.c">
+      <Filter>source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/signal_handler.c">
+      <Filter>source files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src/checkpoint.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/compatibility.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\filelocking.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/mfakto.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/my_types.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/params.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/parse.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/read_config.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/selftest-data.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/sieve.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/signal_handler.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tf_debug.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/timer.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/timeval.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gpusieve.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\datatypes.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="todo.txt" />
+    <None Include="src\barrett.cl">
+      <Filter>kernel files</Filter>
+    </None>
+    <None Include="src\barrett24.cl">
+      <Filter>kernel files</Filter>
+    </None>
+    <None Include="src\barrett15.cl">
+      <Filter>kernel files</Filter>
+    </None>
+    <None Include="src/mfakto_Kernels.cl">
+      <Filter>kernel files</Filter>
+    </None>
+    <None Include="src\mul24.cl">
+      <Filter>kernel files</Filter>
+    </None>
+    <None Include="src\sieve.cl">
+      <Filter>kernel files</Filter>
+    </None>
+    <None Include="trialfactor_72.cl">
+      <Filter>kernel files</Filter>
+    </None>
+    <None Include="src\mfakto.ini" />
+    <None Include="src\gpusieve.cl">
+      <Filter>kernel files</Filter>
+    </None>
+    <None Include="README-mfakto.txt" />
+    <None Include="Changelog-mfakto.txt" />
+    <None Include="src\montgomery.cl">
+      <Filter>kernel files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="kernel files">
+      <UniqueIdentifier>{8d498c17-b0c5-4a69-ab7f-fe06dc2dc049}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header files">
+      <UniqueIdentifier>{d7ff5765-5531-47cf-bb6c-7ebbb8b1e82a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source files">
+      <UniqueIdentifier>{190fd934-ea9b-4cea-aa53-ea57e106dca1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
