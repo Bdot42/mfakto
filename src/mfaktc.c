@@ -187,11 +187,28 @@ other return value
       else if ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  //                   203M/s  vec=2
       else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 288M/s            196M/s  vec=4
       else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 321M/s on HD5870, 183M/s  vec=4
+      else if ((bit_min >= 60) && (bit_max <= 82) && (bit_max - bit_min == 1))  use_kernel = BARRETT82_MUL15;  //                   177M/s  vec=4
+      else if ((bit_min >= 60) && (bit_max <= 83) && (bit_max - bit_min == 1))  use_kernel = BARRETT83_MUL15;  //                   169M/s  vec=4
+      else if ((bit_min >= 60) && (bit_max <= 88) && (bit_max - bit_min == 1))  use_kernel = BARRETT88_MUL15;  //                   146M/s  vec=4
       else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 258M/s            130M/s
       else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 255M/s            128M/s
       else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 236M/s
       else if ((bit_min >= 65) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 205M/s            103M/s
 //      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
+/*    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 76))   kernels[j++] = BARRETT76_MUL32; // 185.1
+    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 77))   kernels[j++] = BARRETT77_MUL32; // 198.3
+    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 79))   kernels[j++] = BARRETT79_MUL32; // 147.2
+    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 87))   kernels[j++] = BARRETT87_MUL32; // 161.4
+    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL32; // 167.3
+    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 92))   kernels[j++] = BARRETT92_MUL32; // 131.5
+    if ((st_data[ind].bit_min >= 63) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL24; // 183.6
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 69))   kernels[j++] = BARRETT69_MUL15; // 244.9
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL15; // 237.2
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 71))   kernels[j++] = BARRETT71_MUL15; // 227.9
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 73))   kernels[j++] = BARRETT73_MUL15; // 197.3
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 82))   kernels[j++] = BARRETT82_MUL15; // 177.3
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 83))   kernels[j++] = BARRETT83_MUL15; // 169.0
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL15; // 145.8 */
     }
     else if (mystuff->gpu_type == GPU_GCN)
     {  // this is the speed order for GCN, HD77xx...HD79xx. Note this GPU requires VectorSize=2 for best performance
