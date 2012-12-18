@@ -629,3 +629,40 @@ int read_config(mystuff_t *mystuff)
 
   return 0;
 }
+
+/* read a config array of integers from <filename>,
+   search for keyname=,
+   write at most num elements into arr,
+   return the number of elements or -1 as error indicator */
+int read_array(char *filename, char *keyname, cl_uint num, cl_uint *arr)
+{
+  FILE *in;
+  char buf[512], tmp[512];
+  char *ps, *pt, *pswap;
+  cl_uint found = 0;
+  cl_uint idx = (unsigned int) strlen(keyname);
+  cl_uint i = 0;
+
+  in=fopen(filename,"r");
+  if(!in)return -1;
+  while(fgets(buf,512,in) && !found)
+  {
+    if(!strncmp(buf, keyname, idx) && buf[idx]=='=')
+    {
+      ps = buf + idx + 1;  // first char after =
+      pt = tmp;
+      for (i=0; i<num;)
+      {
+        found = sscanf(ps, "%u,%512s", &arr[i], pt);
+        if (found) i++;
+        if (found < 2 || *pt == '\0')  break;
+        pswap = pt; pt = ps; ps = pswap;
+        if (*ps == ',') ps++;
+        if (*ps == ' ') ps++;
+      }
+      found = i;
+    }
+  }
+  fclose(in);
+  return i;
+}

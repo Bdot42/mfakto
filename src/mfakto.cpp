@@ -32,6 +32,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "timer.h"
 #include "checkpoint.h"
 #include "filelocking.h"
+#include "perftest.h"
 #include "mfakto.h"
 #ifndef _MSC_VER
 #include <sys/time.h>
@@ -47,13 +48,13 @@ cl_uint             new_class=1;
 cl_device_id        *devices;
 cl_program          program;
 
+cl_context          context=NULL;
+cl_command_queue    commandQueue, commandQueuePrf=NULL;
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-cl_context          context=NULL;
-cl_command_queue    commandQueue;
 
 #include "signal_handler.h"
 extern mystuff_t    mystuff;
@@ -249,7 +250,7 @@ int init_CLstreams(void)
     memcpy(mystuff.h_primes, &primes[4], SIEVE_PRIMES_MAX * sizeof(cl_uint)); // lowest prime=13
     free(primes);
 
-    status = clEnqueueWriteBuffer(commandQueue,
+    status = clEnqueueWriteBuffer(QUEUE,
                 mystuff.d_primes,
                 CL_TRUE,
                 0,
@@ -635,10 +636,7 @@ int init_CL(int num_streams, cl_int devnumber)
 
 //  cl_command_queue_properties props = 0;  // serialize data transfer and kernel execution (i.e. no overlapping transfer while some kernel is still running)
   cl_command_queue_properties props = CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;  // kernels and copy-jobs are queued with event dependencies, so this should work ...
-                                                                               // but so far the GPU driver does not support that anyway (as of Catalyst 11.7)
-#ifdef CL_PERFORMANCE_INFO
-  props |= CL_QUEUE_PROFILING_ENABLE;
-#endif
+                                                                               // but so far the GPU driver does not support that anyway (as of Catalyst 12.9)
 
   commandQueue = clCreateCommandQueue(context, devices[devnumber], props, &status);
   if(status != CL_SUCCESS) 
@@ -647,7 +645,16 @@ int init_CL(int num_streams, cl_int devnumber)
 		return 1;
 	}
 
-	size_t size;
+  props |= CL_QUEUE_PROFILING_ENABLE;
+
+  commandQueuePrf = clCreateCommandQueue(context, devices[devnumber], props, &status);
+  if(status != CL_SUCCESS) 
+	{ 
+    std::cerr << "Error " << status << ": clCreateCommandQueuePrf(dev#" << devnumber+1 << ")\n";
+		return 1;
+	}
+
+ 	size_t size;
 	char*  source;
 
 	std::fstream f(KERNEL_FILE, (std::fstream::in | std::fstream::binary));
@@ -782,7 +789,7 @@ int init_CL(int num_streams, cl_int devnumber)
   	}
   }
 
-  printf("\n"); fflush(NULL);
+  printf("\n");
   return 0;
 }
 
@@ -838,7 +845,7 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
 		  return 1;
 	  }
   }
-  status = clEnqueueNDRangeKernel(commandQueue,
+  status = clEnqueueNDRangeKernel(QUEUE,
                  kernel_info[SEG_SIEVE].kernel,
                  1,
                  NULL,
@@ -852,7 +859,7 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
 		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)" << "\n";
 		return 1;
 	}
-  clFinish(commandQueue);
+  clFinish(QUEUE);
 #ifdef CL_PERFORMANCE_INFO
               cl_ulong startTime=0;
               cl_ulong endTime=1000;
@@ -957,7 +964,7 @@ cl_int run_count_sieve(cl_uint numblocks, cl_uint localThreads,
 		  return 1;
 	  }
   }
-  status = clEnqueueNDRangeKernel(commandQueue,
+  status = clEnqueueNDRangeKernel(QUEUE,
                  kernel_info[COUNT_SIEVE].kernel,
                  1,
                  NULL,
@@ -971,7 +978,7 @@ cl_int run_count_sieve(cl_uint numblocks, cl_uint localThreads,
 		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)" << "\n";
 		return 1;
 	}
-  clFinish(commandQueue);
+  clFinish(QUEUE);
 #ifdef CL_PERFORMANCE_INFO
               cl_ulong startTime=0;
               cl_ulong endTime=1000;
@@ -1070,7 +1077,7 @@ int run_cl_sieve_init(cl_uint exp, cl_ulong k_min, cl_ulong num_threads)
 	}
   // params 2-4 are set during init_CLstreams, after loading the kernel.
 
-  status = clEnqueueNDRangeKernel(commandQueue,
+  status = clEnqueueNDRangeKernel(QUEUE,
                  kernel_info[CL_SIEVE_INIT].kernel,
                  2,
                  NULL,
@@ -1084,7 +1091,7 @@ int run_cl_sieve_init(cl_uint exp, cl_ulong k_min, cl_ulong num_threads)
 		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)\n";
 		return 1;
 	}
-  clFinish(commandQueue);
+  clFinish(QUEUE);
 
   cl_int event_status;
   status = clGetEventInfo(mystuff.copy_events[0],
@@ -1101,7 +1108,7 @@ int run_cl_sieve_init(cl_uint exp, cl_ulong k_min, cl_ulong num_threads)
   new_class = 1;
 
   //#ifdef DETAILED_INFO
-  status = clEnqueueReadBuffer(commandQueue,     // only for tracing/verification - not needed later.
+  status = clEnqueueReadBuffer(QUEUE,     // only for tracing/verification - not needed later.
                 mystuff.d_k_mult,
                 CL_TRUE,
                 0,
@@ -1213,7 +1220,7 @@ int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
 		return 1;
 	}
 
-  status = clEnqueueNDRangeKernel(commandQueue,
+  status = clEnqueueNDRangeKernel(QUEUE,
                  kernel_info[CL_SIEVE].kernel,
                  2,
                  NULL,
@@ -1227,11 +1234,11 @@ int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
 		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)\n";
 		return 1;
 	}
-  clFinish(commandQueue);
+  clFinish(QUEUE);
 /////////////////////////////////////////////////
 
   //#ifdef DETAILED_INFO
-  status = clEnqueueReadBuffer(commandQueue,     // only for tracing/verification - not needed later.
+  status = clEnqueueReadBuffer(QUEUE,     // only for tracing/verification - not needed later.
                 mystuff.d_ktab[0],
                 CL_TRUE,
                 0,
@@ -1251,7 +1258,7 @@ int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
   //#endif
 
     //#ifdef DETAILED_INFO
-  status = clEnqueueReadBuffer(commandQueue,    // only for tracing/verification - not needed later.
+  status = clEnqueueReadBuffer(QUEUE,    // only for tracing/verification - not needed later.
                 mystuff.d_k_mult,
                 CL_TRUE,
                 0,
@@ -1270,7 +1277,7 @@ int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
   printArray("mult", mystuff.h_k_mult, (cl_uint)total_threads);
   //#endif
 
-  status = clEnqueueReadBuffer(commandQueue,  // only for tracing/verification - not needed later.
+  status = clEnqueueReadBuffer(QUEUE,  // only for tracing/verification - not needed later.
                 mystuff.d_savestate,
                 CL_TRUE,
                 0,
@@ -1396,7 +1403,7 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
                     sizeof(cl_uint), 
                     (void *)&status);
 
-  status = clEnqueueTask(commandQueue,
+  status = clEnqueueTask(QUEUE,
                  kernel_info[_TEST_MOD_].kernel,
                  0,
                  NULL,
@@ -1446,7 +1453,7 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
 		std::cerr<< "Error " << status << ": Release mod event object. (clReleaseEvent)\n";
 	  return 1;
   }
-  status = clEnqueueReadBuffer(commandQueue,
+  status = clEnqueueReadBuffer(QUEUE,
                 mystuff.d_RES,
                 CL_TRUE,
                 0,
@@ -1817,8 +1824,8 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
   total_threads /= mystuff.vectorsize;
 
   globalThreads[0] = (total_threads > deviceinfo.maxThreadsPerBlock) ? deviceinfo.maxThreadsPerBlock : total_threads;
-  globalThreads[1] = (total_threads > deviceinfo.maxThreadsPerBlock) ? total_threads/deviceinfo.maxThreadsPerBlock : 1;
-  localThreads[0] = globalThreads[0];
+  globalThreads[1] = (total_threads-1)/deviceinfo.maxThreadsPerBlock + 1;
+  localThreads[0] = globalThreads[0];  // PERF: test different sizes, also in combination with the __attribute__((reqd_work_group_size(X, Y, Z)))qualifier
   localThreads[1] = 1;
 
   // first set the params that don't change per block: exp, RES
@@ -1860,7 +1867,7 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
 
   if (kernel_info[_95BIT_64_OpenCL].kernel == l_kernel)
   {
-    status = clEnqueueNDRangeKernel(commandQueue,
+    status = clEnqueueNDRangeKernel(QUEUE,
                  l_kernel,
                  2,
                  NULL,
@@ -1872,7 +1879,7 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
   }
   else
   {
-    status = clEnqueueNDRangeKernel(commandQueue,
+    status = clEnqueueNDRangeKernel(QUEUE,
                  l_kernel,
                  2,
                  NULL,
@@ -1887,7 +1894,7 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
 		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel), stream " << stream << "\n";
 		return 1;
 	}
-  clFlush(commandQueue);
+  clFlush(QUEUE);
 	return 0;
 }
 
@@ -1947,7 +1954,13 @@ int cleanup_CL(void)
 		std::cerr<<"Error" << status << ": clReleaseCommandQueue\n";
 		return 1;
 	}
-  status = clReleaseContext(context);
+  if (commandQueuePrf) status = clReleaseCommandQueue(commandQueuePrf);
+  if(status != CL_SUCCESS)
+	{
+		std::cerr<<"Error" << status << ": clReleaseCommandQueuePrf\n";
+		return 1;
+	  status = clReleaseContext(context);
+  }
   if(status != CL_SUCCESS)
 	{
 		std::cerr<<"Error" << status << ": clReleaseContext\n";
@@ -2117,7 +2130,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 
   /* set result array to 0 */ 
   memset(mystuff->h_RES,0,32 * sizeof(int));
-  status = clEnqueueWriteBuffer(commandQueue,
+  status = clEnqueueWriteBuffer(QUEUE,
                 mystuff->d_RES,
                 CL_FALSE,          // Don't wait for completion; it's fast to copy 128 bytes ;-)
                 0,
@@ -2134,7 +2147,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 #ifdef CHECKS_MODBASECASE
   /* set modbasecase_debug array to 0 */ 
   memset(mystuff->h_modbasecase_debug,0,32 * sizeof(int));
-  status = clEnqueueWriteBuffer(commandQueue,
+  status = clEnqueueWriteBuffer(QUEUE,
                 mystuff->d_modbasecase_debug,
                 CL_TRUE,
                 0,
@@ -2268,7 +2281,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
         /// test test test
         // mystuff->h_ktab[h_ktab_index][0]=0;
         /////////
-        status = clEnqueueWriteBuffer(commandQueue,
+        status = clEnqueueWriteBuffer(QUEUE,
                   mystuff->d_ktab[h_ktab_index],
                   CL_FALSE,
                   0,
@@ -2549,7 +2562,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   printf("##### k_end = %" PRIu64 " #####\n",k_min);
 #endif    
 
-  status = clEnqueueReadBuffer(commandQueue,
+  status = clEnqueueReadBuffer(QUEUE,
                 mystuff->d_RES,
                 CL_TRUE,
                 0,
@@ -2570,7 +2583,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
 #endif
 
 #ifdef CHECKS_MODBASECASE
-  status = clEnqueueReadBuffer(commandQueue,
+  status = clEnqueueReadBuffer(QUEUE,
                 mystuff->d_modbasecase_debug,
                 CL_TRUE,
                 0,
@@ -3003,16 +3016,6 @@ void CL_test(cl_int devnumber)
       deviceinfo.maxThreadsPerGrid *= deviceinfo.wi_sizes[i];
   }
 
-//  cl_command_queue_properties props = 0;
-  cl_command_queue_properties props = CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;  // kernels and copy-jobs are queued with event dependencies, so this should work ...
-  props |= CL_QUEUE_PROFILING_ENABLE;
-
-  commandQueue = clCreateCommandQueue(context, devices[devnumber], props, &status);
-  if(status != CL_SUCCESS) 
-	{ 
-    std::cerr << "Error " << status << ": clCreateCommandQueue(dev#" << devnumber+1 << ")\n";
-	}
-
 	size_t size;
 	char*  source;
 
@@ -3199,13 +3202,13 @@ void CL_test(cl_int devnumber)
   timer_init(&timer);
 #define TEST_LOOPS 10
 
-  for (i=0; i<=TEST_LOOPS; i++)
+  for (i=1; i<=TEST_LOOPS; i++)
   {
     printf("loop %d: \n", i);fflush(NULL);
 
     /* set result array to 0 */ 
     memset(mystuff.h_RES,0,32 * sizeof(int));
-    status = clEnqueueWriteBuffer(commandQueue,
+    status = clEnqueueWriteBuffer(commandQueuePrf,
                   mystuff.d_RES,
                   CL_FALSE,          // Don't wait for completion; it's fast to copy 128 bytes ;-)
                   0,
@@ -3231,7 +3234,7 @@ void CL_test(cl_int devnumber)
       g_size[1] = i-255;
     }
 
-    status = clEnqueueNDRangeKernel(commandQueue,
+    status = clEnqueueNDRangeKernel(commandQueuePrf,
                  kernel_info[_TEST_MOD_].kernel,
                  2,
                  NULL,
@@ -3258,7 +3261,7 @@ void CL_test(cl_int devnumber)
     }
     */
 
-    status = clEnqueueReadBuffer(commandQueue,
+    status = clEnqueueReadBuffer(commandQueuePrf,
                 mystuff.d_RES,
                 CL_FALSE,
                 0,
@@ -3275,7 +3278,7 @@ void CL_test(cl_int devnumber)
 
     try
     {
-      status = clFinish(commandQueue);
+      status = clFinish(commandQueuePrf);
     }
     catch(...)
     {
@@ -3334,194 +3337,4 @@ void CL_test(cl_int devnumber)
     printArray("RES", mystuff.h_RES, 32);
 
   }
-}
-
-int perftest(int par)
-{
-  struct timeval timer;
-  int i, tmp;
-  unsigned int exp=66362159;
-  unsigned long long int k=0, time1, time2, time3;
-  float it;
-
-  printf("\n\nPerftest\n\n");
-
-  mystuff.mode = MODE_PERFTEST;
-  if (par == 0) par=10;
-  it = (float)par;
-      i = (int) deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
-      while( (i * 2) <= (int)mystuff.threads_per_grid_max) i = i * 2;
-      mystuff.threads_per_grid = i;
-      if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
-      {
-        mystuff.threads_per_grid = (cl_uint)deviceinfo.maxThreadsPerGrid;
-      }
-  init_CLstreams();
-
-  register_signal_handler(&mystuff);
-
-  mystuff.sieve_primes_max_global = 1000000;
-  printf("Generate list of the first 10^6 primes: ");
-
-  timer_init(&timer);
-#ifdef SIEVE_SIZE_LIMIT
-  sieve_init();
-#else
-  sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max_global);
-#endif
-  time1 = timer_diff(&timer);
-  printf("%.2f ms\n\n", (float)time1/1000.0);
-  if (mystuff.quit) exit(1);
-
-  printf("1. Sieve-Init (once per class, 960 times per test, avg. for %d iterations)\n", par);
-  timer_init(&timer);
-  for (i=0; i<par; i++)
-  {
-    sieve_init_class(exp, k++, 5000);
-  }
-  time1 = timer_diff(&timer);
-  printf("\tInit_class(sieveprimes=5000):    %6.2f ms\n", time1/it/1000);
-
-  for (i=0; i<par; i++)
-  {
-    sieve_init_class(exp, k++, 20000);
-  }
-  time2 = timer_diff(&timer) - time1;
-  printf("\tInit_class(sieveprimes=20000):   %6.2f ms\n", time2/it/1000);
-
-  for (i=0; i<par; i++)
-  {
-    sieve_init_class(exp, k++, 80000);
-  }
-  time3 = timer_diff(&timer) - time2;
-
-  printf("\tInit_class(sieveprimes=80000):   %6.2f ms\n", time3/it/1000);
-  timer_init(&timer);
-  for (i=0; i<par; i++)
-  {
-    sieve_init_class(exp, k++, 200000);
-  }
-  time1 = timer_diff(&timer);
-  printf("\tInit_class(sieveprimes=200000):  %6.2f ms\n", time1/it/1000);
-
-  for (i=0; i<par; i++)
-  {
-    sieve_init_class(exp, k++, 500000);
-  }
-  time2 = timer_diff(&timer) - time1;
-  printf("\tInit_class(sieveprimes=500000):  %6.2f ms\n", time2/it/1000);
-
-  for (i=0; i<par; i++)
-  {
-    sieve_init_class(exp, k++, 1000000);
-  }
-  time3 = timer_diff(&timer) - time2;
-
-  printf("\tInit_class(sieveprimes=1000000): %6.2f ms\n", time3/it/1000);
-
-
-  if (mystuff.quit) exit(1);
-
-  printf("\n2. Sieve (M/s)\n");
-#define MAX_NUM_SPS 20
-  int m=13*17*19*23;
-  int ssizes[]={1,2,3,4,5,6,7,8,10,11,13,16,19,20,21,22,25,30,36,43,50,60,72,86,88,170};
-  int nss=sizeof(ssizes)/sizeof(ssizes[0]);
-  int sprimes[]={256, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 40000, 60000, 80000, 100000, 200000, 500000, 1000000}; // max. MAX_NUM_SPS, 8 fit on an 80 chars line
-  int nsp=sizeof(sprimes)/sizeof(sprimes[0]);
-  int ii,j;
-
-  if (nsp>MAX_NUM_SPS) nsp=MAX_NUM_SPS;
-  float peak[MAX_NUM_SPS]={0.0}, Mps;
-  int peak_index[MAX_NUM_SPS]={0};
-  double last_elem[MAX_NUM_SPS]={0.0};
-
-#ifdef SIEVE_SIZE_LIMIT
-  printf("Sieve size is fixed at compile time, cannot test with variable sizes. Just running 3 fixed tests.\n\n");
-#endif
-
-  printf("SievePrimes:");
-  for(ii=0; ii<nsp; ii++)
-  {
-    printf(" %7u", sprimes[ii]);
-  }
-  printf("\nSieveSizeLimit");
-  for (j=0;j<nss; j++)
-  {
-    tmp=m*ssizes[j];
-    sieve_free();
-#ifdef SIEVE_SIZE_LIMIT
-    sieve_init();
-    if (j>=3) break; // quit after 3 equal loops if we can't dynamically set the sieve size anyway
-    sieve_init_class(exp, k++, 1000000);
-    printf("\n%6d kiB  ", SIEVE_SIZE/8192+1);
-#else
-    sieve_init(tmp, 1000000);
-    sieve_init_class(exp, k++, 1000000);
-    printf("\n%6d kiB  ", tmp/8192+1);
-#endif
-
-    for(ii=0; ii<nsp; ii++)
-    {
-      timer_init(&timer);
-      for (i=0; i<(par*(nsp-ii)); i++)
-      {
-        sieve_candidates(mystuff.threads_per_grid, mystuff.h_ktab[0], sprimes[ii]);
-      }
-      time1 = timer_diff(&timer);
-      last_elem[ii] += mystuff.h_ktab[0][mystuff.threads_per_grid-1]; // summ the last elements to get an average
-      Mps =  it*(mystuff.threads_per_grid *(nsp-ii))/time1;
-      if (Mps > peak[ii])
-      {
-        peak[ii]=Mps;
-        peak_index[ii]=j;
-      }
-      printf(" %7.1f", Mps);
-    }
-    if (mystuff.quit)
-    {
-      break;
-      j++;
-    }
-  }
-  printf("\nBest SieveSizeLimit for\nSievePrimes:");
-  for(ii=0; ii<nsp; ii++)
-  {
-    printf(" %7u", sprimes[ii]);
-  }
-
-  printf("\nat kiB:     ");
-  for(ii=0; ii<nsp; ii++)
-  {
-#ifdef SIEVE_SIZE_LIMIT
-    printf(" %7u", SIEVE_SIZE/8192+1);
-#else
-    printf(" %7u", m*ssizes[peak_index[ii]]/8192+1);
-#endif
-  }
-  printf("\nmax M/s:    ");
-  for(ii=0; ii<nsp; ii++)
-  {
-    printf(" %7.1f", peak[ii]);
-  }
-  printf("\nSieved out: ");
-  for(ii=0; ii<nsp; ii++)
-  {
-    // last_elem/nss  is the average end of the sieved block, consisting of threads_per_grid entries
-    printf(" %6.2f%%", (last_elem[ii]/j - (double)mystuff.threads_per_grid)*100.0*j/last_elem[ii]);
-  }
-
-  printf("\n\n");
-
-  printf("3. memory copy (MB/s)\n  soon\n");
-
-  printf("4. mfakto_cl_63 kernel\n  soon\n");
-
-  printf("5. mfakto_cl_71 kernel\n  soon\n");
-
-  printf("6. barrett_79 kernel\n  soon\n");
-
-  printf("7. barrett_92 kernel\n  soon\n");
-
-  return 0;
 }

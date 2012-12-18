@@ -132,7 +132,7 @@ bit_max64 is bit_max - 64!
 	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
 
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf("cl_mg64: exp=%d, k_base=%x:%x:%x\n",
+  if (tid==TRACE_TID) printf("cl_mg62: exp=%d, k_base=%x:%x:%x\n",
         exp, k_base.d2, k_base.d1, k_base.d0);
 #endif
 
@@ -183,16 +183,16 @@ bit_max64 is bit_max - 64!
   k.d0 = mad24(t, 4620u, k_base.d0);
   k.d1 = mad_hi(t, 4620u, k_base.d1) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
 
-  f = upsample(k.d1, k.d0) * (exp + exp) + 1;
+  f = upsample(k.d1, k.d0) * ((ulong)exp + exp) + 1;
 
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf("cl_mg64: k_tab[%d]=%x, f=%#llx, shift=%d\n",
+  if (tid==TRACE_TID) printf("cl_mg62: k_tab[%d]=%x, f=%#llx, shift=%d\n",
         tid, t.s0, f.s0, shiftcount);
 #endif
 
   f_inv = neginvmod2pow64(f);
 
-  /* the montgomery repr. As of A can be calculated by either calculating Rs = R^2 mod P
+  /* the montgomery repr. of A, As, can be calculated by either calculating Rs = R^2 mod P
    and then As = mulmod_REDC(A, Rs)  -or-
    directly calculating As = A*R mod P.
    R = 2^64 for this kernel.
@@ -217,8 +217,8 @@ bit_max64 is bit_max - 64!
 
    */
 // second case
-   while ((exp&0x80000000) == 0) exp<<=1; // shift exp to the very left of the 32 bits
-
+//   while ((exp&0x80000000) == 0) exp<<=1; // shift exp to the very left of the 32 bits
+   exp <<= clz(exp); // shift exp to the very left of the 32 bits
    As = (0 - f) % f;
 
    // verify As
@@ -248,7 +248,7 @@ bit_max64 is bit_max - 64!
   if( a==1 )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-    printf("cl_mg64: tid=%ld found factor: q=%#llx, k=%x:%x:%x\n", tid, f.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+    printf("cl_mg62: tid=%ld found factor: q=%#llx, k=%x:%x:%x\n", tid, f.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
     tid=ATOMIC_INC(RES[0]);
@@ -381,7 +381,9 @@ void shl_45(int90_v * const a)
 int90_v invmod2pow90 (const int90_v n)
 {
   int90_v r, tmp;
+#if (TRACE_KERNEL > 3)
   uint tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
+#endif
 
   // (3*n) XOR 2 is the correct inverse modulo 32 (5 bits),
   // then run 5 (for 90 bit) Newton iterations.
@@ -451,7 +453,7 @@ int90_v invmod2pow90 (const int90_v n)
         r.d5.s0, r.d4.s0);
 #endif
 */
-  // 4th iteration to get 45 bits
+  // 3rd iteration to get 45 bits
   square_45_90(&tmp, r);   // tmp=r*r
 #if (TRACE_KERNEL > 3)
      if (tid==TRACE_TID) printf("invmod-45b sq: r=%x:%x:%x ^2=%x:%x:%x:%x:%x:%x(tmp)\n",
@@ -853,7 +855,9 @@ bit_max64 is bit_max - 64!
 
   ff = as_float(0x3f7ffffd) / ff;
 
-  while ((exp&0x80000000) == 0) exp<<=1; // shift exp to the very left of the 32 bits
+//   while ((exp&0x80000000) == 0) exp<<=1; // shift exp to the very left of the 32 bits
+exp <<= clz(exp); // shift exp to the very left of the 32 bits
+
 #ifndef CHECKS_MODBASECASE
   mod_simple_90(&As, neg_90(f), f, ff
 #if (TRACE_KERNEL > 1)

@@ -28,6 +28,7 @@
     <ClCompile Include="src/signal_handler.c" />
     <ClCompile Include="src/timer.c" />
     <ClCompile Include="src/filelocking.c" />
+    <ClCompile Include="src\perftest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/checkpoint.h" />
@@ -44,6 +45,7 @@
     <ClInclude Include="src/timeval.h" />
     <ClInclude Include="src\datatypes.h" />
     <ClInclude Include="src\gpusieve.h" />
+    <ClInclude Include="src\perftest.h" />
     <ClInclude Include="src\tf_debug.h" />
     <ClInclude Include="src\filelocking.h" />
   </ItemGroup>

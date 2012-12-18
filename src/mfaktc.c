@@ -38,7 +38,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "checkpoint.h"
 #include "signal_handler.h"
 #include "filelocking.h"
-
+#include "perftest.h"
 #include "mfakto.h"
 
 int gpu_sieve_main (int argc, char** argv);
@@ -541,7 +541,7 @@ k_max and k_min are used as 64bit temporary integers here...
 
 void print_help(char *string)
 {
-  printf("mfaktc (%s) Copyright (C) 2009-2011  Oliver Weihe (o.weihe@t-online.de),\n", MFAKTO_VERSION);
+  printf("mfaktc (%s) Copyright (C) 2009-2013  Oliver Weihe (o.weihe@t-online.de),\n", MFAKTO_VERSION);
   printf("                                                 Bertram Franz (bertramf@gmx.net)\n");
   printf("This program comes with ABSOLUTELY NO WARRANTY; for details see COPYING.\n");
   printf("This is free software, and you are welcome to redistribute it\n");
@@ -636,12 +636,12 @@ RET_ERROR we might have a serios problem
     if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 69))   kernels[j++] = BARRETT69_MUL15;
     if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL15;
     if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 71))   kernels[j++] = BARRETT71_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 73))   kernels[j++] = BARRETT73_MUL15;
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 73))   kernels[j++] = BARRETT73_MUL15;*/
     if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 82))   kernels[j++] = BARRETT82_MUL15;
     if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 83))   kernels[j++] = BARRETT83_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL15;*/
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL15;
     if ((st_data[ind].bit_min >= 10) && (st_data[ind].bit_min < 62))   kernels[j++] = MG62;
-    if ((st_data[ind].bit_min >= 76) && (st_data[ind].bit_min < 89))   kernels[j++] = MG88;
+    if ((st_data[ind].bit_min >= 74) && (st_data[ind].bit_min < 90))   kernels[j++] = MG88;
 //  CAREFUL when adding more kernels to the test: kernels is a fixed size array
 //      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
 
@@ -796,12 +796,11 @@ int main(int argc, char **argv)
     else if(!strcmp((char*)"--perftest", argv[i]))
     {
       read_config(&mystuff);
-      init_CL(mystuff.num_streams, devicenumber);
       if ((i+1)<argc)
         tmp = (int)strtol(argv[i+1],&ptr,10);
       else
         tmp = 0;
-      perftest(tmp);  
+      perftest(tmp, devicenumber);  
       return 0;
     }
     else if(!strcmp((char*)"--timertest", argv[i]))

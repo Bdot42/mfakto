@@ -28,6 +28,9 @@
     <ClCompile Include="src/signal_handler.c">
       <Filter>source files</Filter>
     </ClCompile>
+    <ClCompile Include="src\perftest.cpp">
+      <Filter>source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/checkpoint.h">
@@ -76,6 +79,9 @@
       <Filter>header files</Filter>
     </ClInclude>
     <ClInclude Include="src\datatypes.h">
+      <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\perftest.h">
       <Filter>header files</Filter>
     </ClInclude>
   </ItemGroup>

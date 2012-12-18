@@ -16,4 +16,13 @@ You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int read_config(mystuff_t *mystuff);
+int read_array(char * filename, char *name, cl_uint num, cl_uint *arr);
+
+#ifdef __cplusplus
+}
+#endif

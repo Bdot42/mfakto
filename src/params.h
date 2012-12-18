@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
-#define SIEVE_SIZE_LIMIT 64
+//#define SIEVE_SIZE_LIMIT 64
 
 
 /* EXTENDED_SELFTEST will add about 30k additional tests to the -st2 test */
@@ -157,7 +157,11 @@ Needs to be less than SIEVE_PRIMES_MIN.*/
 #define SIEVE_SPLIT 250 /* DO NOT CHANGE! */
 
 
-
+#ifdef CL_PERFORMANCE_INFO
+#define QUEUE commandQueuePrf
+#else
+#define QUEUE commandQueue
+#endif
 /*
 The number of streams used by mfakto. No distinction between CPU and GPU streams anymore
 The actual configuration is done in mfakto.ini. This ini-file contains

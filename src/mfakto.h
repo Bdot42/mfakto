@@ -37,7 +37,6 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min,
 void printArray(const char * Name, const cl_uint * Data, const cl_uint len);
 int run_cl_sieve_init(cl_uint exp, cl_ulong k_min, cl_ulong num_threads);
 int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads);
-int perftest(int par);
 
 #ifdef __cplusplus
 }
