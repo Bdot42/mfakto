@@ -2473,7 +2473,7 @@ void square_90_180(int180_v * const res, const int90_v a)
   // 0x7FFF * 0x7FFF = 0x3FFF0001 = max result of mul24, up to 4 of these can be
   // added into 32-bit: 0x3FFF0001 * 4 = 0xFFFC0004, which even leaves room for
   // one (almost two) carry of 17 bit (32-bit >> 15)
-  // square 6x6 requires: 21 mul/mad24, 28 shift (9 of them cacheable), 14 and, 3 add
+  // square 6x6 requires: 21 mul/mad24, 29 shift (10 of them cacheable), 14 and, 3 add
 
   res->d0 = mul24(a.d0, a.d0);
 
