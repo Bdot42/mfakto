@@ -287,7 +287,7 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
 #ifdef SIEVE_SIZE_LIMIT
     sieve_init();
     if (j>=3) break; // quit after 3 equal loops if we can't dynamically set the sieve size anyway
-    sieve_init_class(exp, k++, 1000000);
+    sieve_init_class(EXP, k++, 1000000);
     printf("\n%6d kiB  ", SIEVE_SIZE/8192+1);
 #else
     sieve_init(tmp, 1000000);
@@ -357,10 +357,10 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
    - different sizes
    - map vs. copy
    */
-int test_copy(int par)
+int test_copy(cl_uint par)
 {
   struct timeval timer;
-  double time1, time2, time3;
+  double time1, time2;
   cl_uint i, j;
   cl_ulong k=0;
   cl_int status;
@@ -557,7 +557,6 @@ extern "C" {
 int perftest(int par, int devicenumber)
 {
   struct timeval timer;
-  int i, tmp;
   double time1;
 
 

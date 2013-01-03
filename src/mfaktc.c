@@ -154,9 +154,10 @@ other return value
       tmp += 3ULL * k_range;
       if((tmp < k_max) || (k_max < k_min)) k_max = tmp; /* check for k_max < k_min enables some selftests where k_max >= 2^64 but the known factor itself has a k < 2^64 */
     }
+#ifdef DEBUG_FACTOR_FIRST
     // The following line is just for debugging: it makes sure that the factor to be found is the first k being tested (so the first trace should show finding the factor)
-    // remove it for "normal" tests
     k_min = k_hint;
+#endif
   }
 
   k_min -= k_min % NUM_CLASSES;	/* k_min is now 0 mod NUM_CLASSES */
@@ -623,25 +624,26 @@ RET_ERROR we might have a serios problem
 
 
 /* create a list which kernels can handle this testcase */
-    j = 0;
-/*    if (st_data[ind].bit_min <= 63)                                    kernels[j++] = _63BIT_MUL24;
-    if ((st_data[ind].bit_min >= 61) && (st_data[ind].bit_min < 72))   kernels[j++] = _71BIT_MUL24;
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 76))   kernels[j++] = BARRETT76_MUL32; 
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 77))   kernels[j++] = BARRETT77_MUL32; 
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 79))   kernels[j++] = BARRETT79_MUL32; 
-    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 87))   kernels[j++] = BARRETT87_MUL32;
-    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL32;
-    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 92))   kernels[j++] = BARRETT92_MUL32;
-    if ((st_data[ind].bit_min >= 63) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL24;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 69))   kernels[j++] = BARRETT69_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 71))   kernels[j++] = BARRETT71_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 73))   kernels[j++] = BARRETT73_MUL15;*/
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 82))   kernels[j++] = BARRETT82_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 83))   kernels[j++] = BARRETT83_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL15;
-    if ((st_data[ind].bit_min >= 10) && (st_data[ind].bit_min < 62))   kernels[j++] = MG62;
-    if ((st_data[ind].bit_min >= 74) && (st_data[ind].bit_min < 90))   kernels[j++] = MG88;
+    j = 0;                                                                                           // 7850@975MHz, v=2 / v=4
+/* */
+    if (st_data[ind].bit_min <= 63)                                    kernels[j++] = _63BIT_MUL24;      // 168.0
+    if ((st_data[ind].bit_min >= 61) && (st_data[ind].bit_min < 72))   kernels[j++] = _71BIT_MUL24;      // 178.2 / 176.0
+    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 76))   kernels[j++] = BARRETT76_MUL32;   // 259.7 / 259.1
+    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 77))   kernels[j++] = BARRETT77_MUL32;   // 251.1 / 248.0
+    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 79))   kernels[j++] = BARRETT79_MUL32;   // 221.9 / 221.3
+    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 87))   kernels[j++] = BARRETT87_MUL32;   // 228.0 / 227.3
+    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL32;   // 219.9 / 217.6
+    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 92))   kernels[j++] = BARRETT92_MUL32;   // 198.4 / 197.8
+    if ((st_data[ind].bit_min >= 63) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL24;   // 210.5 / 204.9
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 69))   kernels[j++] = BARRETT69_MUL15;   // 360.0 / 354.1
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 69))   kernels[j++] = BARRETT70_MUL15;   // 360.0 / 354.2
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT71_MUL15;   // 335.1 / 332.0
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 73))   kernels[j++] = BARRETT73_MUL15;   // 294.6 / 291.4
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 82))   kernels[j++] = BARRETT82_MUL15;   // 261.4 / 202.7
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 83))   kernels[j++] = BARRETT83_MUL15;   // 244.8 / 183.1
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL15;   // 219.5 / 169.6
+    if ((st_data[ind].bit_min >= 10) && (st_data[ind].bit_min < 62))   kernels[j++] = MG62;              // 154.0 /  53.5
+    if ((st_data[ind].bit_min >= 74) && (st_data[ind].bit_min < 89))   kernels[j++] = MG88;              // 163.8 /  57.4
 //  CAREFUL when adding more kernels to the test: kernels is a fixed size array
 //      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
 
