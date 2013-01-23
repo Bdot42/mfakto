@@ -596,7 +596,7 @@ int read_config(mystuff_t *mystuff)
   }
   if(i == 0)printf("  SieveOnGPU                no\n");
   else      printf("  SieveOnGPU                yes\n");
-  mystuff->sieve_gpu = i;
+  mystuff->gpu_sieving = i;
 
   /*****************************************************************************/
 

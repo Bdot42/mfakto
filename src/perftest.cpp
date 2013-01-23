@@ -203,7 +203,7 @@ at kiB:           36      36      36      48      48      48      36      48    
 max M/s:       259.4   239.4   219.7   204.9   188.0   174.1   159.8   148.9   138.3   127.3   116.3   106.0    96.2    84.1    69.5    57.5    45.2    34.9    29.6    26.0
 Sieved out:   65.45%  67.64%  69.55%  71.24%  72.74%  74.09%  75.30%  76.40%  77.40%  78.32%  79.16%  79.94%  80.66%  81.32%  81.94%  82.52%  83.06%  83.57%  84.04%  84.50%
 
-idle i7 2400k:
+idle i7 2600:
 SievePrimes:     256     396     611     945    1460    2257    3487    5389    8328   12871   19890   30738   47503   73411  113449  175323  270944  418716  647083 1000000
 SieveSizeLimit
     12 kiB     381.5   344.8   309.7   279.2   253.5   228.4   206.1   183.5   161.7   144.1   117.6    94.3    77.3    63.0    51.0    41.0    32.4    25.3    19.2    13.6
@@ -357,10 +357,10 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
    - different sizes
    - map vs. copy
    */
-int test_copy(int par)
+int test_copy(cl_uint par)
 {
   struct timeval timer;
-  double time1, time2, time3;
+  double time1, time2;
   cl_uint i, j;
   cl_ulong k=0;
   cl_int status;
@@ -557,7 +557,6 @@ extern "C" {
 int perftest(int par, int devicenumber)
 {
   struct timeval timer;
-  int i, tmp;
   double time1;
 
 
@@ -588,7 +587,7 @@ int perftest(int par, int devicenumber)
   if (mystuff.quit) exit(1);
 
   // 3. memory copy
-  test_copy(par);
+  test_copy((cl_uint)par);
   if (mystuff.quit) exit(1);
 
   // 4. kernels

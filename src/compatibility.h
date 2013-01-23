@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -40,4 +40,9 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #define my_usleep(A) Sleep((A) / 1000)
 #else
   #define my_usleep(A) usleep(A)
+#endif
+
+#ifdef __cplusplus
+#define max(a,b)    (((a) > (b)) ? (a) : (b))
+#define min(a,b)    (((a) < (b)) ? (a) : (b))
 #endif

@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -111,7 +111,7 @@ Version 0.13
 
 #ifdef CL_GPU_SIEVE
 
-//#include "sieve.cl"
+#include "gpusieve.cl"
 #endif
 
 #define EVAL_RES_b(comp) \

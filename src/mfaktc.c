@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -40,6 +40,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "filelocking.h"
 #include "perftest.h"
 #include "mfakto.h"
+#include "gpusieve.h"
 
 int gpu_sieve_main (int argc, char** argv);
 
@@ -305,13 +306,10 @@ other return value
 #ifdef VERBOSE_TIMING
         timer_init(&timer2);
 #endif    
-        if (mystuff->sieve_gpu == 1)
+        if (mystuff->gpu_sieving == 1)
         {
-          cl_ulong new_k_min=k_min+cur_class;
-          run_cl_sieve_init(exp, k_min+cur_class, 256);
-//          run_cl_sieve_init(exp, k_min+cur_class, mystuff->sieve_primes);
-          run_cl_sieve(exp, &new_k_min, 256);
-//          run_cl_sieve(exp, &new_k_min, mystuff->sieve_primes);
+          gpusieve_init_exponent(mystuff);
+          gpusieve_init_class(mystuff, k_min+cur_class);
         }
         else
         {

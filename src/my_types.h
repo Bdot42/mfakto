@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -16,6 +16,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
+#ifndef __MY_TYPES_H
+#define __MY_TYPES_H
+#include "params.h"
 
 /* 60bit (4x 15bit) integer
 D=d0 + d1*(2^15) + d2*(2^30) ... */
@@ -121,10 +124,9 @@ enum GPUKernels
   UNKNOWN_KERNEL, /* what comes after this one will not be loaded automatically*/
   _64BIT_64_OpenCL,
   BARRETT92_64_OpenCL,
-  CL_SIEVE_INIT,
-  CL_SIEVE,
-  SEG_SIEVE,
-  COUNT_SIEVE,
+  CL_CALC_BIT_TO_CLEAR,  // loaded if GPU sieving enabled
+  CL_CALC_MOD_INV,       // loaded if GPU sieving enabled
+  CL_SIEVE,              // loaded if GPU sieving enabled
   _95BIT_MUL32  /* not yet there */
 };
 
@@ -137,6 +139,7 @@ enum GPU_types
   GPU_CPU,
   GPU_APU,
   GPU_NVIDIA,
+  GPU_INTEL,
   GPU_UNKNOWN   // must be the last one
 };
 
@@ -180,6 +183,21 @@ typedef struct
 
 typedef struct
 {
+  char     progressheader[256];       /* userconfigureable progress header */
+  char     progressformat[256];       /* userconfigureable progress line */
+  cl_uint  class_number;              /* the number of the last processed class */
+  cl_uint  grid_count;                /* number of grids processed in the last processed class */
+  cl_ulong class_time;                /* time (in ms) needed to process the last processed class */
+  float    cpu_wait;                  /* percentage CPU was waiting for the GPU */
+  cl_uint  cpu_wait_time;             /* time (ms) CPU was waiting for the GPU */
+  cl_uint  output_counter;            /* count how often the status line was written since last headline */
+  cl_uint  class_counter;             /* number of finished classes of the current job */
+  double   ghzdays;                   /* primenet GHZdays for the current assignment (current stage) */
+  char     kernelname[32];
+}stats_t;
+
+typedef struct
+{
   cl_event copy_events[NUM_STREAMS_MAX];
   cl_event exec_events[NUM_STREAMS_MAX];
   cl_uint *h_ktab[NUM_STREAMS_MAX];
@@ -189,17 +207,24 @@ typedef struct
   enum STREAM_STATUS stream_status[NUM_STREAMS_MAX];
   enum GPU_types gpu_type;
   /* for GPU sieving: */
-  cl_uint *h_primes;
-  cl_mem   d_primes;
-  cl_uint *h_k_mult;
-  cl_mem   d_k_mult;
-  cl_uint *h_savestate;
-  cl_mem   d_savestate;
+  cl_uint *h_bitarray;
+  cl_mem   d_bitarray;
+  cl_uint *h_sieve_info;
+  cl_mem   d_sieve_info;
+  cl_uint *h_calc_bit_to_clear_info;
+  cl_mem   d_calc_bit_to_clear_info;
+  cl_uint  gpu_sieving;			             /* TRUE if we're letting the GPU do the sieving */
+  cl_uint  gpu_sieve_size;			         /* Size (in bits) of the GPU sieve.  Default is 128M bits. */
+  cl_uint  gpu_sieve_primes;             /* the actual number of primes using for sieving */
+  cl_uint  gpu_sieve_processing_size;	   /* The number of GPU sieve bits each thread in a Barrett kernel will process.  Default is 2K bits. */
 
-
-  cl_uint sieve_primes, sieve_primes_adjust, sieve_primes_min, sieve_primes_max, sieve_primes_max_global, sieve_gpu, sieve_size;
+  cl_uint exponent;                      /* the exponent we're currently working on */
+  cl_uint bit_min;                       /* where do we start TFing */
+  cl_uint bit_max_assignment;            /* the upper size of factors we're searching for */
+  cl_uint bit_max_stage;                 /* as above, but only for the current stage */
+  
+  cl_uint sieve_primes, sieve_primes_adjust, sieve_primes_min, sieve_primes_max, sieve_primes_max_global, sieve_size;
   cl_uint num_streams;
-  cl_uint gpu_sieve_primes;
   
   enum MODES mode;
   cl_uint checkpoints, checkpointdelay, stages, stopafterfactor;
@@ -218,6 +243,11 @@ typedef struct
   cl_uint print_timestamp;
   cl_uint quit;
   cl_ulong cpu_mask;        /* CPU affinity mask for the siever thread */
+  cl_uint verbosity;        /* 0 = reduced number of screen printfs, 1= default, >= 2 = some additional printfs */
+  cl_uint selftestsize;
+
+  stats_t stats;            /* stats for the status line */
+
   char * p_ptr[20];         /* pointers to the formatted output string arrays, in the order they are being used, allow 20 of them */
   print_parameter p_par[NUM_PRINT_PARM]; /* to hold the position and strings of each possible parameter */
   char print_line[512];
@@ -249,3 +279,4 @@ typedef struct _kernel_info
 #define RET_ERROR 1000000001
 #define RET_QUIT  1000000002
 
+#endif

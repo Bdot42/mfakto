@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -22,20 +22,10 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 This source is an OpenCL port of the CUDA code by George Woltman.
 This code is a GPU-based sieve for mfakto.
 
-Thanks go to Ben Buhrow for his erato.cu program and to Rocke Verser for his gpusieve program.
+Thanks go also to Ben Buhrow for his erato.cu program and to Rocke Verser for his gpusieve program.
 See (http://www.mersenneforum.org/showthread.php?t=11900) for Ben's initial work.
 
 */
-
-#include <stdio.h>
-#include <cuda.h>
-#include <cuda_runtime.h>  
-
-#include "params.h"
-#include "my_types.h"
-#include "compatibility.h"
-#include "my_intrinsics.h"
-#include "gpusieve.h"
 
 #define MAX_PRIMES_PER_THREAD	4224			// Primes up to 16M can be handled by this many "rows" of 256 primes
 
@@ -126,25 +116,14 @@ inline void __checkCudaErrors(cudaError err, const char *file, const int line )
 
 #define gen_pinv(p)	(0xFFFFFFFF / (p) + 1)
 
-__device__ __inline static int mod_p (int x, int p, int pinv)
+__inline static int mod_p (int x, const int p, const int pinv)
 {
-//	int	q, r, a, b;
-
-//	q = __mulhi (x, pinv);		// quotient = x * inverse_of_p
-//	a = x - q * p;			// x mod p (but may be too large by one p)
-//	b = a - p;			// x mod p (the alternative return value)
-//	asm("slct.s32.s32 %0, %1, %2, %3;" : "=r" (r) : "r" (b) , "r" (a) , "r" (b));
-
-// CUDA compiler generated crappy PTX code for the statements above.  I replaced them with my own PTX code.
-// Even the code below generates a needless copying of x.
-
 	int	r;
-	asm ("mul.hi.s32 %0, %1, %2;\n\t"		//	r = __mulhi (x, pinv);
-	     "mul.lo.s32 %0, %0, %3;\n\t"		//	r = r * p;
-	     "sub.s32 	%1, %1, %0;\n\t"		//	x = x - r;
-	     "sub.s32 	%0, %1, %3;\n\t"		//	r = x - p;
-	     "slct.s32.s32 %0, %0, %1, %0;"		//	r = (r >= 0) ? r : x
-	     : "=r" (r), "+r" (x) : "r" (pinv), "r" (p));
+
+	r = mul_hi (x, pinv);	// quotient = x * inverse_of_p
+	x = x - p * r;		  	// x mod p (but may be too large by one p)
+	r = x - p;	          // x mod p (the alternative return value)
+	r = (r >= 0) ? r : x;
 
 #ifdef GWDEBUG
 	if (pinv != gen_pinv (p))
@@ -158,7 +137,7 @@ __device__ __inline static int mod_p (int x, int p, int pinv)
 
 // Inline to calculate x mod p where p is a constant
 
-__device__ __inline static int mod_const_p (int x, int p)
+__inline static int mod_const_p (int x, int p)
 {
 	return mod_p (x, p, gen_pinv (p));
 }
@@ -170,11 +149,11 @@ __device__ __inline static int mod_const_p (int x, int p)
 
 #define gen_sloppy_pinv(p)	((cl_uint) floor (4294967296.0 / (p) - 0.5))
 
-__device__ __inline static int sloppy_mod_p (int x, int p, int pinv)
+__inline static int sloppy_mod_p (int x, int p, int pinv)
 {
 	int	q, r;
 
-	q = __mulhi (x, pinv);		// quotient = x * inverse_of_p
+	q = mul_hi (x, pinv);		// quotient = x * inverse_of_p
 	r = x - q * p;			// x mod p (but may be too small or large by one-half p)
 
 #ifdef GWDEBUG
@@ -189,11 +168,11 @@ __device__ __inline static int sloppy_mod_p (int x, int p, int pinv)
 
 // Inline to add a negative constant mod p.  That is given i between 0 and p-1, return ((i + inc) % p)
 
-__device__ __inline static int bump_mod_p (int i, int inc, int p)
+__inline static int bump_mod_p (int i, int inc, int p)
 {
 	int	x, j;
 	i = i + inc % p; j = i + p;
-	asm("slct.s32.s32 %0, %1, %2, %1;" : "=r" (x) : "r" (i), "r" (j));
+  x = (i>=0) ? i : j; //	asm("slct.s32.s32 %0, %1, %2, %1;" : "=r" (x) : "r" (i), "r" (j));
 
 #ifdef GWDEBUG
 	if (x < 0 || x >= p)
@@ -204,7 +183,7 @@ __device__ __inline static int bump_mod_p (int i, int inc, int p)
 
 // Inline to OR one bit into the shared memory array
 
-__device__ __inline static void bitOr (cl_uchar *locsieve, cl_uint bclr)
+__inline static void bitOr (cl_uchar *locsieve, cl_uint bclr)
 {
 #define locsieve8	((cl_uchar *) locsieve)
 #define locsieve8v	((volatile cl_uchar *) locsieve)
@@ -213,7 +192,7 @@ __device__ __inline static void bitOr (cl_uchar *locsieve, cl_uint bclr)
 	locsieve8[bclr >> 3] |= 1 << (bclr & 7);
 }
 
-__device__ __inline static void bitOrSometimesIffy (cl_uchar *locsieve, cl_uint bclr)
+__inline static void bitOrSometimesIffy (cl_uchar *locsieve, cl_uint bclr)
 {
 	cl_uint	bytenum = bclr >> 3;
 	cl_uchar	mask = 1 << (bclr & 7);
@@ -244,10 +223,10 @@ __device__ __inline static void bitOrSometimesIffy (cl_uchar *locsieve, cl_uint 
 	be done for each prime prior to sieving to figure out the first bit to clear.
 */
 
-__global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_array_dev, cl_uchar *pinfo_dev, cl_uint maxp)
+__kernel static void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__global cl_uchar *big_bit_array_dev, __global cl_uchar *pinfo_dev, cl_uint maxp)
 {
-	__shared__ cl_uchar locsieve[block_size_in_bytes];
-	cl_uint block_start = blockIdx.x * block_size;
+	__local cl_uchar locsieve[block_size_in_bytes];
+	cl_uint block_start = get_group_id(0) * block_size;
 	cl_uint i, j, p, pinv, bclr;
 
 #define big_bit_array32	((cl_uint *) big_bit_array_dev)
@@ -270,7 +249,7 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 	// This allows us to operate without atomic operations and without syncing.
 	//
 
-	cl_uint thread_start = block_start + threadIdx.x * block_size / threadsPerBlock;
+	cl_uint thread_start = block_start + get_local_id(0) * block_size / threadsPerBlock;
 
 	//
 	// In this section each thread handles one 32 bit word at a time sieving primes below 64.
@@ -413,10 +392,10 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 	i29 = bump_mod_p (i29, -32, 29);
 	i31 = bump_mod_p (i31, -32, 31);
 
-	locsieve32[threadIdx.x * block_size / threadsPerBlock / 32 + 0] = mask;
-	locsieve32[threadIdx.x * block_size / threadsPerBlock / 32 + 1] = mask2;
-	locsieve32[threadIdx.x * block_size / threadsPerBlock / 32 + 2] = mask3;
-	locsieve32[threadIdx.x * block_size / threadsPerBlock / 32 + 3] = mask4;
+	locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + 0] = mask;
+	locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + 1] = mask2;
+	locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + 2] = mask3;
+	locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + 3] = mask4;
 
 	if (primesNotSieved == 4) {	// Primes 2, 3, 5, 7 are not sieved
 		mask = (BITSLL11 << i11) | (BITSLL13 << i13) | (BITSLL17 << i17);
@@ -517,10 +496,10 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 	mask4 |= (BITSLL19 << i19) | (BITSLL23 << i23);
 	mask4 |= (BITSLL29 << i29) | (BITSLL31 << i31);
 
-	locsieve32[threadIdx.x * block_size / threadsPerBlock / 32 + 4] = mask;
-	locsieve32[threadIdx.x * block_size / threadsPerBlock / 32 + 5] = mask2;
-	locsieve32[threadIdx.x * block_size / threadsPerBlock / 32 + 6] = mask3;
-	locsieve32[threadIdx.x * block_size / threadsPerBlock / 32 + 7] = mask4;
+	locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + 4] = mask;
+	locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + 5] = mask2;
+	locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + 6] = mask3;
+	locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + 7] = mask4;
 
 	// The following handles primes, 32 < p < 64.  Each prime hits 0 or 1 32-bit words.
 
@@ -538,7 +517,7 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 		mask |= (1 << i47) | (1 << i53);
 		mask |= (1 << i59) | (1 << i61);
 
-		locsieve32[threadIdx.x * block_size / threadsPerBlock / 32 + j] |= mask;
+		locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + j] |= mask;
 
 		j++;
 		if (j == block_size / threadsPerBlock / 32) break;
@@ -575,7 +554,7 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 		mask |= ((cl_ulong) 1 << i79) | ((cl_ulong) 1 << i83);
 		mask |= ((cl_ulong) 1 << i89) | ((cl_ulong) 1 << i97);
 
-		locsieve64[threadIdx.x * block_size / threadsPerBlock / 64 + j] |= mask;
+		locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j] |= mask;
 
 		j++;
 		if (j == block_size / threadsPerBlock / 64) break;
@@ -602,7 +581,7 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 		mask |= ((cl_ulong) 1 << i109) | ((cl_ulong) 1 << i113);
 		mask |= (cl_ulong) 1 << i127;
 
-		locsieve64[threadIdx.x * block_size / threadsPerBlock / 64 + j] |= mask;
+		locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j] |= mask;
 
 		j++;
 		if (j == block_size / threadsPerBlock / 64) break;
@@ -640,8 +619,8 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 		mask2 |= ((cl_ulong) 1 << (i139 - 64)) | ((cl_ulong) 1 << (i149 - 64));
 		mask2 |= ((cl_ulong) 1 << (i151 - 64)) | ((cl_ulong) 1 << (i157 - 64));
 
-		locsieve64[threadIdx.x * block_size / threadsPerBlock / 64 + j * 2] |= mask1;
-		locsieve64[threadIdx.x * block_size / threadsPerBlock / 64 + j * 2 + 1] |= mask2;
+		locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j * 2] |= mask1;
+		locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j * 2 + 1] |= mask2;
 
 		j++;
 		if (j == block_size / threadsPerBlock / 128) break;
@@ -669,8 +648,8 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 		mask2 |= ((cl_ulong) 1 << (i173 - 64)) | ((cl_ulong) 1 << (i179 - 64));
 		mask2 |= ((cl_ulong) 1 << (i181 - 64)) | ((cl_ulong) 1 << (i191 - 64));
 
-		locsieve64[threadIdx.x * block_size / threadsPerBlock / 64 + j * 2] |= mask1;
-		locsieve64[threadIdx.x * block_size / threadsPerBlock / 64 + j * 2 + 1] |= mask2;
+		locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j * 2] |= mask1;
+		locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j * 2 + 1] |= mask2;
 
 		j++;
 		if (j == block_size / threadsPerBlock / 128) break;
@@ -698,8 +677,8 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 		mask2 |= ((cl_ulong) 1 << (i199 - 64)) | ((cl_ulong) 1 << (i211 - 64));
 		mask2 |= ((cl_ulong) 1 << (i223 - 64)) | ((cl_ulong) 1 << (i227 - 64));
 
-		locsieve64[threadIdx.x * block_size / threadsPerBlock / 64 + j * 2] |= mask1;
-		locsieve64[threadIdx.x * block_size / threadsPerBlock / 64 + j * 2 + 1] |= mask2;
+		locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j * 2] |= mask1;
+		locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j * 2 + 1] |= mask2;
 
 		j++;
 		if (j == block_size / threadsPerBlock / 128) break;
@@ -726,8 +705,8 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 		mask2 |= ((cl_ulong) 1 << (i233 - 64)) | ((cl_ulong) 1 << (i239 - 64));
 		mask2 |= ((cl_ulong) 1 << (i241 - 64)) | ((cl_ulong) 1 << (i251 - 64));
 
-		locsieve64[threadIdx.x * block_size / threadsPerBlock / 64 + j * 2] |= mask1;
-		locsieve64[threadIdx.x * block_size / threadsPerBlock / 64 + j * 2 + 1] |= mask2;
+		locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j * 2] |= mask1;
+		locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j * 2 + 1] |= mask2;
 
 		j++;
 		if (j == block_size / threadsPerBlock / 128) break;
@@ -745,7 +724,7 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 	// Each prime will hit a 256-bit word zero or one time.
 
 #define SIEVE_256_BIT(n,p)	i = mod_const_p (bit_to_clr[n] - thread_start, p); \
-				if (i < 256) locsieve[j * threadsPerBlock * 32 + threadIdx.x * 32 + (i >> 3)] |= 1 << (i & 7);
+				if (i < 256) locsieve[j * threadsPerBlock * 32 + get_local_id(0) * 32 + (i >> 3)] |= 1 << (i & 7);
 
 	if (primesNotSieved + primesHandledWithSpecialCode > 54)
 	for (j = 0; j < block_size / (threadsPerBlock * 256); j++) {
@@ -797,7 +776,8 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 #undef bit_to_clr
 
 	// sync before sieving more primes
-	__syncthreads();
+  // ist this really needed? And does a local mem_fence suffice
+	barrier(CLK_LOCAL_MEM_FENCE);
 
 	// Bump the bit_to_clr_dev pointer to a 256-byte boundary so that warps access
 	// memory without crossing memory block boundaries.
@@ -816,13 +796,13 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 		for (j = 0; j < 8; j++) {
 			cl_uchar	mask;
 
-			bclr = pinfo32[j * threadsPerBlock / 8 + threadIdx.x / 8];	// Read p and the bit_to_clear in one instruction
+			bclr = pinfo32[j * threadsPerBlock / 8 + get_local_id(0) / 8];	// Read p and the bit_to_clear in one instruction
 			p = bclr >> 16;
 			bclr &= 0xFFFF;
-			pinv = pinfo32[threadsPerBlock + j * threadsPerBlock / 8 + threadIdx.x / 8];
+			pinv = pinfo32[threadsPerBlock + j * threadsPerBlock / 8 + get_local_id(0) / 8];
 			validate_bclr (bclr, p);
 
-			bclr = mod_p (bclr - block_start, p, pinv) + (threadIdx.x & 7) * p;
+			bclr = mod_p (bclr - block_start, p, pinv) + (get_local_id(0) & 7) * p;
 			mask = 1 << (bclr & 7);
 			bclr = bclr >> 3;
 
@@ -842,9 +822,9 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 	for ( ; i < sieving64KCrossover && i < maxp; i += 3, pinfo_dev += threadsPerBlock * 24) {
 		cl_uint	p3, pinv3, bclr3, p2, pinv2, bclr2;
 
-		bclr3 = pinfo32[threadIdx.x];		// Read p and the bit_to_clear in one instruction
-		bclr2 = pinfo32[threadsPerBlock*2 + threadIdx.x];
-		bclr = pinfo32[threadsPerBlock*4 + threadIdx.x];
+		bclr3 = pinfo32[get_local_id(0)];		// Read p and the bit_to_clear in one instruction
+		bclr2 = pinfo32[threadsPerBlock*2 + get_local_id(0)];
+		bclr = pinfo32[threadsPerBlock*4 + get_local_id(0)];
 
 		p3 = bclr3 >> 16;
 		p2 = bclr2 >> 16;
@@ -858,9 +838,9 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 		validate_bclr (bclr2, p2);
 		validate_bclr (bclr, p);
 
-		pinv3 = pinfo32[threadsPerBlock + threadIdx.x];
-		pinv2 = pinfo32[threadsPerBlock*3 + threadIdx.x];
-		pinv = pinfo32[threadsPerBlock*5 + threadIdx.x];
+		pinv3 = pinfo32[threadsPerBlock + get_local_id(0)];
+		pinv2 = pinfo32[threadsPerBlock*3 + get_local_id(0)];
+		pinv = pinfo32[threadsPerBlock*5 + get_local_id(0)];
 
 		bclr3 = mod_p (bclr3 - block_start, p3, pinv3);
 		bclr2 = mod_p (bclr2 - block_start, p2, pinv2);
@@ -889,9 +869,9 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 	if (i < maxp) {
 		cl_uint	bclr2, pinv2, p2;
 
-		bclr2 = pinfo32[threadIdx.x];
-		pinv2 = pinfo32[threadsPerBlock + threadIdx.x];
-		p2 = pinfo32[threadsPerBlock * 2 + threadIdx.x];
+		bclr2 = pinfo32[get_local_id(0)];
+		pinv2 = pinfo32[threadsPerBlock + get_local_id(0)];
+		p2 = pinfo32[threadsPerBlock * 2 + get_local_id(0)];
 		validate_bclr (bclr2, p2);
 
 		bclr2 = mod_p (bclr2 - block_start, p2, pinv2);
@@ -903,9 +883,9 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 			if (bclr2 < block_size) bitOr (locsieve, bclr2);
 		}
 
-		bclr = pinfo32[threadsPerBlock * 3 + threadIdx.x];
-		pinv = pinfo32[threadsPerBlock * 4 + threadIdx.x];
-		p = pinfo32[threadsPerBlock * 5 + threadIdx.x];
+		bclr = pinfo32[threadsPerBlock * 3 + get_local_id(0)];
+		pinv = pinfo32[threadsPerBlock * 4 + get_local_id(0)];
+		p = pinfo32[threadsPerBlock * 5 + get_local_id(0)];
 		validate_bclr (bclr, p);
 
 		bclr = mod_p (bclr - block_start, p, pinv);
@@ -919,9 +899,9 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 	// Our memory layout here is 18-bits for bit-to-clr, 7-bits for (p difference) / 2, 7-bits for pinv difference.
 
 	for ( ; i < sieving128KCrossover + 1 && i < maxp; i += 3, pinfo_dev += threadsPerBlock * 12) {
-		cl_uint tmp3 = pinfo32[threadIdx.x];
-		cl_uint tmp2 = pinfo32[threadsPerBlock + threadIdx.x];
-		cl_uint tmp = pinfo32[threadsPerBlock*2 + threadIdx.x];
+		cl_uint tmp3 = pinfo32[get_local_id(0)];
+		cl_uint tmp2 = pinfo32[threadsPerBlock + get_local_id(0)];
+		cl_uint tmp = pinfo32[threadsPerBlock*2 + get_local_id(0)];
 		cl_uint bclr3, p3, pinv3, bclr2, p2, pinv2;
 
 		bclr3 = tmp3 & 0x0003FFFF;
@@ -954,9 +934,9 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 	// Our memory layout here is 32-bits for bit-to-clr, 32-bits for p, 32-bits for pinv.
 
 	if (i < maxp) {
-		bclr = pinfo32[threadIdx.x];
-		pinv = pinfo32[threadsPerBlock + threadIdx.x];
-		p = pinfo32[threadsPerBlock * 2 + threadIdx.x];
+		bclr = pinfo32[get_local_id(0)];
+		pinv = pinfo32[threadsPerBlock + get_local_id(0)];
+		p = pinfo32[threadsPerBlock * 2 + get_local_id(0)];
 		validate_bclr (bclr, p);
 
 		bclr = sloppy_mod_p (bclr - block_start, p, pinv);
@@ -971,10 +951,10 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 	// Primes above 128K can use SLOPPY_MOD.
 
 	for ( ; i < sieving1MCrossover && i < maxp; i += 4, pinfo_dev += threadsPerBlock * 16) {
-		cl_uint tmp4 = pinfo32[threadIdx.x];
-		cl_uint tmp3 = pinfo32[threadsPerBlock + threadIdx.x];
-		cl_uint tmp2 = pinfo32[threadsPerBlock*2 + threadIdx.x];
-		cl_uint tmp = pinfo32[threadsPerBlock*3 + threadIdx.x];
+		cl_uint tmp4 = pinfo32[get_local_id(0)];
+		cl_uint tmp3 = pinfo32[threadsPerBlock + get_local_id(0)];
+		cl_uint tmp2 = pinfo32[threadsPerBlock*2 + get_local_id(0)];
+		cl_uint tmp = pinfo32[threadsPerBlock*3 + get_local_id(0)];
 		cl_uint bclr4, p4, pinv4, bclr3, p3, pinv3, bclr2, p2, pinv2;
 
 		bclr4 = tmp4 & 0x000FFFFF;
@@ -1013,9 +993,9 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 	// Our memory layout here is 32-bits for bit-to-clr, 32-bits for p, 32-bits for pinv.
 
 	if (i < maxp) {
-		bclr = pinfo32[threadIdx.x];
-		pinv = pinfo32[threadsPerBlock + threadIdx.x];
-		p = pinfo32[threadsPerBlock * 2 + threadIdx.x];
+		bclr = pinfo32[get_local_id(0)];
+		pinv = pinfo32[threadsPerBlock + get_local_id(0)];
+		p = pinfo32[threadsPerBlock * 2 + get_local_id(0)];
 		validate_bclr (bclr, p);
 
 		bclr = sloppy_mod_p (bclr - block_start, p, pinv);
@@ -1030,10 +1010,10 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 	// Our memory layout here is 24-bits for bit-to-clr, 7-bits for (p difference) / 2, 1-bit for pinv difference.
 
 	for ( ; i < maxp; i += 4, pinfo_dev += threadsPerBlock * 16) {
-		cl_uint tmp4 = pinfo32[threadIdx.x];
-		cl_uint tmp3 = pinfo32[threadsPerBlock + threadIdx.x];
-		cl_uint tmp2 = pinfo32[threadsPerBlock*2 + threadIdx.x];
-		cl_uint tmp = pinfo32[threadsPerBlock*3 + threadIdx.x];
+		cl_uint tmp4 = pinfo32[get_local_id(0)];
+		cl_uint tmp3 = pinfo32[threadsPerBlock + get_local_id(0)];
+		cl_uint tmp2 = pinfo32[threadsPerBlock*2 + get_local_id(0)];
+		cl_uint tmp = pinfo32[threadsPerBlock*3 + get_local_id(0)];
 		cl_uint bclr4, p4, pinv4, bclr3, p3, pinv3, bclr2, p2, pinv2;
 
 		bclr4 = tmp4 & 0x00FFFFFF;
@@ -1069,16 +1049,16 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 	}
 
 	// sync before copying
-	__syncthreads();
+	barrier(CLK_LOCAL_MEM_FENCE);
 
 // Copy our shared bit array results to the global big bit array
 
 	// Point to the block of the big bit array we are copying to
-	big_bit_array_dev += blockIdx.x * block_size_in_bytes;
+	big_bit_array_dev += get_group_id(0) * block_size_in_bytes;
 
 	// Have each thread copy a part of the array.
 	for (j = 0; j < block_size / (threadsPerBlock * 32); j++)
-		big_bit_array32[j * threadsPerBlock + threadIdx.x] = ~locsieve32[j * threadsPerBlock + threadIdx.x];
+		big_bit_array32[j * threadsPerBlock + get_local_id(0)] = ~locsieve32[j * threadsPerBlock + get_local_id(0)];
 }
 
 //
@@ -1087,7 +1067,7 @@ __global__ static void __launch_bounds__(256,6) SegSieve (cl_uchar *big_bit_arra
 
 // Internal routine to compute 1/n mod d using extended Euclid GCD
 
-__device__ unsigned int modularinverse (cl_uint n, cl_uint orig_d)
+unsigned int modularinverse (cl_uint n, cl_uint orig_d)
 {
 	cl_uint	d = orig_d;
 	int	x, lastx, q, t;
@@ -1105,7 +1085,7 @@ __device__ unsigned int modularinverse (cl_uint n, cl_uint orig_d)
 
 // Calculate the modular inverses used in computing initial bit-to-clear values
 
-__global__ static void __launch_bounds__(256,6) CalcModularInverses (cl_uint exponent, int *calc_info)
+__kernel static void __attribute__((work_group_size_hint(256, 1, 1))) CalcModularInverses (cl_uint exponent, __global int *calc_info)
 {
 	cl_uint	index;		// Index for prime and modinv data in calc_info
 	cl_uint	prime;		// The prime to work on
@@ -1113,16 +1093,16 @@ __global__ static void __launch_bounds__(256,6) CalcModularInverses (cl_uint exp
 
 // Handle the primes that are processed with special code.  That is, they are not part of an official "row" in pinfo_dev.
 
-	if (blockIdx.x == 0) {
-		if (threadIdx.x < primesNotSieved || threadIdx.x >= primesNotSieved + primesHandledWithSpecialCode) return;
-		index = threadIdx.x;
+	if (get_group_id(0) == 0) {
+		if (get_local_id(0) < primesNotSieved || get_local_id(0) >= primesNotSieved + primesHandledWithSpecialCode) return;
+		index = get_local_id(0);
 	}
 
 // Handle primes that are in "rows" of pinfo_dev.
 
 	else {
 		// Get and apply the distance between prime numbers in the pinfo_dev "row"
-		index = primesNotSieved + primesHandledWithSpecialCode + (blockIdx.x - 1) * threadsPerBlock + threadIdx.x;
+		index = primesNotSieved + primesHandledWithSpecialCode + (get_group_id(0) - 1) * threadsPerBlock + get_local_id(0);
 	}
 
 // Calculate and save the modular inverse for one of the sieve primes
@@ -1136,7 +1116,7 @@ __global__ static void __launch_bounds__(256,6) CalcModularInverses (cl_uint exp
 
 // Calculate the initial bit-to-clear values
 
-__global__ static void __launch_bounds__(256,6) CalcBitToClear (cl_uint exponent, int96 k_base, int *calc_info, cl_uchar *pinfo_dev)
+__kernel static void __attribute__((work_group_size_hint(256, 1, 1))) CalcBitToClear (cl_uint exponent, int96 k_base, __global int *calc_info, __global cl_uchar *pinfo_dev)
 {
 	cl_uint	index;		// Index for prime and modinv data in calc_info
 	cl_uint	mask;		// Mask that tells us what bits must be preserved in pinfo_dev when setting bit-to-clear
@@ -1146,29 +1126,29 @@ __global__ static void __launch_bounds__(256,6) CalcBitToClear (cl_uint exponent
 
 // Handle the primes that are processed with special code.  That is, they are not part of an official "row" in pinfo_dev.
 
-	if (blockIdx.x == 0) {
-		if (threadIdx.x < primesNotSieved || threadIdx.x >= primesNotSieved + primesHandledWithSpecialCode) return;
-		pinfo_dev += threadIdx.x * 2;
-		index = threadIdx.x;
+	if (get_group_id(0) == 0) {
+		if (get_local_id(0) < primesNotSieved || get_local_id(0) >= primesNotSieved + primesHandledWithSpecialCode) return;
+		pinfo_dev += get_local_id(0) * 2;
+		index = get_local_id(0);
 	}
 
 // Get info on the "row" of pinfo_dev we are working on.
 
 	else {
 		// Form the pointer to the start of the "row"
-		pinfo_dev += calc_info[(blockIdx.x - 1)];
+		pinfo_dev += calc_info[(get_group_id(0) - 1)];
 
 		// The distance between bit-to-clear values in the pinfo_dev "row" is always 4 bytes
-		pinfo_dev += threadIdx.x * 4;
+		pinfo_dev += get_local_id(0) * 4;
 
 		// Get the index for the first prime number in the pinfo_dev "row"
-		index = calc_info[MAX_PRIMES_PER_THREAD + (blockIdx.x - 1)];
+		index = calc_info[MAX_PRIMES_PER_THREAD + (get_group_id(0) - 1)];
 
 		// Get and apply the distance between prime numbers in the pinfo_dev "row"
-		index += threadIdx.x * calc_info[MAX_PRIMES_PER_THREAD*2 + (blockIdx.x - 1)];
+		index += get_local_id(0) * calc_info[MAX_PRIMES_PER_THREAD*2 + (get_group_id(0) - 1)];
 
 		// Get the mask to apply to word where we set the bit-to-clear value
-		mask = calc_info[MAX_PRIMES_PER_THREAD*3 + (blockIdx.x - 1)];
+		mask = calc_info[MAX_PRIMES_PER_THREAD*3 + (get_group_id(0) - 1)];
 	}
 
 // Read the prime and its modular inverse
@@ -1197,7 +1177,7 @@ __global__ static void __launch_bounds__(256,6) CalcBitToClear (cl_uint exponent
 // Handle the primes that are processed with special code.  That is, they are not part of an official "row" in pinfo_dev.
 // For these primes we store bit-to-clear in a 16-bit word.
 
-	if (blockIdx.x == 0) {
+	if (get_group_id(0) == 0) {
 		*pinfo16 = bit_to_clear;
 	}
 
