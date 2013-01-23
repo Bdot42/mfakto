@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
-//#define SIEVE_SIZE_LIMIT 64
+#define SIEVE_SIZE_LIMIT 32
 
 
 /* EXTENDED_SELFTEST will add about 30k additional tests to the -st2 test */
@@ -87,6 +87,12 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 /* Tell the OpenCL compiler to create debuggable code for the Kernels */
 //#define CL_DEBUG
+
+/* in order to more efficiently trace/debug the kernels, this define makes
+   the factor to be found the first candidate during the selftest, so that
+   debugging/tracing thread 0 of the first block should yield a factor found result */
+//#define DEBUG_FACTOR_FIRST
+
 
 /******************************************************************************
 *******************************************************************************
