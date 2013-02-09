@@ -722,9 +722,9 @@ a is precomputed on host ONCE. */
 ff = f as float, needed in mod_144_72().
 Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_V(f.d2);
-  ff= mad(ff, 16777216.0f, CONVERT_FLOAT_V(f.d1));
+  ff= mad(ff, (float_v)16777216.0f, CONVERT_FLOAT_V(f.d1));
 #ifdef _63BIT_MUL24_K
-  ff= mad(ff, 16777216.0f, CONVERT_FLOAT_V(f.d0));
+  ff= mad(ff, (float_v)16777216.0f, CONVERT_FLOAT_V(f.d0));
 #else // if f>48 bit then d2 and d1 provide enough precision
   ff= ff * 16777216.0f;
 #endif

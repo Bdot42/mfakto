@@ -282,7 +282,7 @@ __kernel void mod_128_64_k(const ulong hi, const ulong lo, const ulong q,
 #if (TRACE_KERNEL < 1)
 #pragma  OPENCL EXTENSION cl_amd_printf : enable
 #endif
-    printf("thread %d: i=%d, res[0]=%d\n", get_global_id(0), i, res[0]);
+//    printf("thread %d: i=%d, res[0]=%d\n", get_global_id(0), i, res[0]);
 
     if(i<10)				/* limit to 10 results */
     {

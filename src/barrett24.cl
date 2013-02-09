@@ -681,7 +681,7 @@ assumes q < 6n (6n includes "optional mul 2")
   __private int72_v nn;
 
   qf = CONVERT_FLOAT_V(q.d2);
-  qf = mad(qf, 16777216.0f, CONVERT_FLOAT_V(q.d1));
+  qf = mad(qf, (float_v)16777216.0f, CONVERT_FLOAT_V(q.d1));
 //  qf = qf * 16777216.0f + CONVERT_FLOAT_V(q.d1);
   
   qi = CONVERT_UINT_V(qf*nf);
@@ -836,7 +836,7 @@ bit_max64 is bit_max - 64! (1 .. 8)
 ff = f as float, needed in mod and div.
 Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_V(f.d2);
-  ff= mad(ff, 16777216.0f, CONVERT_FLOAT_V(f.d1));
+  ff= mad(ff, (float_v)16777216.0f, CONVERT_FLOAT_V(f.d1));
   // f.d0 not needed as d1 and d2 provide more than 23 bits precision
 
 //  ff=0.9999997f/ff;
