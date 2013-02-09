@@ -85,7 +85,10 @@ static int my_read_string(char *inifile, char *name, char *string, unsigned int 
       found = (unsigned int) strlen(buf + idx + 1);
       found = (len > found ? found : len) - 1;
       if (found)
-        strncpy(string, buf+idx+1, found);
+      {
+        strncpy(string, buf + idx + 1, found);
+        if(string[found - 1] == '\r') found--; //remove '\r' from string, this happens when reading a DOS/Windows formatted file on Linux
+      }
       string[found]='\0';
     }
   }
@@ -94,74 +97,6 @@ static int my_read_string(char *inifile, char *name, char *string, unsigned int 
   return 1;
 }
 
-static int set_print_line(mystuff_t *mystuff)
-{
-  char printparms[]="CcpgtenrswWdTUHMlu";  /* list of allowed print parameters,
-                                         when adding some, also update PRINT_PARM in my_types.h */
-  char buf[512]={0};
-  char *ppos;
-  unsigned int i,out_pos=0,out_parm=0;
-
-  for (i=0; i<strlen(printparms); i++)
-  {
-    mystuff->p_par[i].parm = printparms[i];
-    mystuff->p_par[i].pos = 0;
-  }
-
-  for (i=0; i<strlen(mystuff->print_line) && out_pos<510; i++)  // 510 to allow writing 2 bytes plus \0 without checking again
-  {
-    buf[out_pos++] = mystuff->print_line[i];
-    if (mystuff->print_line[i] == '%')
-    {
-      i++;
-      ppos = strchr(printparms, mystuff->print_line[i]);
-      if (ppos != NULL && mystuff->print_line[i]!='\0')
-      {
-        // found a valid param: remember the order number
-        // special handling for strings already known right now (UserID and ComputerID)
-        if (*ppos == 'U')
-        {
-          strncpy(buf+out_pos-1, mystuff->V5UserID, 512 - out_pos);
-          out_pos = out_pos -1 + (unsigned int)strlen(mystuff->V5UserID);
-          strncpy(mystuff->p_par[USER].out, mystuff->V5UserID, 15);
-          mystuff->p_par[USER].out[15]='\0';
-        }
-        else if (*ppos == 'H')
-        {
-          strncpy(buf+out_pos-1, mystuff->ComputerID, 512 - out_pos);
-          out_pos = out_pos -1 + (unsigned int)strlen(mystuff->ComputerID);
-          strncpy(mystuff->p_par[HOST].out, mystuff->ComputerID, 15);
-          mystuff->p_par[HOST].out[15]='\0';
-        }
-        else
-        {
-          if (out_parm >= 20) // too many params
-          {
-            fprintf(stderr, "Warning: More than 20 parameters in output format - line truncated\n");
-            break;
-          }
-          // use '%s' in the format string
-          buf[out_pos++] = 's';
-          // p_ptr[0] ... p_ptr[n] will point to the correct parameter's string,
-          // even allowing to use the same parm multiple times
-          mystuff->p_ptr[out_parm++] = mystuff->p_par[ppos - printparms].out;
-          // remember the posistion, but this is only used as a flag: if != 0, this parm need to be formatted
-          mystuff->p_par[ppos - printparms].pos = out_parm; // starts counting at 1
-        }
-      }
-      else
-      {  
-        buf[out_pos++] = '%';  // double the % sign to escape it
-        i--;                   // start over with the char that did not match a known format.
-                               // do not just copy it - it could be the leading %-sign of a known format
-      }
-    }
-  }
-
-  strncpy(mystuff->print_line, buf, 512);
-  mystuff->print_line[511]='\0';
-  return 0;
-}
 
 int read_config(mystuff_t *mystuff)
 {
@@ -169,98 +104,145 @@ int read_config(mystuff_t *mystuff)
   char tmp[51];
   unsigned long long int ul;
 
-  printf("\nRuntime options\n");
-  printf("  Inifile                   %s\n",mystuff->inifile);
-
-/*****************************************************************************/  
-
-  if(my_read_int(mystuff->inifile, "SievePrimesMin", &i))
+  if(mystuff->verbosity == -1)
   {
-    printf("WARNING: Cannot read SievePrimesMin from inifile, using default value (%d)\n", 5000);
-    i=5000;
+    if(my_read_int(mystuff->inifile, "Verbosity", &i))
+    {
+      printf("WARNING: Cannot read Verbosity from inifile, set to 1 by default\n");
+      mystuff->verbosity = 1;
+    }
+    else
+      mystuff->verbosity = i;
   }
-  else if((i < SIEVE_PRIMES_MIN) || (i >= SIEVE_PRIMES_MAX))
-  {
-    printf("WARNING: SievePrimesMin must be between %d and %d, using default value (%d)\n",
-        SIEVE_PRIMES_MIN, SIEVE_PRIMES_MAX, 5000);
-    i=5000;
-  }
-  printf("  SievePrimesMin            %d\n",i);
-  mystuff->sieve_primes_min = i;
 
-/*****************************************************************************/  
-
-  if(my_read_int(mystuff->inifile, "SievePrimesMax", &i))
-  {
-    printf("WARNING: Cannot read SievePrimesMax from inifile, using default value (%d)\n", SIEVE_PRIMES_MAX);
-    i=SIEVE_PRIMES_MAX;
-  }
-  else if((i < (int) mystuff->sieve_primes_min) || (i > SIEVE_PRIMES_MAX))
-  {
-    printf("WARNING: SievePrimesMax must be between SievePrimesMin(%d) and %d, using default value (%d)\n",
-        mystuff->sieve_primes_min, SIEVE_PRIMES_MAX, 200000);
-    i=200000;
-  }
-  printf("  SievePrimesMax            %d\n",i);
-  mystuff->sieve_primes_max_global = i;
+  if(mystuff->verbosity >= 1)printf("\nRuntime options\n"
+                                    "  Inifile                   %s\n"
+                                    "  Verbosity                 %d\n", mystuff->inifile, mystuff->verbosity);
 
 /*****************************************************************************/
-  if(my_read_int(mystuff->inifile, "SievePrimes", &i))
-  {
-    printf("WARNING: Cannot read SievePrimes from inifile, using default value (%d)\n", SIEVE_PRIMES_DEFAULT);
-    i=SIEVE_PRIMES_DEFAULT;
-  }
-  else
-  {
-    if((cl_uint)i>mystuff->sieve_primes_max_global)
-    {
-      printf("WARNING: Read SievePrimes=%d from inifile, using max value (%d)\n", i, mystuff->sieve_primes_max_global);
-      i=mystuff->sieve_primes_max_global;
-    }
-    else if( i < (int) mystuff->sieve_primes_min)
-    {
-      printf("WARNING: Read SievePrimes=%d from inifile, using min value (%d)\n", i, mystuff->sieve_primes_min);
-      i=mystuff->sieve_primes_min;
-    }
-  }
-  printf("  SievePrimes               %d\n",i);
-  mystuff->sieve_primes = i;
 
-/*****************************************************************************/  
-
-  if(my_read_int(mystuff->inifile, "SievePrimesAdjust", &i))
+  if(my_read_int(mystuff->inifile, "SieveOnGPU", &i))
   {
-    printf("WARNING: Cannot read SievePrimesAdjust from inifile, using default value (0)\n");
+    printf("WARNING: Cannot read SieveOnGPU from inifile, set to 0 by default\n");
     i=0;
   }
   else if(i != 0 && i != 1)
   {
-    printf("WARNING: SievePrimesAdjust must be 0 or 1, using default value (0)\n");
+    printf("WARNING: SieveOnGPU must be 0 or 1, set to 0 by default\n");
     i=0;
   }
-  printf("  SievePrimesAdjust         %d\n",i);
-  mystuff->sieve_primes_adjust = i;
-  if (mystuff->sieve_primes_adjust == 0)
-    mystuff->sieve_primes_max_global = mystuff->sieve_primes;  // no chance to use higher primes
+  if(mystuff->verbosity >= 1)
+  {
+    if(i == 0)printf("  SieveOnGPU                no\n");
+    else      printf("  SieveOnGPU                yes\n");
+  }
+  mystuff->gpu_sieving = i;
 
 /*****************************************************************************/  
+
+  if (mystuff->gpu_sieving == 0)
+  {
+    if(my_read_int(mystuff->inifile, "SievePrimesMin", &i))
+    {
+      printf("WARNING: Cannot read SievePrimesMin from inifile, using default value (%d)\n", 5000);
+      i = 5000;
+    }
+    else if((i < SIEVE_PRIMES_MIN) || (i >= SIEVE_PRIMES_MAX))
+    {
+      printf("WARNING: SievePrimesMin must be between %d and %d, using default value (%d)\n",
+          SIEVE_PRIMES_MIN, SIEVE_PRIMES_MAX, 5000);
+      i = 5000;
+    }
+    if(mystuff->verbosity >= 1)printf("  SievePrimesMin            %d\n",i);
+    mystuff->sieve_primes_min = i;
+
+  /*****************************************************************************/  
+
+    if(my_read_int(mystuff->inifile, "SievePrimesMax", &i))
+    {
+      printf("WARNING: Cannot read SievePrimesMax from inifile, using default value (%d)\n", 200000);
+      i = 200000;
+    }
+    else if((i < (int) mystuff->sieve_primes_min) || (i > SIEVE_PRIMES_MAX))
+    {
+      printf("WARNING: SievePrimesMax must be between SievePrimesMin(%d) and %d, using default value (%d)\n",
+          mystuff->sieve_primes_min, SIEVE_PRIMES_MAX, 200000);
+      i = 200000;
+    }
+    if(mystuff->verbosity >= 1)printf("  SievePrimesMax            %d\n",i);
+    mystuff->sieve_primes_max = i;
+
+  /*****************************************************************************/
+    if(my_read_int(mystuff->inifile, "SievePrimes", &i))
+    {
+      printf("WARNING: Cannot read SievePrimes from inifile, using default value (%d)\n", SIEVE_PRIMES_DEFAULT);
+      i = SIEVE_PRIMES_DEFAULT;
+    }
+    else
+    {
+      if((cl_uint)i>mystuff->sieve_primes_max)
+      {
+        printf("WARNING: Read SievePrimes=%d from inifile, using max value (%d)\n", i, mystuff->sieve_primes_max);
+        i = mystuff->sieve_primes_max;
+      }
+      else if( i < (int) mystuff->sieve_primes_min)
+      {
+        printf("WARNING: Read SievePrimes=%d from inifile, using min value (%d)\n", i, mystuff->sieve_primes_min);
+        i = mystuff->sieve_primes_min;
+      }
+    }
+    if(mystuff->verbosity >= 1)printf("  SievePrimes               %d\n",i);
+    mystuff->sieve_primes = i;
+
+  /*****************************************************************************/  
+
+    if(my_read_int(mystuff->inifile, "SievePrimesAdjust", &i))
+    {
+      printf("WARNING: Cannot read SievePrimesAdjust from inifile, using default value (0)\n");
+      i = 0;
+    }
+    else if(i != 0 && i != 1)
+    {
+      printf("WARNING: SievePrimesAdjust must be 0 or 1, using default value (0)\n");
+      i = 0;
+    }
+    if(mystuff->verbosity >= 1) printf("  SievePrimesAdjust         %d\n",i);
+    mystuff->sieve_primes_adjust = i;
+    if (mystuff->sieve_primes_adjust == 0)
+      mystuff->sieve_primes_max = mystuff->sieve_primes;  // no chance to use higher primes
+
+  /*****************************************************************************/  
 #ifdef SIEVE_SIZE_LIMIT
-  mystuff->sieve_size = SIEVE_SIZE;
+    mystuff->sieve_size = SIEVE_SIZE;
 #else
-  if(my_read_int(mystuff->inifile, "SieveSizeLimit", &i))
-  {
-    printf("WARNING: Cannot read SieveSizeLimit from inifile, using default value (32)\n");
-    i=32;
-  }
-  else if(i <= 13*17*19*23/8192)
-  {
-    printf("WARNING: SieveSizeLimit must be > %d, using default value (32)\n", 13*17*19*23/8192);
-    i=32;
-  }
-  printf("  SieveSizeLimit            %d kiB\n", i);
-  mystuff->sieve_size = ((i<<13) - (i<<13) % (13*17*19*23));
-  printf("  SieveSize                 %d bits\n", mystuff->sieve_size);
+    if(my_read_int(mystuff->inifile, "SieveSizeLimit", &i))
+    {
+      printf("WARNING: Cannot read SieveSizeLimit from inifile, using default value (32)\n");
+      i=32;
+    }
+    else if(i <= 13*17*19*23/8192)
+    {
+      printf("WARNING: SieveSizeLimit must be > %d, using default value (32)\n", 13*17*19*23/8192);
+      i=32;
+    }
+    if(mystuff->verbosity >= 1)printf("  SieveSizeLimit            %d kiB\n", i);
+    mystuff->sieve_size = ((i<<13) - (i<<13) % (13*17*19*23));
+    if(mystuff->verbosity >= 1)printf("  SieveSize                 %d bits\n", mystuff->sieve_size);
 #endif
+
+  /*****************************************************************************/
+
+    if(my_read_ulong(mystuff->inifile, "SieveCPUMask", &ul))
+    {
+      printf("WARNING: Cannot read SieveCPUMask from inifile, set to 0 by default\n");
+      ul=0;
+    }
+    if(mystuff->verbosity >= 1)printf("  SieveCPUMask              %lld\n", ul);
+  
+    mystuff->cpu_mask = ul;
+
+  }
+
 /*****************************************************************************/
 
   if(my_read_int(mystuff->inifile, "NumStreams", &i))
@@ -281,7 +263,7 @@ int read_config(mystuff_t *mystuff)
       i=NUM_STREAMS_MIN;
     }
   }
-  printf("  NumStreams                %d\n",i);
+  if(mystuff->verbosity >= 1)printf("  NumStreams                %d\n",i);
   mystuff->num_streams = i;
 
 /*****************************************************************************/
@@ -328,7 +310,7 @@ int read_config(mystuff_t *mystuff)
       i = 0;
     }
   }
-  printf("  GridSize                  %d\n",i);
+  if(mystuff->verbosity >= 1)printf("  GridSize                  %d\n",i);
        if(i == 0)  mystuff->threads_per_grid_max =  131072;
   else if(i == 1)  mystuff->threads_per_grid_max =  262144;
   else if(i == 2)  mystuff->threads_per_grid_max =  524288;
@@ -342,16 +324,16 @@ int read_config(mystuff_t *mystuff)
     sprintf(mystuff->workfile, "worktodo.txt");
     printf("WARNING: Cannot read WorkFile from inifile, using default (%s)\n", mystuff->workfile);
   }
-  printf("  WorkFile                  %s\n", mystuff->workfile);
+  if(mystuff->verbosity >= 1)printf("  WorkFile                  %s\n", mystuff->workfile);
 
 /*****************************************************************************/
 
-  if(my_read_string(mystuff->inifile, "ResultsFile", mystuff->resultsfile, 50))
+  if(my_read_string(mystuff->inifile, "ResultsFile", mystuff->resultfile, 50))
   {
     printf("WARNING: Cannot read ResultsFile from inifile, using default (results.txt)\n");
-    sprintf(mystuff->resultsfile, "results.txt");
+    sprintf(mystuff->resultfile, "results.txt");
   }
-  printf("  ResultsFile               %s\n", mystuff->resultsfile);
+  if(mystuff->verbosity >= 1)printf("  ResultsFile               %s\n", mystuff->resultfile);
 
 /*****************************************************************************/
 
@@ -365,15 +347,18 @@ int read_config(mystuff_t *mystuff)
     printf("WARNING: Checkpoints must be 0 (disabled) or greater, enabled by default\n");
     i=1;
   }
-  if(i==0)printf("  Checkpoints               disabled\n");
-  else if (i==1) printf("  Checkpoints               enabled\n");
-  else           printf("  Checkpoints               every %d classes\n", i);
+  if(mystuff->verbosity >= 1)
+  {
+    if(i==0)printf("  Checkpoints               disabled\n");
+    else if (i==1) printf("  Checkpoints               enabled\n");
+    else           printf("  Checkpoints               every %d classes\n", i);
+  }
   mystuff->checkpoints = i;
 
 /*****************************************************************************/
   if (mystuff->checkpoints > 1)
   {
-    printf("  CheckpointDelay           ignored as Checkpoints > 1\n");
+    if(mystuff->verbosity >= 1)printf("  CheckpointDelay           ignored as Checkpoints > 1\n");
     mystuff->checkpointdelay = 300;
   }
   else
@@ -393,7 +378,7 @@ int read_config(mystuff_t *mystuff)
       printf("WARNING: Minimum value for CheckpointDelay is 0s\n");
       i = 0;
     }
-    printf("  CheckpointDelay           %ds\n", i);
+    if(mystuff->verbosity >= 1)printf("  CheckpointDelay           %ds\n", i);
     mystuff->checkpointdelay = i;
   }
 
@@ -409,8 +394,11 @@ int read_config(mystuff_t *mystuff)
     printf("WARNING: Stages must be 0 or 1, enabled by default\n");
     i=1;
   }
-  if(i==0)printf("  Stages                    disabled\n");
-  else    printf("  Stages                    enabled\n");
+  if(mystuff->verbosity >= 1)
+  {
+    if(i==0)printf("  Stages                    disabled\n");
+    else    printf("  Stages                    enabled\n");
+  }
   mystuff->stages = i;
 
 /*****************************************************************************/
@@ -425,9 +413,12 @@ int read_config(mystuff_t *mystuff)
     printf("WARNING: StopAfterFactor must be 0, 1 or 2, set to 1 by default\n");
     i=1;
   }
-       if(i==0)printf("  StopAfterFactor           disabled\n");
-  else if(i==1)printf("  StopAfterFactor           bitlevel\n");
-  else if(i==2)printf("  StopAfterFactor           class\n");
+  if(mystuff->verbosity >= 1)
+  {
+         if(i==0)printf("  StopAfterFactor           disabled\n");
+    else if(i==1)printf("  StopAfterFactor           bitlevel\n");
+    else if(i==2)printf("  StopAfterFactor           class\n");
+  }
   mystuff->stopafterfactor = i;
 
 /*****************************************************************************/
@@ -442,8 +433,11 @@ int read_config(mystuff_t *mystuff)
     printf("WARNING: PrintMode must be 0 or 1, set to 0 by default\n");
     i=0;
   }
-  if(i == 0)printf("  PrintMode                 full\n");
-  else      printf("  PrintMode                 compact\n");
+  if(mystuff->verbosity >= 1)
+  {
+    if(i == 0)printf("  PrintMode                 full\n");
+    else      printf("  PrintMode                 compact\n");
+  }
   mystuff->printmode = i;
 
 /*****************************************************************************/
@@ -451,12 +445,12 @@ int read_config(mystuff_t *mystuff)
   if (my_read_string(mystuff->inifile, "V5UserID", mystuff->V5UserID, 50))
   {
     /* no problem, don't use any */
-    printf("  V5UserID                  none\n");
+    if(mystuff->verbosity >= 1)printf("  V5UserID                  none\n");
     mystuff->V5UserID[0]='\0';
   }
   else
   {
-    printf("  V5UserID                  %s\n", mystuff->V5UserID);
+    if(mystuff->verbosity >= 1)printf("  V5UserID                  %s\n", mystuff->V5UserID);
   }
 
 /*****************************************************************************/
@@ -464,40 +458,36 @@ int read_config(mystuff_t *mystuff)
   if(my_read_string(mystuff->inifile, "ComputerID", mystuff->ComputerID, 50))
   {
     /* no problem, don't use any */
-    printf("  ComputerID                none\n");
+    if(mystuff->verbosity >= 1)printf("  ComputerID                none\n");
     mystuff->ComputerID[0]='\0';
   }
   else
   {
-    printf("  ComputerID                %s\n", mystuff->ComputerID);
+    if(mystuff->verbosity >= 1)printf("  ComputerID                %s\n", mystuff->ComputerID);
   }
 
 /*****************************************************************************/
 
-  if(my_read_string(mystuff->inifile, "ProgressHeader", mystuff->head_line, 510))
+  for(i = 0; i < 256; i++)mystuff->stats.progressheader[i] = 0;
+  if(my_read_string(mystuff->inifile, "ProgressHeader", mystuff->stats.progressheader, 250))
   {
-    /* no problem, use some default */
-    strcpy(mystuff->head_line, "  done |    ETA |     GHz |time/class|    #FCs | avg. rate | SieveP. |CPU idle");
+//    sprintf(mystuff->stats.progressheader, "    class | candidates |    time |    ETA | avg. rate | SievePrimes | CPU wait");
+    sprintf(mystuff->stats.progressheader, "Date   Time     Pct    ETA | Exponent    Bits | GHz-d/day    Sieve     Wait");
+    printf("WARNING, no ProgressHeader specified in inifile, using default\n");
   }
-  else
-  {
-// do not clutter the screen too much
-//    printf("  ProgressHeader            %s\n", mystuff->head_line);
-  }
+  if(mystuff->verbosity >= 2)printf("  ProgressHeader            \"%s\"\n", mystuff->stats.progressheader);
 
 /*****************************************************************************/
 
-  if(my_read_string(mystuff->inifile, "PrintFormat", mystuff->print_line, 510))
+  for(i = 0; i < 256; i++)mystuff->stats.progressformat[i] = 0;
+  if(my_read_string(mystuff->inifile, "ProgressFormat", mystuff->stats.progressformat, 250))
   {
-    /* no problem, use some default */
-    strcpy(mystuff->print_line, "%p% | %e | %g |  %ts | %n | %rM/s | %s | %W%");
+//    sprintf(mystuff->stats.progressformat, "%%C/%4d |    %%n | %%ts | %%e | %%rM/s |     %%s |  %%W%%%%", NUM_CLASSES);
+    sprintf(mystuff->stats.progressformat, "%%d %%T  %%p %%e | %%M %%l-%%u |   %%g  %%s  %%W%%%%");
+    printf("WARNING, no ProgressFormat specified in inifile, using default\n");
   }
-  else
-  {
-// do not clutter the screen too much
-//    printf("  PrintFormat               %s\n", mystuff->print_line);
-  }
-  set_print_line(mystuff);
+  if(mystuff->verbosity >= 2)printf("  ProgressFormat            \"%s\"\n", mystuff->stats.progressformat);
+
 
 /*****************************************************************************/
 
@@ -511,8 +501,11 @@ int read_config(mystuff_t *mystuff)
     printf("WARNING: AllowSleep must be 0 or 1, set to 0 by default\n");
     i=0;
   }
-  if(i == 0)printf("  AllowSleep                no\n");
-  else      printf("  AllowSleep                yes\n");
+  if(mystuff->verbosity >= 1)
+  {
+    if(i == 0)printf("  AllowSleep                no\n");
+    else      printf("  AllowSleep                yes\n");
+  }
   mystuff->allowsleep = i;
 
 /*****************************************************************************/
@@ -527,8 +520,11 @@ int read_config(mystuff_t *mystuff)
     printf("WARNING: TimeStampInResults must be 0 or 1, set to 0 by default\n");
     i=0;
   }
-  if(i == 0)printf("  TimeStampInResults        no\n");
-  else      printf("  TimeStampInResults        yes\n");
+  if(mystuff->verbosity >= 1)
+  {
+    if(i == 0)printf("  TimeStampInResults        no\n");
+    else      printf("  TimeStampInResults        yes\n");
+  }
   mystuff->print_timestamp = i;
 
 /*****************************************************************************/
@@ -550,7 +546,7 @@ int read_config(mystuff_t *mystuff)
     i=1;
   }
 #endif
-  printf("  VectorSize                %d\n", i);
+  if(mystuff->verbosity >= 1)printf("  VectorSize                %d\n", i);
   mystuff->vectorsize = i;
 
 /*****************************************************************************/
@@ -580,23 +576,7 @@ int read_config(mystuff_t *mystuff)
     }
   }
 
-  printf("  GPUType                   %s\n", tmp);
-
-/*****************************************************************************/
-
-  if(my_read_int(mystuff->inifile, "SieveOnGPU", &i))
-  {
-    printf("WARNING: Cannot read SieveOnGPU from inifile, set to 0 by default\n");
-    i=0;
-  }
-  else if(i != 0 && i != 1)
-  {
-    printf("WARNING: SieveOnGPU must be 0 or 1, set to 0 by default\n");
-    i=0;
-  }
-  if(i == 0)printf("  SieveOnGPU                no\n");
-  else      printf("  SieveOnGPU                yes\n");
-  mystuff->gpu_sieving = i;
+  if(mystuff->verbosity >= 1)printf("  GPUType                   %s\n", tmp);
 
   /*****************************************************************************/
 
@@ -610,20 +590,12 @@ int read_config(mystuff_t *mystuff)
     printf("WARNING: SmallExp must be 0 or 1, set to 0 by default\n");
     i=0;
   }
-  if(i == 0)printf("  SmallExp                  no\n");
-  else      printf("  SmallExp                  yes\n");
-  mystuff->small_exp = i;
-
-  /*****************************************************************************/
-
-  if(my_read_ulong(mystuff->inifile, "SieveCPUMask", &ul))
+  if(mystuff->verbosity >= 1)
   {
-    printf("WARNING: Cannot read SieveCPUMask from inifile, set to 0 by default\n");
-    ul=0;
+    if(i == 0)printf("  SmallExp                  no\n");
+    else      printf("  SmallExp                  yes\n");
   }
-  printf("  SieveCPUMask              %lld\n", ul);
-  
-  mystuff->cpu_mask = ul;
+  mystuff->small_exp = i;
 
   /*****************************************************************************/
 

@@ -19,6 +19,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #ifndef __MY_TYPES_H
 #define __MY_TYPES_H
 #include "params.h"
+#include "CL/cl.h"
 
 /* 60bit (4x 15bit) integer
 D=d0 + d1*(2^15) + d2*(2^30) ... */
@@ -130,6 +131,8 @@ enum GPUKernels
   _95BIT_MUL32  /* not yet there */
 };
 
+typedef enum GPUKernels GPUKernels;
+
 enum GPU_types
 {
   GPU_AUTO,
@@ -213,17 +216,24 @@ typedef struct
   cl_mem   d_sieve_info;
   cl_uint *h_calc_bit_to_clear_info;
   cl_mem   d_calc_bit_to_clear_info;
+
+  cl_uint  exponent;                        /* the exponent we're currently working on */
+  cl_uint  bit_min;                         /* where do we start TFing */
+  cl_uint  bit_max_assignment;              /* the upper size of factors we're searching for */
+  cl_uint  bit_max_stage;                   /* as above, but only for the current stage */
+  
+  cl_uint  sieve_primes;                    /* the actual number of odd primes using for sieving */
+  cl_uint  sieve_primes_adjust;             /* allow automated adjustment of sieve_primes? */
+  cl_uint  sieve_primes_upper_limit;        /* the upper limit of sieve_primes for the current exponent */
+  cl_uint  sieve_primes_min, sieve_primes_max; /* user configureable sieve_primes min/max */
+  cl_uint  sieve_size;
+
   cl_uint  gpu_sieving;			             /* TRUE if we're letting the GPU do the sieving */
   cl_uint  gpu_sieve_size;			         /* Size (in bits) of the GPU sieve.  Default is 128M bits. */
   cl_uint  gpu_sieve_primes;             /* the actual number of primes using for sieving */
   cl_uint  gpu_sieve_processing_size;	   /* The number of GPU sieve bits each thread in a Barrett kernel will process.  Default is 2K bits. */
 
-  cl_uint exponent;                      /* the exponent we're currently working on */
-  cl_uint bit_min;                       /* where do we start TFing */
-  cl_uint bit_max_assignment;            /* the upper size of factors we're searching for */
-  cl_uint bit_max_stage;                 /* as above, but only for the current stage */
-  
-  cl_uint sieve_primes, sieve_primes_adjust, sieve_primes_min, sieve_primes_max, sieve_primes_max_global, sieve_size;
+
   cl_uint num_streams;
   
   enum MODES mode;
@@ -235,28 +245,24 @@ typedef struct
   cl_uint *h_modbasecase_debug;
 #endif  
 
-  cl_uint vectorsize;
-  cl_uint printmode;
-  cl_uint class_counter;		/* needed for ETA calculation */
-  cl_uint allowsleep;
-  cl_uint small_exp;
-  cl_uint print_timestamp;
-  cl_uint quit;
+  cl_uint  vectorsize;
+  cl_uint  printmode;
+  cl_uint  allowsleep;
+  cl_uint  small_exp;
+  cl_uint  print_timestamp;
+  cl_uint  quit;
   cl_ulong cpu_mask;        /* CPU affinity mask for the siever thread */
-  cl_uint verbosity;        /* 0 = reduced number of screen printfs, 1= default, >= 2 = some additional printfs */
-  cl_uint selftestsize;
+  cl_int  verbosity;        /* -1 = uninitialized, 0 = reduced number of screen printfs, 1= default, >= 2 = some additional printfs */
+  cl_uint  selftestsize;
 
-  stats_t stats;            /* stats for the status line */
+  stats_t  stats;            /* stats for the status line */
 
-  char * p_ptr[20];         /* pointers to the formatted output string arrays, in the order they are being used, allow 20 of them */
-  print_parameter p_par[NUM_PRINT_PARM]; /* to hold the position and strings of each possible parameter */
-  char print_line[512];
-  char head_line[512];
-  char V5UserID[51];
-  char ComputerID[51];
   char workfile[51];		/* allow filenames up to 50 chars... */
-  char inifile[51];		/* allow filenames up to 50 chars... */
-  char resultsfile[51];
+  char inifile[51];	  	/* allow filenames up to 50 chars... */
+  char resultfile[51];
+  char V5UserID[51];                   /* primenet V5UserID and ComputerID */
+  char ComputerID[51];                 /* currently only used for screen/result output */
+
 }mystuff_t;			/* FIXME: proper name needed */
 
 typedef struct

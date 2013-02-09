@@ -34,6 +34,9 @@
     <ClCompile Include="src\gpusieve.cpp">
       <Filter>source files</Filter>
     </ClCompile>
+    <ClCompile Include="src\output.c">
+      <Filter>source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/checkpoint.h">
@@ -87,6 +90,9 @@
     <ClInclude Include="src\perftest.h">
       <Filter>header files</Filter>
     </ClInclude>
+    <ClInclude Include="src\output.h">
+      <Filter>header files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="todo.txt" />
@@ -106,9 +112,6 @@
       <Filter>kernel files</Filter>
     </None>
     <None Include="src\sieve.cl">
-      <Filter>kernel files</Filter>
-    </None>
-    <None Include="trialfactor_72.cl">
       <Filter>kernel files</Filter>
     </None>
     <None Include="src\mfakto.ini" />

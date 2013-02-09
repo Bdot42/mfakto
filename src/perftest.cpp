@@ -66,7 +66,7 @@ int init_perftest(int devicenumber)
 
   register_signal_handler(&mystuff);
 
-  mystuff.sieve_primes_max_global = 1000000;
+  mystuff.sieve_primes_max = 1000000;
   return 0;
 }
 
@@ -572,7 +572,7 @@ int perftest(int par, int devicenumber)
 #ifdef SIEVE_SIZE_LIMIT
   sieve_init();
 #else
-  sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max_global);
+  sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max);
 #endif
   time1 = (double)timer_diff(&timer);
   printf("%.2f ms\n\n", time1/1000.0);

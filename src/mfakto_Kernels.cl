@@ -110,7 +110,6 @@ Version 0.13
 #include "datatypes.h"
 
 #ifdef CL_GPU_SIEVE
-
 #include "gpusieve.cl"
 #endif
 

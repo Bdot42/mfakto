@@ -34,6 +34,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "filelocking.h"
 #include "perftest.h"
 #include "mfakto.h"
+#include "output.h"
 #include "gpusieve.h"
 #ifndef _MSC_VER
 #include <sys/time.h>
@@ -86,7 +87,7 @@ kernel_info_t       kernel_info[] = {
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         0,      NULL}, // end of automatic loading
      {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         0,      NULL}, // slow shift-cmp-sub kernel: removed
      {   BARRETT92_64_OpenCL, "cl_barrett32_92",      64,     92,         0,      NULL}, // mapped to 32-bit barrett so far
-     {   CL_CALC_BIT_TO_CLEAR, "CalcBitToClear",        0,      0,         0,      NULL}, // called by gpusieve_init_class
+     {   CL_CALC_BIT_TO_CLEAR, "CalcBitToClear",       0,      0,         0,      NULL}, // called by gpusieve_init_class
      {   CL_CALC_MOD_INV,     "CalcModularInverses",   0,      0,         0,      NULL}, // called by gpusieve_init_exponent
      {   CL_SIEVE,            "SegSieve",              0,      0,         0,      NULL}
 };
@@ -1895,145 +1896,28 @@ int cleanup_CL(void)
 	return 0;
 }
 
-void print_dez72(int72 a, char *buf)
-/*
-writes "a" into "buf" in decimal
-"buf" must be at least 25 bytes
-*/
-{
-  char digit[24];
-  int digits=0,carry,i=0;
-  
-  while((a.d0!=0 || a.d1!=0 || a.d2!=0) && digits<24)
-  {
-                     carry=a.d2%10; a.d2/=10;
-    a.d1+=carry<<24; carry=a.d1%10; a.d1/=10;
-    a.d0+=carry<<24; carry=a.d0%10; a.d0/=10;
-    digit[digits++]=carry;
-  }
-  if(digits==0)sprintf(buf,"0");
-  else
-  {
-    digits--;
-    while(digits >= 0)
-    {
-      sprintf(&(buf[i++]),"%1d",digit[digits--]);
-    }
-  }
-}
-
-void print_dez144(int144 a, char *buf)
-{
-/*
-writes "a" into "buf" in decimal
-"buf" must be at least 45 bytes
-*/
-  char digit[44];
-  int digits=0,carry,i=0;
-  
-  while((a.d0!=0 || a.d1!=0 || a.d2!=0 || a.d3!=0 || a.d4!=0 || a.d5!=0) && digits<44)
-  {
-                     carry=a.d5%10; a.d5/=10;
-    a.d4+=carry<<24; carry=a.d4%10; a.d4/=10;
-    a.d3+=carry<<24; carry=a.d3%10; a.d3/=10;
-    a.d2+=carry<<24; carry=a.d2%10; a.d2/=10;
-    a.d1+=carry<<24; carry=a.d1%10; a.d1/=10;
-    a.d0+=carry<<24; carry=a.d0%10; a.d0/=10;
-    digit[digits++]=carry;
-  }
-  if(digits==0)sprintf(buf,"0 bla");
-  else
-  {
-    digits--;
-    while(digits >= 0)
-    {
-      sprintf(&(buf[i++]),"%1d",digit[digits--]);
-    }
-  }
-}
-
-void print_dez96(cl_uint a_hi, cl_uint a_mid, cl_uint a_lo, char *buf)
-/*
-writes "a" into "buf" in decimal
-"buf" must be at least 30 bytes
-*/
-{
-  char digit[29];
-  int  digits=0,carry,i=0;
-  long long int tmp;
-  
-  while((a_lo!=0 || a_mid!=0 || a_hi!=0) && digits<29)
-  {
-                                                    carry=a_hi%10; a_hi/=10;
-    tmp = a_mid; tmp += (long long int)carry << 32; carry=tmp%10;  a_mid=(cl_uint) (tmp/10);
-    tmp = a_lo;  tmp += (long long int)carry << 32; carry=tmp%10;  a_lo =(cl_uint) (tmp/10);
-    digit[digits++]=carry;
-  }
-  if(digits==0)sprintf(buf,"0");
-  else
-  {
-    digits--;
-    while(digits >= 0)
-    {
-      sprintf(&(buf[i++]),"%1d",digit[digits--]);
-    }
-  }
-}
-
-void print_dez90(cl_uint a_hi, cl_uint a_mid, cl_uint a_lo, char *buf)
-/*
-assumes 30 bits per component
-writes "a" into "buf" in decimal
-"buf" must be at least 30 bytes
-*/
-{
-  char digit[29];
-  int  digits=0,carry,i=0;
-  long long int tmp;
-  
-  while((a_lo!=0 || a_mid!=0 || a_hi!=0) && digits<29)
-  {
-                                                    carry=a_hi%10; a_hi/=10;
-    tmp = a_mid; tmp += (long long int)carry << 30; carry=tmp%10;  a_mid=(cl_uint) (tmp/10);
-    tmp = a_lo;  tmp += (long long int)carry << 30; carry=tmp%10;  a_lo =(cl_uint) (tmp/10);
-    digit[digits++]=carry;
-  }
-  if(digits==0)sprintf(buf,"0");
-  else
-  {
-    digits--;
-    while(digits >= 0)
-    {
-      sprintf(&(buf[i++]),"%1d",digit[digits--]);
-    }
-  }
-}
-
-
 int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPUKernels use_kernel)
 {
   size_t size = mystuff->threads_per_grid * sizeof(int);
   int status, wait = 0;
   struct timeval timer, timer2;
   unsigned long long int twait=0;
-  unsigned int eta;
   cl_uint cwait=0, i;
 // for TF_72BIT  
   int72  k_base;
   int144 b_preinit = {0};
   int192 b_192 = {0};
   cl_uint8 b_in = {{0}};
+  int96  factor;
 //  double ghz_assignment = 0.016968 * pow((double)2, bit_min - 47) * 1680 / exp * (pow((double)2, bit_max-bit_min) -1);
   double ghz_assignment = 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1);
 
-  cl_uint factor_lo, factor_mid, factor_hi, factorsfound=0;
+  cl_uint  factorsfound=0;
   unsigned long long int b_preinit_lo, b_preinit_mid, b_preinit_hi;
   int shiftcount,ln2b,count=1;
   unsigned long long int k_diff;
-  unsigned long long int t;
   char string[50];
   int running=0;
-  FILE *resultfile;
   
   int h_ktab_index = 0;
   unsigned long long int k_min_grid[NUM_STREAMS_MAX];	// k_min_grid[N] contains the k_min for h_ktab[N], only valid for preprocessed h_ktab[]s
@@ -2153,10 +2037,6 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   // combine for more efficient passing of parameters
   cl_ulong4 b_preinit4 = {{b_preinit_lo, b_preinit_mid, b_preinit_hi, shiftcount-1}};
 
-#ifdef VERBOSE_TIMING
-  printf("mfakt(%u,...) init:     %" PRIu64 "msec\n",exp,timer_diff(&timer)/1000);
-#endif
-
   status = clWaitForEvents(1, &mystuff->copy_events[0]); // copying RES finished?
   if(status != CL_SUCCESS) 
   { 
@@ -2173,10 +2053,6 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   while((k_min <= k_max) || (running > 0))
   {
     h_ktab_index = count % mystuff->num_streams;
-#ifdef VERBOSE_TIMING
-    printf("##### k_start = %" PRIu64 " ##### ",k_min);
-    printf("mfakt(%u,...) start:    %" PRIu64 "msec\n",exp,timer_diff(&timer)/1000);
-#endif
 
 /* preprocessing: calculate a ktab (factor table) */
     if((mystuff->stream_status[h_ktab_index] == UNUSED) && (k_min <= k_max))	// if we have an empty h_ktab we can preprocess another one
@@ -2225,9 +2101,6 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
       printArray("ktab", mystuff->h_ktab[h_ktab_index], mystuff->threads_per_grid);
 #endif
 
-#ifdef VERBOSE_TIMING
-      printf("mfakt(%u,...) sieved:  %" PRIu64 "msec\n",exp,timer_diff(&timer)/1000);
-#endif
       count++;
       k_min += (unsigned long long int)k_diff;
     }
@@ -2477,12 +2350,6 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
     }
   }
 
-
-#ifdef VERBOSE_TIMING
-  printf("mfakt(%u,...) wait:     %" PRIu64 "msec ",exp,timer_diff(&timer)/1000);
-  printf("##### k_end = %" PRIu64 " #####\n",k_min);
-#endif    
-
   status = clEnqueueReadBuffer(QUEUE,
                 mystuff->d_RES,
                 CL_TRUE,
@@ -2526,172 +2393,59 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   for(i=0;i<32;i++)if(mystuff->h_modbasecase_debug[i] != 0)printf("h_modbasecase_debug[%2d] = %u\n", i, mystuff->h_modbasecase_debug[i]);
 #endif
 
-#ifdef VERBOSE_TIMING
-  printf("mfakt(%u,...) download: %" PRIu64 "msec\n",exp,timer_diff(&timer)/1000);
-#endif
+  mystuff->stats.grid_count = count;
+  mystuff->stats.class_time = timer_diff(&timer)/1000;
+/* prevent division by zero if timer resolution is too low */
+  if(mystuff->stats.class_time == 0)mystuff->stats.class_time = 1;
 
-  t=timer_diff(&timer)/1000;
-  if(t==0)t=1;	/* prevent division by zero */
-  if(count==0)count=1;
+  if(mystuff->stats.grid_count > 2 * mystuff->num_streams)mystuff->stats.cpu_wait = (float)twait / ((float)mystuff->stats.class_time * 10);
+  else                                mystuff->stats.cpu_wait = -1.0f;
 
-  if(mystuff->mode != MODE_SELFTEST_SHORT)
+  print_status_line(mystuff);
+
+  if(mystuff->stats.cpu_wait >= 0.0f)
   {
-    if (mystuff->p_par[CLASS_ID].pos) sprintf(mystuff->p_par[CLASS_ID].out, "%4d", (unsigned int)(k_min%NUM_CLASSES));
-    if (mystuff->p_par[CANDIDATES].pos)
-    {
-      float f = (float)mystuff->threads_per_grid * (float)count;
-      if(f < 1000000000.0)
-      {
-        sprintf(mystuff->p_par[CANDIDATES].out, "%6.2fM", f / 1000000.0);
-      }
-      else
-      {
-        sprintf(mystuff->p_par[CANDIDATES].out, "%6.2fG", f / 1000000000.0);
-      }
-    }
-
-    if (mystuff->p_par[TIME_PER_CLASS].pos)
-    {
-           if(t < 100000ULL  )sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%6.3f", (float)t/1000.0);
-      else if(t < 1000000ULL )sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%6.2f", (float)t/1000.0);
-      else if(t < 10000000ULL)sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%6.1f", (float)t/1000.0);
-      else                    sprintf(mystuff->p_par[TIME_PER_CLASS].out, "%6.0f", (float)t/1000.0);
-    }
-    if (mystuff->p_par[GHZ].pos) sprintf(mystuff->p_par[GHZ].out, "%7.2f", ghz_assignment * 90000.0 / (float)t); // ass * 86400 / (t * 960 / 1000 s/ms)    (t is in ms)
-    if (mystuff->p_par[RATE].pos)
-      sprintf(mystuff->p_par[RATE].out, "%6.2f", (float)mystuff->threads_per_grid * (float)count / ((float)t * 1000.0));
-
-    if (mystuff->p_par[ETA].pos)
-    {
-      sprintf(mystuff->p_par[ETA].out, "  n.a.");
-      if (mystuff->mode == MODE_NORMAL)
-      {
-        if (t > 250)
-        {
-          eta = (unsigned int)(t * (960 - mystuff->class_counter) + 500)  / 1000;
-          if(eta < 3600)
-          {
-            sprintf(mystuff->p_par[ETA].out, "%2dm%02ds", eta / 60, eta % 60);
-          }
-          else if(eta < 86400)
-          {
-            sprintf(mystuff->p_par[ETA].out, "%2dh%02dm", eta / 3600, (eta / 60) % 60);
-          }
-          else
-          {
-            sprintf(mystuff->p_par[ETA].out, "%2dd%02dh", eta / 86400, (eta / 3600) % 24);
-          }
-        }
-      }
-    }
-
-    if (mystuff->p_par[CPU_WAIT_PCT].pos) sprintf(mystuff->p_par[CPU_WAIT_PCT].out, "%6.2f", (double)twait/(double)t/10.0);
-    twait/=count;
-    if (mystuff->p_par[CPU_WAIT_TIME].pos) sprintf(mystuff->p_par[CPU_WAIT_TIME].out, "%6lld", twait);
-    if (mystuff->p_par[DATE_SHORT].pos || mystuff->p_par[TIME_SHORT].pos)
-    {
-      time_t now = time(NULL);
-      struct tm *tm_now = localtime(&now);
-      strftime(mystuff->p_par[DATE_SHORT].out, 16, "%b %d", tm_now);
-      strftime(mystuff->p_par[TIME_SHORT].out, 16, "%H:%M", tm_now);
-    }
-
-      // Now we have all possible parms: print the line
-    printf(mystuff->print_line, mystuff->p_ptr[0], mystuff->p_ptr[1],
-        mystuff->p_ptr[2], mystuff->p_ptr[3], mystuff->p_ptr[4], mystuff->p_ptr[5],
-        mystuff->p_ptr[6], mystuff->p_ptr[7], mystuff->p_ptr[8], mystuff->p_ptr[9],
-        mystuff->p_ptr[10], mystuff->p_ptr[11],
-        mystuff->p_ptr[12], mystuff->p_ptr[13], mystuff->p_ptr[14], mystuff->p_ptr[15],
-        mystuff->p_ptr[16], mystuff->p_ptr[17], mystuff->p_ptr[18], mystuff->p_ptr[19]);
-
-    if(mystuff->sieve_primes_adjust==1 && twait>500 && mystuff->sieve_primes < mystuff->sieve_primes_max && (mystuff->mode != MODE_SELFTEST_SHORT))
+/* if SievePrimesAdjust is enable lets try to get 2 % < CPU wait < 6% */
+    if(mystuff->sieve_primes_adjust == 1 && mystuff->stats.cpu_wait > 6.0f && mystuff->sieve_primes < mystuff->sieve_primes_upper_limit && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
       mystuff->sieve_primes *= 9;
       mystuff->sieve_primes /= 8;
-      if(mystuff->sieve_primes > mystuff->sieve_primes_max) mystuff->sieve_primes = mystuff->sieve_primes_max;
-//      printf("\navg. wait > 750us, increasing SievePrimes to %d",mystuff->sieve_primes);
+      if(mystuff->sieve_primes > mystuff->sieve_primes_upper_limit) mystuff->sieve_primes = mystuff->sieve_primes_upper_limit;
     }
-    if(mystuff->sieve_primes_adjust==1 && twait<150 && mystuff->sieve_primes > mystuff->sieve_primes_min && (mystuff->mode != MODE_SELFTEST_SHORT))
+    if(mystuff->sieve_primes_adjust == 1 && mystuff->stats.cpu_wait < 2.0f  && mystuff->sieve_primes > mystuff->sieve_primes_min && (mystuff->mode != MODE_SELFTEST_SHORT))
     {
       mystuff->sieve_primes *= 7;
       mystuff->sieve_primes /= 8;
       if(mystuff->sieve_primes < mystuff->sieve_primes_min) mystuff->sieve_primes = mystuff->sieve_primes_min;
-//      printf("\navg. wait < 200us, decreasing SievePrimes to %d",mystuff->sieve_primes);
     }
-    // this is already for the next iteration, if SievePrimes was adjusted.
-    if (mystuff->p_par[SIEVE_PRIMES].pos) sprintf(mystuff->p_par[SIEVE_PRIMES].out, "%7d", mystuff->sieve_primes);
   }
 
-  if(mystuff->mode == MODE_NORMAL)
-  {
-    if(mystuff->printmode == 1)printf("\r");
-    else printf("\n");
-  }
-  else if(mystuff->mode != MODE_SELFTEST_SHORT)
-  {
-    printf("\n");
-  }
 
   factorsfound=mystuff->h_RES[0];
   for(i=0; (i<factorsfound) && (i<10); i++)
   {
-    factor_hi  = mystuff->h_RES[i*3 + 1];
-    factor_mid = mystuff->h_RES[i*3 + 2];
-    factor_lo  = mystuff->h_RES[i*3 + 3];
+    factor.d2  = mystuff->h_RES[i*3 + 1];
+    factor.d1  = mystuff->h_RES[i*3 + 2];
+    factor.d0  = mystuff->h_RES[i*3 + 3];
     if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24))
     {
-      int72 factor={factor_lo, factor_mid, factor_hi};
       print_dez72(factor,string);
     }
     else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15) || (use_kernel == MG88))
     {
-      print_dez90(factor_hi, factor_mid, factor_lo, string);
+      print_dez90(factor, string);
     }
     else
     {
-      print_dez96(factor_hi, factor_mid, factor_lo, string);
+      print_dez96(factor, string);
     }
-    if(mystuff->mode != MODE_SELFTEST_SHORT)
-    {
-      if(mystuff->printmode == 1 && i == 0) printf("\n");
-      printf("Result[%02d]: M%u has a factor: %s\n", i, exp, string);
-    }
-    if(mystuff->mode == MODE_NORMAL)
-    {
-      resultfile = fopen_and_lock(mystuff->resultsfile, "a");
-      if (resultfile == NULL)
-        return RET_ERROR;
-      if (mystuff->print_timestamp)
-      {
-        time_t now = time(NULL);
-        char *ptr = ctime(&now);
-        ptr[24] = '\0'; // cut off the newline
-        fprintf(resultfile, "[%s]\n", ptr);
-      }
-      if (mystuff->ComputerID[0] && mystuff->V5UserID[0])
-      {
-        fprintf(resultfile, "UID: %s/%s, ", mystuff->V5UserID, mystuff->ComputerID);
-      }
-#ifndef MORE_CLASSES      
-      fprintf(resultfile,"M%u has a factor: %s [TF:%d:%d%s:%s %s]\n", exp, string, bit_min, bit_max,
-        ((mystuff->stopafterfactor == 2) && (mystuff->class_counter <  96)) ? "*" : "" , MFAKTO_VERSION, kernel_info[use_kernel].kernelname);
-#else      
-      fprintf(resultfile,"M%u has a factor: %s [TF:%d:%d%s:%s %s]\n", exp, string, bit_min, bit_max,
-        ((mystuff->stopafterfactor == 2) && (mystuff->class_counter < 960)) ? "*" : "" , MFAKTO_VERSION, kernel_info[use_kernel].kernelname);
-#endif
-      unlock_and_fclose(resultfile);
-    }
+    print_factor(mystuff, i, string);
   }
-  if(factorsfound>=10) // so unlikely that I don't care that this will lock the file a second time and another
-  {                    // mfakto instance could write something in between (even less likely)
-    if(mystuff->mode != MODE_SELFTEST_SHORT)printf("M%u: %d additional factors not shown\n", exp, factorsfound - 10);
-    if(mystuff->mode == MODE_NORMAL)
-    {
-      resultfile = fopen_and_lock(mystuff->resultsfile, "a");
-      fprintf(resultfile,"M%u: %d additional factors not shown\n",exp,factorsfound-10);
-      unlock_and_fclose(resultfile);
-    }
+  if(factorsfound>=10)
+  {
+    print_factor(mystuff, factorsfound, NULL);
   }
+
   return factorsfound;
 }
 
