@@ -136,3 +136,4 @@ TODO
 - test __attribute__((vec_type_hint(UINT_V)))
 - test clEnqueueMapBuffer/clEnqueueUnmapMemObject instead of clEnqueueWriteBuffer
 - test speed without event sync (just in-order-queue)
+

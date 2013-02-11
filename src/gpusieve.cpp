@@ -31,7 +31,9 @@ See (http://www.mersenneforum.org/showthread.php?t=11900) for Ben's initial work
 #include <cstdlib>
 #include "CL/cl.h"
 #include <iostream>
-#include <string>
+#include <string.h>
+#include <stdio.h>
+#include <math.h>
 #include "my_types.h"
 #include "compatibility.h"
 

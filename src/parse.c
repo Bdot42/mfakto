@@ -253,9 +253,8 @@ output
  *     1 - get_next_assignment : cannot open file							    *
  *     2 - get_next_assignment : no valid assignment found						    *
  ************************************************************************************************************/
-enum ASSIGNMENT_ERRORS get_next_assignment(char *filename, unsigned int *exponent, int *bit_min, int *bit_max, LINE_BUFFER *key, int verbosity)
+enum ASSIGNMENT_ERRORS get_next_assignment(char *filename, unsigned int *exponent, unsigned int *bit_min, unsigned int *bit_max, LINE_BUFFER *key, int verbosity)
 {
-  int ret = 2, count = 0, reason = 0;
   FILE *f_in;
   
   enum PARSE_WARNINGS value;

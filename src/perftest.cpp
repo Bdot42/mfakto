@@ -242,7 +242,7 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
   struct timeval timer;
   double time1;
   cl_ulong k = 0;
-  cl_uint i, tmp;
+  cl_uint i;
   printf("\n2. Sieve (M/s)\n");
 
 #define MAX_NUM_SPS 30
@@ -267,7 +267,6 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
 
   if (nsp>MAX_NUM_SPS) nsp=MAX_NUM_SPS;
   double peak[MAX_NUM_SPS]={0.0}, Mps;
-  int peak_index[MAX_NUM_SPS]={0};
   double last_elem[MAX_NUM_SPS]={0.0};
 
 #ifdef SIEVE_SIZE_LIMIT

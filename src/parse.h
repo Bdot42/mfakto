@@ -48,7 +48,7 @@ struct ASSIGNMENT
 
 
 int valid_assignment(unsigned int exp, int bit_min, int bit_max, int verbosity);	// nonzero if assignment is valid
-enum ASSIGNMENT_ERRORS get_next_assignment(char *filename, unsigned int *exponent, int *bit_min, int *bit_max, LINE_BUFFER *assignment_key, int verbosity);
+enum ASSIGNMENT_ERRORS get_next_assignment(char *filename, unsigned int *exponent, unsigned int *bit_min, unsigned int *bit_max, LINE_BUFFER *assignment_key, int verbosity);
 enum ASSIGNMENT_ERRORS clear_assignment(char *filename, unsigned int exponent, int bit_min, int bit_max, int bit_min_new);
 
 int add_file_available(char *filename);
