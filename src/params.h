@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
-#define SIEVE_SIZE_LIMIT 64
+#define SIEVE_SIZE_LIMIT 32
 
 
 /* EXTENDED_SELFTEST will add about 30k additional tests to the -st2 test */
@@ -48,10 +48,6 @@ than an equal SIEVE_SIZE_LIMIT #define.
 /******************
 ** DEBUG options **
 ******************/
-
-/* print some more timing information */
-//#define VERBOSE_TIMING
-
 
 /* print detailed timing information of the sieve*/
 //#define VERBOSE_SIEVE_TIMING
@@ -87,6 +83,12 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 /* Tell the OpenCL compiler to create debuggable code for the Kernels */
 //#define CL_DEBUG
+
+/* in order to more efficiently trace/debug the kernels, this define makes
+   the factor to be found the first candidate during the selftest, so that
+   debugging/tracing thread 0 of the first block should yield a factor found result */
+//#define DEBUG_FACTOR_FIRST
+
 
 /******************************************************************************
 *******************************************************************************
@@ -157,7 +159,11 @@ Needs to be less than SIEVE_PRIMES_MIN.*/
 #define SIEVE_SPLIT 250 /* DO NOT CHANGE! */
 
 
-
+#ifdef CL_PERFORMANCE_INFO
+#define QUEUE commandQueuePrf
+#else
+#define QUEUE commandQueue
+#endif
 /*
 The number of streams used by mfakto. No distinction between CPU and GPU streams anymore
 The actual configuration is done in mfakto.ini. This ini-file contains
@@ -180,3 +186,32 @@ The following lines define the min, default and max value.
 #else
 # error "mfakto requires MORE_CLASSES be defined."
 #endif
+
+
+/*
+GPU_SIEVE_PRIMES defines how far we sieve the factor candidates on the GPU.
+The first <GPU_SIEVE_PRIMES> primes are sieved.
+
+GPU_SIEVE_SIZE defines how big of a GPU sieve we use (in M bits).
+
+GPU_SIEVE_PROCESS_SIZE defines how far many bits of the sieve each TF block processes (in K bits).
+Larger values may lead to less wasted cycles by reducing the number of times all threads in a warp
+are not TFing a candidate.  However, more shared memory is used which may reduce occupancy.
+Smaller values should lead to a more responsive system (each kernel takes less time to execute).
+
+The actual configuration is done in mfaktc.ini.
+The following lines define the min, default and max value.
+*/
+
+#define GPU_SIEVE_PRIMES_MIN                 0 /* GPU sieving code can work (inefficiently) with very small numbers */
+#define GPU_SIEVE_PRIMES_DEFAULT         82486 /* Default is to sieve primes up to about 1.05M */
+#define GPU_SIEVE_PRIMES_MAX           1075000 /* Primes to 16,729,793.  GPU sieve should be able to handle up to 16M. */
+
+#define GPU_SIEVE_SIZE_MIN                   4 /* A 4M bit sieve seems like a reasonable minimum */
+#define GPU_SIEVE_SIZE_DEFAULT              64 /* Default is a 16M bit sieve */
+#define GPU_SIEVE_SIZE_MAX                 128 /* We've only tested up to 128M bits.  The GPU sieve code may be able to go higher. */
+
+#define GPU_SIEVE_PROCESS_SIZE_MIN           8 /* Processing 8K bits in each block is minimum (256 threads * 1 word of 32 bits) */
+#define GPU_SIEVE_PROCESS_SIZE_DEFAULT      16 /* Default is processing 8K bits */
+#define GPU_SIEVE_PROCESS_SIZE_MAX          32 /* Upper limit is 64K, since we store k values as "short". */
+

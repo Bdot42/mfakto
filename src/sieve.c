@@ -560,13 +560,12 @@ b) ktab is full */
 }
 
 
-unsigned int sieve_sieve_primes_max(unsigned int exp, unsigned int max_global)
+unsigned int sieve_sieve_primes_max(unsigned int exp, unsigned int sieve_max)
 /* returns min(max_global, number of primes below exp) */
 {
-  unsigned int ret = max_global;
-  while((primes[ret-1] >= exp) && (ret > 0)) ret--;
+  while((primes[sieve_max-1] >= exp) && (sieve_max > 0)) sieve_max--;
 
-  return ret;
+  return sieve_max;
 }
 
 #ifdef __cplusplus

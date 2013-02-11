@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -38,8 +38,11 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "checkpoint.h"
 #include "signal_handler.h"
 #include "filelocking.h"
-
+#include "perftest.h"
 #include "mfakto.h"
+#include "gpusieve.h"
+#include "output.h"
+
 
 int gpu_sieve_main (int argc, char** argv);
 
@@ -87,11 +90,309 @@ unsigned long long int calculate_k(unsigned int exp, int bits)
 }
 
 
+int kernel_possible(int kernel, cl_uint exp, cl_uint bit_min, cl_uint bit_max)
+/* returns 1 if the selected kernel can handle the assignment, 0 otherwise
+The variables exp, bit_min and bit_max must be a valid assignment! */
+{
+  int ret = 0;
+  kernel_info_t k=kernel_info[kernel];
+
+  if (bit_min >= k.bit_min  &&  bit_max <= k.bit_max  &&  (k.stages || (bit_max - bit_min) == 1)) ret = 1;
+  
+  exp++;	//exp is currently unused in this function...
+  
+  return ret;
+}
 
 
-int tf(unsigned int exp, int bit_min, int bit_max, mystuff_t *mystuff, int class_hint, unsigned long long int k_hint, enum GPUKernels use_kernel)
+int class_needed(unsigned int exp, unsigned long long int k_min, int c)
+{
 /*
-tf M<exp> from 2^bit_min to 2^bit_max
+checks whether the class c must be processed or can be ignored at all because
+all factor candidates within the class c are a multiple of 3, 5, 7 or 11 (11
+only if MORE_CLASSES is definied) or are 3 or 5 mod 8
+
+k_min *MUST* be aligned in that way that k_min is in class 0!
+*/
+  if( ((2 * (exp %  8) * ((k_min + c) %  8)) %  8 !=  2) && \
+      ((2 * (exp %  8) * ((k_min + c) %  8)) %  8 !=  4) && \
+      ((2 * (exp %  3) * ((k_min + c) %  3)) %  3 !=  2) && \
+      ((2 * (exp %  5) * ((k_min + c) %  5)) %  5 !=  4) && \
+      ((2 * (exp %  7) * ((k_min + c) %  7)) %  7 !=  6))
+#ifdef MORE_CLASSES        
+  if(  (2 * (exp % 11) * ((k_min + c) % 11)) % 11 != 10 )
+#endif
+  {
+    return 1;
+  }
+
+  return 0;
+}
+
+typedef GPUKernels kernel_precedence[UNKNOWN_KERNEL];
+
+GPUKernels find_fastest_kernel(mystuff_t *mystuff)
+{
+  /* searches the kernel precedence list of the GPU for the first on that is capable of running the assignment */
+  static kernel_precedence kernel_precedences [] = {
+    /* sorted list of all kernels per GPU type, fastest first */
+    {
+/*  GPU_AUTO,   */  
+      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
+      BARRETT70_MUL15,  //                   240M/s  vec=4
+      BARRETT71_MUL15,  //                   226M/s  vec=4
+      BARRETT77_MUL32,  //                   203M/s  vec=2
+      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
+      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
+      BARRETT92_MUL32,
+      BARRETT88_MUL32,
+      BARRETT87_MUL32,
+      _71BIT_MUL24,     // 258M/s            130M/s
+      BARRETT79_MUL32,  // 255M/s            128M/s
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+    {
+/*  GPU_VLIW4,  */
+      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
+      BARRETT70_MUL15,  //                   240M/s  vec=4
+      BARRETT71_MUL15,  //                   226M/s  vec=4
+      BARRETT77_MUL32,  //                   203M/s  vec=2
+      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
+      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
+      BARRETT92_MUL32,
+      BARRETT88_MUL32,
+      BARRETT87_MUL32,
+      _71BIT_MUL24,     // 258M/s            130M/s
+      BARRETT79_MUL32,  // 255M/s            128M/s
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+    {
+/*  GPU_VLIW5,  */
+      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
+      BARRETT70_MUL15,  //                   240M/s  vec=4
+      BARRETT71_MUL15,  //                   226M/s  vec=4
+      BARRETT77_MUL32,  //                   203M/s  vec=2
+      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
+      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
+      BARRETT92_MUL32,
+      BARRETT88_MUL32,
+      BARRETT87_MUL32,
+      _71BIT_MUL24,     // 258M/s            130M/s
+      BARRETT79_MUL32,  // 255M/s            128M/s
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+    {
+/*  GPU_GCN,    */
+      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
+      BARRETT70_MUL15,  //                   240M/s  vec=4
+      BARRETT71_MUL15,  //                   226M/s  vec=4
+      BARRETT77_MUL32,  //                   203M/s  vec=2
+      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
+      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
+      BARRETT92_MUL32,
+      BARRETT88_MUL32,
+      BARRETT87_MUL32,
+      _71BIT_MUL24,     // 258M/s            130M/s
+      BARRETT79_MUL32,  // 255M/s            128M/s
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+      /*// 7850@975MHz, v=2 / v=4
+          if (st_data[ind].bit_min <= 63)                                    kernels[j++] = _63BIT_MUL24;      // 168.0
+    if ((st_data[ind].bit_min >= 61) && (st_data[ind].bit_min < 72))   kernels[j++] = _71BIT_MUL24;      // 178.2 / 176.0
+    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 76))   kernels[j++] = BARRETT76_MUL32;   // 259.7 / 259.1
+    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 77))   kernels[j++] = BARRETT77_MUL32;   // 251.1 / 248.0
+    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 79))   kernels[j++] = BARRETT79_MUL32;   // 221.9 / 221.3
+    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 87))   kernels[j++] = BARRETT87_MUL32;   // 228.0 / 227.3
+    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL32;   // 219.9 / 217.6
+    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 92))   kernels[j++] = BARRETT92_MUL32;   // 198.4 / 197.8
+    if ((st_data[ind].bit_min >= 63) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL24;   // 210.5 / 204.9
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 69))   kernels[j++] = BARRETT69_MUL15;   // 360.0 / 354.1
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 69))   kernels[j++] = BARRETT70_MUL15;   // 360.0 / 354.2
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT71_MUL15;   // 335.1 / 332.0
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 73))   kernels[j++] = BARRETT73_MUL15;   // 294.6 / 291.4
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 82))   kernels[j++] = BARRETT82_MUL15;   // 261.4 / 202.7
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 83))   kernels[j++] = BARRETT83_MUL15;   // 244.8 / 183.1
+    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL15;   // 219.5 / 169.6
+    if ((st_data[ind].bit_min >= 10) && (st_data[ind].bit_min < 62))   kernels[j++] = MG62;              // 154.0 /  53.5
+    if ((st_data[ind].bit_min >= 74) && (st_data[ind].bit_min < 89))   kernels[j++] = MG88;              // 163.8 /  57.4
+*/
+
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+    {
+/*  GPU_CPU,    */
+      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
+      BARRETT70_MUL15,  //                   240M/s  vec=4
+      BARRETT71_MUL15,  //                   226M/s  vec=4
+      BARRETT77_MUL32,  //                   203M/s  vec=2
+      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
+      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
+      BARRETT92_MUL32,
+      BARRETT88_MUL32,
+      BARRETT87_MUL32,
+      _71BIT_MUL24,     // 258M/s            130M/s
+      BARRETT79_MUL32,  // 255M/s            128M/s
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+    {
+/*  GPU_APU,    */
+      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
+      BARRETT70_MUL15,  //                   240M/s  vec=4
+      BARRETT71_MUL15,  //                   226M/s  vec=4
+      BARRETT77_MUL32,  //                   203M/s  vec=2
+      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
+      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
+      BARRETT92_MUL32,
+      BARRETT88_MUL32,
+      BARRETT87_MUL32,
+      _71BIT_MUL24,     // 258M/s            130M/s
+      BARRETT79_MUL32,  // 255M/s            128M/s
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+    {
+/*  GPU_NVIDIA, */
+      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
+      BARRETT70_MUL15,  //                   240M/s  vec=4
+      BARRETT71_MUL15,  //                   226M/s  vec=4
+      BARRETT77_MUL32,  //                   203M/s  vec=2
+      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
+      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
+      BARRETT92_MUL32,
+      BARRETT88_MUL32,
+      BARRETT87_MUL32,
+      _71BIT_MUL24,     // 258M/s            130M/s
+      BARRETT79_MUL32,  // 255M/s            128M/s
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+    {
+/*  GPU_INTEL,  */
+      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
+      BARRETT70_MUL15,  //                   240M/s  vec=4
+      BARRETT71_MUL15,  //                   226M/s  vec=4
+      BARRETT77_MUL32,  //                   203M/s  vec=2
+      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
+      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
+      BARRETT92_MUL32,
+      BARRETT88_MUL32,
+      BARRETT87_MUL32,
+      _71BIT_MUL24,     // 258M/s            130M/s
+      BARRETT79_MUL32,  // 255M/s            128M/s
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+    {
+/*  GPU_UNKNOWN */
+      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
+      BARRETT70_MUL15,  //                   240M/s  vec=4
+      BARRETT71_MUL15,  //                   226M/s  vec=4
+      BARRETT77_MUL32,  //                   203M/s  vec=2
+      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
+      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
+      BARRETT92_MUL32,
+      BARRETT88_MUL32,
+      BARRETT87_MUL32,
+      _71BIT_MUL24,     // 258M/s            130M/s
+      BARRETT79_MUL32,  // 255M/s            128M/s
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+      _63BIT_MUL24,     // 236M/s
+      BARRETT92_MUL32,  // 205M/s            103M/s
+      MG62,
+      MG88,
+
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL }
+    
+  };
+
+  kernel_precedence *k = &kernel_precedences[mystuff->gpu_type];
+  GPUKernels         use_kernel = AUTOSELECT_KERNEL;
+  cl_uint            i;
+
+  for (i = 0; i < UNKNOWN_KERNEL && (*k)[i] < UNKNOWN_KERNEL; i++)
+  {
+    if (kernel_possible((*k)[i], mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage))
+    {
+      use_kernel = (*k)[i];
+      break;
+    }
+  }
+  return use_kernel;
+}
+
+int tf(mystuff_t *mystuff, int class_hint, unsigned long long int k_hint, enum GPUKernels use_kernel)
+/*
+tf M<mystuff->exponent> from 2^<mystuff->bit_min> to 2^<mystuff->mystuff->bit_max_stage>
 
 kernel: see my_types.h -> enum GPUKernels
 
@@ -117,28 +418,25 @@ other return value
   unsigned int f_hi, f_med, f_low;
   struct timeval timer;
   time_t time_last_checkpoint, time_add_file_check;
-#ifdef VERBOSE_TIMING  
-  struct timeval timer2;
-#endif  
   int factorsfound = 0, numfactors = 0, restart = 0, do_checkpoint = mystuff->checkpoints;
   FILE *resultfile=NULL;
 
-  const char *kernelname;
   int retval = 0, add_file_exists = 0;
     
   unsigned long long int time_run, time_est;
-  double ghz_assignment = 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1);
 
+  mystuff->stats.output_counter = 0; /* reset output counter, needed for status headline */
+  mystuff->stats.ghzdays = primenet_ghzdays(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage);
 
-  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d (%4.2fGHz-days)\n",
-    exp, bit_min, bit_max, ghz_assignment);
+  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d (%.2fGHz-days)\n",
+    mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, mystuff->stats.ghzdays);
   timer_init(&timer);
   time(&time_last_checkpoint);
 
-  mystuff->class_counter = 0;
+  mystuff->stats.class_counter = 0;
   
-  k_min=calculate_k(exp,bit_min);
-  k_max=calculate_k(exp,bit_max);
+  k_min=calculate_k(mystuff->exponent,mystuff->bit_min);
+  k_max=calculate_k(mystuff->exponent,mystuff->bit_max_stage);
   
   if(mystuff->mode > MODE_NORMAL) // any selftest mode
   {
@@ -154,135 +452,51 @@ other return value
       tmp += 3ULL * k_range;
       if((tmp < k_max) || (k_max < k_min)) k_max = tmp; /* check for k_max < k_min enables some selftests where k_max >= 2^64 but the known factor itself has a k < 2^64 */
     }
+#ifdef DEBUG_FACTOR_FIRST
     // The following line is just for debugging: it makes sure that the factor to be found is the first k being tested (so the first trace should show finding the factor)
-    // remove it for "normal" tests
     k_min = k_hint;
+#endif
   }
 
   k_min -= k_min % NUM_CLASSES;	/* k_min is now 0 mod NUM_CLASSES */
 
-  if(mystuff->mode != MODE_SELFTEST_SHORT)
+  if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->verbosity >= 2)
   {
     printf("  k_min = %llu - k_max = %llu\n", k_min, k_max);
   }
 
   if(use_kernel == AUTOSELECT_KERNEL)
   {  // this is the speed order for VLIW4, Cayman (HD6970)
-    if (mystuff->gpu_type == GPU_VLIW4)
-    {
-      if      ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  // ?
-      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 295M/s on HD6970
-      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 211M/s
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 207M/s
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 203M/s
-      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 195M/s
-      else if ((bit_min >= 65) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 155M/s
-//      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
-    }
-    else if (mystuff->gpu_type == GPU_VLIW5)
-    {  // this is the speed order for VLIW5, HD5770, for instance
-      if      ((bit_min >= 60) && (bit_max <= 69) && (bit_max - bit_min == 1))  use_kernel = BARRETT69_MUL15;  //                   244M/s  vec=4  on HD5770
-      else if ((bit_min >= 60) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL15;  //                   240M/s  vec=4
-      else if ((bit_min >= 60) && (bit_max <= 71) && (bit_max - bit_min == 1))  use_kernel = BARRETT71_MUL15;  //                   226M/s  vec=4
-      else if ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  //                   203M/s  vec=2
-      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 288M/s            196M/s  vec=4
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 321M/s on HD5870, 183M/s  vec=4
-      else if ((bit_min >= 60) && (bit_max <= 82) && (bit_max - bit_min == 1))  use_kernel = BARRETT82_MUL15;  //                   177M/s  vec=4
-      else if ((bit_min >= 60) && (bit_max <= 83) && (bit_max - bit_min == 1))  use_kernel = BARRETT83_MUL15;  //                   169M/s  vec=4
-      else if ((bit_min >= 60) && (bit_max <= 88) && (bit_max - bit_min == 1))  use_kernel = BARRETT88_MUL15;  //                   146M/s  vec=4
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 258M/s            130M/s
-      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 255M/s            128M/s
-      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 236M/s
-      else if ((bit_min >= 65) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 205M/s            103M/s
-//      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
-/*    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 76))   kernels[j++] = BARRETT76_MUL32; // 185.1
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 77))   kernels[j++] = BARRETT77_MUL32; // 198.3
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 79))   kernels[j++] = BARRETT79_MUL32; // 147.2
-    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 87))   kernels[j++] = BARRETT87_MUL32; // 161.4
-    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL32; // 167.3
-    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 92))   kernels[j++] = BARRETT92_MUL32; // 131.5
-    if ((st_data[ind].bit_min >= 63) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL24; // 183.6
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 69))   kernels[j++] = BARRETT69_MUL15; // 244.9
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL15; // 237.2
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 71))   kernels[j++] = BARRETT71_MUL15; // 227.9
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 73))   kernels[j++] = BARRETT73_MUL15; // 197.3
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 82))   kernels[j++] = BARRETT82_MUL15; // 177.3
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 83))   kernels[j++] = BARRETT83_MUL15; // 169.0
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL15; // 145.8 */
-    }
-    else if (mystuff->gpu_type == GPU_GCN)
-    {  // this is the speed order for GCN, HD77xx...HD79xx. Note this GPU requires VectorSize=2 for best performance
-      if      ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 165M/s on HD7770, 258M/s on HD7850 (975MHz)
-      else if ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  // ?                 246M/s
-      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 137M/s            212M/s
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 135M/s            209M/s
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 115M/s            178M/s
-      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 
-      else if ((bit_min >= 65) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 106M/s            163M/s
-//      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
-    }
-    else if (mystuff->gpu_type == GPU_APU)
-    {  // this is the speed order for APU's, HD6550D in A8-3850, for instance
-      if      ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  // ?
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 57M/s on HD6550D (A8-3850)
-      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 54M/s
-      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 45M/s
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 45M/s
-      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 
-      else if ((bit_min >= 65) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 36M/s
-//      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
-    }
-    else
-    {  // this is the speed order for CPUs, also used for all others that we don't yet have data for
-      if      ((bit_min >= 64) && (bit_max <= 77))                              use_kernel = BARRETT77_MUL32;  // ?
-      else if ((bit_min >= 64) && (bit_max <= 79))                              use_kernel = BARRETT79_MUL32;  // 19.4M/s on 2x X5650  (12 cores total)
-      else if ((bit_min >= 63) && (bit_max <= 70) && (bit_max - bit_min == 1))  use_kernel = BARRETT70_MUL24;  // 15.8M/s
-      else if ((bit_min >= 65) && (bit_max <= 92) && (bit_max - bit_min == 1))  use_kernel = BARRETT92_MUL32;  // 13.6M/s
-      else if ((bit_min >= 60) && (bit_max <= 73) && (bit_max - bit_min == 1))  use_kernel = BARRETT73_MUL15;  // 11.6M/s
-      else if                     (bit_max <= 64)                               use_kernel = _63BIT_MUL24;     // 11.3M/s
-      else if ((bit_min >= 61) && (bit_max <= 72))                              use_kernel = _71BIT_MUL24;     // 11.1M/s
-//      else if                     (bit_max <  95)                               use_kernel = _95BIT_64_OpenCL;
-    }
-
+    use_kernel = find_fastest_kernel(mystuff);
 
     if(use_kernel == AUTOSELECT_KERNEL)
     {
       printf("ERROR: No suitable kernel found for bit_min=%d, bit_max=%d.\n",
-                 bit_min, bit_max);
+                 mystuff->bit_min, mystuff->bit_max_stage);
       return RET_ERROR;
     }
   }
 
-  kernelname=kernel_info[use_kernel].kernelname;
+  sprintf(mystuff->stats.kernelname, kernel_info[use_kernel].kernelname);
 
-  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Using GPU kernel \"%s\"\n",kernelname);
+  if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->verbosity >= 1)printf("Using GPU kernel \"%s\"\n", mystuff->stats.kernelname);
 
   if(mystuff->mode == MODE_NORMAL)
   {
-    if((mystuff->checkpoints > 0) && (checkpoint_read(exp, bit_min, bit_max, &cur_class, &factorsfound) == 1))
+    if((mystuff->checkpoints > 0) && (checkpoint_read(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, &cur_class, &factorsfound) == 1))
     {
       printf("\nfound a valid checkpoint file!\n");
-      printf("  last finished class was: %d\n", cur_class);
-      printf("  found %d factor%s already\n\n", factorsfound, factorsfound == 1 ? "" : "s");
+      if(mystuff->verbosity >= 1) printf("  last finished class was: %d\n", cur_class);
+      if(mystuff->verbosity >= 2) printf("  found %d factor%s already\n", factorsfound, factorsfound == 1 ? "" : "s");
+      printf("\n");
       cur_class++; // the checkpoint contains the last completely processed class!
 
 /* calculate the number of classes which are already processed. This value is needed to estimate ETA */
       for(i = 0; i < cur_class; i++)
       {
-/* check if class is NOT "3 or 5 mod 8", "0 mod 3", "0 mod 5", "0 mod 7" (or "0 mod 11") */
-        if( ((2 * (exp% 8) * ((k_min+i)% 8)) % 8 !=  2) &&
-            ((2 * (exp% 8) * ((k_min+i)% 8)) % 8 !=  4) &&
-            ((2 * (exp% 3) * ((k_min+i)% 3)) % 3 !=  2) &&
-            ((2 * (exp% 5) * ((k_min+i)% 5)) % 5 !=  4) &&
-#ifdef MORE_CLASSES
-            ((2 * (exp%11) * ((k_min+i)%11)) %11 != 10) &&
-#endif
-            ((2 * (exp% 7) * ((k_min+i)% 7)) % 7 !=  6))
-        {
-          mystuff->class_counter++;
-        }
+        if(class_needed(mystuff->exponent, k_min, i))mystuff->stats.class_counter++;
       }
-      restart = mystuff->class_counter;
+      restart = mystuff->stats.class_counter;
     }
     else
     {
@@ -297,16 +511,9 @@ other return value
 
   for(; cur_class <= max_class; cur_class++)
   {
-/* check if class is NOT "3 or 5 mod 8", "0 mod 3", "0 mod 5", "0 mod 7" (or "0 mod 11") */
-    if( ((2 * (exp% 3) * ((k_min+cur_class)% 3)) % 3 !=  2) &&
-        ((2 * (exp% 5) * ((k_min+cur_class)% 5)) % 5 !=  4) &&
-        ((2 * (exp% 8) * ((k_min+cur_class)% 8)) % 8 !=  2) &&
-        ((2 * (exp% 8) * ((k_min+cur_class)% 8)) % 8 !=  4) &&
-#ifdef MORE_CLASSES        
-        ((2 * (exp%11) * ((k_min+cur_class)%11)) %11 != 10) &&
-#endif    
-        ((2 * (exp% 7) * ((k_min+cur_class)% 7)) % 7 !=  6))
+    if(class_needed(mystuff->exponent, k_min, cur_class))
     {
+      mystuff->stats.class_number = cur_class;
       if(mystuff->quit)
       {
 /* check if quit is requested. Because this is at the begining of the class
@@ -318,37 +525,22 @@ other return value
       }
       else
       {
-
-#ifdef VERBOSE_TIMING
-        timer_init(&timer2);
-#endif    
-        if (mystuff->sieve_gpu == 1)
+        if (mystuff->gpu_sieving == 1)
         {
-          cl_ulong new_k_min=k_min+cur_class;
-          run_cl_sieve_init(exp, k_min+cur_class, 256);
-//          run_cl_sieve_init(exp, k_min+cur_class, mystuff->sieve_primes);
-          run_cl_sieve(exp, &new_k_min, 256);
-//          run_cl_sieve(exp, &new_k_min, mystuff->sieve_primes);
+          gpusieve_init_exponent(mystuff);
+          gpusieve_init_class(mystuff, k_min+cur_class);
         }
         else
         {
-          sieve_init_class(exp, k_min+cur_class, mystuff->sieve_primes_max);
+          sieve_init_class(mystuff->exponent, k_min+cur_class, mystuff->sieve_primes);
         }
-#ifdef VERBOSE_TIMING      
-        printf("tf(): time spent for sieve_init_class(exp, k_min+cur_class, mystuff->sieve_primes): %" PRIu64 "ms\n",timer_diff(&timer2)/1000);
-#endif
-        if(mystuff->mode != MODE_SELFTEST_SHORT && (count == 0 || (count%20 == 0 && mystuff->printmode == 0)))
-        {
-          printf("%s\n", mystuff->head_line);
-        }
+
         count++;
-        mystuff->class_counter++;
-        if (mystuff->p_par[CLASS_NUM].pos) sprintf(mystuff->p_par[CLASS_NUM].out, "%3d", mystuff->class_counter);
-        if (mystuff->p_par[PCT_COMPLETE].pos) sprintf(mystuff->p_par[PCT_COMPLETE].out, "%5.1f", 0.1041666667f * mystuff->class_counter);
+        mystuff->stats.class_counter++;
 
         if ((use_kernel >= _71BIT_MUL24) && (use_kernel < UNKNOWN_KERNEL))
         {
-          numfactors = tf_class_opencl (exp, bit_min, bit_max, k_min+cur_class, k_max, mystuff, use_kernel);
+          numfactors = tf_class_opencl (mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, k_min+cur_class, k_max, mystuff, use_kernel);
         }
         else
         {
@@ -385,7 +577,7 @@ other return value
                  ((mystuff->checkpoints == 1) && (now - time_last_checkpoint > (time_t) mystuff->checkpointdelay)) ||
                    mystuff->quit )
             {
-              checkpoint_write(exp, bit_min, bit_max, cur_class, factorsfound);
+              checkpoint_write(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, cur_class, factorsfound);
               do_checkpoint = mystuff->checkpoints;
               time_last_checkpoint = now;
             }
@@ -397,62 +589,18 @@ other return value
     }
   }
   if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->printmode == 1)printf("\n");
-  if(mystuff->mode == MODE_NORMAL)resultfile=fopen_and_lock(mystuff->resultsfile, "a");
-  
-  if(factorsfound)
-  {
-#ifndef MORE_CLASSES
-    if((mystuff->mode == MODE_NORMAL) && (mystuff->class_counter < 96))
-#else
-    if((mystuff->mode == MODE_NORMAL) && (mystuff->class_counter < 960))
-#endif
-    {
-      fprintf(resultfile, "found %d factor%s for M%u from 2^%2d to 2^%2d (partially tested) [%s %s_%d]\n",
-        factorsfound, (factorsfound > 1) ? "s" : "", exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
-      printf(             "found %d factor%s for M%u from 2^%2d to 2^%2d (partially tested) [%s %s_%d]\n",
-        factorsfound, (factorsfound > 1) ? "s" : "", exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
-    }
-    else
-    {
-      if(mystuff->mode == MODE_NORMAL)        fprintf(resultfile, "found %d factor%s for M%u from 2^%2d to 2^%2d [%s %s_%d]\n",
-        factorsfound, (factorsfound > 1) ? "s" : "", exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
-      if(mystuff->mode != MODE_SELFTEST_SHORT)printf(             "found %d factor%s for M%u from 2^%2d to 2^%2d [%s %s_%d]\n",
-        factorsfound, (factorsfound > 1) ? "s" : "", exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
-    }
-  }
-  else
-  {
-    if(mystuff->mode == MODE_NORMAL)
-    {
-      if (mystuff->print_timestamp)
-      {
-        time_t now = time(NULL);
-        char *ptr = ctime(&now);
-        ptr[24] = '\0'; // cut off the newline
-        fprintf(resultfile, "[%s]\n", ptr);
-      }
-      if (mystuff->ComputerID[0] && mystuff->V5UserID[0])
-      {
-        fprintf(resultfile, "UID: %s/%s, ", mystuff->V5UserID, mystuff->ComputerID);
-      }
-      fprintf(resultfile, "no factor for M%u from 2^%d to 2^%d [%s %s_%d]\n",
-        exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
-    }
-    if(mystuff->mode != MODE_SELFTEST_SHORT)printf(             "no factor for M%u from 2^%d to 2^%d [%s %s_%d]\n",
-      exp, bit_min, bit_max, MFAKTO_VERSION, kernelname, mystuff->vectorsize);
-  }
+  print_result_line(mystuff, factorsfound);
 
   if(mystuff->mode == MODE_NORMAL)
   {
     retval = factorsfound;
-    unlock_and_fclose(resultfile);
-    if(mystuff->checkpoints > 0)checkpoint_delete(exp);
+    if(mystuff->checkpoints > 0)checkpoint_delete(mystuff->exponent);
   }
   else // mystuff->mode != MODE_NORMAL
   {
     if(mystuff->h_RES[0] == 0)
     {
-      printf("ERROR: selftest failed for M%u (%s)\n", exp, kernel_info[use_kernel].kernelname);
+      printf("ERROR: selftest failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
       printf("  no factor found\n");
       retval = 1;
     }
@@ -467,17 +615,17 @@ k_max and k_min are used as 64bit temporary integers here...
       f_med   = (k_hint >> 31) & 0xFFFFFFFFULL;
       f_low   = (k_hint <<  1) & 0xFFFFFFFFULL; /* f_{hi|med|low} = 2 * k_hint */
       
-      k_max   = (unsigned long long int)exp * f_low;
+      k_max   = (unsigned long long int)mystuff->exponent * f_low;
       f_low   = (k_max & 0xFFFFFFFFULL) + 1;
       k_min   = (k_max >> 32);
 
-      k_max   = (unsigned long long int)exp * f_med;
+      k_max   = (unsigned long long int)mystuff->exponent * f_med;
       k_min  += k_max & 0xFFFFFFFFULL;
       f_med   = k_min & 0xFFFFFFFFULL;
       k_min >>= 32;
       k_min  += (k_max >> 32);
 
-      f_hi  = (unsigned int ) (k_min + (exp * f_hi)); /* f_{hi|med|low} = 2 * k_hint * exp +1 */
+      f_hi  = (unsigned int ) (k_min + (mystuff->exponent * f_hi)); /* f_{hi|med|low} = 2 * k_hint * exp +1 */
       
       if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24)) /* these kernels use 24bit per int */
       {
@@ -511,7 +659,7 @@ k_max and k_min are used as 64bit temporary integers here...
       }
       if(k_min != 1) /* the factor should appear ONCE */
       {
-        printf("ERROR: selftest failed for M%u (%s)\n", exp, kernel_info[use_kernel].kernelname);
+        printf("ERROR: selftest failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
         printf("  expected result: %08X %08X %08X\n", f_hi, f_med, f_low);
         for(i=0; (i<mystuff->h_RES[0]) && (i<10); i++)
         {
@@ -521,7 +669,7 @@ k_max and k_min are used as 64bit temporary integers here...
       }
       else
       {
-        if(mystuff->mode != MODE_SELFTEST_SHORT)printf("selftest for M%u passed (%s)!\n", exp, kernel_info[use_kernel].kernelname);
+        if(mystuff->mode != MODE_SELFTEST_SHORT)printf("selftest for M%u passed (%s)!\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
       }
     }
   }
@@ -542,47 +690,19 @@ k_max and k_min are used as 64bit temporary integers here...
                               printf("%2" PRIu64 ".%03" PRIu64 "s", (time_run / 1000ULL) % 60ULL, time_run % 1000ULL);
     if(restart != 0)
     {
-      time_est = (time_run * mystuff->class_counter ) / (unsigned long long int)(mystuff->class_counter-restart);
+      time_est = (time_run * mystuff->stats.class_counter ) / (unsigned long long int)(mystuff->stats.class_counter-restart);
       printf("\n      estimated total time spent: ");
       if(time_est > 86400000ULL)printf("%" PRIu64 "d ",   time_est / 86400000ULL);
       if(time_est > 3600000ULL) printf("%2" PRIu64 "h ", (time_est /  3600000ULL) % 24ULL);
       if(time_est > 60000ULL)   printf("%2" PRIu64 "m ", (time_est /    60000ULL) % 60ULL);
                                 printf("%2" PRIu64 ".%03" PRIu64 "s", (time_est / 1000ULL) % 60ULL, time_est % 1000ULL);
     }
-    if(mystuff->mode == MODE_NORMAL) printf(" (%.2f GHz-days / day)", ghz_assignment * 86400000.0 / (double) time_est);
+    if(mystuff->mode == MODE_NORMAL) printf(" (%.2f GHz-days / day)", mystuff->stats.ghzdays * 86400000.0 / (double) time_est);
     printf("\n\n");
   }
   return retval;
 }
 
-
-void print_help(char *string)
-{
-  printf("mfaktc (%s) Copyright (C) 2009-2011  Oliver Weihe (o.weihe@t-online.de),\n", MFAKTO_VERSION);
-  printf("                                                 Bertram Franz (bertramf@gmx.net)\n");
-  printf("This program comes with ABSOLUTELY NO WARRANTY; for details see COPYING.\n");
-  printf("This is free software, and you are welcome to redistribute it\n");
-  printf("under certain conditions; see COPYING for details.\n\n\n");
-
-  printf("Usage: %s [options]\n", string);
-  printf("  -h|--help              display this help and exit\n");
-  printf("  -d <xy>                specify to use OpenCL platform number x and\n");
-  printf("                         device number y in this program\n");
-  printf("  -d c                   force using all CPUs\n");
-  printf("  -d g                   force using the first GPU\n");
-  printf("  -tf <exp> <min> <max>  trial factor M<exp> from 2^<min> to 2^<max> and exit\n");
-  printf("                         instead of parsing the worktodo file\n");
-  printf("  -i|--inifile <file>    load <file> as inifile (default: mfakto.ini)\n");
-  printf("  -st                    run builtin selftest (half the testcases) and exit\n");
-  printf("  -st2                   run builtin selftest (all testcases) and exit\n");
-  printf("\n");
-  printf("options for debugging purposes\n");
-  printf("  --timertest            run test of timer functions and exit\n");
-  printf("  --sleeptest            run test of sleep functions and exit\n");
-  printf("  --perftest             run performance test of the sieve and other parts, then exit\n");
-  printf("  --CLtest               run test of some OpenCL functions and exit\n");
-  printf("                         specify -d before --CLtest to test the specified device\n");
-}
 
 int selftest(mystuff_t *mystuff, enum MODES type)
 /*
@@ -603,7 +723,7 @@ RET_ERROR we might have a serios problem
   unsigned int num_selftests=0, total_selftests=sizeof(st_data) / sizeof(st_data[0]);
   int f_class, selftests_to_run;
   int retval=1, ind;
-  enum GPUKernels kernels[21];
+  enum GPUKernels kernels[UNKNOWN_KERNEL];
   unsigned int index[] = {    46, 1518, 2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
                              70,   72,   73,  82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
@@ -611,6 +731,7 @@ RET_ERROR we might have a serios problem
                          };                          // mfakto special case (25-bit factor)
   // save the SievePrimes ini value as the selftest may lower it to fit small test-exponents
   unsigned int sieve_primes_save = mystuff->sieve_primes;
+  unsigned int kernel_index;
 
   if (type == MODE_SELFTEST_FULL)
     selftests_to_run = total_selftests;
@@ -619,7 +740,7 @@ RET_ERROR we might have a serios problem
 
   register_signal_handler(mystuff);
 
-  for(i=0; i<selftests_to_run; i++)
+  for(i=0; i<selftests_to_run; ++i)
   {
     if(type == MODE_SELFTEST_SHORT)
     {
@@ -637,44 +758,27 @@ RET_ERROR we might have a serios problem
       ind = i;
     }
     f_class = (int)(st_data[ind].k % NUM_CLASSES);
-
+    mystuff->exponent           = st_data[ind].exp;
+    mystuff->bit_min            = st_data[ind].bit_min;
+    mystuff->bit_max_assignment = st_data[ind].bit_min + 1;
+    mystuff->bit_max_stage      = mystuff->bit_max_assignment;
 
 /* create a list which kernels can handle this testcase */
-    j = 0;
-/*    if (st_data[ind].bit_min <= 63)                                    kernels[j++] = _63BIT_MUL24;
-    if ((st_data[ind].bit_min >= 61) && (st_data[ind].bit_min < 72))   kernels[j++] = _71BIT_MUL24;
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 76))   kernels[j++] = BARRETT76_MUL32; 
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 77))   kernels[j++] = BARRETT77_MUL32; 
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 79))   kernels[j++] = BARRETT79_MUL32; 
-    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 87))   kernels[j++] = BARRETT87_MUL32;
-    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL32;
-    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 92))   kernels[j++] = BARRETT92_MUL32;
-    if ((st_data[ind].bit_min >= 63) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL24;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 69))   kernels[j++] = BARRETT69_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 71))   kernels[j++] = BARRETT71_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 73))   kernels[j++] = BARRETT73_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 82))   kernels[j++] = BARRETT82_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 83))   kernels[j++] = BARRETT83_MUL15;
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL15;*/
-    if ((st_data[ind].bit_min >= 10) && (st_data[ind].bit_min < 62))   kernels[j++] = MG62;
-    if ((st_data[ind].bit_min >= 76) && (st_data[ind].bit_min < 89))   kernels[j++] = MG88;
-//  CAREFUL when adding more kernels to the test: kernels is a fixed size array
-//      if ((bit_min[ind] >= 64) && (bit_min[ind]) < 79)   kernels[j++] = _95BIT_64_OpenCL; // currently just a test for no sieving at all
-
+    j = 0;                                                                                           
+/* */
+    for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index)
+    {
+      if(kernel_possible(kernel_index, mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage)) kernels[j++] = kernel_index;
+    }
     // careful to not sieve out small test candidates
-    mystuff->sieve_primes_max = sieve_sieve_primes_max(st_data[ind].exp, mystuff->sieve_primes_max_global);
-    if (mystuff->sieve_primes > mystuff->sieve_primes_max)
-      mystuff->sieve_primes = mystuff->sieve_primes_max;
-    if (mystuff->p_par[SIEVE_PRIMES].pos) sprintf(mystuff->p_par[SIEVE_PRIMES].out, "%7d", mystuff->sieve_primes);
-    if (mystuff->p_par[EXP].pos)          sprintf(mystuff->p_par[EXP].out, "%-10u", st_data[ind].exp);
-    if (mystuff->p_par[LOWER_LIMIT].pos)  sprintf(mystuff->p_par[LOWER_LIMIT].out, "%2d", st_data[ind].bit_min);
-    if (mystuff->p_par[UPPER_LIMIT].pos)  sprintf(mystuff->p_par[UPPER_LIMIT].out, "%2d", st_data[ind].bit_min+1);
+    mystuff->sieve_primes_upper_limit = sieve_sieve_primes_max(st_data[ind].exp, mystuff->sieve_primes_max);
+    if (mystuff->sieve_primes > mystuff->sieve_primes_upper_limit)
+      mystuff->sieve_primes = mystuff->sieve_primes_upper_limit;
 
     while(j>0)
     {
       num_selftests++;
-      tf_res=tf(st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min+1, mystuff, f_class, st_data[ind].k, kernels[--j]);
+      tf_res=tf(mystuff, f_class, st_data[ind].k, kernels[--j]);
             if(tf_res == 0)st_success++;
       else if(tf_res == 1)st_nofactor++;
       else if(tf_res == 2)st_wrongfactor++;
@@ -715,19 +819,26 @@ RET_ERROR we might have a serios problem
 
 int main(int argc, char **argv)
 {
-  unsigned int exp = 0;
-  int bit_min = -1, bit_max = -1, bit_min_stage, bit_max_stage;
+  unsigned int exponent = 1;
+  int bit_min = -1, bit_max = -1;
   int parse_ret = -1;
   int devicenumber = 0;
-#ifdef VERBOSE_TIMING  
-  struct timeval timer;
-#endif
+
   int i = 1, tmp = 0;
   char *ptr;
   int use_worktodo = 1;
   
-  mystuff.mode=MODE_NORMAL;
+  mystuff.mode = MODE_NORMAL;
   mystuff.quit = 0;
+  mystuff.verbosity = -1;
+  mystuff.bit_min = -1;
+  mystuff.bit_max_assignment = -1;
+  mystuff.bit_max_stage = -1;
+  mystuff.gpu_sieving = 0;
+  mystuff.gpu_sieve_size = GPU_SIEVE_SIZE_DEFAULT * 1024 * 1024;		/* Size (in bits) of the GPU sieve.  Default is 128M bits. */
+  mystuff.gpu_sieve_primes = GPU_SIEVE_PRIMES_DEFAULT;				/* Default to sieving primes below about 1.05M */
+  mystuff.gpu_sieve_processing_size = GPU_SIEVE_PROCESS_SIZE_DEFAULT * 1024;	/* Default to 8K bits processed by each block in a Barrett kernel. */
+  strcpy(mystuff.resultfile, "results.txt");
   strcpy(mystuff.inifile, "mfakto.ini");
 
   while(i<argc)
@@ -736,6 +847,35 @@ int main(int argc, char **argv)
     {
       print_help(argv[0]);
       return 0;
+    }
+    else if(!strcmp((char*)"-v", argv[i]))
+    {
+      if(i+1 >= argc)
+      {
+        printf("ERROR: no verbosity level specified for option \"-v\"\n");
+        return 1;
+      }
+      tmp = (int)strtol(argv[i+1], &ptr, 10);
+      if(*ptr || errno || tmp != strtol(argv[i+1], &ptr, 10) )
+      {
+        printf("ERROR: can't parse verbosity level for option \"-v\"\n");
+        return 1;
+      }
+      i++;
+      
+      if(tmp > 2)
+      {
+        printf("WARNING: maximum verbosity level is 2\n");
+        tmp = 2;
+      }
+      
+      if(tmp < 0)
+      {
+        printf("WARNING: minumum verbosity level is 0\n");
+        tmp = 0;
+      }
+
+      mystuff.verbosity = tmp;
     }
     else if(!strcmp((char*)"-d", argv[i]))
     {
@@ -770,8 +910,8 @@ int main(int argc, char **argv)
         printf("ERROR: missing parameters for option \"-tf\"\n");
         return 1;
       }
-      exp=(unsigned int)strtoul(argv[i+1],&ptr,10);
-      if(*ptr || errno || (unsigned long)exp != strtoul(argv[i+1],&ptr,10) )
+      exponent=(unsigned int)strtoul(argv[i+1],&ptr,10);
+      if(*ptr || errno || (unsigned long)exponent != strtoul(argv[i+1],&ptr,10) )
       {
         printf("ERROR: can't parse parameter <exp> for option \"-tf\"\n");
         return 1;
@@ -788,7 +928,7 @@ int main(int argc, char **argv)
         printf("ERROR: can't parse parameter <max> for option \"-tf\"\n");
         return 1;
       }
-      if(!valid_assignment(exp, bit_min, bit_max))
+      if(!valid_assignment(exponent, bit_min, bit_max, mystuff.verbosity))
       {
         return 1;
       }
@@ -813,12 +953,11 @@ int main(int argc, char **argv)
     else if(!strcmp((char*)"--perftest", argv[i]))
     {
       read_config(&mystuff);
-      init_CL(mystuff.num_streams, devicenumber);
       if ((i+1)<argc)
         tmp = (int)strtol(argv[i+1],&ptr,10);
       else
         tmp = 0;
-      perftest(tmp);  
+      perftest(tmp, devicenumber);  
       return 0;
     }
     else if(!strcmp((char*)"--timertest", argv[i]))
@@ -874,9 +1013,6 @@ int main(int argc, char **argv)
   printf("  MORE_CLASSES              disabled\n");
 #endif
 
-#ifdef VERBOSE_TIMING
-  printf("  VERBOSE_TIMING            enabled (DEBUG option)\n");
-#endif
 #ifdef USE_DEVICE_PRINTF
   printf("  USE_DEVICE_PRINTF         enabled (DEBUG option)\n");
 #endif
@@ -994,30 +1130,27 @@ int main(int argc, char **argv)
     printf("ERROR: init_CLstreams (malloc buffers?) failed\n");
     return 1;
   }
-
-  // do not set the CPU affinity earlier as the OpenCL initialization will
-  // start some control threads which we do not want to bind to a certain CPU
-  if (mystuff.cpu_mask)
+  if (mystuff.gpu_sieving == 0)
   {
+    // do not set the CPU affinity earlier as the OpenCL initialization will
+    // start some control threads which we do not want to bind to a certain CPU
+    // no need to do this if we're sieving on the GPU
+    if (mystuff.cpu_mask)
+    {
 #ifdef _MSC_VER
-    SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
+      SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
 #else
-    sched_setaffinity(0, sizeof(mystuff.cpu_mask), mystuff.cpu_mask);
+      sched_setaffinity(0, sizeof(mystuff.cpu_mask), mystuff.cpu_mask);
 #endif
-  }
-#ifdef VERBOSE_TIMING
-  timer_init(&timer);
-#endif
+    }
 #ifdef SIEVE_SIZE_LIMIT
-  sieve_init();
+    sieve_init();
 #else
-  sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max_global);
+    sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max);
 #endif
-#ifdef VERBOSE_TIMING
-  printf("tf(): time spent for sieve_init(): %" PRIu64 "ms\n",timer_diff(&timer)/1000);
-#endif
+    mystuff.sieve_primes_upper_limit = mystuff.sieve_primes_max;
+  }
 
-  mystuff.sieve_primes_max = mystuff.sieve_primes_max_global;
   if(mystuff.mode == MODE_NORMAL)
   {
 
@@ -1031,37 +1164,37 @@ int main(int argc, char **argv)
  
     do
     {
-      if (use_worktodo) parse_ret = get_next_assignment(mystuff.workfile, &exp, &bit_min, &bit_max);
-      if (parse_ret == 0)
+      if (use_worktodo) parse_ret = get_next_assignment(mystuff.workfile, &((mystuff.exponent)), &((mystuff.bit_min)), 
+                                                            &((mystuff.bit_max_assignment)), NULL, mystuff.verbosity);
+      else
       {
-        printf("got assignment: exp=%u bit_min=%d bit_max=%d\n",exp,bit_min,bit_max);
-        if (mystuff.p_par[EXP].pos) sprintf(mystuff.p_par[EXP].out, "%-10u", exp);
+        mystuff.exponent           = exponent;
+        mystuff.bit_min            = bit_min;
+        mystuff.bit_max_assignment = bit_max;
+      }
 
-        bit_min_stage = bit_min;
-        bit_max_stage = bit_max;
+      if (parse_ret == OK)
+      {
+        if(mystuff.verbosity >= 1)printf("got assignment: exp=%u bit_min=%d bit_max=%d (%.2f GHz-days)\n", mystuff.exponent, mystuff.bit_min, mystuff.bit_max_assignment, primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_max_assignment));
 
-        mystuff.sieve_primes_max = sieve_sieve_primes_max(exp, mystuff.sieve_primes_max_global);
+        mystuff.bit_max_stage = mystuff.bit_max_assignment;
 
-        if(mystuff.sieve_primes > mystuff.sieve_primes_max)
+        mystuff.sieve_primes_upper_limit = sieve_sieve_primes_max(mystuff.exponent, mystuff.sieve_primes_max);
+        if(mystuff.sieve_primes > mystuff.sieve_primes_upper_limit)
         {
-          mystuff.sieve_primes = mystuff.sieve_primes_max;
-          printf("WARNING: SievePrimes is too big for the current assignment, lowering to %u\n", mystuff.sieve_primes_max);
+          mystuff.sieve_primes = mystuff.sieve_primes_upper_limit;
+          printf("WARNING: SievePrimes is too big for the current assignment, lowering to %u\n", mystuff.sieve_primes_upper_limit);
           printf("         It is not allowed to sieve primes which are equal or bigger than the \n");
           printf("         exponent itself!\n");
         }
-        if (mystuff.p_par[SIEVE_PRIMES].pos) sprintf(mystuff.p_par[SIEVE_PRIMES].out, "%7d", mystuff.sieve_primes);
-
         if(mystuff.stages == 1)
         {
-          while( ((calculate_k(exp,bit_max_stage) - calculate_k(exp,bit_min_stage)) > (250000000ULL * NUM_CLASSES))
-              && ((bit_max_stage - bit_min_stage) > 1) )  bit_max_stage--;
+          while( ((calculate_k(mystuff.exponent, mystuff.bit_max_stage) - calculate_k(mystuff.exponent, mystuff.bit_min)) > (250000000ULL * NUM_CLASSES)) && ((mystuff.bit_max_stage - mystuff.bit_min) > 1) )mystuff.bit_max_stage--;
         }
         tmp = 0;
-        while(bit_max_stage <= bit_max && !mystuff.quit)
+        while(mystuff.bit_max_stage <= mystuff.bit_max_assignment && !mystuff.quit)
         {
-          if (mystuff.p_par[LOWER_LIMIT].pos) sprintf(mystuff.p_par[LOWER_LIMIT].out, "%2d", bit_min_stage);
-          if (mystuff.p_par[UPPER_LIMIT].pos) sprintf(mystuff.p_par[UPPER_LIMIT].out, "%2d", bit_max_stage);
-          tmp = tf(exp, bit_min_stage, bit_max_stage, &mystuff, 0, 0, AUTOSELECT_KERNEL);
+          tmp = tf(&mystuff, 0, 0, AUTOSELECT_KERNEL);
           if(tmp == RET_ERROR) return 1; /* bail out, we might have a serios problem  */
 
           if(tmp != RET_QUIT)
@@ -1069,31 +1202,31 @@ int main(int argc, char **argv)
 
             if( (mystuff.stopafterfactor > 0) && (tmp > 0) )
             {
-              bit_max_stage = bit_max;
+              mystuff.bit_max_stage = mystuff.bit_max_assignment;
             }
 
             if(use_worktodo)
             {
-              if(bit_max_stage == bit_max)parse_ret = clear_assignment(mystuff.workfile, exp, bit_min_stage, bit_max, 0);
-              else                        parse_ret = clear_assignment(mystuff.workfile, exp, bit_min_stage, bit_max, bit_max_stage);
+              if(mystuff.bit_max_stage == mystuff.bit_max_assignment)parse_ret = clear_assignment(mystuff.workfile, mystuff.exponent, mystuff.bit_min, mystuff.bit_max_assignment, 0);
+              else                                                   parse_ret = clear_assignment(mystuff.workfile, mystuff.exponent, mystuff.bit_min, mystuff.bit_max_assignment, mystuff.bit_max_stage);
 
-                   if(parse_ret == 3) printf("ERROR: clear_assignment() / modify_assignment(): can't open \"%s\"\n", mystuff.workfile);
-              else if(parse_ret == 4) printf("ERROR: clear_assignment() / modify_assignment(): can't open \"__worktodo__.tmp\"\n");
-              else if(parse_ret == 5) printf("ERROR: clear_assignment() / modify_assignment(): assignment not found in \"%s\"\n", mystuff.workfile);
-              else if(parse_ret == 6) printf("ERROR: clear_assignment() / modify_assignment(): can't rename workfiles\n");
-              else if(parse_ret != 0) printf("ERROR: clear_assignment() / modify_assignment(): Unknown error (%d)\n", parse_ret);
+                   if(parse_ret == CANT_OPEN_WORKFILE)   printf("ERROR: clear_assignment() / modify_assignment(): can't open \"%s\"\n", mystuff.workfile);
+              else if(parse_ret == CANT_OPEN_TEMPFILE)   printf("ERROR: clear_assignment() / modify_assignment(): can't open \"__worktodo__.tmp\"\n");
+              else if(parse_ret == ASSIGNMENT_NOT_FOUND) printf("ERROR: clear_assignment() / modify_assignment(): assignment not found in \"%s\"\n", mystuff.workfile);
+              else if(parse_ret == CANT_RENAME)          printf("ERROR: clear_assignment() / modify_assignment(): can't rename workfiles\n");
+              else if(parse_ret != OK)                   printf("ERROR: clear_assignment() / modify_assignment(): Unknown error (%d)\n", parse_ret);
             }
 
-            bit_min_stage = bit_max_stage;
-            bit_max_stage++;
+            mystuff.bit_min = mystuff.bit_max_stage;
+            mystuff.bit_max_stage++;
           }
         }
       }
-      else if(parse_ret == 1) printf("ERROR: get_next_assignment(): can't open \"%s\"\n", mystuff.workfile);
-      else if(parse_ret == 2) printf("ERROR: get_next_assignment(): no valid assignment found in \"%s\"\n", mystuff.workfile);
-      else if(parse_ret != 0) printf("ERROR: get_next_assignment(): Unknown error (%d)\n", parse_ret);
+      else if(parse_ret == CANT_OPEN_FILE)             printf("ERROR: get_next_assignment(): can't open \"%s\"\n", mystuff.workfile);
+      else if(parse_ret == VALID_ASSIGNMENT_NOT_FOUND) printf("ERROR: get_next_assignment(): no valid assignment found in \"%s\"\n", mystuff.workfile);
+      else if(parse_ret != OK)                         printf("ERROR: get_next_assignment(): Unknown error (%d)\n", parse_ret);
     }
-    while(parse_ret == 0 && use_worktodo && !mystuff.quit);
+    while(parse_ret == OK && use_worktodo && !mystuff.quit);
   }
   else // mystuff.mode != MODE_NORMAL
   {

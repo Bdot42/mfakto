@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2012  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -110,8 +110,7 @@ Version 0.13
 #include "datatypes.h"
 
 #ifdef CL_GPU_SIEVE
-
-//#include "sieve.cl"
+#include "gpusieve.cl"
 #endif
 
 #define EVAL_RES_b(comp) \
@@ -189,7 +188,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   a.d3=0x0003;
   a.d4=0x7000;
   a.d5=0x0010;
-
+  /*
   b=invmod2pow90(a);
   r=neginvmod2pow90(a);
 
@@ -273,10 +272,10 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 
   //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
   ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
+  */
 #if (BARRETT_VECTOR_SIZE > 1)
   i=mad24(resv.db.s0, 32768u, resv.da.s0)>>2;
   f=(mad24(resv.db.s0, 32768u, resv.da.s0)<<30) + mad24(resv.d9.s0, 32768u, resv.d8.s0);
-
   div_180_90(&r, i, a, ff
 #if (TRACE_KERNEL > 1)
                   , tid
