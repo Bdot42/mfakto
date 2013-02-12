@@ -268,6 +268,8 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
   if (nsp>MAX_NUM_SPS) nsp=MAX_NUM_SPS;
   double peak[MAX_NUM_SPS]={0.0}, Mps;
   double last_elem[MAX_NUM_SPS]={0.0};
+  int peak_index[MAX_NUM_SPS]={0};
+  cl_uint tmp;
 
 #ifdef SIEVE_SIZE_LIMIT
   printf("Sieve size is fixed at compile time, cannot test with variable sizes. Just running 3 fixed tests.\n\n");
@@ -279,6 +281,7 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
     printf(" %7u", sprimes[ii]);
   }
   printf("\nSieveSizeLimit");
+
   for (j=0;j<nss; j++)
   {
     tmp=m*ssizes[j];
@@ -313,7 +316,7 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
     }
     if (mystuff.quit)
     {
-      j++;
+      j++; // adjustment for later calculation: j= number of finished rows.
       break;
     }
   }
@@ -341,6 +344,7 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
   for(ii=0; ii<nsp; ii++)
   {
     // last_elem/nss  is the average end of the sieved block, consisting of threads_per_grid entries
+    // use j instead of nss in case the loop was interrupted.
     printf(" %6.2f%%", ((double)mystuff.threads_per_grid)*100.0*j/last_elem[ii]);
   }
 
