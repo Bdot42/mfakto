@@ -32,8 +32,7 @@ int init_CL(int num_streams, cl_int devicenumber);
 int init_CLstreams(void);
 int cleanup_CL(void);
 void CL_test(cl_int devicenumber);
-int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min,
-   cl_ulong k_max, mystuff_t *mystuff, enum GPUKernels use_kernel);
+int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPUKernels use_kernel);
 void printArray(const char * Name, const cl_uint * Data, const cl_uint len);
 void SegSieve();
 void CalcModularInverses();

@@ -92,11 +92,21 @@ enum STREAM_STATUS
 
 enum MODES
 {
+  MODE_PERFTEST,
   MODE_NORMAL,
   MODE_SELFTEST_SHORT,
   MODE_SELFTEST_HALF,
-  MODE_SELFTEST_FULL,
-  MODE_PERFTEST
+  MODE_SELFTEST_FULL
+};
+
+enum EXIT_VALUES
+{
+  ERR_OK = 0,
+  ERR_PARAM,
+  ERR_INIT,
+  ERR_MEM,
+  ERR_SELFTEST,
+  ERR_RUNTIME
 };
 
 enum GPUKernels
@@ -191,8 +201,8 @@ typedef struct
   cl_uint  class_number;              /* the number of the last processed class */
   cl_uint  grid_count;                /* number of grids processed in the last processed class */
   cl_ulong class_time;                /* time (in ms) needed to process the last processed class */
+  cl_ulong cpu_wait_time;             /* time (ms) CPU was waiting for the GPU */
   float    cpu_wait;                  /* percentage CPU was waiting for the GPU */
-  cl_uint  cpu_wait_time;             /* time (ms) CPU was waiting for the GPU */
   cl_uint  output_counter;            /* count how often the status line was written since last headline */
   cl_uint  class_counter;             /* number of finished classes of the current job */
   double   ghzdays;                   /* primenet GHZdays for the current assignment (current stage) */

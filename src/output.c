@@ -251,16 +251,12 @@ void print_status_line(mystuff_t *mystuff)
       {
         if(mystuff->mode == MODE_NORMAL)
         {
-          if(mystuff->stats.class_time > 250)
-          {
-            eta = (mystuff->stats.class_time * (max_class_number - mystuff->stats.class_counter) + 500)  / 1000;
-                 if(eta < 3600) index += sprintf(buffer + index, "%2" PRIu64 "m%02" PRIu64 "s", eta / 60, eta % 60);
-            else if(eta < 86400)index += sprintf(buffer + index, "%2" PRIu64 "h%02" PRIu64 "m", eta / 3600, (eta / 60) % 60);
-            else                index += sprintf(buffer + index, "%2" PRIu64 "d%02" PRIu64 "h", eta / 86400, (eta / 3600) % 24);
-          }
-          else                  index += sprintf(buffer + index, "  n.a.");
+          eta = (mystuff->stats.class_time * (max_class_number - mystuff->stats.class_counter) + 500)  / 1000;
+               if(eta < 3600) index += sprintf(buffer + index, "%2" PRIu64 "m%02" PRIu64 "s", eta / 60, eta % 60);
+          else if(eta < 86400)index += sprintf(buffer + index, "%2" PRIu64 "h%02" PRIu64 "m", eta / 3600, (eta / 60) % 60);
+          else                index += sprintf(buffer + index, "%2" PRIu64 "d%02" PRIu64 "h", eta / 86400, (eta / 3600) % 24);
         }
-        else if(mystuff->mode == MODE_SELFTEST_FULL)index += sprintf(buffer + index, "  n.a.");
+        else                  index += sprintf(buffer + index, "  n.a.");
       }
       else if(mystuff->stats.progressformat[i+1] == 'n')
       {
@@ -295,7 +291,7 @@ void print_status_line(mystuff_t *mystuff)
       }
       else if(mystuff->stats.progressformat[i+1] == 'w')
       {
-        index += sprintf(buffer + index, "(n.a.)"); /* mfakto only */
+        index += sprintf(buffer + index, "%6llu", mystuff->stats.cpu_wait_time); /* mfakto only */
       }
       else if(mystuff->stats.progressformat[i+1] == 'W')
       {
@@ -368,7 +364,7 @@ void print_status_line(mystuff_t *mystuff)
     if(mystuff->printmode == 1)index += sprintf(buffer + index, "\r");
     else                       index += sprintf(buffer + index, "\n");
   }
-  if(mystuff->mode == MODE_SELFTEST_FULL && mystuff->printmode == 0)
+  if(mystuff->mode > MODE_SELFTEST_SHORT && mystuff->printmode == 0)
   {
     index += sprintf(buffer + index, "\n");
   }

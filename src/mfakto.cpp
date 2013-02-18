@@ -83,7 +83,7 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL}, // one kernel for all vector sizes
      {   MG62,                "cl_mg62",              10,     62,         1,      NULL}, // one kernel for all vector sizes
-     {   MG88,                "cl_mg88",              10,     88,         1,      NULL}, // one kernel for all vector sizes
+     {   MG88,                "cl_mg88",              10,     87,         1,      NULL}, // one kernel for all vector sizes
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         0,      NULL}, // end of automatic loading
      {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         0,      NULL}, // slow shift-cmp-sub kernel: removed
      {   BARRETT92_64_OpenCL, "cl_barrett32_92",      64,     92,         0,      NULL}, // mapped to 32-bit barrett so far
@@ -1896,12 +1896,12 @@ int cleanup_CL(void)
 	return 0;
 }
 
-int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPUKernels use_kernel)
+int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPUKernels use_kernel)
 {
   size_t size = mystuff->threads_per_grid * sizeof(int);
   int status, wait = 0;
   struct timeval timer, timer2;
-  unsigned long long int twait=0;
+  cl_ulong twait=0;
   cl_uint cwait=0, i;
 // for TF_72BIT  
   int72  k_base;
@@ -1909,13 +1909,11 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   int192 b_192 = {0};
   cl_uint8 b_in = {{0}};
   int96  factor;
-//  double ghz_assignment = 0.016968 * pow((double)2, bit_min - 47) * 1680 / exp * (pow((double)2, bit_max-bit_min) -1);
-  double ghz_assignment = 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1);
 
   cl_uint  factorsfound=0;
-  unsigned long long int b_preinit_lo, b_preinit_mid, b_preinit_hi;
-  int shiftcount,ln2b,count=1;
-  unsigned long long int k_diff;
+  cl_uint shiftcount,ln2b,count=1;
+  cl_ulong b_preinit_lo, b_preinit_mid, b_preinit_hi;
+  cl_ulong k_diff;
   char string[50];
   int running=0;
   
@@ -1925,10 +1923,10 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   timer_init(&timer);
 #ifdef DETAILED_INFO
   printf("tf_class_opencl(%u, %d, %llu, %llu, ...)\n",
-      exp, bit_min, (long long unsigned int) k_min, (long long unsigned int) k_max);
+      mystuff->exponent, mystuff->bit_min, (long long unsigned int) k_min, (long long unsigned int) k_max);
 #endif
 
-  //  exp=51152869; k_min=20582854459640ULL; k_max=20582854459641ULL;  // test test test
+  //  mystuff->exponent=51152869; k_min=20582854459640ULL; k_max=20582854459641ULL;  // test test test
 
   new_class=1; // tell run_kernel to re-submit the one-time kernel arguments
   if ( k_max <= k_min) k_max = k_min + 1;  // otherwise it would skip small bit ranges
@@ -1975,9 +1973,9 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   }
   
   shiftcount=10;  // no exp below 2^10 ;-)
-  while((1ULL<<shiftcount) < (unsigned long long int)exp)shiftcount++;
+  while((1ULL<<shiftcount) < (unsigned long long int)mystuff->exponent)shiftcount++;
 #ifdef DETAILED_INFO
-  printf("bits in exp %u: %u, ", exp, shiftcount);
+  printf("bits in exp %u: %u, ", mystuff->exponent, shiftcount);
 #endif
   shiftcount--;ln2b=1;
   // some kernels may actually accept a higher preprocessed value
@@ -1989,9 +1987,9 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   {
     shiftcount--;
     ln2b<<=1;
-    if(exp&(1<<(shiftcount)))ln2b++;
+    if(mystuff->exponent&(1<<(shiftcount)))ln2b++;
   }
-  while (ln2b < bit_max);
+  while (ln2b < mystuff->bit_max_stage);
 #ifdef DETAILED_INFO
   printf("remaining shiftcount = %d, ln2b = %d\n", shiftcount, ln2b);
 #endif
@@ -2127,7 +2125,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
               k_base.d0 =  k_min_grid[i] & 0xFFFFFF;
               k_base.d1 = (k_min_grid[i] >> 24) & 0xFFFFFF;
               k_base.d2 =  k_min_grid[i] >> 48;
-              status = run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount, bit_min-63);
+              status = run_kernel24(kernel_info[use_kernel].kernel, mystuff->exponent, k_base, i, b_preinit, mystuff->d_RES, shiftcount, mystuff->bit_min-63);
             }
             else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15) || (use_kernel == MG88))
             {
@@ -2137,7 +2135,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
               k_base.d2 = (k_min_grid[i] >> 30) & 0x7FFF;
               k_base.d3 = (k_min_grid[i] >> 45) & 0x7FFF;
               k_base.d4 =  k_min_grid[i] >> 60;
-              status = run_kernel15(kernel_info[use_kernel].kernel, exp, k_base, i, b_in, mystuff->d_RES, shiftcount, bit_max);
+              status = run_kernel15(kernel_info[use_kernel].kernel, mystuff->exponent, k_base, i, b_in, mystuff->d_RES, shiftcount, mystuff->bit_max_stage);
             }
             else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL) || (use_kernel == MG62))
             {
@@ -2145,11 +2143,11 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
               k.d0 = (cl_uint) k_min_grid[i];
               k.d1 = k_min_grid[i] >> 32;
               k.d2 = 0;
-              status = run_barrett_kernel32(kernel_info[use_kernel].kernel, exp, k, i, b_192, mystuff->d_RES, shiftcount, bit_min-63);
+              status = run_barrett_kernel32(kernel_info[use_kernel].kernel, mystuff->exponent, k, i, b_192, mystuff->d_RES, shiftcount, mystuff->bit_min-63);
             }
             else
             {
-              status = run_kernel64(kernel_info[use_kernel].kernel, exp, k_min_grid[i], i, b_preinit4, mystuff->d_RES, bit_min-63);
+              status = run_kernel64(kernel_info[use_kernel].kernel, mystuff->exponent, k_min_grid[i], i, b_preinit4, mystuff->d_RES, mystuff->bit_min-63);
             }
             if(status != CL_SUCCESS) 
             { 
@@ -2158,7 +2156,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
             }
 
 #ifdef DEBUG_STREAM_SCHEDULE
-            printf(" STREAM_SCHEDULE: started GPU kernel using h_ktab[%d] (%s, %u, %llu, ...)\n", i, kernel_info[use_kernel].kernelname, exp, k_min_grid[i]);
+            printf(" STREAM_SCHEDULE: started GPU kernel using h_ktab[%d] (%s, %u, %llu, ...)\n", i, kernel_info[use_kernel].kernelname, mystuff->exponent, k_min_grid[i]);
 #endif
             mystuff->stream_status[i] = RUNNING;
             break;
@@ -2397,6 +2395,7 @@ int tf_class_opencl(cl_uint exp, int bit_min, int bit_max, cl_ulong k_min, cl_ul
   mystuff->stats.class_time = timer_diff(&timer)/1000;
 /* prevent division by zero if timer resolution is too low */
   if(mystuff->stats.class_time == 0)mystuff->stats.class_time = 1;
+  mystuff->stats.cpu_wait_time = twait;
 
   if(mystuff->stats.grid_count > 2 * mystuff->num_streams)mystuff->stats.cpu_wait = (float)twait / ((float)mystuff->stats.class_time * 10);
   else                                mystuff->stats.cpu_wait = -1.0f;

@@ -58,6 +58,7 @@ struct GPU_type gpu_types[]={
   {GPU_CPU,      1,  "CPU"},
   {GPU_APU,     80,  "APU"},
   {GPU_NVIDIA,   8,  "NVIDIA"},
+  {GPU_INTEL,    1,  "INTEL"},
   {GPU_UNKNOWN,  0,  "UNKNOWN"}
 };
 
@@ -95,7 +96,7 @@ int kernel_possible(int kernel, cl_uint exp, cl_uint bit_min, cl_uint bit_max)
 The variables exp, bit_min and bit_max must be a valid assignment! */
 {
   int ret = 0;
-  kernel_info_t k=kernel_info[kernel];
+  kernel_info_t k = kernel_info[kernel];
 
   if (bit_min >= k.bit_min  &&  bit_max <= k.bit_max  &&  (k.stages || (bit_max - bit_min) == 1)) ret = 1;
   
@@ -375,7 +376,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
     
   };
 
-  kernel_precedence *k = &kernel_precedences[mystuff->gpu_type];
+  kernel_precedence *k = &kernel_precedences[mystuff->gpu_type]; // select the row for the GPU we're running on / we're configured for
   GPUKernels         use_kernel = AUTOSELECT_KERNEL;
   cl_uint            i;
 
@@ -419,11 +420,10 @@ other return value
   struct timeval timer;
   time_t time_last_checkpoint, time_add_file_check;
   int factorsfound = 0, numfactors = 0, restart = 0, do_checkpoint = mystuff->checkpoints;
-  FILE *resultfile=NULL;
 
   int retval = 0, add_file_exists = 0;
     
-  unsigned long long int time_run, time_est;
+  cl_ulong time_run, time_est;
 
   mystuff->stats.output_counter = 0; /* reset output counter, needed for status headline */
   mystuff->stats.ghzdays = primenet_ghzdays(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage);
@@ -485,7 +485,7 @@ other return value
   {
     if((mystuff->checkpoints > 0) && (checkpoint_read(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, &cur_class, &factorsfound) == 1))
     {
-      printf("\nfound a valid checkpoint file!\n");
+      printf("\nFound a valid checkpoint file.\n");
       if(mystuff->verbosity >= 1) printf("  last finished class was: %d\n", cur_class);
       if(mystuff->verbosity >= 2) printf("  found %d factor%s already\n", factorsfound, factorsfound == 1 ? "" : "s");
       printf("\n");
@@ -540,7 +540,7 @@ other return value
 
         if ((use_kernel >= _71BIT_MUL24) && (use_kernel < UNKNOWN_KERNEL))
         {
-          numfactors = tf_class_opencl (mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, k_min+cur_class, k_max, mystuff, use_kernel);
+          numfactors = tf_class_opencl (k_min+cur_class, k_max, mystuff, use_kernel);
         }
         else
         {
@@ -690,7 +690,7 @@ k_max and k_min are used as 64bit temporary integers here...
                               printf("%2" PRIu64 ".%03" PRIu64 "s", (time_run / 1000ULL) % 60ULL, time_run % 1000ULL);
     if(restart != 0)
     {
-      time_est = (time_run * mystuff->stats.class_counter ) / (unsigned long long int)(mystuff->stats.class_counter-restart);
+      time_est = (time_run * mystuff->stats.class_counter ) / (cl_ulong)(mystuff->stats.class_counter-restart);
       printf("\n      estimated total time spent: ");
       if(time_est > 86400000ULL)printf("%" PRIu64 "d ",   time_est / 86400000ULL);
       if(time_est > 3600000ULL) printf("%2" PRIu64 "h ", (time_est /  3600000ULL) % 24ULL);
@@ -771,7 +771,7 @@ RET_ERROR we might have a serios problem
       if(kernel_possible(kernel_index, mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage)) kernels[j++] = kernel_index;
     }
     // careful to not sieve out small test candidates
-    mystuff->sieve_primes_upper_limit = sieve_sieve_primes_max(st_data[ind].exp, mystuff->sieve_primes_max);
+    mystuff->sieve_primes_upper_limit = sieve_sieve_primes_max(mystuff->exponent, mystuff->sieve_primes_max);
     if (mystuff->sieve_primes > mystuff->sieve_primes_upper_limit)
       mystuff->sieve_primes = mystuff->sieve_primes_upper_limit;
 
@@ -846,20 +846,20 @@ int main(int argc, char **argv)
     if((!strcmp((char*)"-h", argv[i])) || (!strcmp((char*)"--help", argv[i])))
     {
       print_help(argv[0]);
-      return 0;
+      return ERR_OK;
     }
     else if(!strcmp((char*)"-v", argv[i]))
     {
       if(i+1 >= argc)
       {
         printf("ERROR: no verbosity level specified for option \"-v\"\n");
-        return 1;
+        return ERR_PARAM;
       }
       tmp = (int)strtol(argv[i+1], &ptr, 10);
       if(*ptr || errno || tmp != strtol(argv[i+1], &ptr, 10) )
       {
         printf("ERROR: can't parse verbosity level for option \"-v\"\n");
-        return 1;
+        return ERR_PARAM;
       }
       i++;
       
@@ -882,7 +882,7 @@ int main(int argc, char **argv)
       if(i+1 >= argc)
       {
         printf("ERROR: no device number specified for option \"-d\"\n");
-        return 1;
+        return ERR_PARAM;
       }
       if (argv[i+1][0] == 'c')  // run on CPU
       {
@@ -898,7 +898,7 @@ int main(int argc, char **argv)
         if(*ptr || errno || devicenumber != strtol(argv[i+1],&ptr,10) )
         {
           printf("ERROR: can't parse <device number> for option \"-d\"\n");
-          return 1;
+          return ERR_PARAM;
 	      }
       }
       i++;
@@ -908,29 +908,29 @@ int main(int argc, char **argv)
       if(i+3 >= argc)
       {
         printf("ERROR: missing parameters for option \"-tf\"\n");
-        return 1;
+        return ERR_PARAM;
       }
       exponent=(unsigned int)strtoul(argv[i+1],&ptr,10);
       if(*ptr || errno || (unsigned long)exponent != strtoul(argv[i+1],&ptr,10) )
       {
         printf("ERROR: can't parse parameter <exp> for option \"-tf\"\n");
-        return 1;
+        return ERR_PARAM;
       }
       bit_min=(int)strtol(argv[i+2],&ptr,10);
       if(*ptr || errno || (long)bit_min != strtol(argv[i+2],&ptr,10) )
       {
         printf("ERROR: can't parse parameter <min> for option \"-tf\"\n");
-        return 1;
+        return ERR_PARAM;
       }
       bit_max=(int)strtol(argv[i+3],&ptr,10);
       if(*ptr || errno || (long)bit_max != strtol(argv[i+3],&ptr,10) )
       {
         printf("ERROR: can't parse parameter <max> for option \"-tf\"\n");
-        return 1;
+        return ERR_PARAM;
       }
       if(!valid_assignment(exponent, bit_min, bit_max, mystuff.verbosity))
       {
-        return 1;
+        return ERR_PARAM;
       }
       use_worktodo = 0;
       parse_ret = 0;
@@ -958,35 +958,35 @@ int main(int argc, char **argv)
       else
         tmp = 0;
       perftest(tmp, devicenumber);  
-      return 0;
+      return ERR_OK;
     }
     else if(!strcmp((char*)"--timertest", argv[i]))
     {
       timertest();
-      return 0;
+      return ERR_OK;
     }
     else if(!strcmp((char*)"--sleeptest", argv[i]))
     {
       sleeptest();
-      return 0;
+      return ERR_OK;
     }
     else if(!strcmp((char*)"--CLtest", argv[i]))
     {
       read_config(&mystuff);
       CL_test(devicenumber);
-      return 0;
+      return ERR_OK;
     }
     else if(!strcmp((char*)"--gpusievetest", argv[i]))
     {
       read_config(&mystuff);
       init_CL(mystuff.num_streams, devicenumber);
 //      gpu_sieve_main(argc-i, &argv[i]);  
-      return 0;
+      return ERR_OK;
     }
     else
     {
       fprintf(stderr, "ERROR: unknown option '%s'\n", argv[i]);
-      return 1;
+      return ERR_PARAM;
     }
     i++;
   }
@@ -996,58 +996,64 @@ int main(int argc, char **argv)
   read_config(&mystuff);
   
 /* print current configuration */
-  printf("Compiletime options\n");
+  if(mystuff.verbosity >= 1)
+  {
+    printf("Compiletime options\n");
 #ifdef SIEVE_SIZE_LIMIT
-  printf("  SIEVE_SIZE_LIMIT          %dkiB\n", SIEVE_SIZE_LIMIT);
-  printf("  SIEVE_SIZE                %dbits\n", SIEVE_SIZE);
+    printf("  SIEVE_SIZE_LIMIT          %dkiB\n", SIEVE_SIZE_LIMIT);
+    printf("  SIEVE_SIZE                %dbits\n", SIEVE_SIZE);
 #endif
-  printf("  SIEVE_SPLIT               %d\n", SIEVE_SPLIT);
-  if(SIEVE_SPLIT > mystuff.sieve_primes_min)
+    printf("  SIEVE_SPLIT               %d\n", SIEVE_SPLIT);
+  }
+  if(mystuff.gpu_sieving == 0 && SIEVE_SPLIT > mystuff.sieve_primes_min)
   {
     printf("ERROR: SIEVE_SPLIT must be <= SievePrimesMin\n");
-    return 1;
+    return ERR_PARAM;
   }
+  if(mystuff.verbosity >= 1)
+  {
 #ifdef MORE_CLASSES
-  printf("  MORE_CLASSES              enabled\n");
+    printf("  MORE_CLASSES              enabled\n");
 #else
-  printf("  MORE_CLASSES              disabled\n");
+    printf("  MORE_CLASSES              disabled\n");
 #endif
 
 #ifdef USE_DEVICE_PRINTF
-  printf("  USE_DEVICE_PRINTF         enabled (DEBUG option)\n");
+    printf("  USE_DEVICE_PRINTF         enabled (DEBUG option)\n");
 #endif
 #ifdef CHECKS_MODBASECASE
-  printf("  CHECKS_MODBASECASE        enabled (DEBUG option)\n");
+    printf("  CHECKS_MODBASECASE        enabled (DEBUG option)\n");
 #endif
 #ifdef DEBUG_STREAM_SCHEDULE
-  printf("  DEBUG_STREAM_SCHEDULE     enabled (DEBUG option)\n");
+    printf("  DEBUG_STREAM_SCHEDULE     enabled (DEBUG option)\n");
 #endif
 #ifdef DEBUG_STREAM_SCHEDULE_CHECK
-  printf("  DEBUG_STREAM_SCHEDULE_CHECK\n                            enabled (DEBUG option)\n");
+    printf("  DEBUG_STREAM_SCHEDULE_CHECK\n                            enabled (DEBUG option)\n");
 #endif
 #ifdef RAW_GPU_BENCH
-  printf("  RAW_GPU_BENCH             enabled (DEBUG option)\n");
+    printf("  RAW_GPU_BENCH             enabled (DEBUG option)\n");
 #endif
 #ifdef DETAILED_INFO
-  printf("  DETAILED_INFO             enabled (DEBUG option)\n");
+    printf("  DETAILED_INFO             enabled (DEBUG option)\n");
 #endif
 #ifdef CL_PERFORMANCE_INFO
-  printf("  CL_PERFORMANCE_INFO       enabled (DEBUG option)\n");
+    printf("  CL_PERFORMANCE_INFO       enabled (DEBUG option)\n");
 #endif
+  }
 
   if(init_CL(mystuff.num_streams, devicenumber)!=CL_SUCCESS)
   {
     printf("init_CL(%d, %d) failed\n", mystuff.num_streams, devicenumber);
-    return 2;
+    return ERR_INIT;
   }
 
   if (mystuff.gpu_type == GPU_AUTO)
   {
     // try to auto-detect the type of GPU
-    if (strstr(deviceinfo.d_name, "Capeverde") ||    // 7750, 7770
-        strstr(deviceinfo.d_name, "Pitcairn")  ||    // 7850, 7870
-        strstr(deviceinfo.d_name, "Newzealand") ||   // 7990
-        strstr(deviceinfo.d_name, "Tahiti"))         // 7950, 7970
+    if (strstr(deviceinfo.d_name, "Capeverde")  ||    // 7750, 7770
+        strstr(deviceinfo.d_name, "Pitcairn")   ||    // 7850, 7870
+        strstr(deviceinfo.d_name, "Newzealand") ||    // 7990
+        strstr(deviceinfo.d_name, "Tahiti"))          // 7950, 7970
     {
       mystuff.gpu_type = GPU_GCN;
     }
@@ -1071,19 +1077,24 @@ int main(int argc, char **argv)
              strstr(deviceinfo.d_name, "Juniper")  ||  // 6750, 6770, 5750, 5770
              strstr(deviceinfo.d_name, "Cypress")  ||  // 5830, 5850, 5870
              strstr(deviceinfo.d_name, "Hemlock")  ||  // 5970
-             strstr(deviceinfo.d_name, "Barts"))       // 6790, 6850, 6870
+             strstr(deviceinfo.d_name, "Barts")    ||  // 6790, 6850, 6870
+             strstr(deviceinfo.d_name, "RV7"))         // 4xxx
     {
       mystuff.gpu_type = GPU_VLIW5;
     }
-    else if (strstr(deviceinfo.d_name, "CPU") ||
-             strstr(deviceinfo.v_name, "GenuineIntel") ||
+    else if (strstr(deviceinfo.d_name, "CPU")           ||
+             strstr(deviceinfo.v_name, "GenuineIntel")  ||
              strstr(deviceinfo.v_name, "AuthenticAMD"))
     {
       mystuff.gpu_type = GPU_CPU;
     }
     else if (strstr(deviceinfo.v_name, "NVIDIA"))
     {
-      mystuff.gpu_type = GPU_NVIDIA;
+      mystuff.gpu_type = GPU_NVIDIA;  // not (yet) working
+    }
+    else if (strstr(deviceinfo.d_name, "Intel(R) HD Graphics"))
+    {
+      mystuff.gpu_type = GPU_INTEL;  // not (yet) working
     }
     else
     {
@@ -1095,16 +1106,6 @@ int main(int argc, char **argv)
     }
   }
 
-  printf("\nOpenCL device info\n");
-  printf("  name                      %s (%s)\n", deviceinfo.d_name, deviceinfo.v_name);
-  printf("  device (driver) version   %s (%s)\n", deviceinfo.d_ver, deviceinfo.dr_version);
-  printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
-  printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
-  printf("  number of multiprocessors %d (%d compute elements)\n", deviceinfo.units, deviceinfo.units * gpu_types[mystuff.gpu_type].CE_per_multiprocessor);
-  printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
-
-  printf("\nAutomatic parameters\n");
-
   mystuff.threads_per_grid = mystuff.threads_per_grid_max;
   if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
   {
@@ -1114,8 +1115,21 @@ int main(int argc, char **argv)
   // as only threads_per_grid / vectorsize threads will actually be started.
   mystuff.threads_per_grid -= mystuff.threads_per_grid % (mystuff.vectorsize * deviceinfo.maxThreadsPerBlock);
 
-  printf("  threads per grid          %d\n", mystuff.threads_per_grid);
-  printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
+  if(mystuff.verbosity >= 1)
+  {
+    printf("\nOpenCL device info\n");
+    printf("  name                      %s (%s)\n", deviceinfo.d_name, deviceinfo.v_name);
+    printf("  device (driver) version   %s (%s)\n", deviceinfo.d_ver, deviceinfo.dr_version);
+    printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
+    printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
+    printf("  number of multiprocessors %d (%d compute elements)\n", deviceinfo.units, deviceinfo.units * gpu_types[mystuff.gpu_type].CE_per_multiprocessor);
+    printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
+
+    printf("\nAutomatic parameters\n");
+
+    printf("  threads per grid          %d\n", mystuff.threads_per_grid);
+    printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
+  }
 
   if ((mystuff.gpu_type == GPU_GCN) && (mystuff.vectorsize > 3))
   {
@@ -1128,7 +1142,7 @@ int main(int argc, char **argv)
   if (init_CLstreams())
   {
     printf("ERROR: init_CLstreams (malloc buffers?) failed\n");
-    return 1;
+    return ERR_MEM;
   }
   if (mystuff.gpu_sieving == 0)
   {
@@ -1156,8 +1170,8 @@ int main(int argc, char **argv)
 
 /* before we start real work run a small selftest */  
     mystuff.mode = MODE_SELFTEST_SHORT;
-    printf("running a simple selftest ...\n");
-    if (selftest(&mystuff, MODE_SELFTEST_SHORT) != 0) return 1; /* selftest failed :( */
+    if(mystuff.verbosity >= 1) printf("running a simple selftest ...\n");
+    if (selftest(&mystuff, MODE_SELFTEST_SHORT) != 0) return ERR_SELFTEST; /* selftest failed :( */
     mystuff.mode = MODE_NORMAL;
     /* allow for ^C */
     register_signal_handler(&mystuff);
@@ -1195,7 +1209,7 @@ int main(int argc, char **argv)
         while(mystuff.bit_max_stage <= mystuff.bit_max_assignment && !mystuff.quit)
         {
           tmp = tf(&mystuff, 0, 0, AUTOSELECT_KERNEL);
-          if(tmp == RET_ERROR) return 1; /* bail out, we might have a serios problem  */
+          if(tmp == RET_ERROR) return ERR_RUNTIME; /* bail out, we might have a serios problem  */
 
           if(tmp != RET_QUIT)
           {
@@ -1235,7 +1249,7 @@ int main(int argc, char **argv)
       printf ("Error exit as selftest failed\n");
       cleanup_CL();
       sieve_free();
-      return 1;
+      return ERR_SELFTEST;
     }
   }
 
@@ -1243,5 +1257,5 @@ int main(int argc, char **argv)
 
   sieve_free();
 
-  return 0;
+  return ERR_OK;
 }
