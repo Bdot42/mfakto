@@ -606,11 +606,11 @@ int init_CL(int num_streams, cl_int devnumber)
 
   char program_options[150];
   // so far use the same vector size for all kernels ...
-  sprintf(program_options, "-I. -DBARRETT_VECTOR_SIZE=%d -DVECTOR_SIZE=%d ", mystuff.vectorsize, mystuff.vectorsize);
+  sprintf(program_options, "-I. -DBARRETT_VECTOR_SIZE=%d -DVECTOR_SIZE=%d -DNUM_CLASSES=%d", mystuff.vectorsize, mystuff.vectorsize, NUM_CLASSES);
 #ifdef CL_DEBUG
-  strcat(program_options, "-g");
+  strcat(program_options, " -g");
 #else
-  if (mystuff.gpu_type != GPU_NVIDIA) strcat(program_options, "-O3");
+  if (mystuff.gpu_type != GPU_NVIDIA) strcat(program_options, " -O3");
 #endif
 
 #ifdef CHECKS_MODBASECASE
@@ -622,6 +622,7 @@ int init_CL(int num_streams, cl_int devnumber)
 
   if (mystuff.small_exp == 1)
     strcat(program_options, " -DSMALL_EXP");
+
 
 #ifdef DETAILED_INFO
   printf("Compiling kernels (build options: \"%s\").", program_options);
@@ -1657,7 +1658,7 @@ int run_barrett_kernel32(cl_kernel l_kernel, cl_uint exp, int96 k_base, int stre
 {
   cl_int   status;
   /* __kernel void cl_barrett32_79(__private uint exp, __private int96 k, __global uint *k_tab,
-         __private int shiftcount, __private int192_t b, __global uint *RES, __private int bit_max64) */
+         __private int shiftcount, __private int192_v b, __global uint *RES, __private int bit_max64) */
   // first set the specific params that don't change per block: b_pre_shift, bin_min63
   if (new_class)
   {

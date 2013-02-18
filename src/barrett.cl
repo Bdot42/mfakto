@@ -50,15 +50,15 @@ Version 0.13
 
 
 #ifndef CHECKS_MODBASECASE
-void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf);
-void div_160_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf);
+void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, const float_v nf);
+void div_160_96(int96_v * const res, __private int192_v q, const int96_v n, const float_v nf);
 #else
-void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf, __global uint* modcasebase_debug);
-void div_160_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf, __global uint* modcasebase_debug);
+void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, const float_v nf, __global uint* modcasebase_debug);
+void div_160_96(int96_v * const res, __private int192_v q, const int96_v n, const float_v nf, __global uint* modcasebase_debug);
 #endif
-void mul_96(int96_t * const res, const int96_t a, const int96_t b);
-void mul_96_192_no_low2(int192_t *const res, const int96_t a, const int96_t b);
-void mul_96_192_no_low3(int192_t *const res, const int96_t a, const int96_t b);
+void mul_96(int96_v * const res, const int96_v a, const int96_v b);
+void mul_96_192_no_low2(int192_v *const res, const int96_v a, const int96_v b);
+void mul_96_192_no_low3(int192_v *const res, const int96_v a, const int96_v b);
 
 
 /****************************************
@@ -68,10 +68,10 @@ void mul_96_192_no_low3(int192_t *const res, const int96_t a, const int96_t b);
  ****************************************
  ****************************************/
 
-int96_t sub_if_gte_96(const int96_t a, const int96_t b)
+int96_v sub_if_gte_96(const int96_v a, const int96_v b)
 /* return (a>b)?a-b:a */
 {
-  int96_t tmp;
+  int96_v tmp;
   /* do the subtraction and use tmp.d2 to decide if the result is valid (if a was > b) */
 
   int_v carry= (b.d0 > a.d0);
@@ -88,7 +88,7 @@ int96_t sub_if_gte_96(const int96_t a, const int96_t b)
   return tmp;
 }
 
-void inc_if_ge_96(int96_t * const res, const int96_t a, const int96_t b)
+void inc_if_ge_96(int96_v * const res, const int96_v a, const int96_v b)
 { /* if (a >= b) res++ */
   __private uint_v ge, carry;
 
@@ -102,7 +102,7 @@ void inc_if_ge_96(int96_t * const res, const int96_t a, const int96_t b)
   res->d2 += AS_UINT_V((carry > res->d1)? 1 : 0);
 }
 
-void mul_96(int96_t * const res, const int96_t a, const int96_t b)
+void mul_96(int96_v * const res, const int96_v a, const int96_v b)
 /* res = a * b */
 {
   __private uint_v tmp;
@@ -128,7 +128,7 @@ void mul_96(int96_t * const res, const int96_t a, const int96_t b)
 
 /*
    not used anymore
-void mul_96_192_no_low2(int192_t * const res, const int96_t a, const int96_t b)
+void mul_96_192_no_low2(int192_v * const res, const int96_v a, const int96_v b)
 res ~= a * b
 res.d0 and res.d1 are NOT computed. Carry from res.d1 to res.d2 is ignored,
 too. So the digits res.d{2-5} might differ from mul_96_192(). In
@@ -197,7 +197,7 @@ of mul_96_192().
  */
 
 
-void mul_96_192_no_low3(int192_t * const res, const int96_t a, const int96_t b)
+void mul_96_192_no_low3(int192_v * const res, const int96_v a, const int96_v b)
 /*
 res ~= a * b
 res.d0, res.d1 and res.d2 are NOT computed. Carry to res.d3 is ignored,
@@ -247,7 +247,7 @@ than of mul_96_192().
 }
 
 
-void square_96_192(int192_t * const res, const int96_t a)
+void square_96_192(int192_v * const res, const int96_v a)
 /* res = a^2 = a.d0^2 + a.d1^2 + a.d2^2 + 2(a.d0*a.d1 + a.d0*a.d2 + a.d1*a.d2) */
 {
 /*
@@ -312,7 +312,7 @@ Adding x*x to a few carries will not cascade the carry
   res->d5 += mul_hi(a.d2, a.d2);
 }
 
-void square_96_160(int192_t * const res, const int96_t a)
+void square_96_160(int192_v * const res, const int96_v a)
 /* res = a^2 */
 /* this is a stripped down version of square_96_192, it doesn't compute res.d5
 and is a little bit faster.
@@ -367,7 +367,7 @@ Adding x*x to a few carries will not cascade the carry
   res->d4 += mul_hi(a.d1, TWOad2);
 }
 
-void shl_96(int96_t * const a)
+void shl_96(int96_v * const a)
 /* shiftleft a one bit */
 { /* here, bitalign improves the 92-bit kernel, and slows down 76-bit */
   a->d2 = amd_bitalign(a->d2, a->d1, 31);
@@ -377,7 +377,7 @@ void shl_96(int96_t * const a)
   a->d0 = a->d0 << 1;
 }
 
-void shl_192(int192_t * const a)
+void shl_192(int192_v * const a)
 /* shiftleft a one bit */
 { /* in this function, bitalign slows down all kernels */
 //  a->d5 = amd_bitalign(a->d5, a->d4, 31);
@@ -396,16 +396,16 @@ void shl_192(int192_t * const a)
 
 #undef DIV_160_96
 #ifndef CHECKS_MODBASECASE
-void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf)
+void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, const float_v nf)
 #else
-void div_192_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf, __global uint * restrict modbasecase_debug)
+void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, const float_v nf, __global uint * restrict modbasecase_debug)
 #endif
 /* res = q / n (integer division) */
 {
   __private float_v qf;
   __private uint_v qi, tmp, carry;
-  __private int192_t nn;
-  __private int96_t tmp96;
+  __private int192_v nn;
+  __private int96_v tmp96;
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
@@ -719,9 +719,9 @@ one. Sometimes the result is a little bit bigger than n
 
 #define DIV_160_96
 #ifndef CHECKS_MODBASECASE
-void div_160_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf)
+void div_160_96(int96_v * const res, __private int192_v q, const int96_v n, const float_v nf)
 #else
-void div_160_96(int96_t * const res, __private int192_t q, const int96_t n, const float_v nf, __global uint * restrict modbasecase_debug)
+void div_160_96(int96_v * const res, __private int192_v q, const int96_v n, const float_v nf, __global uint * restrict modbasecase_debug)
 #endif
 /* res = q / n (integer division) */
 /* the code of div_160_96() is an EXACT COPY of div_192_96(), the only
@@ -731,8 +731,8 @@ DIV_160_96 here. */
 {
   __private float_v qf;
   __private uint_v qi, tmp, carry;
-  __private int192_t nn;
-  __private int96_t tmp96;
+  __private int192_v nn;
+  __private int96_v tmp96;
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
@@ -1041,7 +1041,7 @@ one. Sometimes the result is a little bit bigger than n
 #undef DIV_160_96
 
 
-void mod_simple_96(int96_t * const res, const int96_t q, const int96_t n, const float_v nf
+void mod_simple_96(int96_v * const res, const int96_v q, const int96_v n, const float_v nf
 #if (TRACE_KERNEL > 1)
                   , const uint tid
 #endif
@@ -1057,7 +1057,7 @@ assumes q < 6n (6n includes "optional mul 2")
 {
   __private float_v qf;
   __private uint_v qi, tmp, carry;
-  __private int96_t nn;
+  __private int96_v nn;
 
   qf = CONVERT_FLOAT_V(q.d2);
   qf = qf * 4294967296.0f + CONVERT_FLOAT_V(q.d1);
@@ -1116,11 +1116,11 @@ are "out of range".
   res->d2 = q.d2 - nn.d2 - carry;
 }
 
-__kernel void cl_barrett32_92(__private uint exp, const int96_1t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void cl_barrett32_92(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else
-                           __private int192_1t bb,
+                           __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max64
 #ifdef CHECKS_MODBASECASE
@@ -1134,10 +1134,10 @@ a is precomputed on host ONCE.
 bit_max64 is bit_max - 64!
 */
 {
-  __private int96_1t exp96;
-  __private int96_t a, u, f, k;
-  __private int192_t b, tmp192;
-  __private int96_t tmp96;
+  __private int96_t exp96;
+  __private int96_v a, u, f, k;
+  __private int192_v b, tmp192;
+  __private int96_v tmp96;
   __private float_v ff;
   __private int bit_max65 = bit_max64 - 1; /* used for bit shifting... */
   __private int bit_max65_32 = 32 - bit_max65; /* used for bit shifting... */
@@ -1145,7 +1145,7 @@ bit_max64 is bit_max - 64!
   __private uint_v t, tmp, carry;
 
 #ifdef WA_FOR_CATALYST11_10_BUG
-  __private int192_1t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+  __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
 	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
@@ -1458,11 +1458,11 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
  
 }
-__kernel void cl_barrett32_87(__private uint exp, const int96_1t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void cl_barrett32_87(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else
-                           __private int192_1t bb,
+                           __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max64
 #ifdef CHECKS_MODBASECASE
@@ -1476,10 +1476,10 @@ a is precomputed on host ONCE.
 bit_max64 is bit_max - 64!
 */
 {
-  __private int96_1t exp96;
-  __private int96_t a, u, f, k;
-  __private int192_t b, tmp192;
-  __private int96_t tmp96;
+  __private int96_t exp96;
+  __private int96_v a, u, f, k;
+  __private int192_v b, tmp192;
+  __private int96_v tmp96;
   __private float_v ff;
   __private int bit_max65 = bit_max64 - 1; /* used for bit shifting... */
   __private int bit_max65_32 = 32 - bit_max65; /* used for bit shifting... */
@@ -1487,7 +1487,7 @@ bit_max64 is bit_max - 64!
   __private uint_v t, tmp, carry;
 
 #ifdef WA_FOR_CATALYST11_10_BUG
-  __private int192_1t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+  __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
 	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
@@ -1779,11 +1779,11 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
  
 }
-__kernel void cl_barrett32_88(__private uint exp, const int96_1t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void cl_barrett32_88(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else
-                           __private int192_1t bb,
+                           __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max64
 #ifdef CHECKS_MODBASECASE
@@ -1797,10 +1797,10 @@ a is precomputed on host ONCE.
 bit_max64 is bit_max - 64!
 */
 {
-  __private int96_1t exp96;
-  __private int96_t a, u, f, k;
-  __private int192_t b, tmp192;
-  __private int96_t tmp96;
+  __private int96_t exp96;
+  __private int96_v a, u, f, k;
+  __private int192_v b, tmp192;
+  __private int96_v tmp96;
   __private float_v ff;
   __private int bit_max65 = bit_max64 - 1; /* used for bit shifting... */
   __private int bit_max65_32 = 32 - bit_max65; /* used for bit shifting... */
@@ -1808,7 +1808,7 @@ bit_max64 is bit_max - 64!
   __private uint_v t, tmp, carry;
 
 #ifdef WA_FOR_CATALYST11_10_BUG
-  __private int192_1t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+  __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
 	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
@@ -2097,11 +2097,11 @@ Precalculated here since it is the same for all steps in the following loop */
  
 }
 
-__kernel void cl_barrett32_79(__private uint exp, const int96_1t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void cl_barrett32_79(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else
-                           __private int192_1t bb,
+                           __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max64
 #ifdef CHECKS_MODBASECASE
@@ -2113,16 +2113,16 @@ shiftcount is used for precomputing without mod
 a is precomputed on host ONCE.
 */
 {
-  __private int96_1t exp96;
-  __private int96_t a, u, f, k;
-  __private int192_t tmp192, b;
-  __private int96_t tmp96;
+  __private int96_t exp96;
+  __private int96_v a, u, f, k;
+  __private int192_v tmp192, b;
+  __private int96_v tmp96;
   __private float_v ff;
   __private uint tid;
   __private uint_v t, tmp, carry;
 
 #ifdef WA_FOR_CATALYST11_10_BUG
-  __private int192_1t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+  __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
 	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
@@ -2417,11 +2417,11 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 }
 
-__kernel void cl_barrett32_76(__private uint exp, const int96_1t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void cl_barrett32_76(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else
-                           __private int192_1t bb,
+                           __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max64
 #ifdef CHECKS_MODBASECASE
@@ -2433,16 +2433,16 @@ shiftcount is used for precomputing without mod
 a is precomputed on host ONCE.
 */
 {
-  __private int96_1t exp96;
-  __private int96_t a, u, f, k;
-  __private int192_t tmp192, b;
-  __private int96_t tmp96;
+  __private int96_t exp96;
+  __private int96_v a, u, f, k;
+  __private int192_v tmp192, b;
+  __private int96_v tmp96;
   __private float_v ff;
   __private uint tid;
   __private uint_v t, tmp, carry;
 
 #ifdef WA_FOR_CATALYST11_10_BUG
-  __private int192_1t bb={0, 0, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+  __private int192_t bb={0, 0, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
 	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
@@ -2763,11 +2763,11 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_b(sf)
 #endif
 }
-__kernel void cl_barrett32_77(__private uint exp, const int96_1t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void cl_barrett32_77(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else
-                           __private int192_1t bb,
+                           __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max64
 #ifdef CHECKS_MODBASECASE
@@ -2779,16 +2779,16 @@ shiftcount is used for precomputing without mod
 a is precomputed on host ONCE.
 */
 {
-  __private int96_1t exp96;
-  __private int96_t a, u, f, k;
-  __private int192_t tmp192, b;
-  __private int96_t tmp96;
+  __private int96_t exp96;
+  __private int96_v a, u, f, k;
+  __private int192_v tmp192, b;
+  __private int96_v tmp96;
   __private float_v ff;
   __private uint tid;
   __private uint_v t, tmp, carry;
 
 #ifdef WA_FOR_CATALYST11_10_BUG
-  __private int192_1t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+  __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
 	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
@@ -3060,11 +3060,11 @@ Precalculated here since it is the same for all steps in the following loop */
 }
 
 // a copy of the 79-bit barrett for testing the effect of (not) sieving
-__kernel void cl_barrett32_79_ns(__private uint exp, const int96_1t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void cl_barrett32_79_ns(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else
-                           __private int192_1t bb,
+                           __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max64
 #ifdef CHECKS_MODBASECASE
@@ -3076,16 +3076,16 @@ shiftcount is used for precomputing without mod
 a is precomputed on host ONCE.
 */
 {
-  __private int96_1t exp96;
-  __private int96_t a, u, f, k;
-  __private int192_t tmp192, b;
-  __private int96_t tmp96;
+  __private int96_t exp96;
+  __private int96_v a, u, f, k;
+  __private int192_v tmp192, b;
+  __private int96_v tmp96;
   __private float_v ff;
   __private uint tid;
   __private uint_v t, tmp, carry;
 
 #ifdef WA_FOR_CATALYST11_10_BUG
-  __private int192_1t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+  __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
 	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;

@@ -27,17 +27,17 @@ Version 0.13
 
 /* 96bit (3x 32bit) integer
 D= d0 + d1*(2^32) + d2*(2^64) */
-typedef struct _int96_1t
+typedef struct _int96_t
 {
   uint d0,d1,d2;
-}int96_1t;
+}int96_t;
 
 /* 192bit (6x 32bit) integer
 D=d0 + d1*(2^32) + d2*(2^64) + ... */
-typedef struct _int192_1t
+typedef struct _int192_t
 {
   uint d0,d1,d2,d3,d4,d5;
-}int192_1t;
+}int192_t;
 
 /* 72bit (3x 24bit) integer
 D=d0 + d1*(2^24) + d2*(2^48) */
@@ -90,15 +90,15 @@ typedef struct _int144_v
   uint d0,d1,d2,d3,d4,d5;
 }int144_v;
 
-typedef struct _int96_t
+typedef struct _int96_v
 {
   uint d0,d1,d2;
-}int96_t;
+}int96_v;
 
-typedef struct _int192_t
+typedef struct _int192_v
 {
   uint d0,d1,d2,d3,d4,d5;
-}int192_t;
+}int192_v;
 
 typedef struct _int75_v
 {
@@ -141,15 +141,15 @@ typedef struct _int144_v
   CONC(uint,BARRETT_VECTOR_SIZE) d0,d1,d2,d3,d4,d5;
 }int144_v;
 
-typedef struct _int96_t
+typedef struct _int96_v
 {
   CONC(uint,BARRETT_VECTOR_SIZE) d0,d1,d2;
-}int96_t;
+}int96_v;
 
-typedef struct _int192_t
+typedef struct _int192_v
 {
   CONC(uint,BARRETT_VECTOR_SIZE) d0,d1,d2,d3,d4,d5;
-}int192_t;
+}int192_v;
 
 typedef struct _int75_v
 {

@@ -180,16 +180,16 @@ __inline static int bump_mod_p (int i, int inc, int p)
 
 // Inline to OR one bit into the shared memory array
 
-__inline static void bitOr (uchar *locsieve, uint bclr)
+__inline static void bitOr (__local uchar *locsieve, uint bclr)
 {
-#define locsieve8	((uchar *) locsieve)
-#define locsieve8v	((volatile uchar *) locsieve)
-#define locsieve32	((uint *) locsieve)
-#define locsieve32v	((volatile uint *) locsieve)
+#define locsieve8	((__local uchar *) locsieve)
+#define locsieve8v	((__local volatile uchar *) locsieve)
+#define locsieve32	((__local uint *) locsieve)
+#define locsieve32v	((__local volatile uint *) locsieve)
 	locsieve8[bclr >> 3] |= 1 << (bclr & 7);
 }
 
-__inline static void bitOrSometimesIffy (uchar *locsieve, uint bclr)
+__inline static void bitOrSometimesIffy (__local uchar *locsieve, uint bclr)
 {
 	uint	bytenum = bclr >> 3;
 	uchar	mask = 1 << (bclr & 7);
@@ -220,17 +220,17 @@ __inline static void bitOrSometimesIffy (uchar *locsieve, uint bclr)
 	be done for each prime prior to sieving to figure out the first bit to clear.
 */
 
-__kernel static void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__global uchar *big_bit_array_dev, __global uchar *pinfo_dev, uint maxp)
+__kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__global uchar *big_bit_array_dev, __global uchar *pinfo_dev, uint maxp)
 {
 	__local uchar locsieve[block_size_in_bytes];
 	uint block_start = get_group_id(0) * block_size;
 	uint i, j, p, pinv, bclr;
 
-#define big_bit_array32	((uint *) big_bit_array_dev)
-#define locsieve32	((uint *) locsieve)
-#define locsieve64	((ulong *) locsieve)
-#define pinfo16		((ushort *) pinfo_dev)
-#define pinfo32		((uint *) pinfo_dev)
+#define big_bit_array32	((__global uint *) big_bit_array_dev)
+#define locsieve32	((__local uint *) locsieve)
+#define locsieve64	((__local ulong *) locsieve)
+#define pinfo16		((__global ushort *) pinfo_dev)
+#define pinfo32		((__global uint *) pinfo_dev)
 
 // Sieve using all 8 bits of each shared memory byte.
 // This is more complicated code than using the whole byte as a flag
@@ -1082,7 +1082,7 @@ unsigned int modularinverse (uint n, uint orig_d)
 
 // Calculate the modular inverses used in computing initial bit-to-clear values
 
-__kernel static void __attribute__((work_group_size_hint(256, 1, 1))) CalcModularInverses (uint exponent, __global int *calc_info)
+__kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcModularInverses (uint exponent, __global int *calc_info)
 {
 	uint	index;		// Index for prime and modinv data in calc_info
 	uint	prime;		// The prime to work on
@@ -1113,7 +1113,7 @@ __kernel static void __attribute__((work_group_size_hint(256, 1, 1))) CalcModula
 
 // Calculate the initial bit-to-clear values
 
-__kernel static void __attribute__((work_group_size_hint(256, 1, 1))) CalcBitToClear (uint exponent, int96 k_base, __global int *calc_info, __global uchar *pinfo_dev)
+__kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcBitToClear (uint exponent, int96_t k_base, __global int *calc_info, __global uchar *pinfo_dev)
 {
 	uint	index;		// Index for prime and modinv data in calc_info
 	uint	mask;		// Mask that tells us what bits must be preserved in pinfo_dev when setting bit-to-clear

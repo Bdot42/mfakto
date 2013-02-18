@@ -172,10 +172,10 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 )
 {
   __private uint i,f, tid;
-  int180_v resv = {{0}};
+  int180_v resv = {{0,0,0,0}};
   int90_v a, as, b, r, m;
   tid = get_global_id(0);
-  float_v ff = 1.0;
+  float_v ff = 1.0f;
 
 
 //  barrier(CLK_GLOBAL_MEM_FENCE);
