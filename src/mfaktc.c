@@ -20,8 +20,9 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #ifndef _MSC_VER
-#include <unistd.h>
-#include <sched.h>
+  #include <unistd.h>
+  #define _GNU_SOURCE
+  #include <sched.h>
 #endif
 #include <string.h>
 #include <errno.h>
@@ -418,7 +419,7 @@ other return value
   unsigned long long int k_min, k_max, k_range, tmp;
   unsigned int f_hi, f_med, f_low;
   struct timeval timer;
-  time_t time_last_checkpoint, time_add_file_check;
+  time_t time_last_checkpoint, time_add_file_check=0;
   int factorsfound = 0, numfactors = 0, restart = 0, do_checkpoint = mystuff->checkpoints;
 
   int retval = 0, add_file_exists = 0;
@@ -638,7 +639,7 @@ k_max and k_min are used as 64bit temporary integers here...
         
         f_low  &= 0x00FFFFFF;
       }
-      else if ((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15) || (use_kernel == MG88))
+      else if (((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15)) || (use_kernel == MG88))
       {
         // 30 bits per reported result int
         f_hi  <<= 4;
