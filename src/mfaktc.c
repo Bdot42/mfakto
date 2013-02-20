@@ -1194,13 +1194,16 @@ int main(int argc, char **argv)
 
         mystuff.bit_max_stage = mystuff.bit_max_assignment;
 
-        mystuff.sieve_primes_upper_limit = sieve_sieve_primes_max(mystuff.exponent, mystuff.sieve_primes_max);
-        if(mystuff.sieve_primes > mystuff.sieve_primes_upper_limit)
+        if (mystuff.gpu_sieving == 0)
         {
-          mystuff.sieve_primes = mystuff.sieve_primes_upper_limit;
-          printf("WARNING: SievePrimes is too big for the current assignment, lowering to %u\n", mystuff.sieve_primes_upper_limit);
-          printf("         It is not allowed to sieve primes which are equal or bigger than the \n");
-          printf("         exponent itself!\n");
+          mystuff.sieve_primes_upper_limit = sieve_sieve_primes_max(mystuff.exponent, mystuff.sieve_primes_max);
+          if(mystuff.sieve_primes > mystuff.sieve_primes_upper_limit)
+          {
+            mystuff.sieve_primes = mystuff.sieve_primes_upper_limit;
+            printf("WARNING: SievePrimes is too big for the current assignment, lowering to %u\n", mystuff.sieve_primes_upper_limit);
+            printf("         It is not allowed to sieve primes which are equal or bigger than the \n");
+            printf("         exponent itself!\n");
+          }
         }
         if(mystuff.stages == 1)
         {

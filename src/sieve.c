@@ -563,7 +563,7 @@ b) ktab is full */
 unsigned int sieve_sieve_primes_max(unsigned int exp, unsigned int sieve_max)
 /* returns min(max_global, number of primes below exp) */
 {
-  while((primes[sieve_max-1] >= exp) && (sieve_max > 0)) sieve_max--;
+  while((sieve_max > 0) && (primes[sieve_max-1] >= exp)) sieve_max--;
 
   return sieve_max;
 }
