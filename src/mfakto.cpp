@@ -178,20 +178,22 @@ int init_CLstreams(void)
     gpusieve_init(&mystuff, context);
 
     // now already set the fix parameters for the GPU sieve kernels
+    // CL_CALC_MOD_INV
+    // CalcModularInverses<<<primes_per_thread+1, threadsPerBlock>>>(mystuff->exponent, (int *)mystuff->d_calc_bit_to_clear_info);
+
+    status = clSetKernelArg(kernel_info[CL_CALC_MOD_INV].kernel,
+                      1,
+                      sizeof(cl_mem),
+                      (void *)&mystuff.d_calc_bit_to_clear_info);
+    if(status != CL_SUCCESS)
+	  {
+		  std::cout<<"Error " << status << ": Setting kernel argument. (d_calc_bit_to_clear_info)\n";
+		  return 1;
+	  }
+
     // CL_CALC_BIT_TO_CLEAR
 	  // CalcBitToClear<<<primes_per_thread+1, threadsPerBlock>>>(mystuff->exponent, k_base, (int *)mystuff->d_calc_bit_to_clear_info, (cl_uchar *)mystuff->d_sieve_info);
 
-
-    status = clSetKernelArg(kernel_info[CL_CALC_BIT_TO_CLEAR].kernel,
-                      0,
-                      sizeof(cl_uint),
-                      (void *)&mystuff.exponent);
-    if(status != CL_SUCCESS)
-	  {
-		  std::cout<<"Error " << status << ": Setting kernel argument. (exponent)\n";
-		  return 1;
-	  }
-    // param 1 (k_base) is variable - can't bind it now
     status = clSetKernelArg(kernel_info[CL_CALC_BIT_TO_CLEAR].kernel,
                       2,
                       sizeof(cl_mem),
@@ -208,27 +210,6 @@ int init_CLstreams(void)
     if(status != CL_SUCCESS)
 	  {
 		  std::cout<<"Error " << status << ": Setting kernel argument. (d_sieve_info)\n";
-		  return 1;
-	  }
-
-    // CL_CALC_MOD_INV
-    // CalcModularInverses<<<primes_per_thread+1, threadsPerBlock>>>(mystuff->exponent, (int *)mystuff->d_calc_bit_to_clear_info);
-    status = clSetKernelArg(kernel_info[CL_CALC_MOD_INV].kernel,
-                      0,
-                      sizeof(cl_uint),
-                      (void *)&mystuff.exponent);
-    if(status != CL_SUCCESS)
-	  {
-		  std::cout<<"Error " << status << ": Setting kernel argument. (exponent)\n";
-		  return 1;
-	  }
-    status = clSetKernelArg(kernel_info[CL_CALC_MOD_INV].kernel,
-                      1,
-                      sizeof(cl_mem),
-                      (void *)&mystuff.d_calc_bit_to_clear_info);
-    if(status != CL_SUCCESS)
-	  {
-		  std::cout<<"Error " << status << ": Setting kernel argument. (d_calc_bit_to_clear_info)\n";
 		  return 1;
 	  }
 
@@ -847,62 +828,68 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
   return status;
 }
 
-/* Run the count_sieve kernel to count the surviving FCs
+#ifdef __cplusplus
+}
+#endif
+
+
+/* error callback function - not used right now */
+void  CL_CALLBACK CL_error_cb(const char *errinfo,
+  	const void  *private_info,
+  	size_t  cb,
+  	void  *user_data)
+{
+  std::cerr << "Error callback: " << errinfo << std::endl;
+}
+
+/* Run the CalcModularInverses kernel
+__kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcModularInverses (uint exponent, __global int *calc_info)
+
    numblocks and localThreads: correspond to cuda's numblocks and threadsPerBlock,
-   device_block_counts:   the result, one uint per workgroup (block)
-   device_big_bit_array:  the sieve array, resides only on the GPU (except for debugging)
    run_event:             can be used to synchronize the following copy-to-host of the
                           block_counts. But for now the kernel is run synchronously, so this
                           is not needed.
 */
-cl_int run_calc_mod_inv(cl_uint numblocks, cl_uint localThreads,
-                   cl_mem device_block_counts, cl_mem device_big_bit_array,
-                   cl_event *run_event)
+cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_event)
 {
   cl_int status;
-  static cl_uint first_run=1;
   size_t globalThreads = numblocks * localThreads;
 
+#ifdef DETAILED_INFO
+    printf("run_calc_mod_inv: %d x %d = %d threads, exp=%d\n",
+        (int) numblocks, (int) localThreads, (int) globalThreads, mystuff.exponent);
+#endif
 
-  if (first_run)
-  {
-    // set all the kernel parameters that don't change
-    first_run=0;
-    status = clSetKernelArg(kernel_info[CL_CALC_MOD_INV].kernel,
+  status = clSetKernelArg(kernel_info[CL_CALC_MOD_INV].kernel,
                     0,
-                    sizeof(cl_mem),
-                    (void *)&device_block_counts);
-    if(status != CL_SUCCESS)
-	  {
-		  std::cerr<<"Error " << status << ": Setting kernel argument. (device_block_counts)\n";
-		  return 1;
-	  }
-    status = clSetKernelArg(kernel_info[CL_CALC_MOD_INV].kernel,
-                    1,
-                    sizeof(cl_mem),
-                    (void *)&device_big_bit_array);
-    if(status != CL_SUCCESS)
-	  {
-		  std::cerr<<"Error " << status << ": Setting kernel argument. (device_big_bit_array)\n";
-		  return 1;
-	  }
-  }
+                    sizeof(cl_uint),
+                    (void *)&mystuff.exponent);
+  if(status != CL_SUCCESS)
+	{
+	  std::cout<<"Error " << status << ": Setting kernel argument. (exponent)\n";
+	  return 1;
+	}
+
+#ifdef CL_PERFORMANCE_INFO
+  if (run_event == NULL) run_event = &mystuff.copy_events[0]; // When checking performance, we need an event to monitor.
+#endif
+
   status = clEnqueueNDRangeKernel(QUEUE,
                  kernel_info[CL_CALC_MOD_INV].kernel,
                  1,
                  NULL,
                  &globalThreads,
-                 (size_t *)&localThreads,
+                 &localThreads,
                  0,
-                 NULL, // wait for the primes write to finish
+                 NULL,
                  run_event);
   if(status != CL_SUCCESS) 
 	{ 
 		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)" << "\n";
 		return 1;
 	}
-  clFinish(QUEUE);
 #ifdef CL_PERFORMANCE_INFO
+  clFinish(QUEUE);
               cl_ulong startTime=0;
               cl_ulong endTime=1000;
               /* Get kernel profiling info */
@@ -926,68 +913,66 @@ cl_int run_calc_mod_inv(cl_uint numblocks, cl_uint localThreads,
 		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
                 return RET_ERROR;
               }
-              printf("counted in %2.2f ms (%3.2f M/s)\n", (endTime - startTime)/1e6, double(globalThreads) *1e3/ (endTime - startTime));
+              printf("CalcModularInverses in %2.2f us (%3.2f M/s)\n", (endTime - startTime)/1e3, double(globalThreads) *1e3/ (endTime - startTime));
+              clReleaseEvent(mystuff.copy_events[0]); // dont use run_events - if it was passed in, it will still be needed. Ignore errors here, as we may have used a different event
+#endif
+
+#ifdef DETAILED_INFO
+    // get mystuff.d_calc_bit_to_clear_info and print it
+	cl_uint rowinfo_size = MAX_PRIMES_PER_THREAD*4 * sizeof (cl_uint) + mystuff.gpu_sieve_primes * 8;
+
+  status = clEnqueueReadBuffer(QUEUE,     // only for tracing/verification - not needed later.
+                mystuff.d_calc_bit_to_clear_info,
+                CL_TRUE,
+                0,
+                rowinfo_size,
+                mystuff.h_calc_bit_to_clear_info,
+                0,
+                NULL,
+                NULL);
+    
+  if(status != CL_SUCCESS) 
+	{ 
+    std::cout << "Error " << status << ": clEnqueueReadBuffer d_calc_bit_to_clear_info failed. (clEnqueueReadBuffer)\n";
+		return 1;
+  }
+
+  printArray("h_calc_bit_to_clear_info", mystuff.h_calc_bit_to_clear_info, rowinfo_size/sizeof(int));
 #endif
 
   return status;
 }
 
+/* Run the CalcBitToClear kernel
+__kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcBitToClear (uint exponent, ulong k_base, __global int *calc_info, __global uchar *pinfo_dev)
 
-#ifdef __cplusplus
-}
-#endif
-
-
-/* error callback function - not used right now */
-void  CL_CALLBACK CL_error_cb(const char *errinfo,
-  	const void  *private_info,
-  	size_t  cb,
-  	void  *user_data)
+   numblocks and localThreads: correspond to cuda's numblocks and threadsPerBlock,
+   run_event:                  can be used to synchronize the following calls.
+   k_min:                      starting k for the calculation (passed to the kernel as k_base)
+*/
+cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *run_event, cl_ulong k_min)
 {
-  std::cerr << "Error callback: " << errinfo << std::endl;
-}
-
-int run_calc_bit_to_clear(cl_uint exp, cl_ulong k_min, cl_ulong num_threads)
-{
-  /* __kernel void mfakto_cl_sieve_init(__private uint exp,
-                                   __private ulong k_base,
-                                   __constant uint *primes,        // primes used for sieving, start with primes[0]=13
-                                   __global  uint *next_multiple,  // out-array of k-offsets when the corresponding prime divides the factor candidate
-                                   __private uint vector_size)     // not yet used
-  */
+  static int last_exponent = 0;
   cl_int   status;
-  size_t   globalThreads[2];
-  size_t   localThreads[2];
-  size_t   total_threads;
-
-  if (num_threads > deviceinfo.maxThreadsPerBlock)
-  {
-    globalThreads[0] = deviceinfo.maxThreadsPerBlock;
-    globalThreads[1] = num_threads/deviceinfo.maxThreadsPerBlock;
-    total_threads = globalThreads[0]*globalThreads[1];
-  }
-  else
-  {
-    total_threads = num_threads - num_threads % 64;   // should be "workgroup preferred multiple", for now 64
-    globalThreads[0] = total_threads;
-    globalThreads[1] = 1;
-  }
-  localThreads[0] = globalThreads[0];
-  localThreads[1] = 1;
+  size_t   globalThreads = numblocks * localThreads;
 
 #ifdef DETAILED_INFO
-    printf("run_sieve_init: %d primes -> %d x %d = %d threads, exp=%d, k_min=%llu\n",
-        (int) num_threads, (int) globalThreads[0], (int) globalThreads[1], (int) total_threads, exp, (long long unsigned int) k_min);
+    printf("run_calc_bit_to_clear: %d x %d = %d threads, exp=%d, k_min=%llu\n",
+        (int) numblocks, (int) localThreads, (int) globalThreads, mystuff.exponent, (long long unsigned int) k_min);
 #endif
 
-  status = clSetKernelArg(kernel_info[CL_CALC_BIT_TO_CLEAR].kernel,
+  if (last_exponent != mystuff.exponent) // only copy the exponent if it changed
+  {
+    last_exponent = mystuff.exponent;
+    status = clSetKernelArg(kernel_info[CL_CALC_BIT_TO_CLEAR].kernel,
                     0,
                     sizeof(cl_uint),
-                    (void *)&exp);
-  if(status != CL_SUCCESS)
-	{
-		std::cout<<"Error " << status << ": Setting kernel argument. (exp)\n";
-		return 1;
+                    (void *)&mystuff.exponent);
+    if(status != CL_SUCCESS)
+  	{
+  		std::cout<<"Error " << status << ": Setting kernel argument. (exp)\n";
+    	return 1;
+    }
 	}
   status = clSetKernelArg(kernel_info[CL_CALC_BIT_TO_CLEAR].kernel,
                     1,
@@ -998,74 +983,33 @@ int run_calc_bit_to_clear(cl_uint exp, cl_ulong k_min, cl_ulong num_threads)
 		std::cout<<"Error " << status << ": Setting kernel argument. (k_min)\n";
 		return 1;
 	}
-  // params 2-4 are set during init_CLstreams, after loading the kernel.
+
+#ifdef CL_PERFORMANCE_INFO
+  if (run_event == NULL) run_event = &mystuff.copy_events[0];  // When checking performance, we need an event to monitor.
+#endif
 
   status = clEnqueueNDRangeKernel(QUEUE,
                  kernel_info[CL_CALC_BIT_TO_CLEAR].kernel,
-                 2,
+                 1,
                  NULL,
-                 globalThreads,
-                 localThreads,
+                 &globalThreads,
+                 &localThreads,
                  0,
                  NULL,
-                 &mystuff.copy_events[0]);
+                 run_event);
   if(status != CL_SUCCESS) 
 	{ 
 		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)\n";
 		return 1;
 	}
-  clFinish(QUEUE);
-
-  cl_int event_status;
-  status = clGetEventInfo(mystuff.copy_events[0],
-                         CL_EVENT_COMMAND_EXECUTION_STATUS,
-                         sizeof(cl_int),
-                         &event_status,
-                         NULL);
-  if(status != CL_SUCCESS) 
-	{ 
-		std::cerr<< "Error " << status << ": Querying kernel status(clGetEventInfo)\n";
-		return 1;
-	}
-  std::cout << "sieve init exec status: " << event_status << "\n";
-  new_class = 1;
-
-  //#ifdef DETAILED_INFO
-  status = clEnqueueReadBuffer(QUEUE,     // only for tracing/verification - not needed later.
-                mystuff.d_sieve_info,
-                CL_TRUE,
-                0,
-                total_threads * sizeof(cl_uint),
-                mystuff.h_sieve_info,
-                1,
-                &mystuff.copy_events[0],
-                NULL);
-    
-  if(status != CL_SUCCESS) 
-	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer mult failed. (clEnqueueReadBuffer)\n";
-		return 1;
-  }
-  status = clGetEventInfo(mystuff.copy_events[0],
-                         CL_EVENT_COMMAND_EXECUTION_STATUS,
-                         sizeof(cl_int),
-                         &event_status,
-                         NULL);
-  if(status != CL_SUCCESS) 
-	{ 
-		std::cerr<< "Error " << status << ": Querying kernel status(clGetEventInfo)\n";
-		return 1;
-	}
-  std::cout << "sieve init exec status: " << event_status << "\n";
-
-  printArray("mult", mystuff.h_sieve_info, (cl_uint)total_threads);
-  //#endif
+  clFlush(QUEUE);
 
 #ifdef CL_PERFORMANCE_INFO
+  clFinish(QUEUE);
   cl_ulong startTime=0;
   cl_ulong endTime=1000;
   /* Get kernel profiling info */
-  status = clGetEventProfilingInfo(mystuff.copy_events[0],
+  status = clGetEventProfilingInfo(*run_event,
                                 CL_PROFILING_COMMAND_START,
                                 sizeof(cl_ulong),
                                 &startTime,
@@ -1075,7 +1019,7 @@ int run_calc_bit_to_clear(cl_uint exp, cl_ulong k_min, cl_ulong num_threads)
 		std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
     return RET_ERROR;
   }
-  status = clGetEventProfilingInfo(mystuff.copy_events[0],
+  status = clGetEventProfilingInfo(*run_event,
                                 CL_PROFILING_COMMAND_END,
                                 sizeof(cl_ulong),
                                 &endTime,
@@ -1085,149 +1029,115 @@ int run_calc_bit_to_clear(cl_uint exp, cl_ulong k_min, cl_ulong num_threads)
 		std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
     return RET_ERROR;
   }
-  std::cout<< "sieve init for " << total_threads << " primes: " << (endTime - startTime)/1e3 << " us ("
-                       << total_threads * 1e9 / (endTime - startTime) << " threads/s)\n" ;
+  std::cout<< "CalcBitToClear " << globalThreads << " primes: " << (endTime - startTime)/1e3 << " us ("
+                       << globalThreads * 1e3 / (endTime - startTime) << " M/s)\n" ;
+  clReleaseEvent(mystuff.copy_events[0]); // ignore errors: we may have use a different event
 #endif
-  status = clReleaseEvent(mystuff.copy_events[0]);
+
+#ifdef DETAILED_INFO
+    // get mystuff.d_calc_bit_to_clear_info and d_sieve_info and print it
+	cl_uint info_size = MAX_PRIMES_PER_THREAD*4 * sizeof (cl_uint) + mystuff.gpu_sieve_primes * 8;
+  status = clEnqueueReadBuffer(QUEUE,     // only for tracing/verification - not needed later.
+                mystuff.d_calc_bit_to_clear_info,
+                CL_TRUE,
+                0,
+                info_size,
+                mystuff.h_calc_bit_to_clear_info,
+                0,
+                NULL,
+                NULL);
+    
   if(status != CL_SUCCESS) 
-  { 
-		std::cerr<< "Error " << status << ": Release copy event object. (clReleaseEvent)\n";
-		return RET_ERROR;
+	{ 
+    std::cout << "Error " << status << ": clEnqueueReadBuffer d_calc_bit_to_clear_info failed. (clEnqueueReadBuffer)\n";
+		return 1;
   }
+
+  printArray("h_calc_bit_to_clear_info", mystuff.h_calc_bit_to_clear_info, info_size/sizeof(int));
+
+  info_size = mystuff.sieve_size;
+
+  status = clEnqueueReadBuffer(QUEUE,     // only for tracing/verification - not needed later.
+                mystuff.d_sieve_info,
+                CL_TRUE,
+                0,
+                info_size,
+                mystuff.h_sieve_info,
+                0,
+                NULL,
+                NULL);
+    
+  if(status != CL_SUCCESS) 
+	{ 
+    std::cout << "Error " << status << ": clEnqueueReadBuffer h_sieve_info failed. (clEnqueueReadBuffer)\n";
+		return 1;
+  }
+
+  printArray("h_sieve_info", mystuff.h_sieve_info, info_size/sizeof(int));
+  //#endif
+#endif
 
 	return 0;
 }
 
-int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
+/* Run the SegSieve kernel
+__kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__global uchar *big_bit_array_dev, __global uchar *pinfo_dev, uint maxp)
+
+   numblocks and localThreads: correspond to cuda's numblocks and threadsPerBlock,
+   run_event:                  can be used to synchronize the following calls.
+   maxp:                       numer of primes per thread (passed to the kernel as maxp)
+*/
+cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event, cl_uint maxp)
 {
-  /*
-  __kernel void mfakto_cl_sieve(__global   uint *k_tab,         // out-array, the sieved factor-candidates
-                              __constant uint *primes,        // primes used for sieving, indexed by tid
-                              __global   uint *next_multiple, // in_array, for each prime, the next k when the fc is a multiple of prime[tid]
-                              __private  uint k_tab_size,     // number of entries in the sieve
-                              __global   uint *savestate      // to remember where to continue
-                             )
-  */
-  cl_int   status;
-  size_t   globalThreads[2];
-  size_t   localThreads[2];
-  size_t   total_threads;
-  // PERF: get globalThreads from sieve_init
-  if (num_threads > deviceinfo.maxThreadsPerBlock)
-  {
-    globalThreads[0] = deviceinfo.maxThreadsPerBlock;
-    globalThreads[1] = num_threads/deviceinfo.maxThreadsPerBlock;
-    total_threads = globalThreads[0]*globalThreads[1];
-  }
-  else
-  {
-    total_threads = num_threads - num_threads % 64;   // should be "workgroup preferred multiple", for now 64
-    globalThreads[0] = total_threads;
-    globalThreads[1] = 1;
-  }
-  localThreads[0] = globalThreads[0];
-  localThreads[1] = 1;
+  static int last_maxp = 0;
+  cl_int     status;
+  size_t     globalThreads = numblocks * localThreads;
 
 #ifdef DETAILED_INFO
-    printf("run_sieve: %d primes -> %d x %d = %d threads, exp=%d, k_min=%llu\n", 
-        (int) num_threads, (int) globalThreads[0], (int) globalThreads[1], (int) total_threads, exp, (long long unsigned int) *k_min);
+    printf("run_cl_sieve: %d x %d = %d threads, exp=%d, maxp=%d\n",
+        (int) numblocks, (int) localThreads, (int) globalThreads, mystuff.exponent, maxp);
 #endif
 
-  status = clSetKernelArg(kernel_info[CL_SIEVE].kernel, 
-                    3, 
-                    sizeof(cl_uint), 
-                    (void *)&mystuff.threads_per_grid);  // in-parm by-value, max # of output-FCs for that run
-  if(status != CL_SUCCESS) 
-	{ 
-		std::cout<<"Error " << status << ": Setting kernel argument. (threads_per_grid)\n";
-		return 1;
+  if (last_maxp != maxp) // only copy primes-per-thread if it changed
+  {
+    last_maxp = maxp;
+    status = clSetKernelArg(kernel_info[CL_SIEVE].kernel,
+                    2,
+                    sizeof(cl_uint),
+                    (void *)&maxp);
+    if(status != CL_SUCCESS)
+  	{
+  		std::cout<<"Error " << status << ": Setting kernel argument. (exp)\n";
+    	return 1;
+    }
 	}
+
+#ifdef CL_PERFORMANCE_INFO
+  if (run_event == NULL) run_event = &mystuff.copy_events[0];  // When checking performance, we need an event to monitor.
+#endif
 
   status = clEnqueueNDRangeKernel(QUEUE,
                  kernel_info[CL_SIEVE].kernel,
-                 2,
+                 1,
                  NULL,
-                 globalThreads,
-                 localThreads,
+                 &globalThreads,
+                 &localThreads,
                  0,
                  NULL,
-                 &mystuff.copy_events[0]);
+                 run_event);
   if(status != CL_SUCCESS) 
 	{ 
 		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)\n";
 		return 1;
 	}
-  clFinish(QUEUE);
+  clFlush(QUEUE);
 /////////////////////////////////////////////////
-
-  //#ifdef DETAILED_INFO
-  status = clEnqueueReadBuffer(QUEUE,     // only for tracing/verification - not needed later.
-                mystuff.d_ktab[0],
-                CL_TRUE,
-                0,
-                mystuff.threads_per_grid * sizeof(cl_uint),
-                mystuff.h_ktab[0],
-                1,
-                &mystuff.copy_events[0],
-                NULL);
-    
-  if(status != CL_SUCCESS) 
-	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer ktab failed. (clEnqueueReadBuffer)\n";
-		return 1;
-  }
-
-  printArray("ktab", mystuff.h_ktab[0], mystuff.threads_per_grid);
-  //#endif
-
-    //#ifdef DETAILED_INFO
-  status = clEnqueueReadBuffer(QUEUE,    // only for tracing/verification - not needed later.
-                mystuff.d_sieve_info,
-                CL_TRUE,
-                0,
-                total_threads * sizeof(cl_uint),
-                mystuff.h_sieve_info,
-                1,
-                &mystuff.copy_events[0],
-                NULL);
-    
-  if(status != CL_SUCCESS) 
-	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer kmult failed. (clEnqueueReadBuffer)\n";
-		return 1;
-  }
-
-  printArray("mult", mystuff.h_sieve_info, (cl_uint)total_threads);
-  //#endif
-
-  status = clEnqueueReadBuffer(QUEUE,  // only for tracing/verification - not needed later.
-                mystuff.d_bitarray,
-                CL_TRUE,
-                0,
-                4 * sizeof(cl_uint),
-                mystuff.h_bitarray,
-                1,
-                &mystuff.copy_events[0],
-                NULL);
-    
-  if(status != CL_SUCCESS) 
-	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer save failed. (clEnqueueReadBuffer)\n";
-		return 1;
-  }
-
-  *k_min += mystuff.h_bitarray[0];
-  //#ifdef DETAILED_INFO
-  printArray("save", mystuff.h_bitarray, 4);
-  printf("Sieved %d FC's to receive %d. New k_min = %llu.\n",
-      mystuff.h_bitarray[0], mystuff.threads_per_grid, (long long unsigned int) *k_min);
-  //#endif
-
 #ifdef CL_PERFORMANCE_INFO
+  clFinish(QUEUE);
   cl_ulong startTime=0;  // device time in nanosecs
   cl_ulong endTime=1000;
   /* Get kernel profiling info */
-  status = clGetEventProfilingInfo(mystuff.copy_events[0],
+  status = clGetEventProfilingInfo(*run_event,
                                 CL_PROFILING_COMMAND_START,
                                 sizeof(cl_ulong),
                                 &startTime,
@@ -1237,7 +1147,7 @@ int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
 		std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
     return RET_ERROR;
   }
-  status = clGetEventProfilingInfo(mystuff.copy_events[0],
+  status = clGetEventProfilingInfo(*run_event,
                                 CL_PROFILING_COMMAND_END,
                                 sizeof(cl_ulong),
                                 &endTime,
@@ -1247,17 +1157,54 @@ int run_cl_sieve(cl_uint exp, cl_ulong *k_min, cl_ulong num_threads)
 		std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
     return RET_ERROR;
   }
-  std::cout<< "sieve using " << total_threads << " primes: " << (endTime - startTime)/1e6 << " ms ("
-                       << total_threads * 1e9 / (endTime - startTime) << " primes/s)\n" <<
-                       mystuff.threads_per_grid * 1e9 / (endTime - startTime) << " FCs/s output\n";
+  std::cout<< "sieve using " << globalThreads << " threads: " << (endTime - startTime)/1e6 << " ms ("
+                       << globalThreads * 1e3 / (endTime - startTime) << " M/s)\n" <<
+                       mystuff.gpu_sieve_size * 1e3 / (endTime - startTime) << " M/s sieved\n";
+  clReleaseEvent(mystuff.copy_events[0]);
 #endif
-  status = clReleaseEvent(mystuff.copy_events[0]);
+
+#ifdef DETAILED_INFO
+  //mystuff->d_bitarray, (cl_uchar *)mystuff->d_sieve_info
+  cl_uint info_size = mystuff.sieve_size;
+
+  status = clEnqueueReadBuffer(QUEUE,     // only for tracing/verification - not needed later.
+                mystuff.d_sieve_info,
+                CL_TRUE,
+                0,
+                info_size,
+                mystuff.h_sieve_info,
+                0,
+                NULL,
+                NULL);
+    
   if(status != CL_SUCCESS) 
-  { 
-		std::cerr<< "Error " << status << ": Release copy event object. (clReleaseEvent)\n";
-		return RET_ERROR;
+	{ 
+    std::cout << "Error " << status << ": clEnqueueReadBuffer h_sieve_info failed. (clEnqueueReadBuffer)\n";
+		return 1;
   }
 
+  printArray("h_sieve_info", mystuff.h_sieve_info, info_size/sizeof(int));
+
+  info_size = mystuff.gpu_sieve_size / 8;
+
+  status = clEnqueueReadBuffer(QUEUE,     // only for tracing/verification - not needed later.
+                mystuff.d_bitarray,
+                CL_TRUE,
+                0,
+                info_size,
+                mystuff.h_bitarray,
+                0,
+                NULL,
+                NULL);
+    
+  if(status != CL_SUCCESS) 
+	{ 
+    std::cout << "Error " << status << ": clEnqueueReadBuffer h_sieve_info failed. (clEnqueueReadBuffer)\n";
+		return 1;
+  }
+
+  printArray("h_bitarray", mystuff.h_bitarray, info_size/sizeof(int));
+#endif
 
 	return 0;
 }
@@ -1871,6 +1818,11 @@ int cleanup_CL(void)
 	}
   free(mystuff.h_modbasecase_debug);
 #endif
+  if (mystuff.gpu_sieving == 1)
+  {
+    gpusieve_free (&mystuff);
+  }
+
   status = clReleaseCommandQueue(commandQueue);
   if(status != CL_SUCCESS)
 	{
@@ -1920,7 +1872,13 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   
   int h_ktab_index = 0;
   unsigned long long int k_min_grid[NUM_STREAMS_MAX];	// k_min_grid[N] contains the k_min for h_ktab[N], only valid for preprocessed h_ktab[]s
-  
+
+  if (mystuff->gpu_sieving == 1)
+  {
+    // If we haven't initialized the GPU sieving code for this Mersenne exponent, do so now.
+    gpusieve_init_exponent (mystuff);
+  }
+
   timer_init(&timer);
 #ifdef DETAILED_INFO
   printf("tf_class_opencl(%u, %d, %llu, %llu, ...)\n",
@@ -1936,7 +1894,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   memset(mystuff->h_RES,0,32 * sizeof(int));
   status = clEnqueueWriteBuffer(QUEUE,
                 mystuff->d_RES,
-                CL_FALSE,          // Don't wait for completion; it's fast to copy 128 bytes ;-)
+                CL_TRUE,          // Wait for completion; it's fast to copy 128 bytes ;-)
                 0,
                 32 * sizeof(int),
                 mystuff->h_RES,
@@ -2036,19 +1994,6 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   // combine for more efficient passing of parameters
   cl_ulong4 b_preinit4 = {{b_preinit_lo, b_preinit_mid, b_preinit_hi, (cl_ulong)shiftcount-1}};
 
-  status = clWaitForEvents(1, &mystuff->copy_events[0]); // copying RES finished?
-  if(status != CL_SUCCESS) 
-  { 
-	  std::cerr<< "Error " << status << ": Waiting for copy RES call to finish. (clWaitForEvents)\n";
-	  return RET_ERROR;
-  }
-  status = clReleaseEvent(mystuff->copy_events[0]);
-  if(status != CL_SUCCESS) 
-  { 
-		std::cerr<< "Error " << status << ": Release copy RES object. (clReleaseEvent)\n";
-		return RET_ERROR;
-  }
-
   while((k_min <= k_max) || (running > 0))
   {
     h_ktab_index = count % mystuff->num_streams;
@@ -2060,12 +2005,12 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
       printf(" STREAM_SCHEDULE: preprocessing on h_ktab[%d]\n", h_ktab_index);
 #endif
     
-      if (use_kernel == _95BIT_64_OpenCL) // no sieving for this kernel
+      if (use_kernel == _95BIT_64_OpenCL) // no sieving at all for this kernel
       {
         k_min_grid[h_ktab_index] = k_min;
         k_diff = NUM_CLASSES * (unsigned long long int) mystuff->threads_per_grid;
       }
-      else
+      else if (mystuff->gpu_sieving == 0)
       {
         sieve_candidates(mystuff->threads_per_grid, mystuff->h_ktab[h_ktab_index], mystuff->sieve_primes);
         k_diff=mystuff->h_ktab[h_ktab_index][mystuff->threads_per_grid-1]+1;
@@ -2074,9 +2019,6 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
         k_min_grid[h_ktab_index] = k_min;
         /* try upload ktab*/
 
-        /// test test test
-        // mystuff->h_ktab[h_ktab_index][0]=0;
-        /////////
         status = clEnqueueWriteBuffer(QUEUE,
                   mystuff->d_ktab[h_ktab_index],
                   CL_FALSE,
@@ -2092,6 +2034,12 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 	          std::cout<<"Error " << status << ": Copying h_ktab(clEnqueueWriteBuffer)\n";
             return RET_ERROR; // # factors found ;-)
 	      }
+      }
+      else
+      {
+        // GPU sieving
+        gpusieve (mystuff, k_max-k_min);
+        k_diff = NUM_CLASSES * (unsigned long long int) mystuff->gpu_sieve_size;
       }
 	    mystuff->stream_status[h_ktab_index] = PREPARED;
       running++;

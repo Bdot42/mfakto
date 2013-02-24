@@ -100,6 +100,8 @@ TODO
 +DONE+ - worktodo.add
 +DONE+ - GHz-days/day in the "total time ..." line
 +DONE+ - better estimate of compute cores (CPU!)
++DONE+ - 6x15bit based on mul24
++DONE+ - test a montgomery kernel (1x64-bit, 6x15-bit: ~10% slower than barretts)
 - transfer 4 FCs in 3 ints
 - dynamic sieve size, adjusting as SievePrimes changes
 - AllowSleep
@@ -109,7 +111,6 @@ TODO
 - retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
 - serialize memory access for vector kernels
 - div/mul-modulo for 96 bits
-- 6x15bit based on mul24
 - mu = 2^(bitlevel+1) / FC on host?
 - kernel trace more specific (bitmask)
 - error handling: RES[0] -= 100; save up to 3 ints in RES; only in single-vec
@@ -128,7 +129,6 @@ TODO
 - SDK 2.6: __attribute__((always_inline)), set environment variable GPU_ASYNC_MEM_COPY=2, Profiler
 - Auto-adjust VectorSize per kernel
 - dummy kernel for performance testing of sieve and transfer
-- test a montgomery kernel
 - _getcwd / _chdir to avoid problems on temporary loss of the device
 - _kbhit + getchar to allow config changes at runtime
 - __kernel __attribute__((vec_type_hint(uintn)))
@@ -136,4 +136,4 @@ TODO
 - test __attribute__((vec_type_hint(UINT_V)))
 - test clEnqueueMapBuffer/clEnqueueUnmapMemObject instead of clEnqueueWriteBuffer
 - test speed without event sync (just in-order-queue)
-
+- CPU-sieving: multiple queues

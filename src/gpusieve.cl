@@ -1113,7 +1113,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcModularInvers
 
 // Calculate the initial bit-to-clear values
 
-__kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcBitToClear (uint exponent, int96_t k_base, __global int *calc_info, __global uchar *pinfo_dev)
+__kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcBitToClear (uint exponent, ulong k_base, __global int *calc_info, __global uchar *pinfo_dev)
 {
 	uint	index;		// Index for prime and modinv data in calc_info
 	uint	mask;		// Mask that tells us what bits must be preserved in pinfo_dev when setting bit-to-clear
@@ -1158,7 +1158,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcBitToClear (u
 	ulong	k_mod_p;	// k_base mod prime
 	ulong	factor_mod_p;	// factor mod prime
 
-	k_mod_p = (((ulong) k_base.d1 << 32) + k_base.d0) % prime;
+	k_mod_p = k_base % prime;
 	factor_mod_p = (2 * k_mod_p * exponent + 1) % prime;
 	bit_to_clear = ((ulong) prime - factor_mod_p) * modinv % prime;
 

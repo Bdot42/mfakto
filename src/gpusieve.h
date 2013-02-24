@@ -20,10 +20,11 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 extern "C" {
 #endif
 
-void gpusieve_init (mystuff_t *mystuff, cl_context context);
+int gpusieve_init (mystuff_t *mystuff, cl_context context);
 void gpusieve_init_exponent (mystuff_t *mystuff);
 void gpusieve_init_class (mystuff_t *mystuff, unsigned long long k_min);
 void gpusieve (mystuff_t *mystuff, unsigned long long num_k_remaining);
+int gpusieve_free (mystuff_t *mystuff);
 
 #ifdef __cplusplus
 }
