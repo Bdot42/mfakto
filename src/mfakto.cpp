@@ -45,7 +45,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 // valgrind tests
-#define malloc(x) calloc(x,1)
+// #define malloc(x) calloc(x,1)
 
 /* Global variables */
 
@@ -2042,7 +2042,44 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
       {
         // GPU sieving
         gpusieve (mystuff, k_max-k_min);
-        k_diff = NUM_CLASSES * (unsigned long long int) mystuff->gpu_sieve_size;
+        k_diff = NUM_CLASSES * (cl_ulong) mystuff->gpu_sieve_size;
+
+        // as a first test, copy the sieve bits into the usual sieve array - later, the kernels will do that.
+        cl_uint ind=0, pos=0, *dest=mystuff->h_ktab[h_ktab_index];
+        for (i=0; i<mystuff->gpu_sieve_size/256 && ind < mystuff->threads_per_grid; i++)
+        {
+          cl_uint ii, word=mystuff->h_bitarray[i];
+          for (ii=0; ii<32 && word>0 && ind < mystuff->threads_per_grid; ii++)
+          {
+            if (word & 0x80000000) dest[ind++]=pos;
+            pos++;
+            word <<= 1;
+          }
+          pos+= 32-ii;
+        }
+#ifdef DETAILED_INFO
+        printf("bit-extract: %u/%u words processed, %u(max %u) bits set.\n", i, mystuff->gpu_sieve_size/256, ind, mystuff->threads_per_grid);
+#endif
+
+        k_min_grid[h_ktab_index] = k_min;
+        /* try upload ktab*/
+
+        status = clEnqueueWriteBuffer(QUEUE,
+                  mystuff->d_ktab[h_ktab_index],
+                  CL_FALSE,
+                  0,
+                  size,
+                  mystuff->h_ktab[h_ktab_index],
+                  0,
+                  NULL,
+                  &mystuff->copy_events[h_ktab_index]);
+
+        if(status != CL_SUCCESS) 
+	      {  
+	          std::cout<<"Error " << status << ": Copying h_ktab(clEnqueueWriteBuffer)\n";
+            return RET_ERROR; // # factors found ;-)
+	      }
+
       }
 	    mystuff->stream_status[h_ktab_index] = PREPARED;
       running++;

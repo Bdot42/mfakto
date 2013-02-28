@@ -39,7 +39,7 @@ See (http://www.mersenneforum.org/showthread.php?t=11900) for Ben's initial work
 #include "mfakto.h"
 
 // valgrind tests
-#define malloc(x) calloc(x,1)
+// #define malloc(x) calloc(x,1)
 
 extern  cl_command_queue    QUEUE;
 
