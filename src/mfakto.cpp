@@ -44,6 +44,9 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #define localtime _localtime64
 #endif
 
+// valgrind tests
+#define malloc(x) calloc(x,1)
+
 /* Global variables */
 
 cl_uint             new_class=1;
@@ -100,9 +103,9 @@ void printArray(const char * Name, const cl_uint * Data, const cl_uint len)
     o = printf("%s (%d): ", Name, len);
     for(i = 0; i < len && o < 960; i++) // limit to ~ 4 lines (~ 4x80 chars)
     {
-        o += printf("%d ", Data[i]);
+        o += printf("%u ", Data[i]);
     }
-    if (i<len) printf("... %d %d %d\n", Data[len-3], Data[len-2], Data[len-1]); else printf("\n");
+    if (i<len) printf("... %u %u %u\n", Data[len-3], Data[len-2], Data[len-1]); else printf("\n");
     i=len-1;
     while ((Data[i--] == 0) && i>0) c++;
     if (c > 0) printf("<%d x 0 at the end>\n", c);
@@ -2142,31 +2145,31 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               cl_ulong startTime=0;
               cl_ulong endTime=1000;
               /* Get kernel profiling info */
-              if (use_kernel != _95BIT_64_OpenCL) 
+              if (use_kernel != _95BIT_64_OpenCL && !mystuff->gpu_sieving) 
               {
-              status = clGetEventProfilingInfo(mystuff->copy_events[i],
-                                CL_PROFILING_COMMAND_START,
-                                sizeof(cl_ulong),
-                                &startTime,
-                                0);
-              if(status != CL_SUCCESS)
- 	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
-                return RET_ERROR;
+                status = clGetEventProfilingInfo(mystuff->copy_events[i],
+                                  CL_PROFILING_COMMAND_START,
+                                  sizeof(cl_ulong),
+                                  &startTime,
+                                  0);
+                if(status != CL_SUCCESS)
+                { 
+                  std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+                  return RET_ERROR;
+                }
+                status = clGetEventProfilingInfo(mystuff->copy_events[i],
+                                  CL_PROFILING_COMMAND_END,
+                                  sizeof(cl_ulong),
+                                  &endTime,
+                                  0);
+                if(status != CL_SUCCESS) 
+                { 
+                  std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+                  return RET_ERROR;
+                }
+                printf("%d FCs copied in %2.2f ms (%4.2f MB/s), ", mystuff->threads_per_grid, (endTime - startTime)/1e6,
+                        size * 1e3 / (endTime - startTime) );
               }
-              status = clGetEventProfilingInfo(mystuff->copy_events[i],
-                                CL_PROFILING_COMMAND_END,
-                                sizeof(cl_ulong),
-                                &endTime,
-                                0);
-              if(status != CL_SUCCESS) 
- 	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
-                return RET_ERROR;
-              }
-              }
-              printf("%d FCs copied in %2.2f ms (%4.2f MB/s), ", mystuff->threads_per_grid, (endTime - startTime)/1e6,
-                       size * 1e3 / (endTime - startTime) );
               status = clGetEventProfilingInfo(mystuff->exec_events[i],
                                 CL_PROFILING_COMMAND_START,
                                 sizeof(cl_ulong),
@@ -2195,7 +2198,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 		         	  std::cerr<< "Error " << status << ": Release exec event object. (clReleaseEvent)\n";
 		         	  return RET_ERROR;
     	       	}
-              if (use_kernel != _95BIT_64_OpenCL) status = clReleaseEvent(mystuff->copy_events[i]);
+              if (use_kernel != _95BIT_64_OpenCL && !mystuff->gpu_sieving)  status = clReleaseEvent(mystuff->copy_events[i]);
              	if(status != CL_SUCCESS) 
            	  { 
 		          	std::cerr<< "Error " << status << ": Release copy event object. (clReleaseEvent)\n";

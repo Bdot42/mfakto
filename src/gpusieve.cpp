@@ -38,6 +38,9 @@ See (http://www.mersenneforum.org/showthread.php?t=11900) for Ben's initial work
 #include "compatibility.h"
 #include "mfakto.h"
 
+// valgrind tests
+#define malloc(x) calloc(x,1)
+
 extern  cl_command_queue    QUEUE;
 
 #define gen_pinv(p)	(0xFFFFFFFF / (p) + 1)
@@ -177,7 +180,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
     return 1;
   }
   mystuff->d_bitarray = clCreateBuffer(context, 
-                         CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+                         CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
                          mystuff->gpu_sieve_size / 8,
                          mystuff->h_bitarray, 
                         &status);
@@ -501,7 +504,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 	// checkCudaErrors (cudaMemcpy (mystuff->d_sieve_info, pinfo, pinfo_size, cudaMemcpyHostToDevice));
   mystuff->h_sieve_info = (cl_uint *) pinfo;
   mystuff->d_sieve_info = clCreateBuffer(context,
-                        CL_MEM_READ_WRITE |  CL_MEM_COPY_HOST_PTR,
+                        CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
                         pinfo_size,
                         pinfo,
                         &status);
@@ -522,7 +525,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 
   mystuff->h_calc_bit_to_clear_info = (cl_uint *) rowinfo;
   mystuff->d_calc_bit_to_clear_info = clCreateBuffer(context, 
-                          CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                          CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
                           rowinfo_size,
                           rowinfo,
                           &status);
