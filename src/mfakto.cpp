@@ -44,8 +44,8 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #define localtime _localtime64
 #endif
 
-// valgrind tests
-// #define malloc(x) calloc(x,1)
+// valgrind tests complain a lot about the blocks being uninitialized
+#define malloc(x) calloc(x,1)
 
 /* Global variables */
 
@@ -96,19 +96,49 @@ kernel_info_t       kernel_info[] = {
 };
 
 
-void printArray(const char * Name, const cl_uint * Data, const cl_uint len)
+void printArray(const char * Name, const cl_uint * Data, const cl_uint len, cl_uint hex=0)
 {
-    cl_uint i, o, c=0;
+  cl_uint i, o, c, val;
+  char *fmt1, *fmt2, *fmt3, *fmt4;
 
-    o = printf("%s (%d): ", Name, len);
-    for(i = 0; i < len && o < 960; i++) // limit to ~ 4 lines (~ 4x80 chars)
+  if (hex)
+  {
+    fmt1="<%u x %#x> ";
+    fmt2="%#x ";
+    fmt3="... %#x %#x %#x\n";
+    fmt4="<%d x 0x0 at the end>\n";
+  }
+  else
+  {
+    fmt1="<%u x %u> ";
+    fmt2="%u ";
+    fmt3="... %u %u %u\n";
+    fmt4="<%d x 0 at the end>\n";
+  }
+  o = printf("%s (%d): ", Name, len);
+  for(i = 0; i < len-2 && o < 960;) // no more than 1000 chars
+  {
+    if (Data[i] == Data[i+1] && Data[i] == Data[i+2])
     {
-        o += printf("%u ", Data[i]);
+      val = Data[i];
+      c = 0;
+      while(Data[i] == val && i < len)
+      {
+        ++c; ++i;
+      }
+      o += printf(fmt1, c, val);
+      continue;
     }
-    if (i<len) printf("... %u %u %u\n", Data[len-3], Data[len-2], Data[len-1]); else printf("\n");
-    i=len-1;
-    while ((Data[i--] == 0) && i>0) c++;
-    if (c > 0) printf("<%d x 0 at the end>\n", c);
+    else
+    {
+      o += printf(fmt2, Data[i]);
+    }
+    ++i;
+  }
+  if (i<len) printf(fmt3, Data[len-3], Data[len-2], Data[len-1]); else printf("\n");
+  i=len-1; c=0;
+  while ((Data[i--] == 0) && i>0) c++;
+  if (c > 0) printf(fmt4, c);
 }
 
 /* allocate memory buffer arrays, test a small kernel */
@@ -859,7 +889,7 @@ cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_ev
   size_t globalThreads = numblocks * localThreads;
 
 #ifdef DETAILED_INFO
-    printf("run_calc_mod_inv: %d x %d = %d threads, exp=%d\n",
+    printf("run_calc_mod_inv: %d x %d = %d threads, exp=%u\n",
         (int) numblocks, (int) localThreads, (int) globalThreads, mystuff.exponent);
 #endif
 
@@ -940,7 +970,7 @@ cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_ev
 		return 1;
   }
 
-  printArray("h_calc_bit_to_clear_info", mystuff.h_calc_bit_to_clear_info, rowinfo_size/sizeof(int));
+  printArray("h_calc_bit_to_clear_info", mystuff.h_calc_bit_to_clear_info, rowinfo_size/sizeof(int), 1);
 #endif
 
   return status;
@@ -960,7 +990,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
   size_t   globalThreads = numblocks * localThreads;
 
 #ifdef DETAILED_INFO
-    printf("run_calc_bit_to_clear: %d x %d = %d threads, exp=%d, k_min=%llu\n",
+    printf("run_calc_bit_to_clear: %d x %d = %d threads, exp=%u, k_min=%llu\n",
         (int) numblocks, (int) localThreads, (int) globalThreads, mystuff.exponent, (long long unsigned int) k_min);
 #endif
 
@@ -1056,7 +1086,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
 		return 1;
   }
 
-  printArray("h_calc_bit_to_clear_info", mystuff.h_calc_bit_to_clear_info, info_size/sizeof(int));
+  printArray("h_calc_bit_to_clear_info", mystuff.h_calc_bit_to_clear_info, info_size/sizeof(int), 1);
 
   info_size = mystuff.sieve_size;
 
@@ -1076,7 +1106,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
 		return 1;
   }
 
-  printArray("h_sieve_info", mystuff.h_sieve_info, info_size/sizeof(int));
+  printArray("h_sieve_info", mystuff.h_sieve_info, info_size/sizeof(int), 1);
   //#endif
 #endif
 
@@ -1092,12 +1122,12 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 */
 cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event, cl_uint maxp)
 {
-  static int last_maxp = 0;
-  cl_int     status;
-  size_t     globalThreads = numblocks * localThreads;
+  static cl_uint last_maxp = 0xFFFFFFFF;  // 0 is a bad choice for "uninitialized" as it can happen for small GPUSievePrimes
+  cl_int         status;
+  size_t         globalThreads = numblocks * localThreads;
 
 #ifdef DETAILED_INFO
-    printf("run_cl_sieve: %d x %d = %d threads, exp=%d, maxp=%d\n",
+    printf("run_cl_sieve: %d x %d = %d threads, exp=%u, maxp=%d\n",
         (int) numblocks, (int) localThreads, (int) globalThreads, mystuff.exponent, maxp);
 #endif
 
@@ -1161,8 +1191,8 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
     return RET_ERROR;
   }
   std::cout<< "sieve using " << globalThreads << " threads: " << (endTime - startTime)/1e6 << " ms ("
-                       << globalThreads * 1e3 / (endTime - startTime) << " M/s)\n" <<
-                       mystuff.gpu_sieve_size * 1e3 / (endTime - startTime) << " M/s sieved\n";
+                       << globalThreads * 1e3 / (endTime - startTime) << " M/s), " <<
+                       mystuff.gpu_sieve_size * 1e3 / (endTime - startTime) << " M FCs/s sieved\n";
   clReleaseEvent(mystuff.copy_events[0]);
 #endif
 
@@ -1186,7 +1216,7 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
 		return 1;
   }
 
-  printArray("h_sieve_info", mystuff.h_sieve_info, info_size/sizeof(int));
+  printArray("h_sieve_info", mystuff.h_sieve_info, info_size/sizeof(int), 1);
 
   info_size = mystuff.gpu_sieve_size / 8;
 
@@ -1206,7 +1236,7 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
 		return 1;
   }
 
-  printArray("h_bitarray", mystuff.h_bitarray, info_size/sizeof(int));
+  printArray("h_bitarray", mystuff.h_bitarray, info_size/sizeof(int), 1);
 #endif
 
 	return 0;
@@ -2046,16 +2076,33 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 
         // as a first test, copy the sieve bits into the usual sieve array - later, the kernels will do that.
         cl_uint ind=0, pos=0, *dest=mystuff->h_ktab[h_ktab_index];
+        cl_ulong rem;
         for (i=0; i<mystuff->gpu_sieve_size/256 && ind < mystuff->threads_per_grid; i++)
         {
           cl_uint ii, word=mystuff->h_bitarray[i];
-          for (ii=0; ii<32 && word>0 && ind < mystuff->threads_per_grid; ii++)
+          for (ii=0; ii<32 && ind < mystuff->threads_per_grid; ii++)
           {
-            if (word & 0x80000000) dest[ind++]=pos;
+            if (word & 0x80000000)
+            {
+              dest[ind++]=pos;
+              // simple verify ...
+              for (cl_uint p=13; p<1963; p+=2)
+              {
+                rem=k_min%p + (pos*NUM_CLASSES)%p;
+                rem=(2*mystuff->exponent*rem +1)%p;
+                if (rem == 0)
+                {
+                  //if (p>512)
+                  {
+                    printf("pos %d: %d ==> f divisible by %d\n", ind, pos, p);
+                  }
+                  break;
+                }
+              }
+            }
             pos++;
             word <<= 1;
           }
-          pos+= 32-ii;
         }
 #ifdef DETAILED_INFO
         printf("bit-extract: %u/%u words processed, %u(max %u) bits set.\n", i, mystuff->gpu_sieve_size/256, ind, mystuff->threads_per_grid);
@@ -2085,7 +2132,11 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
       running++;
 #ifdef DETAILED_INFO
       printf("k-base: %llu, ", (long long unsigned int) k_min);
-      printArray("ktab", mystuff->h_ktab[h_ktab_index], mystuff->threads_per_grid);
+      printArray("ktab", mystuff->h_ktab[h_ktab_index], mystuff->threads_per_grid, 0);
+      // test a few of them for correctness
+      for (i=0; i<20; i++)
+      {
+      }
 #endif
 
       count++;
@@ -2354,7 +2405,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   }
 
 #ifdef DETAILED_INFO
-  printArray("RES", mystuff->h_RES, 32);
+  printArray("RES", mystuff->h_RES, 32, 0);
 #endif
 
 #ifdef CHECKS_MODBASECASE
@@ -2375,7 +2426,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   }
 
 #ifdef DETAILED_INFO
-  printArray("modbasecase_debug", mystuff->h_modbasecase_debug, 32);
+  printArray("modbasecase_debug", mystuff->h_modbasecase_debug, 32, 0);
 #endif
   for(i=0;i<32;i++)if(mystuff->h_modbasecase_debug[i] != 0)printf("h_modbasecase_debug[%2d] = %u\n", i, mystuff->h_modbasecase_debug[i]);
 #endif
@@ -2997,7 +3048,7 @@ void CL_test(cl_int devnumber)
 
 
     printf("%d threads: ", (int)(g_size[0]*g_size[1]));
-    printArray("RES", mystuff.h_RES, 32);
+    printArray("RES", mystuff.h_RES, 32, 0);
 
   }
 }

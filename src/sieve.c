@@ -26,7 +26,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "timer.h"
 #endif
 #include "compatibility.h"
-void printArray(const char * Name, const unsigned int * Data, const unsigned int len);
+void printArray(const char * Name, const unsigned int * Data, const unsigned int len, unsigned int hex);
 
 /* yeah, I like global variables :) */
 static unsigned int *sieve, *sieve_base, *primes;
@@ -135,7 +135,7 @@ void sieve_init(unsigned int ssize, unsigned int max_global)
     j+=2;
   }
   #ifdef DETAILED_INFO
-    printArray("primes", primes, max_global);
+    printArray("primes", primes, max_global, 0);
   #endif
 
   for(i=0;i<256;i++)

@@ -38,8 +38,8 @@ See (http://www.mersenneforum.org/showthread.php?t=11900) for Ben's initial work
 #include "compatibility.h"
 #include "mfakto.h"
 
-// valgrind tests
-// #define malloc(x) calloc(x,1)
+// valgrind tests complain a lot about the blocks being uninitialized
+#define malloc(x) calloc(x,1)
 
 extern  cl_command_queue    QUEUE;
 
@@ -191,7 +191,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 	}
 
 #ifdef DETAILED_INFO
-  printf("gpusieve_init: d/h_bitarray (size %d) allocated\n", mystuff->gpu_sieve_size / 8);
+  printf("gpusieve_init: d/h_bitarray (%d bytes) allocated\n", mystuff->gpu_sieve_size / 8);
 #endif
 
 #ifdef RAW_GPU_BENCH
@@ -280,7 +280,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 	}
 
 #ifdef DETAILED_INFO
-  printf("gpusieve_init: h_sieve_info (size %d) allocated\n", mystuff->gpu_sieve_primes * 12);
+  printf("gpusieve_init: h_sieve_info (%d bytes) allocated\n", mystuff->gpu_sieve_primes * 12);
 #endif
 
 	// allocate memory for info that describes each row of 256 primes AND has the primes and modular inverses
@@ -292,7 +292,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 	}
 
 #ifdef DETAILED_INFO
-  printf("gpusieve_init: h_calc_bit_to_clear_info (size %d) allocated\n", rowinfo_size);
+  printf("gpusieve_init: h_calc_bit_to_clear_info (%d bytes) allocated\n", rowinfo_size);
 #endif
 
 	// In first section (very small primes) we only store a 16-bit value of the bit to clear which is computed later
@@ -502,7 +502,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 	// Allocate and copy the device compressed prime sieving info
 	// checkCudaErrors (cudaMalloc ((void**) &mystuff->d_sieve_info, pinfo_size));
 	// checkCudaErrors (cudaMemcpy (mystuff->d_sieve_info, pinfo, pinfo_size, cudaMemcpyHostToDevice));
-  mystuff->h_sieve_info = (cl_uint *) pinfo;
+  mystuff->h_sieve_info = (cl_uint *) realloc(pinfo, pinfo_size);
   mystuff->d_sieve_info = clCreateBuffer(context,
                         CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
                         pinfo_size,
@@ -515,7 +515,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 	}
 
 #ifdef DETAILED_INFO
-  printf("gpusieve_init: d_sieve_info (size %d) allocated\n", pinfo_size);
+  printf("gpusieve_init: d_sieve_info (%d bytes) allocated\n", pinfo_size);
   mystuff->sieve_size = pinfo_size;  // misuse of sieve_size, but for debugging we need to remember how many bytes we used
 #endif
 
@@ -536,7 +536,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 	}
 
 #ifdef DETAILED_INFO
-  printf("gpusieve_init: d_calc_bit_to_clear_info (size %d) allocated\n", rowinfo_size);
+  printf("gpusieve_init: d_calc_bit_to_clear_info (%d bytes) allocated\n", rowinfo_size);
 #endif
 
 	// Free allocated memory

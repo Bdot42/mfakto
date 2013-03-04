@@ -203,7 +203,7 @@ The actual configuration is done in mfaktc.ini.
 The following lines define the min, default and max value.
 */
 
-#define GPU_SIEVE_PRIMES_MIN                 0 /* GPU sieving code can work (inefficiently) with very small numbers */
+#define GPU_SIEVE_PRIMES_MIN                54 /* GPU sieving code can work (inefficiently) with very small numbers */
 #define GPU_SIEVE_PRIMES_DEFAULT         82486 /* Default is to sieve primes up to about 1.05M */
 #define GPU_SIEVE_PRIMES_MAX           1075000 /* Primes to 16,729,793.  GPU sieve should be able to handle up to 16M. */
 
