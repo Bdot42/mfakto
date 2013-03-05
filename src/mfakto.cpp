@@ -2082,13 +2082,13 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
           cl_uint ii, word=mystuff->h_bitarray[i];
           for (ii=0; ii<32 && ind < mystuff->threads_per_grid; ii++)
           {
-            if (word & 0x80000000)
+            if (word & 1)
             {
               dest[ind++]=pos;
               // simple verify ...
-              for (cl_uint p=13; p<1963; p+=2)
+/*              for (cl_uint p=13; p<mystuff->gpu_sieve_primes; p+=2)
               {
-                rem=k_min%p + (pos*NUM_CLASSES)%p;
+                rem=k_min%p + ((cl_ulong)pos*NUM_CLASSES)%p;
                 rem=(2*mystuff->exponent*rem +1)%p;
                 if (rem == 0)
                 {
@@ -2098,10 +2098,11 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
                   }
                   break;
                 }
-              }
+              }*/
             }
             pos++;
-            word <<= 1;
+            if (pos > 0xffffff) printf("Overflow!\n");
+            word >>= 1;
           }
         }
 #ifdef DETAILED_INFO

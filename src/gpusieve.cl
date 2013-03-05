@@ -27,7 +27,7 @@ See (http://www.mersenneforum.org/showthread.php?t=11900) for Ben's initial work
 
 */
 // TRACE_SIEVE_KERNEL: higher is more trace, 0-5 currently used
-#define TRACE_SIEVE_KERNEL 2
+#define TRACE_SIEVE_KERNEL 0
 
 // If above tracing is on, only the thread with the ID below will trace
 #define TRACE_SIEVE_TID 0
