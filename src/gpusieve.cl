@@ -33,10 +33,7 @@ See (http://www.mersenneforum.org/showthread.php?t=11900) for Ben's initial work
 #define TRACE_SIEVE_TID 0
 
 // diagnostics
-#define GWDEBUG
-
-// required
-#define MORE_CLASSES
+//#define GWDEBUG
 
 // Primes up to 16M can be handled by this many "rows" of 256 primes
 #define MAX_PRIMES_PER_THREAD	4224

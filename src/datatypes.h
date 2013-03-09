@@ -22,6 +22,12 @@ Version 0.13
 
 /* all datatypes used by the various kernels */
 
+#ifdef MORE_CLASSES
+#define NUM_CLASSES 4620u
+#else
+#define NUM_CLASSES 420u
+#endif
+
 #define CON2(a,b) a##b
 #define CONC(a,b) CON2(a,b)
 
@@ -79,7 +85,7 @@ typedef struct _int180_t
 
 ////////// vectorized data types /////////////
 
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
 typedef struct _int72_v
 {
   uint d0,d1,d2;
@@ -133,57 +139,57 @@ typedef struct _int180_v
 #else
 typedef struct _int72_v
 {
-  CONC(uint,BARRETT_VECTOR_SIZE) d0,d1,d2;
+  CONC(uint,VECTOR_SIZE) d0,d1,d2;
 }int72_v;
 
 typedef struct _int144_v
 {
-  CONC(uint,BARRETT_VECTOR_SIZE) d0,d1,d2,d3,d4,d5;
+  CONC(uint,VECTOR_SIZE) d0,d1,d2,d3,d4,d5;
 }int144_v;
 
 typedef struct _int96_v
 {
-  CONC(uint,BARRETT_VECTOR_SIZE) d0,d1,d2;
+  CONC(uint,VECTOR_SIZE) d0,d1,d2;
 }int96_v;
 
 typedef struct _int192_v
 {
-  CONC(uint,BARRETT_VECTOR_SIZE) d0,d1,d2,d3,d4,d5;
+  CONC(uint,VECTOR_SIZE) d0,d1,d2,d3,d4,d5;
 }int192_v;
 
 typedef struct _int75_v
 {
-  CONC(uint,BARRETT_VECTOR_SIZE) d0,d1,d2,d3,d4;
+  CONC(uint,VECTOR_SIZE) d0,d1,d2,d3,d4;
 }int75_v;
 
 typedef struct _int150_v
 {
-  CONC(uint,BARRETT_VECTOR_SIZE) d0,d1,d2,d3,d4,d5,d6,d7,d8,d9;
+  CONC(uint,VECTOR_SIZE) d0,d1,d2,d3,d4,d5,d6,d7,d8,d9;
 }int150_v;
 
 typedef struct _int90_v
 {
-  CONC(uint,BARRETT_VECTOR_SIZE) d0,d1,d2,d3,d4,d5;
+  CONC(uint,VECTOR_SIZE) d0,d1,d2,d3,d4,d5;
 }int90_v;
 
 typedef struct _int180_v
 {
-  CONC(uint,BARRETT_VECTOR_SIZE) d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,da,db;
+  CONC(uint,VECTOR_SIZE) d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,da,db;
 }int180_v;
 
-#define int_v CONC(int,BARRETT_VECTOR_SIZE)
-#define uint_v CONC(uint,BARRETT_VECTOR_SIZE)
-#define ulong_v CONC(ulong,BARRETT_VECTOR_SIZE)
-#define float_v CONC(float,BARRETT_VECTOR_SIZE)
+#define int_v CONC(int,VECTOR_SIZE)
+#define uint_v CONC(uint,VECTOR_SIZE)
+#define ulong_v CONC(ulong,VECTOR_SIZE)
+#define float_v CONC(float,VECTOR_SIZE)
 // _rtp/_rtz are MUCH slower than the default (at least on HD5770)
-//#define CONVERT_FLOAT_V CONC(CONC(convert_float,BARRETT_VECTOR_SIZE), _rtz)
-//#define CONVERT_FLOAT_RTP_V CONC(CONC(convert_float,BARRETT_VECTOR_SIZE), _rtp)
-//#define CONVERT_UINT_V CONC(CONC(convert_uint,BARRETT_VECTOR_SIZE), _rtz)
-#define CONVERT_FLOAT_V CONC(convert_float,BARRETT_VECTOR_SIZE)
-#define CONVERT_FLOAT_RTP_V CONC(convert_float,BARRETT_VECTOR_SIZE)
-#define CONVERT_UINT_V CONC(convert_uint,BARRETT_VECTOR_SIZE)
-#define CONVERT_ULONG_V CONC(convert_ulong,BARRETT_VECTOR_SIZE)
-#define AS_UINT_V CONC(as_uint,BARRETT_VECTOR_SIZE)
+//#define CONVERT_FLOAT_V CONC(CONC(convert_float,VECTOR_SIZE), _rtz)
+//#define CONVERT_FLOAT_RTP_V CONC(CONC(convert_float,VECTOR_SIZE), _rtp)
+//#define CONVERT_UINT_V CONC(CONC(convert_uint,VECTOR_SIZE), _rtz)
+#define CONVERT_FLOAT_V CONC(convert_float,VECTOR_SIZE)
+#define CONVERT_FLOAT_RTP_V CONC(convert_float,VECTOR_SIZE)
+#define CONVERT_UINT_V CONC(convert_uint,VECTOR_SIZE)
+#define CONVERT_ULONG_V CONC(convert_ulong,VECTOR_SIZE)
+#define AS_UINT_V CONC(as_uint,VECTOR_SIZE)
 #endif
 
 

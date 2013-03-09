@@ -128,29 +128,29 @@ bit_max64 is bit_max - 64!
   __private uint tid;
   __private uint_v t;
 
-	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * BARRETT_VECTOR_SIZE;
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
+	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf("cl_mg62: exp=%d, k_base=%x:%x:%x\n",
         exp, k_base.d2, k_base.d1, k_base.d0);
 #endif
 
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   t    = k_tab[tid];
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
   t.w  = k_tab[tid+3];
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -159,7 +159,7 @@ bit_max64 is bit_max - 64!
   t.s5 = k_tab[tid+5];
   t.s6 = k_tab[tid+6];
   t.s7 = k_tab[tid+7];
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -244,7 +244,7 @@ bit_max64 is bit_max - 64!
 //   printf ("result = %llu\n", A);
 
 /* finally check if we found a factor and write the factor to RES[] */
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   if( a==1 )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
@@ -259,19 +259,19 @@ bit_max64 is bit_max - 64!
       RES[tid*3 + 3]=CONVERT_UINT_V(f);
     }
   }
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   EVAL_RES_l(x)
   EVAL_RES_l(y)
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   EVAL_RES_l(x)
   EVAL_RES_l(y)
   EVAL_RES_l(z)
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   EVAL_RES_l(x)
   EVAL_RES_l(y)
   EVAL_RES_l(z)
   EVAL_RES_l(w)
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   EVAL_RES_l(s0)
   EVAL_RES_l(s1)
   EVAL_RES_l(s2)
@@ -280,7 +280,7 @@ bit_max64 is bit_max - 64!
   EVAL_RES_l(s5)
   EVAL_RES_l(s6)
   EVAL_RES_l(s7)
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   EVAL_RES_l(s0)
   EVAL_RES_l(s1)
   EVAL_RES_l(s2)
@@ -657,7 +657,7 @@ bit_max64 is bit_max - 64!
   __private uint_v t, f_inv;
   __private float_v ff;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
   exp75.d2=exp>>29;exp75.d1=(exp>>14)&0x7FFF;exp75.d0=(exp<<1)&0x7FFF;	// exp75 = 2 * exp
 
 #if (TRACE_KERNEL > 1)
@@ -665,21 +665,21 @@ bit_max64 is bit_max - 64!
         exp, exp75.d2, exp75.d1, exp75.d0, k_base.d3, k_base.d2, k_base.d1, k_base.d0);
 #endif
 
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   t    = k_tab[tid];
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
   t.w  = k_tab[tid+3];
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -688,7 +688,7 @@ bit_max64 is bit_max - 64!
   t.s5 = k_tab[tid+5];
   t.s6 = k_tab[tid+6];
   t.s7 = k_tab[tid+7];
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -851,7 +851,7 @@ exp <<= clz(exp); // shift exp to the very left of the 32 bits
 #endif
 
 /* finally check if we found a factor and write the factor to RES[] */
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   if( ((a.d5|a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
   {
 /* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
@@ -863,19 +863,19 @@ exp <<= clz(exp); // shift exp to the very left of the 32 bits
       RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
     }
   }
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   EVAL_RES_90(x)
   EVAL_RES_90(y)
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   EVAL_RES_90(x)
   EVAL_RES_90(y)
   EVAL_RES_90(z)
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   EVAL_RES_90(x)
   EVAL_RES_90(y)
   EVAL_RES_90(z)
   EVAL_RES_90(w)
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   EVAL_RES_90(s0)
   EVAL_RES_90(s1)
   EVAL_RES_90(s2)
@@ -884,7 +884,7 @@ exp <<= clz(exp); // shift exp to the very left of the 32 bits
   EVAL_RES_90(s5)
   EVAL_RES_90(s6)
   EVAL_RES_90(s7)
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   EVAL_RES_90(s0)
   EVAL_RES_90(s1)
   EVAL_RES_90(s2)

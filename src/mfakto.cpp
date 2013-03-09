@@ -620,11 +620,15 @@ int init_CL(int num_streams, cl_int devnumber)
 
   char program_options[150];
   // so far use the same vector size for all kernels ...
-  sprintf(program_options, "-I. -DBARRETT_VECTOR_SIZE=%d -DVECTOR_SIZE=%d -DNUM_CLASSES=%d", mystuff.vectorsize, mystuff.vectorsize, NUM_CLASSES);
+  sprintf(program_options, "-I. -DVECTOR_SIZE=%d", mystuff.vectorsize);
 #ifdef CL_DEBUG
   strcat(program_options, " -g");
 #else
   if (mystuff.gpu_type != GPU_NVIDIA) strcat(program_options, " -O3");
+#endif
+
+#ifdef MORE_CLASSES
+  strcat(program_options, " -DMORE_CLASSES");
 #endif
 
 #ifdef CHECKS_MODBASECASE
@@ -2077,7 +2081,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
         // as a first test, copy the sieve bits into the usual sieve array - later, the kernels will do that.
         cl_uint ind=0, pos=0, *dest=mystuff->h_ktab[h_ktab_index];
         cl_ulong rem;
-        for (i=0; i<mystuff->gpu_sieve_size/256 && ind < mystuff->threads_per_grid; i++)
+        for (i=0; i<mystuff->gpu_sieve_size/32 && ind < mystuff->threads_per_grid; i++)
         {
           cl_uint ii, word=mystuff->h_bitarray[i];
           for (ii=0; ii<32 && ind < mystuff->threads_per_grid; ii++)
@@ -2106,7 +2110,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
           }
         }
 #ifdef DETAILED_INFO
-        printf("bit-extract: %u/%u words processed, %u(max %u) bits set.\n", i, mystuff->gpu_sieve_size/256, ind, mystuff->threads_per_grid);
+        printf("bit-extract: %u/%u words processed, %u(max %u) bits set.\n", i, mystuff->gpu_sieve_size/32, ind, mystuff->threads_per_grid);
 #endif
 
         k_min_grid[h_ktab_index] = k_min;
@@ -2764,7 +2768,7 @@ void CL_test(cl_int devnumber)
 	  std::cerr << "Error " << status << ": clCreateProgramWithSource\n";
 	}
 
-  status = clBuildProgram(program, 1, &devices[devnumber], "-O3 -I. -DBARRETT_VECTOR_SIZE=4 -DVECTOR_SIZE=4", NULL, NULL);
+  status = clBuildProgram(program, 1, &devices[devnumber], "-O3 -I. -DVECTOR_SIZE=4", NULL, NULL);
   { 
       cl_int logstatus;
       char *buildLog = NULL;

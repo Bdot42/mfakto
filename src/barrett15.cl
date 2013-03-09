@@ -784,7 +784,7 @@ a is precomputed on host ONCE.
   // b > 2^60, 8 fields of the uint8 for d4-db, da and db not used in this kernel (only for bit_max > 73)
   __private int150_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
 
   // exp75.d4=0;exp75.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
   exp75.d2=exp>>29;exp75.d1=(exp>>14)&0x7FFF;exp75.d0=(exp<<1)&0x7FFF;	// exp75 = 2 * exp  // PERF: exp.d1=amd_bfe(exp, 15, 14)
@@ -794,21 +794,21 @@ a is precomputed on host ONCE.
         exp, exp75.d2, exp75.d1, exp75.d0, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, bb.d3, bb.d2, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
 #endif
 
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   t    = k_tab[tid];
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
   t.w  = k_tab[tid+3];
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -817,7 +817,7 @@ a is precomputed on host ONCE.
   t.s5 = k_tab[tid+5];
   t.s6 = k_tab[tid+6];
   t.s7 = k_tab[tid+7];
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -1077,7 +1077,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 
 /* finally check if we found a factor and write the factor to RES[] */
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   if( ((a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
   {
 /* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
@@ -1089,19 +1089,19 @@ Precalculated here since it is the same for all steps in the following loop */
       RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
     }
   }
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   EVAL_RES_d(x)
   EVAL_RES_d(y)
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   EVAL_RES_d(x)
   EVAL_RES_d(y)
   EVAL_RES_d(z)
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   EVAL_RES_d(x)
   EVAL_RES_d(y)
   EVAL_RES_d(z)
   EVAL_RES_d(w)
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   EVAL_RES_d(s0)
   EVAL_RES_d(s1)
   EVAL_RES_d(s2)
@@ -1110,7 +1110,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_d(s5)
   EVAL_RES_d(s6)
   EVAL_RES_d(s7)
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   EVAL_RES_d(s0)
   EVAL_RES_d(s1)
   EVAL_RES_d(s2)
@@ -1155,7 +1155,7 @@ a is precomputed on host ONCE.
   // b > 2^60, 8 fields of the uint8 for d4-db, da and db not used in this kernel (only for bit_max > 73)
   __private int150_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
 
   // exp75.d4=0;exp75.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
   exp75.d2=exp>>29;exp75.d1=(exp>>14)&0x7FFF;exp75.d0=(exp<<1)&0x7FFF;	// exp75 = 2 * exp
@@ -1165,21 +1165,21 @@ a is precomputed on host ONCE.
         exp, exp75.d2, exp75.d1, exp75.d0, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, bb.d3, bb.d2, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
 #endif
 
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   t    = k_tab[tid];
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
   t.w  = k_tab[tid+3];
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -1188,7 +1188,7 @@ a is precomputed on host ONCE.
   t.s5 = k_tab[tid+5];
   t.s6 = k_tab[tid+6];
   t.s7 = k_tab[tid+7];
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -1421,7 +1421,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 
 /* finally check if we found a factor and write the factor to RES[] */
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   if( ((a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
   {
 /* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
@@ -1433,19 +1433,19 @@ Precalculated here since it is the same for all steps in the following loop */
       RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
     }
   }
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   EVAL_RES_d(x)
   EVAL_RES_d(y)
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   EVAL_RES_d(x)
   EVAL_RES_d(y)
   EVAL_RES_d(z)
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   EVAL_RES_d(x)
   EVAL_RES_d(y)
   EVAL_RES_d(z)
   EVAL_RES_d(w)
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   EVAL_RES_d(s0)
   EVAL_RES_d(s1)
   EVAL_RES_d(s2)
@@ -1454,7 +1454,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_d(s5)
   EVAL_RES_d(s6)
   EVAL_RES_d(s7)
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   EVAL_RES_d(s0)
   EVAL_RES_d(s1)
   EVAL_RES_d(s2)
@@ -1499,7 +1499,7 @@ a is precomputed on host ONCE.
   // b > 2^60, 8 fields of the uint8 for d4-db, da and db not used in this kernel (only for bit_max > 73)
   __private int150_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
 
   // exp75.d4=0;exp75.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
   exp75.d2=exp>>29;exp75.d1=(exp>>14)&0x7FFF;exp75.d0=(exp<<1)&0x7FFF;	// exp75 = 2 * exp
@@ -1509,21 +1509,21 @@ a is precomputed on host ONCE.
         exp, exp75.d2, exp75.d1, exp75.d0, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, bb.d3, bb.d2, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
 #endif
 
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   t    = k_tab[tid];
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
   t.w  = k_tab[tid+3];
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -1532,7 +1532,7 @@ a is precomputed on host ONCE.
   t.s5 = k_tab[tid+5];
   t.s6 = k_tab[tid+6];
   t.s7 = k_tab[tid+7];
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -1760,7 +1760,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 
 /* finally check if we found a factor and write the factor to RES[] */
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   if( ((a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
   {
 /* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
@@ -1772,19 +1772,19 @@ Precalculated here since it is the same for all steps in the following loop */
       RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
     }
   }
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   EVAL_RES_d(x)
   EVAL_RES_d(y)
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   EVAL_RES_d(x)
   EVAL_RES_d(y)
   EVAL_RES_d(z)
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   EVAL_RES_d(x)
   EVAL_RES_d(y)
   EVAL_RES_d(z)
   EVAL_RES_d(w)
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   EVAL_RES_d(s0)
   EVAL_RES_d(s1)
   EVAL_RES_d(s2)
@@ -1793,7 +1793,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_d(s5)
   EVAL_RES_d(s6)
   EVAL_RES_d(s7)
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   EVAL_RES_d(s0)
   EVAL_RES_d(s1)
   EVAL_RES_d(s2)
@@ -1838,7 +1838,7 @@ a is precomputed on host ONCE.
   // b > 2^60, 8 fields of the uint8 for d4-db, da and db not used in this kernel (only for bit_max > 73)
   __private int150_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
 
   // exp75.d4=0;exp75.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
   exp75.d2=exp>>29;exp75.d1=(exp>>14)&0x7FFF;exp75.d0=(exp<<1)&0x7FFF;	// exp75 = 2 * exp
@@ -1848,21 +1848,21 @@ a is precomputed on host ONCE.
         exp, exp75.d2, exp75.d1, exp75.d0, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, bb.d3, bb.d2, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
 #endif
 
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   t    = k_tab[tid];
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
   t.w  = k_tab[tid+3];
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -1871,7 +1871,7 @@ a is precomputed on host ONCE.
   t.s5 = k_tab[tid+5];
   t.s6 = k_tab[tid+6];
   t.s7 = k_tab[tid+7];
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -2099,7 +2099,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 
 /* finally check if we found a factor and write the factor to RES[] */
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   if( ((a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
   {
 /* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
@@ -2111,19 +2111,19 @@ Precalculated here since it is the same for all steps in the following loop */
       RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
     }
   }
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   EVAL_RES_d(x)
   EVAL_RES_d(y)
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   EVAL_RES_d(x)
   EVAL_RES_d(y)
   EVAL_RES_d(z)
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   EVAL_RES_d(x)
   EVAL_RES_d(y)
   EVAL_RES_d(z)
   EVAL_RES_d(w)
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   EVAL_RES_d(s0)
   EVAL_RES_d(s1)
   EVAL_RES_d(s2)
@@ -2132,7 +2132,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_d(s5)
   EVAL_RES_d(s6)
   EVAL_RES_d(s7)
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   EVAL_RES_d(s0)
   EVAL_RES_d(s1)
   EVAL_RES_d(s2)
@@ -3065,7 +3065,7 @@ a is precomputed on host ONCE.
   // implicitely assume b > 2^60 and use the 8 fields of the uint8 for d4-db
   __private int180_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5, b_in.s6, b_in.s7};
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
 
   // exp90.d4=0;exp90.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
   exp90.d2=exp>>29;exp90.d1=(exp>>14)&0x7FFF;exp90.d0=(exp<<1)&0x7FFF;	// exp90 = 2 * exp
@@ -3075,21 +3075,21 @@ a is precomputed on host ONCE.
         exp, exp90.d2, exp90.d1, exp90.d0, bb.db, bb.da, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
 #endif
 
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   t    = k_tab[tid];
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
   t.w  = k_tab[tid+3];
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -3098,7 +3098,7 @@ a is precomputed on host ONCE.
   t.s5 = k_tab[tid+5];
   t.s6 = k_tab[tid+6];
   t.s7 = k_tab[tid+7];
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -3407,7 +3407,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 
 /* finally check if we found a factor and write the factor to RES[] */
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   if( ((a.d5|a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
   {
 /* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
@@ -3419,19 +3419,19 @@ Precalculated here since it is the same for all steps in the following loop */
       RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
     }
   }
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   EVAL_RES_90(x)
   EVAL_RES_90(y)
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   EVAL_RES_90(x)
   EVAL_RES_90(y)
   EVAL_RES_90(z)
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   EVAL_RES_90(x)
   EVAL_RES_90(y)
   EVAL_RES_90(z)
   EVAL_RES_90(w)
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   EVAL_RES_90(s0)
   EVAL_RES_90(s1)
   EVAL_RES_90(s2)
@@ -3440,7 +3440,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_90(s5)
   EVAL_RES_90(s6)
   EVAL_RES_90(s7)
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   EVAL_RES_90(s0)
   EVAL_RES_90(s1)
   EVAL_RES_90(s2)
@@ -3484,7 +3484,7 @@ a is precomputed on host ONCE.
   // implicitely assume b > 2^60 and use the 8 fields of the uint8 for d4-db
   __private int180_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5, b_in.s6, b_in.s7};
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
 
   // exp90.d4=0;exp90.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
   exp90.d2=exp>>29;exp90.d1=(exp>>14)&0x7FFF;exp90.d0=(exp<<1)&0x7FFF;	// exp90 = 2 * exp
@@ -3494,21 +3494,21 @@ a is precomputed on host ONCE.
         exp, exp90.d2, exp90.d1, exp90.d0, bb.db, bb.da, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
 #endif
 
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   t    = k_tab[tid];
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
   t.w  = k_tab[tid+3];
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -3517,7 +3517,7 @@ a is precomputed on host ONCE.
   t.s5 = k_tab[tid+5];
   t.s6 = k_tab[tid+6];
   t.s7 = k_tab[tid+7];
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -3806,7 +3806,7 @@ Precalculated here since it is the same for all steps in the following loop */
   
 
 /* finally check if we found a factor and write the factor to RES[] */
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   if( ((a.d5|a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
   {
 /* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
@@ -3818,19 +3818,19 @@ Precalculated here since it is the same for all steps in the following loop */
       RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
     }
   }
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   EVAL_RES_90(x)
   EVAL_RES_90(y)
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   EVAL_RES_90(x)
   EVAL_RES_90(y)
   EVAL_RES_90(z)
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   EVAL_RES_90(x)
   EVAL_RES_90(y)
   EVAL_RES_90(z)
   EVAL_RES_90(w)
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   EVAL_RES_90(s0)
   EVAL_RES_90(s1)
   EVAL_RES_90(s2)
@@ -3839,7 +3839,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_90(s5)
   EVAL_RES_90(s6)
   EVAL_RES_90(s7)
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   EVAL_RES_90(s0)
   EVAL_RES_90(s1)
   EVAL_RES_90(s2)
@@ -3884,7 +3884,7 @@ a is precomputed on host ONCE.
   // implicitely assume b > 2^60 and use the 8 fields of the uint8 for d4-db
   __private int180_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5, b_in.s6, b_in.s7};
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * BARRETT_VECTOR_SIZE;
+	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
 
   // exp90.d4=0;exp90.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
   exp90.d2=exp>>29;exp90.d1=(exp>>14)&0x7FFF;exp90.d0=(exp<<1)&0x7FFF;	// exp90 = 2 * exp
@@ -3894,21 +3894,21 @@ a is precomputed on host ONCE.
         exp, exp90.d2, exp90.d1, exp90.d0, bb.db, bb.da, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
 #endif
 
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   t    = k_tab[tid];
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   t.x  = k_tab[tid];
   t.y  = k_tab[tid+1];
   t.z  = k_tab[tid+2];
   t.w  = k_tab[tid+3];
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -3917,7 +3917,7 @@ a is precomputed on host ONCE.
   t.s5 = k_tab[tid+5];
   t.s6 = k_tab[tid+6];
   t.s7 = k_tab[tid+7];
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   t.s0 = k_tab[tid];
   t.s1 = k_tab[tid+1];
   t.s2 = k_tab[tid+2];
@@ -4203,7 +4203,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 
 /* finally check if we found a factor and write the factor to RES[] */
-#if (BARRETT_VECTOR_SIZE == 1)
+#if (VECTOR_SIZE == 1)
   if( ((a.d5|a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
   {
 /* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
@@ -4215,19 +4215,19 @@ Precalculated here since it is the same for all steps in the following loop */
       RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
     }
   }
-#elif (BARRETT_VECTOR_SIZE == 2)
+#elif (VECTOR_SIZE == 2)
   EVAL_RES_90(x)
   EVAL_RES_90(y)
-#elif (BARRETT_VECTOR_SIZE == 3)
+#elif (VECTOR_SIZE == 3)
   EVAL_RES_90(x)
   EVAL_RES_90(y)
   EVAL_RES_90(z)
-#elif (BARRETT_VECTOR_SIZE == 4)
+#elif (VECTOR_SIZE == 4)
   EVAL_RES_90(x)
   EVAL_RES_90(y)
   EVAL_RES_90(z)
   EVAL_RES_90(w)
-#elif (BARRETT_VECTOR_SIZE == 8)
+#elif (VECTOR_SIZE == 8)
   EVAL_RES_90(s0)
   EVAL_RES_90(s1)
   EVAL_RES_90(s2)
@@ -4236,7 +4236,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_90(s5)
   EVAL_RES_90(s6)
   EVAL_RES_90(s7)
-#elif (BARRETT_VECTOR_SIZE == 16)
+#elif (VECTOR_SIZE == 16)
   EVAL_RES_90(s0)
   EVAL_RES_90(s1)
   EVAL_RES_90(s2)
