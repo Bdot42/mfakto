@@ -92,7 +92,20 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT92_64_OpenCL, "cl_barrett32_92",      64,     92,         0,      NULL}, // mapped to 32-bit barrett so far
      {   CL_CALC_BIT_TO_CLEAR, "CalcBitToClear",       0,      0,         0,      NULL}, // called by gpusieve_init_class
      {   CL_CALC_MOD_INV,     "CalcModularInverses",   0,      0,         0,      NULL}, // called by gpusieve_init_exponent
-     {   CL_SIEVE,            "SegSieve",              0,      0,         0,      NULL}
+     {   CL_SIEVE,            "SegSieve",              0,      0,         0,      NULL}, // GPU sieve
+     {   BARRETT79_MUL32_GS,  "cl_barrett32_79_gs",   64,     79,         1,      NULL}, // one kernel for all vector sizes
+     {   BARRETT77_MUL32_GS,  "cl_barrett32_77_gs",   64,     77,         1,      NULL}, // one kernel for all vector sizes
+     {   BARRETT76_MUL32_GS,  "cl_barrett32_76_gs",   64,     76,         1,      NULL}, // one kernel for all vector sizes
+     {   BARRETT92_MUL32_GS,  "cl_barrett32_92_gs",   65,     92,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT88_MUL32_GS,  "cl_barrett32_88_gs",   65,     88,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT87_MUL32_GS,  "cl_barrett32_87_gs",   65,     87,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT73_MUL15_GS,  "cl_barrett15_73_gs",   60,     73,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT69_MUL15_GS,  "cl_barrett15_69_gs",   60,     69,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT70_MUL15_GS,  "cl_barrett15_70_gs",   60,     70,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT71_MUL15_GS,  "cl_barrett15_71_gs",   60,     71,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     88,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     83,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL}, // one kernel for all vector sizes
 };
 
 
@@ -704,29 +717,15 @@ int init_CL(int num_streams, cl_int devnumber)
   }
   if (mystuff.gpu_sieving == 1)
   {
-    putchar('.'); fflush(stdout);
-    i=CL_CALC_BIT_TO_CLEAR;
-    kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
-    if(status != CL_SUCCESS)
-  	{
-      std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
-      return 1;
-    }
-
-    i=CL_CALC_MOD_INV;
-    kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
-    if(status != CL_SUCCESS)
-  	{
-      std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
-      return 1;
-    }
-
-    i=CL_SIEVE;
-    kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
-    if(status != CL_SUCCESS)
-  	{
-      std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
-      return 1;
+    for (i=CL_CALC_BIT_TO_CLEAR; i<=BARRETT82_MUL15_GS; i++)
+    {
+      putchar('.'); fflush(stdout);
+      kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
+      if(status != CL_SUCCESS)
+      {
+        std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
+        return 1;
+      }
     }
   }
 
@@ -1805,6 +1804,224 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
 	return 0;
 }
 
+int run_gs_kernel15(cl_kernel kernel, cl_uint numblocks, cl_uint shared_mem_required, int75 k_base, cl_uint8 b_in, cl_uint shiftcount)
+{
+  cl_int   status;
+  /*
+__kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const __global uint * restrict bit_array, const uint bits_to_process, __local ushort *smem, const int shiftcount,
+                           __private int192_t bb, __global uint * restrict RES, const int bit_max64
+#ifdef CHECKS_MODBASECASE
+         , __global uint * restrict modbasecase_debug
+#endif
+         )
+*/
+  // first set the specific params that don't change per block: b_in
+  if (new_class)
+  {
+    status = clSetKernelArg(kernel, 
+                    6, 
+                    sizeof(cl_uint8), 
+                    (void *)&b_in
+        );
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (b_in)\n";
+  		return 1;
+  	}
+  }
+#ifdef DETAILED_INFO
+    printf("run_gs_kernel15: b=%x:%x:%x:%x:%x:%x:%x:%x, shift=%d\n",
+      b_in.s[0], b_in.s[1], b_in.s[2], b_in.s[3], b_in.s[4], b_in.s[5], b_in.s[6], b_in.s[7], shiftcount);
+#endif
+
+  // now the params that change everytime
+  status = clSetKernelArg(kernel, 
+                    1, 
+                    sizeof(int75), 
+                    (void *)&k_base);
+  if(status != CL_SUCCESS) 
+	{ 
+		std::cerr<<"Error " << status << ": Setting kernel argument. (k_base)\n";
+		return 1;
+	}
+#ifdef DETAILED_INFO
+  printf("run_gs_kernel32: k_base=%x:%x:%x\n", k_base.d2, k_base.d1, k_base.d0);
+#endif
+    
+  return run_gs_kernel(kernel, numblocks, shared_mem_required, shiftcount);
+}
+
+int run_gs_kernel32(cl_kernel kernel, cl_uint numblocks, cl_uint shared_mem_required, int96 k_base, int192 b_in, cl_uint shiftcount)
+{
+  cl_int   status;
+  /*
+__kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const __global uint * restrict bit_array, const uint bits_to_process, __local ushort *smem, const int shiftcount,
+                           __private int192_t bb, __global uint * restrict RES, const int bit_max64
+#ifdef CHECKS_MODBASECASE
+         , __global uint * restrict modbasecase_debug
+#endif
+         )
+*/
+  // first set the specific params that don't change per block: b_in
+  if (new_class)
+  {
+    status = clSetKernelArg(kernel, 
+                    6, 
+                    sizeof(int192), 
+                    (void *)&b_in
+        );
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (b_in)\n";
+  		return 1;
+  	}
+  }
+#ifdef DETAILED_INFO
+    printf("run_gs_kernel32: b=%x:%x:%x:%x:%x:%x, shift=%d\n",
+      b_in.d5, b_in.d4, b_in.d3, b_in.d2, b_in.d1, b_in.d0, shiftcount);
+#endif
+
+  // now the params that change everytime
+  status = clSetKernelArg(kernel, 
+                    1, 
+                    sizeof(int96), 
+                    (void *)&k_base);
+  if(status != CL_SUCCESS) 
+	{ 
+		std::cerr<<"Error " << status << ": Setting kernel argument. (k_base)\n";
+		return 1;
+	}
+#ifdef DETAILED_INFO
+  printf("run_gs_kernel32: k_base=%x:%x:%x\n", k_base.d2, k_base.d1, k_base.d0);
+#endif
+    
+  return run_gs_kernel(kernel, numblocks, shared_mem_required, shiftcount);
+}
+
+/* set all generic parameters for GPU-sieve-aware TF kernels and start them */
+int run_gs_kernel(cl_kernel kernel, cl_uint numblocks, cl_uint shared_mem_required, cl_uint shiftcount)
+{
+  /*
+__kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const __global uint * restrict bit_array, const uint bits_to_process, __local ushort *smem, const int shiftcount,
+                           __private int192_t bb, __global uint * restrict RES, const int bit_max64
+#ifdef CHECKS_MODBASECASE
+         , __global uint * restrict modbasecase_debug
+#endif
+         )
+*/
+  // params 1 (k_base) and 6 (bb) are already set when entering this function
+  cl_int status;
+  size_t   globalThreads=numblocks*256;
+  size_t   localThreads=256;
+
+  if (new_class)
+  {
+    new_class = 0;
+    status = clSetKernelArg(kernel, 
+                    0, 
+                    sizeof(cl_uint), 
+                    (void *)&mystuff.exponent);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (exponent)\n";
+  		return 1;
+  	}
+
+    status = clSetKernelArg(kernel, 
+                    2, 
+                    sizeof(cl_mem), 
+                    (void *)&mystuff.d_bitarray);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (d_bitarray)\n";
+  		return 1;
+  	}
+
+    status = clSetKernelArg(kernel, 
+                    3, 
+                    sizeof(cl_uint), 
+                    (void *)&mystuff.gpu_sieve_processing_size);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (gpu_sieve_processing_size)\n";
+  		return 1;
+  	}
+
+    status = clSetKernelArg(kernel, 
+                    4, 
+                    shared_mem_required, 
+                    NULL);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (smem)\n";
+  		return 1;
+  	}
+
+    status = clSetKernelArg(kernel, 
+                    5, 
+                    sizeof(cl_uint), 
+                    (void *)&shiftcount);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (gpu_sieve_processing_size)\n";
+  		return 1;
+  	}
+
+    status = clSetKernelArg(kernel, 
+                    7, 
+                    sizeof(cl_mem), 
+                    (void *)&mystuff.d_RES);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (d_bitarray)\n";
+  		return 1;
+  	}
+
+    cl_uint tmp = mystuff.bit_max_stage - 64;
+
+    status = clSetKernelArg(kernel, 
+                    8, 
+                    sizeof(cl_uint), 
+                    (void *)&tmp);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (gpu_sieve_processing_size)\n";
+  		return 1;
+  	}
+
+#ifdef CHECKS_MODBASECASE
+      status = clSetKernelArg(l_kernel, 
+                    9, 
+                    sizeof(cl_mem), 
+                    (void *)&mystuff.d_modbasecase_debug);
+      if(status != CL_SUCCESS) 
+  	  { 
+	  	  std::cerr<<"Error " << status << ": Setting kernel argument. (d_modbasecase_debug)\n";
+  		  return 1;
+  	  }
+#endif
+  }
+  // all set? now start the kernel
+  status = clEnqueueNDRangeKernel(QUEUE,
+                 kernel,
+                 1,
+                 NULL,
+                 &globalThreads,
+                 &localThreads,
+                 0,
+                 NULL,
+                 NULL); // no need to wait for anything - they will be processed serially, and we read the results synchronously.
+
+  if(status != CL_SUCCESS) 
+	{ 
+		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)\n";
+		return 1;
+	}
+  clFlush(QUEUE);
+	return 0;
+}
+
+
 int cleanup_CL(void)
 {
   cl_int status;
@@ -1901,20 +2118,14 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   int96  factor;
 
   cl_uint  factorsfound=0;
-  cl_uint shiftcount,ln2b,count=1;
+  cl_uint  shiftcount, ln2b, count=1, shared_mem_required, numblocks;
   cl_ulong b_preinit_lo, b_preinit_mid, b_preinit_hi;
-  cl_ulong k_diff;
+  cl_ulong k_diff, k_remaining;
   char string[50];
   int running=0;
   
   int h_ktab_index = 0;
   unsigned long long int k_min_grid[NUM_STREAMS_MAX];	// k_min_grid[N] contains the k_min for h_ktab[N], only valid for preprocessed h_ktab[]s
-
-  if (mystuff->gpu_sieving == 1)
-  {
-    // If we haven't initialized the GPU sieving code for this Mersenne exponent, do so now.
-    gpusieve_init_exponent (mystuff);
-  }
 
   timer_init(&timer);
 #ifdef DETAILED_INFO
@@ -1973,25 +2184,24 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 #ifdef DETAILED_INFO
   printf("bits in exp %u: %u, ", mystuff->exponent, shiftcount);
 #endif
-  shiftcount--;ln2b=1;
+  shiftcount -= 6; // all kernels can handle 5 bits of pre-shift (max 2^63)
+  ln2b = mystuff->exponent >> shiftcount;
   // some kernels may actually accept a higher preprocessed value
   // but it's hard to find the exact limit, and mfakto already had
   // a bug with the precalculation being too high
   // Therefore: play it safe and just precalc as far as the algorithm including modulus would go
 
-  do
+  while (ln2b < mystuff->bit_max_stage)
   {
     shiftcount--;
-    ln2b<<=1;
-    if(mystuff->exponent&(1<<(shiftcount)))ln2b++;
+    ln2b = mystuff->exponent >> shiftcount;
   }
-  while (ln2b < mystuff->bit_max_stage);
 #ifdef DETAILED_INFO
   printf("remaining shiftcount = %d, ln2b = %d\n", shiftcount, ln2b);
 #endif
   b_preinit_hi=0;b_preinit_mid=0;b_preinit_lo=0;
   count=0;
-  if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24)) 
+// set the pre-initriables in all sizes for all possible kernels
   {
     if     (ln2b<24 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
     else if(ln2b<48 )b_preinit.d1=1<<(ln2b-24);   // should not happen
@@ -2000,7 +2210,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     else if(ln2b<120)b_preinit.d4=1<<(ln2b-96);
     else             b_preinit.d5=1<<(ln2b-120);	// b_preinit = 2^ln2b
   }
-  else if (((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15)) || (use_kernel == MG88))
+
   { // skip the "lowest" 4 levels, so that uint8 is sufficient for 12 components of int180
     if     (ln2b<60 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
     else if(ln2b<75 )b_in.s[0]=1<<(ln2b-60);
@@ -2012,7 +2222,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     else if(ln2b<165)b_in.s[6]=1<<(ln2b-150);
     else             b_in.s[7]=1<<(ln2b-165);
   }
-  else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL) || (use_kernel == MG62))
+
   {
     if     (ln2b<32 )b_192.d0=1<< ln2b;       // should not happen
     else if(ln2b<64 )b_192.d1=1<<(ln2b-32);   // should not happen
@@ -2021,7 +2231,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     else if(ln2b<160)b_192.d4=1<<(ln2b-128);
     else             b_192.d5=1<<(ln2b-160);	// b_preinit = 2^ln2b
   }
-  else
+
   {
     if     (ln2b<64 )b_preinit_lo = 1ULL<< ln2b;
     else if(ln2b<128)b_preinit_mid= 1ULL<<(ln2b-64);
@@ -2030,6 +2240,17 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 
   // combine for more efficient passing of parameters
   cl_ulong4 b_preinit4 = {{b_preinit_lo, b_preinit_mid, b_preinit_hi, (cl_ulong)shiftcount-1}};
+#ifdef RAW_GPU_BENCH
+  shared_mem_required = 100;						// no sieving = 100%
+#else
+  if (mystuff->gpu_sieve_primes < 54) shared_mem_required = 100;	// no sieving = 100%
+  else if (mystuff->gpu_sieve_primes < 310) shared_mem_required = 50;	// 54 primes expect 48.30%
+  else if (mystuff->gpu_sieve_primes < 1846) shared_mem_required = 38;	// 310 primes expect 35.50%
+  else if (mystuff->gpu_sieve_primes < 21814) shared_mem_required = 30;	// 1846 primes expect 28.10%
+  else if (mystuff->gpu_sieve_primes < 67894) shared_mem_required = 24;	// 21814 primes expect 21.93%
+  else shared_mem_required = 22;					// 67894 primes expect 19.94%
+#endif
+  shared_mem_required = mystuff->gpu_sieve_processing_size * sizeof (int) * shared_mem_required / 100;
 
   while((k_min <= k_max) || (running > 0))
   {
@@ -2075,12 +2296,23 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
       else
       {
         // GPU sieving
-        gpusieve (mystuff, k_max-k_min);
-        k_diff = NUM_CLASSES * (cl_ulong) mystuff->gpu_sieve_size;
+        // Calculate the number of k's remaining.  Round this up so that we sieve an array that is
+        // a multiple of the bits processed by each TF kernel (my_stuff->gpu_sieve_processing_size).
 
-        // as a first test, copy the sieve bits into the usual sieve array - later, the kernels will do that.
+        k_remaining = ((k_max - k_min + 1) + NUM_CLASSES - 1) / NUM_CLASSES;
+        if (k_remaining < (cl_ulong) mystuff->gpu_sieve_size) {
+          numblocks = (cl_uint) ((k_remaining + mystuff->gpu_sieve_processing_size - 1) / mystuff->gpu_sieve_processing_size);
+          k_remaining = numblocks * mystuff->gpu_sieve_processing_size;
+        } else
+          numblocks = mystuff->gpu_sieve_size / mystuff->gpu_sieve_processing_size;
+
+        // the sieving
+
+        gpusieve (mystuff, k_max-k_min);
+
+#ifdef DETAILED_INFO
+  // as a first test, copy the sieve bits into the usual sieve array - later, the kernels will do that.
         cl_uint ind=0, pos=0, *dest=mystuff->h_ktab[h_ktab_index];
-        cl_ulong rem;
         for (i=0; i<mystuff->gpu_sieve_size/32 && ind < mystuff->threads_per_grid; i++)
         {
           cl_uint ii, word=mystuff->h_bitarray[i];
@@ -2092,7 +2324,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               // simple verify ...
 /*              for (cl_uint p=13; p<mystuff->gpu_sieve_primes; p+=2)
               {
-                rem=k_min%p + ((cl_ulong)pos*NUM_CLASSES)%p;
+                cl_ulong rem=k_min%p + ((cl_ulong)pos*NUM_CLASSES)%p;
                 rem=(2*mystuff->exponent*rem +1)%p;
                 if (rem == 0)
                 {
@@ -2109,39 +2341,51 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
             word >>= 1;
           }
         }
-#ifdef DETAILED_INFO
         printf("bit-extract: %u/%u words processed, %u(max %u) bits set.\n", i, mystuff->gpu_sieve_size/32, ind, mystuff->threads_per_grid);
 #endif
+        // Now let the GPU trial factor the candidates that survived the sieving
 
-        k_min_grid[h_ktab_index] = k_min;
-        /* try upload ktab*/
+        if (use_kernel >= BARRETT73_MUL15_GS && use_kernel <= BARRETT82_MUL15_GS)
+        {
+          int75 k_base;
+          k_base.d0 =  k_min & 0x7FFF;
+          k_base.d1 = (k_min >> 15) & 0x7FFF;
+          k_base.d2 = (k_min >> 30) & 0x7FFF;
+          k_base.d3 = (k_min >> 45) & 0x7FFF;
+          k_base.d4 =  k_min >> 60;
+          status = run_gs_kernel15(kernel_info[use_kernel].kernel, numblocks, shared_mem_required, k_base, b_in, shiftcount);
+        }
+        else if (use_kernel >= BARRETT79_MUL32_GS && use_kernel <= BARRETT87_MUL32_GS)
+        {
+          int96 k_base;
+          k_base.d0 = (cl_uint) k_min;
+          k_base.d1 = k_min >> 32;
+          k_base.d2 = 0;
+          status = run_gs_kernel32(kernel_info[use_kernel].kernel, numblocks, shared_mem_required, k_base, b_192, shiftcount);
+        }
 
-        status = clEnqueueWriteBuffer(QUEUE,
-                  mystuff->d_ktab[h_ktab_index],
-                  CL_FALSE,
-                  0,
-                  size,
-                  mystuff->h_ktab[h_ktab_index],
-                  0,
-                  NULL,
-                  &mystuff->copy_events[h_ktab_index]);
+        k_base.d0 = (int) (k_min & 0xFFFFFFFF);
+        k_base.d1 = (int) (k_min >> 32);
+        k_base.d2 = 0;
 
-        if(status != CL_SUCCESS) 
-	      {  
-	          std::cout<<"Error " << status << ": Copying h_ktab(clEnqueueWriteBuffer)\n";
-            return RET_ERROR; // # factors found ;-)
-	      }
+        // Count the number of blocks processed
+        count += numblocks;
 
+        // Move to next batch of k's
+        k_min += (cl_ulong) mystuff->gpu_sieve_size * NUM_CLASSES;
+        if (k_min > k_max) break;
+
+        //BUG - we should call a different routine to advance the bit-to-clear values by gpusieve_size bits
+        // This will be cheaper than recomputing the bit-to-clears from scratch
+        // HOWEVER, the self-test code will not check this new code unless we make the gpusieve_size much smaller
+        gpusieve_init_class (mystuff, k_min);
+        continue; // don't go to the stream-scheduling code below - the GPU sieve runs the TF kernels all in one stream
       }
 	    mystuff->stream_status[h_ktab_index] = PREPARED;
       running++;
 #ifdef DETAILED_INFO
       printf("k-base: %llu, ", (long long unsigned int) k_min);
       printArray("ktab", mystuff->h_ktab[h_ktab_index], mystuff->threads_per_grid, 0);
-      // test a few of them for correctness
-      for (i=0; i<20; i++)
-      {
-      }
 #endif
 
       count++;

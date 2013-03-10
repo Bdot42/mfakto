@@ -138,6 +138,19 @@ enum GPUKernels
   CL_CALC_BIT_TO_CLEAR,  // loaded if GPU sieving enabled
   CL_CALC_MOD_INV,       // loaded if GPU sieving enabled
   CL_SIEVE,              // loaded if GPU sieving enabled
+  BARRETT79_MUL32_GS,
+  BARRETT77_MUL32_GS,
+  BARRETT76_MUL32_GS,
+  BARRETT92_MUL32_GS,
+  BARRETT88_MUL32_GS,
+  BARRETT87_MUL32_GS,
+  BARRETT73_MUL15_GS,
+  BARRETT69_MUL15_GS,
+  BARRETT70_MUL15_GS,
+  BARRETT71_MUL15_GS,
+  BARRETT88_MUL15_GS,
+  BARRETT83_MUL15_GS,
+  BARRETT82_MUL15_GS,
   _95BIT_MUL32  /* not yet there */
 };
 

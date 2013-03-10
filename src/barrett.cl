@@ -4960,12 +4960,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 }
 __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const __global uint * restrict bit_array, const uint bits_to_process, __local ushort *smem, const int shiftcount,
-#ifdef WA_FOR_CATALYST11_10_BUG
-                           const uint8 b_in,
-#else
-                           __private int192_t bb,
-#endif
-                           __global uint * restrict RES, const int bit_max64
+                           __private int192_t bb, __global uint * restrict RES, const int bit_max64
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
@@ -4985,9 +4980,6 @@ a is precomputed on host ONCE.
   __private uint tid, tmp;
   __private uint_v tmp_v, carry;
 
-#ifdef WA_FOR_CATALYST11_10_BUG
-  __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
-#endif
   // Get pointer to section of the bit_array this thread is processing.
 
   words_per_thread = bits_to_process / 8192;

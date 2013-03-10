@@ -137,3 +137,4 @@ TODO
 - test clEnqueueMapBuffer/clEnqueueUnmapMemObject instead of clEnqueueWriteBuffer
 - test speed without event sync (just in-order-queue)
 - CPU-sieving: multiple queues
+- cleanup: separate GPU- and CPU-sieve based kernels, compile and load only one set of them

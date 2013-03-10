@@ -510,6 +510,11 @@ other return value
     max_class = cur_class;
   }
 
+  if (mystuff->gpu_sieving == 1)
+  {
+    gpusieve_init_exponent(mystuff);
+  }
+
   for(; cur_class <= max_class; cur_class++)
   {
     if(class_needed(mystuff->exponent, k_min, cur_class))
@@ -526,26 +531,32 @@ other return value
       }
       else
       {
+        count++;
+        mystuff->stats.class_counter++;
+
         if (mystuff->gpu_sieving == 1)
         {
-          gpusieve_init_exponent(mystuff);
           gpusieve_init_class(mystuff, k_min+cur_class);
+          if ((use_kernel >= BARRETT79_MUL32_GS) && (use_kernel <= BARRETT82_MUL15_GS))
+          {
+            numfactors = tf_class_opencl (k_min+cur_class, k_max, mystuff, use_kernel);
+          }
+          else
+          {
+            printf("ERROR: Unknown GPU sieve kernel selected (%d)!\n", use_kernel);  return RET_ERROR;
+          }
         }
         else
         {
           sieve_init_class(mystuff->exponent, k_min+cur_class, mystuff->sieve_primes);
-        }
-
-        count++;
-        mystuff->stats.class_counter++;
-
-        if ((use_kernel >= _71BIT_MUL24) && (use_kernel < UNKNOWN_KERNEL))
-        {
-          numfactors = tf_class_opencl (k_min+cur_class, k_max, mystuff, use_kernel);
-        }
-        else
-        {
-          printf("ERROR: Unknown kernel selected (%d)!\n", use_kernel);  return RET_ERROR;
+          if ((use_kernel >= _71BIT_MUL24) && (use_kernel < UNKNOWN_KERNEL))
+          {
+            numfactors = tf_class_opencl (k_min+cur_class, k_max, mystuff, use_kernel);
+          }
+          else
+          {
+            printf("ERROR: Unknown kernel selected (%d)!\n", use_kernel);  return RET_ERROR;
+          }
         }
 
         if (numfactors == RET_ERROR)
@@ -766,15 +777,26 @@ RET_ERROR we might have a serios problem
 
 /* create a list which kernels can handle this testcase */
     j = 0;                                                                                           
-/* */
-    for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index)
+
+
+    if (mystuff->gpu_sieving == 0)
     {
-      if(kernel_possible(kernel_index, mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage)) kernels[j++] = kernel_index;
+      for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index)
+      {
+        if(kernel_possible(kernel_index, mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage)) kernels[j++] = kernel_index;
+      }
+      // careful to not sieve out small test candidates
+      mystuff->sieve_primes_upper_limit = sieve_sieve_primes_max(mystuff->exponent, mystuff->sieve_primes_max);
+      if (mystuff->sieve_primes > mystuff->sieve_primes_upper_limit)
+        mystuff->sieve_primes = mystuff->sieve_primes_upper_limit;
     }
-    // careful to not sieve out small test candidates
-    mystuff->sieve_primes_upper_limit = sieve_sieve_primes_max(mystuff->exponent, mystuff->sieve_primes_max);
-    if (mystuff->sieve_primes > mystuff->sieve_primes_upper_limit)
-      mystuff->sieve_primes = mystuff->sieve_primes_upper_limit;
+    else
+    {
+      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT82_MUL15_GS; ++kernel_index)
+      {
+        if(kernel_possible(kernel_index, mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage)) kernels[j++] = kernel_index;
+      }
+    }
 
     while(j>0)
     {
@@ -1078,10 +1100,14 @@ int main(int argc, char **argv)
              strstr(deviceinfo.d_name, "Juniper")  ||  // 6750, 6770, 5750, 5770
              strstr(deviceinfo.d_name, "Cypress")  ||  // 5830, 5850, 5870
              strstr(deviceinfo.d_name, "Hemlock")  ||  // 5970
-             strstr(deviceinfo.d_name, "Barts")    ||  // 6790, 6850, 6870
-             strstr(deviceinfo.d_name, "RV7"))         // 4xxx
+             strstr(deviceinfo.d_name, "Barts"))       // 6790, 6850, 6870
     {
       mystuff.gpu_type = GPU_VLIW5;
+    }
+    else if (strstr(deviceinfo.d_name, "RV7"))         // 4xxx
+    {
+      mystuff.gpu_type = GPU_VLIW5;
+      gpu_types[mystuff.gpu_type].CE_per_multiprocessor = 40; // though VLIW5, only 40 instead of 80 compute elements
     }
     else if (strstr(deviceinfo.d_name, "CPU")           ||
              strstr(deviceinfo.v_name, "GenuineIntel")  ||
