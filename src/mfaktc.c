@@ -1076,10 +1076,12 @@ int main(int argc, char **argv)
   if (mystuff.gpu_type == GPU_AUTO)
   {
     // try to auto-detect the type of GPU
-    if (strstr(deviceinfo.d_name, "Capeverde")  ||    // 7750, 7770
-        strstr(deviceinfo.d_name, "Pitcairn")   ||    // 7850, 7870
+    if (strstr(deviceinfo.d_name, "Capeverde")  ||    // 7750, 7770, 8760, 8740
+        strstr(deviceinfo.d_name, "Pitcairn")   ||    // 7850, 7870, 8870
         strstr(deviceinfo.d_name, "Newzealand") ||    // 7990
-        strstr(deviceinfo.d_name, "Tahiti"))          // 7950, 7970
+        strstr(deviceinfo.d_name, "Oland")      ||    // 8670, 8570
+        strstr(deviceinfo.d_name, "Malta")      ||    // ?
+        strstr(deviceinfo.d_name, "Tahiti"))          // 7950, 7970, 8970, 8950
     {
       mystuff.gpu_type = GPU_GCN;
     }
