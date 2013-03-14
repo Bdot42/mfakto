@@ -236,11 +236,11 @@ void mod_144_72
   MODBASECASE_QI_ERROR(1<<22, 1, qi, 0);
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("mod_%d%d_%d#1: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_%d%d_%d#1: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
 #endif
 
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf("mod_144_72#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+    if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
         q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
@@ -252,7 +252,7 @@ void mod_144_72
 //  nn.d3  = (mul_hi(n.d0, qi) << 11) | (tmp >> 21);
   nn.d2  = (tmp << 3) & 0xFFFFFF;
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#1.1: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#1.1: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -262,7 +262,7 @@ void mod_144_72
 //  nn.d3 += (tmp << 3) & 0xFFFFFF;
   nn.d3  =  mad24((tmp & 0x1FFFFF), 8u, nn.d3);
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#1.2: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#1.2: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -272,7 +272,7 @@ void mod_144_72
 //  nn.d4 += (tmp << 3) & 0xFFFFFF;
   nn.d4  =  mad24((tmp & 0x1FFFFF), 8u, nn.d4);
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#1.3: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#1.3: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -284,7 +284,7 @@ void mod_144_72
 //  MODBASECASE_NN_BIG_ERROR(0xFFFFFF, 1, nn.d5, 1);
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("mod_144_72#1: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#1: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
@@ -319,11 +319,11 @@ void mod_144_72
   MODBASECASE_QI_ERROR(1<<22, 2, qi, 2);
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("mod_%d%d_%d#2: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_%d%d_%d#2: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
 #endif
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf("mod_144_72#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+    if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
         q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
@@ -331,7 +331,7 @@ void mod_144_72
 // nn = n * qi AND shiftleft 7 bits at once, carry is done later
 
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#2.0: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#2.0: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -341,7 +341,7 @@ void mod_144_72
   nn.d1  = (tmp << 7) & 0xFFFFFF;
 
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -352,7 +352,7 @@ void mod_144_72
   nn.d2  =  mad24((tmp & 0x1FFFF), 128u, nn.d2);
 
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -366,7 +366,7 @@ void mod_144_72
 #endif
  
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#2.2: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#2.2: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -378,7 +378,7 @@ void mod_144_72
 #endif
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("mod_144_72#2: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#2: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
@@ -424,12 +424,12 @@ void mod_144_72
   MODBASECASE_QI_ERROR(1<<22, 3, qi, 4);
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("mod_%d%d_%d#3: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
-    // if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", -1.0e10f, 3.2e8f, qi);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_%d%d_%d#3: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
+    // if (tid==TRACE_TID) printf((__constant char *)"mod_144_72: qf=%#G, nf=%#G, qi=%d\n", -1.0e10f, 3.2e8f, qi);
 #endif
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf("mod_144_72#3: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+    if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
         q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
@@ -440,7 +440,7 @@ void mod_144_72
   nn.d3 = __addc   (mul_hi(n.d2, qi) >> 8, 0); */
 
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#3.0: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3.0: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -450,7 +450,7 @@ void mod_144_72
   nn.d0 = tmp & 0xFFFFFF;
 
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#3.1: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3.1: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -460,7 +460,7 @@ void mod_144_72
   nn.d1 += tmp & 0xFFFFFF;
  
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#3.2: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3.2: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -470,7 +470,7 @@ void mod_144_72
   nn.d2 += tmp & 0xFFFFFF;
 
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#3.3: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3.3: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -479,7 +479,7 @@ void mod_144_72
   nn.d3 += nn.d2 >> 24; nn.d2 &= 0xFFFFFF;
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("mod_144_72#3: before shl(11): nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3: before shl(11): nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 // shiftleft 11 bits
@@ -494,7 +494,7 @@ void mod_144_72
   nn.d0 = ((nn.d0 & 0x1FFF)<<11);
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("mod_144_72#3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
@@ -541,12 +541,12 @@ void mod_144_72
   MODBASECASE_QI_ERROR(1<<22, 4, qi, 7);
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("mod_%d%d_%d#4: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
-    //if (tid==TRACE_TID) printf("mod_144_72: qf=%#G, nf=%#G, qi=%d\n", qf, nf, qi);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_%d%d_%d#4: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
+    //if (tid==TRACE_TID) printf((__constant char *)"mod_144_72: qf=%#G, nf=%#G, qi=%d\n", qf, nf, qi);
 #endif
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf("mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+    if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
         q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
@@ -560,7 +560,7 @@ void mod_144_72
 #endif */
 
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#4.0: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#4.0: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -569,7 +569,7 @@ void mod_144_72
   nn.d0 = tmp & 0xFFFFFF;
 
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#4.1: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#4.1: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -578,7 +578,7 @@ void mod_144_72
   nn.d1 += tmp & 0xFFFFFF;
 
 #if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf("mod_144_72#4.2: nn=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#4.2: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -595,7 +595,7 @@ void mod_144_72
 #endif
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("mod_144_72#4.3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#4.3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
@@ -626,7 +626,7 @@ void mod_144_72
   MODBASECASE_NONZERO_ERROR(q.d3, 5, 3, 10);
 
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf("mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
+    if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
         q.d5.s0, q.d4.s0, q.d3.s0, res->d2.s0, res->d1.s0, res->d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
@@ -738,7 +738,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff=as_float(0x3f7ffffb) / ff;	// just a little bit below 1.0f so we always underestimate the quotient
  
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf("mfakto_cl_71: tid=%d: p=%x, *2 =%x:%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d, b=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_71: tid=%d: p=%x, *2 =%x:%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d, b=%x:%x:%x:%x:%x:%x\n",
                               tid, exp, exp72.d1, exp72.d0, k.d2.s0, k.d1.s0, k.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0);
 #endif
 
@@ -761,7 +761,7 @@ Precalculated here since it is the same for all steps in the following loop */
     if(exp&0x80000000)square_72_144_shl(&b,a);	// b = 2 * a^2 ("optional multiply by 2" in Prime 95 documentation)
     else              square_72_144(&b,a);	// b = a^2
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("mfakto_cl_71: exp=%x,  %x:%x:%x ^2 (shl:%d) = %x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_71: exp=%x,  %x:%x:%x ^2 (shl:%d) = %x:%x:%x:%x:%x:%x\n",
                               exp, a.d2.s0, a.d1.s0, a.d0.s0, (exp&0x80000000?1:0), b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0);
 #endif
 
@@ -781,7 +781,7 @@ Precalculated here since it is the same for all steps in the following loop */
     exp+=exp;
   }
 #if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf("mfakto_cl_71 result: f=%x:%x:%x, a=%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_71 result: f=%x:%x:%x, a=%x:%x:%x\n",
                               f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
 
@@ -796,7 +796,7 @@ Precalculated here since it is the same for all steps in the following loop */
     {
 #endif
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-    printf("mfakto_cl_71: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2, f.d1, f.d0, k.d2, k.d1, k.d0);
+    printf((__constant char *)"mfakto_cl_71: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2, f.d1, f.d0, k.d2, k.d1, k.d0);
 #endif
 
     tid=ATOMIC_INC(RES[0]);

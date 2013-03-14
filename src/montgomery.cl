@@ -132,7 +132,7 @@ bit_max64 is bit_max - 64!
 	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
 
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf("cl_mg62: exp=%d, k_base=%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"cl_mg62: exp=%d, k_base=%x:%x:%x\n",
         exp, k_base.d2, k_base.d1, k_base.d0);
 #endif
 
@@ -186,7 +186,7 @@ bit_max64 is bit_max - 64!
   f = upsample(k.d1, k.d0) * ((ulong)exp + exp) + 1;
 
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf("cl_mg62: k_tab[%d]=%x, f=%#llx, shift=%d\n",
+  if (tid==TRACE_TID) printf((__constant char *)"cl_mg62: k_tab[%d]=%x, f=%#llx, shift=%d\n",
         tid, t.s0, f.s0, shiftcount);
 #endif
 
@@ -222,7 +222,7 @@ bit_max64 is bit_max - 64!
    As = (0 - f) % f;
 
    // verify As
-   // if (A != (B=mod_REDC64 (As, P, Pinv))) printf("ERROR: A (%llu)!= mod_REDC(As=%llu,1) = %llu\n", A, As, B);
+   // if (A != (B=mod_REDC64 (As, P, Pinv))) printf((__constant char *)"ERROR: A (%llu)!= mod_REDC(As=%llu,1) = %llu\n", A, As, B);
 
 //   printf ("A=%#llx ==> Am=%llu, P=%llu (%#llx..<32>): ", A, As, P, P>>32);
 
@@ -248,7 +248,7 @@ bit_max64 is bit_max - 64!
   if( a==1 )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-    printf("cl_mg62: tid=%ld found factor: q=%#llx, k=%x:%x:%x\n", tid, f.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+    printf((__constant char *)"cl_mg62: tid=%ld found factor: q=%#llx, k=%x:%x:%x\n", tid, f.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
     tid=ATOMIC_INC(RES[0]);
@@ -661,7 +661,7 @@ bit_max64 is bit_max - 64!
   exp75.d2=exp>>29;exp75.d1=(exp>>14)&0x7FFF;exp75.d0=(exp<<1)&0x7FFF;	// exp75 = 2 * exp
 
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf("cl_mg88: exp=%d, x2=%x:%x:%x, k_base=%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: exp=%d, x2=%x:%x:%x, k_base=%x:%x:%x:%x\n",
         exp, exp75.d2, exp75.d1, exp75.d0, k_base.d3, k_base.d2, k_base.d1, k_base.d0);
 #endif
 
@@ -720,7 +720,7 @@ bit_max64 is bit_max - 64!
   k.d3 &= 0x7FFF;
         
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("cl_mg88: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
         tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 		// f = 2 * k * exp + 1
@@ -752,16 +752,11 @@ bit_max64 is bit_max - 64!
   f.d4 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf("cl_mg88: k_tab[%d]=%x, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x, shift=%d\n",
+    if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: k_tab[%d]=%x, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x, shift=%d\n",
         tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
   f_inv = neginvmod2pow15(f.d0);
-
-#if (TRACE_KERNEL > 3)
-     if (tid==TRACE_TID) printf("f*(-f_inv)=%x\n",
-        a.d0.s0 * f_inv.s0);*/
-#endif
 
   /* the montgomery repr. As of A can be calculated by either calculating Rs = R^2 mod f
    and then As = mulmod_REDC(A, Rs)  -or-
@@ -813,12 +808,12 @@ exp <<= clz(exp); // shift exp to the very left of the 32 bits
 
   // As is now the montgomery-representation of 1
 #if (TRACE_KERNEL > 2)
-   if (tid==TRACE_TID) printf("cl_mg88: exp=0x%x, As=%x:%x:%x:%x:%x:%x, f_inv=%x\n",
+   if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: exp=0x%x, As=%x:%x:%x:%x:%x:%x, f_inv=%x\n",
         exp, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, f_inv.s0);
 #endif
 #if (TRACE_KERNEL > 3)
      a = mod_REDC90 (As, f, f_inv);
-     if (tid==TRACE_TID) printf("cl_mg88-beforeshift: exp=0x%x, As=%x:%x:%x:%x:%x:%x (a=%x:%x:%x:%x:%x:%x)\n",
+     if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-beforeshift: exp=0x%x, As=%x:%x:%x:%x:%x:%x (a=%x:%x:%x:%x:%x:%x)\n",
         exp, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
 
@@ -828,7 +823,7 @@ exp <<= clz(exp); // shift exp to the very left of the 32 bits
 
 #if (TRACE_KERNEL > 3)
      a = mod_REDC90 (As, f, f_inv);
-     if (tid==TRACE_TID) printf("cl_mg88-beforeloop: exp=0x%x, As=%x:%x:%x:%x:%x:%x (a=%x:%x:%x:%x:%x:%x)\n",
+     if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-beforeloop: exp=0x%x, As=%x:%x:%x:%x:%x:%x (a=%x:%x:%x:%x:%x:%x)\n",
         exp, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
    while(exp)
@@ -837,7 +832,7 @@ exp <<= clz(exp); // shift exp to the very left of the 32 bits
      if (exp&0x80000000) shl_90(&As);         // mul by 2
 #if (TRACE_KERNEL > 3)
      a = mod_REDC90 (As, f, f_inv);
-     if (tid==TRACE_TID) printf("cl_mg88-loop: exp=0x%x, As=%x:%x:%x:%x:%x:%x (a=%x:%x:%x:%x:%x:%x)\n",
+     if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-loop: exp=0x%x, As=%x:%x:%x:%x:%x:%x (a=%x:%x:%x:%x:%x:%x)\n",
         exp, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
      exp<<=1;
@@ -846,7 +841,7 @@ exp <<= clz(exp); // shift exp to the very left of the 32 bits
    
    a = mod_REDC90 (As, f, f_inv);
 #if (TRACE_KERNEL > 1)
-   if (tid==TRACE_TID) printf("cl_mg88-end: exp=0x%x, As=%x:%x:%x:%x:%x:%x, a=%x:%x:%x:%x:%x:%x\n",
+   if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-end: exp=0x%x, As=%x:%x:%x:%x:%x:%x, a=%x:%x:%x:%x:%x:%x\n",
         exp, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
 

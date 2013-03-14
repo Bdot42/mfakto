@@ -132,12 +132,12 @@ __inline int mod_p (int x, const int p, const int pinv)
 
 #ifdef GWDEBUG
 	if (pinv != gen_pinv (p))
-		printf ("mod_p: p doesn't match pinv!! p = %d, pinv = %d\n", p, pinv);
+		printf((__constant char *)"mod_p: p doesn't match pinv!! p = %d, pinv = %d\n", p, pinv);
 	if (r < 0 || r >= p)
-		printf ("mod_p: x mod p out of range!! x = %d, p = %d, pinv = %d, r = %d\n", x, p, pinv, r);
+		printf((__constant char *)"mod_p: x mod p out of range!! x = %d, p = %d, pinv = %d, r = %d\n", x, p, pinv, r);
 #endif
 #if (TRACE_SIEVE_KERNEL > 4)
-    printf("mod_p(%d, %d, %d) = %d\n", x, p, pinv, r);
+    printf((__constant char *)"mod_p(%d, %d, %d) = %d\n", x, p, pinv, r);
 #endif
 
 	return r;
@@ -166,13 +166,13 @@ __inline int sloppy_mod_p (int x, int p, int pinv)
 
 #ifdef GWDEBUG
 	if ((uint) pinv != gen_sloppy_pinv (p))
-		printf ("sloppy_mod_p: p doesn't match pinv!! p = %d, pinv = %d (should be %d)\n", p, pinv, gen_sloppy_pinv (p));
+		printf((__constant char *)"sloppy_mod_p: p doesn't match pinv!! p = %d, pinv = %d (should be %d)\n", p, pinv, gen_sloppy_pinv (p));
 	if (r < -p / 2 || r >= p)
-		printf ("sloppy_mod_p: x sloppy mod p out of range!! x = %d, p = %d, pinv = %d, r = %d\n", x, p, pinv, r);
+		printf((__constant char *)"sloppy_mod_p: x sloppy mod p out of range!! x = %d, p = %d, pinv = %d, r = %d\n", x, p, pinv, r);
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 4)
-    printf("sloppy_mod_p(%d, %d, %d) = %d\n", x, p, pinv, r);
+    printf((__constant char *)"sloppy_mod_p(%d, %d, %d) = %d\n", x, p, pinv, r);
 #endif
 
 	return r;
@@ -264,7 +264,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 	uint thread_start = block_start + get_local_id(0) * block_size / threadsPerBlock;
 
 #if (TRACE_SIEVE_KERNEL > 2)
-  printf("SegSieve: grpid=%d, locid=%d, thread_start=%u, maxp=%u\n", get_group_id(0), get_local_id(0), thread_start, maxp);
+  printf((__constant char *)"SegSieve: grpid=%d, locid=%d, thread_start=%u, maxp=%u\n", get_group_id(0), get_local_id(0), thread_start, maxp);
 #endif
 
 	//
@@ -306,7 +306,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 
 #if (TRACE_SIEVE_KERNEL > 1)
     if (get_local_id(0) == TRACE_SIEVE_TID)
-    printf("SegSieve: mask=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask, i11, i13, i17, i19, i23, i29, i31, thread_start);
+    printf((__constant char *)"SegSieve: mask=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask, i11, i13, i17, i19, i23, i29, i31, thread_start);
 #endif
 
 	  if (primesNotSieved == 4) {	// Primes 2, 3, 5, 7 are not sieved
@@ -340,7 +340,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 
 #if (TRACE_SIEVE_KERNEL > 1)
     if (get_local_id(0) == TRACE_SIEVE_TID)
-    printf("SegSieve: mask2=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask2, i11, i13, i17, i19, i23, i29, i31, thread_start);
+    printf((__constant char *)"SegSieve: mask2=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask2, i11, i13, i17, i19, i23, i29, i31, thread_start);
 #endif
 
 	  if (primesNotSieved == 4) {	// Primes 2, 3, 5, 7 are not sieved
@@ -374,7 +374,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 
 #if (TRACE_SIEVE_KERNEL > 1)
     if (get_local_id(0) == TRACE_SIEVE_TID)
-    printf("SegSieve: mask3=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask3, i11, i13, i17, i19, i23, i29, i31, thread_start);
+    printf((__constant char *)"SegSieve: mask3=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask3, i11, i13, i17, i19, i23, i29, i31, thread_start);
 #endif
 
     if (primesNotSieved == 4) {	// Primes 2, 3, 5, 7 are not sieved
@@ -408,7 +408,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 
 #if (TRACE_SIEVE_KERNEL > 1)
     if (get_local_id(0) == TRACE_SIEVE_TID)
-    printf("SegSieve: mask4=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask4, i11, i13, i17, i19, i23, i29, i31, thread_start);
+    printf((__constant char *)"SegSieve: mask4=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask4, i11, i13, i17, i19, i23, i29, i31, thread_start);
 #endif
 
 	  if (primesNotSieved == 4) {	// Primes 2, 3, 5, 7 are not sieved
@@ -447,7 +447,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 
 #if (TRACE_SIEVE_KERNEL > 1)
     if (get_local_id(0) == TRACE_SIEVE_TID)
-    printf("SegSieve: mask=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask, i11, i13, i17, i19, i23, i29, i31, thread_start);
+    printf((__constant char *)"SegSieve: mask=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask, i11, i13, i17, i19, i23, i29, i31, thread_start);
 #endif
 
 	  if (primesNotSieved == 4) {	// Primes 2, 3, 5, 7 are not sieved
@@ -481,7 +481,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 
 #if (TRACE_SIEVE_KERNEL > 1)
     if (get_local_id(0) == TRACE_SIEVE_TID)
-    printf("SegSieve: mask2=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask2, i11, i13, i17, i19, i23, i29, i31, thread_start);
+    printf((__constant char *)"SegSieve: mask2=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask2, i11, i13, i17, i19, i23, i29, i31, thread_start);
 #endif
 
 	  if (primesNotSieved == 4) {	// Primes 2, 3, 5, 7 are not sieved
@@ -515,7 +515,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 
 #if (TRACE_SIEVE_KERNEL > 1)
     if (get_local_id(0) == TRACE_SIEVE_TID)
-    printf("SegSieve: mask3=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask3, i11, i13, i17, i19, i23, i29, i31, thread_start);
+    printf((__constant char *)"SegSieve: mask3=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask3, i11, i13, i17, i19, i23, i29, i31, thread_start);
 #endif
 
 	  if (primesNotSieved == 4) {	// Primes 2, 3, 5, 7 are not sieved
@@ -549,7 +549,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 
 #if (TRACE_SIEVE_KERNEL > 1)
     if (get_local_id(0) == TRACE_SIEVE_TID)
-    printf("SegSieve: mask4=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask4, i11, i13, i17, i19, i23, i29, i31, thread_start);
+    printf((__constant char *)"SegSieve: mask4=%#x,(%d, %d, %d, %d, %d, %d, %d), thread_start=%d\n", mask4, i11, i13, i17, i19, i23, i29, i31, thread_start);
 #endif
 
 	  locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + 4] = mask;
@@ -1159,7 +1159,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcModularInvers
 // Handle the primes that are processed with special code.  That is, they are not part of an official "row" in pinfo_dev.
 
 #if (TRACE_SIEVE_KERNEL > 3)
-    printf("CalcModularInverses: grpid=%d, locid=%d, exp=%u\n", get_group_id(0), get_local_id(0), exponent);
+    printf((__constant char *)"CalcModularInverses: grpid=%d, locid=%d, exp=%u\n", get_group_id(0), get_local_id(0), exponent);
 #endif
 	if (get_group_id(0) == 0) {
 		if (get_local_id(0) < primesNotSieved || get_local_id(0) >= primesNotSieved + primesHandledWithSpecialCode) return;
@@ -1180,7 +1180,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcModularInvers
 	facdist = (ulong) (2 * NUM_CLASSES) * (ulong) exponent;
 	calc_info[MAX_PRIMES_PER_THREAD*4 + index * 2 + 1] = modularinverse ((uint) (facdist % prime), prime);
 #if (TRACE_SIEVE_KERNEL > 2)
-    printf("CalcModularInverses: index=%d, prime=%d, facdist=%d, inv=%d\n", index, prime, facdist%prime, calc_info[MAX_PRIMES_PER_THREAD*4 + index * 2 + 1]);
+    printf((__constant char *)"CalcModularInverses: index=%d, prime=%d, facdist=%d, inv=%d\n", index, prime, facdist%prime, calc_info[MAX_PRIMES_PER_THREAD*4 + index * 2 + 1]);
 #endif
 #ifdef GWDEBUG
   if (((facdist%prime) * calc_info[MAX_PRIMES_PER_THREAD*4 + index * 2 + 1])%prime != 1)
@@ -1202,7 +1202,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcBitToClear (u
 // Handle the primes that are processed with special code.  That is, they are not part of an official "row" in pinfo_dev.
 
 #if (TRACE_SIEVE_KERNEL > 3)
-    printf("CalcBitToClear: grpid=%d, locid=%d, exp=%u, k_base=%llu\n", get_group_id(0), get_local_id(0), exponent, k_base);
+    printf((__constant char *)"CalcBitToClear: grpid=%d, locid=%d, exp=%u, k_base=%llu\n", get_group_id(0), get_local_id(0), exponent, k_base);
 #endif
 	if (get_group_id(0) == 0) {
 		if (get_local_id(0) < primesNotSieved || get_local_id(0) >= primesNotSieved + primesHandledWithSpecialCode) return;
@@ -1244,7 +1244,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcBitToClear (u
 	bit_to_clear = ((ulong) prime - factor_mod_p) * modinv % prime;
 
 #if (TRACE_SIEVE_KERNEL > 2)
-    printf("CalcBitToClear: prime=%d, modinv=%d, k_mod_p=%llu, factor_mod_p=%llu, bit_to_clear=%d\n", prime, modinv, k_mod_p, factor_mod_p, bit_to_clear);
+    printf((__constant char *)"CalcBitToClear: prime=%d, modinv=%d, k_mod_p=%llu, factor_mod_p=%llu, bit_to_clear=%d\n", prime, modinv, k_mod_p, factor_mod_p, bit_to_clear);
 #endif
 
 #ifdef GWDEBUG

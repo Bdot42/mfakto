@@ -93,6 +93,22 @@ kernel_info_t       kernel_info[] = {
      {   CL_CALC_BIT_TO_CLEAR, "CalcBitToClear",       0,      0,         0,      NULL}, // called by gpusieve_init_class
      {   CL_CALC_MOD_INV,     "CalcModularInverses",   0,      0,         0,      NULL}, // called by gpusieve_init_exponent
      {   CL_SIEVE,            "SegSieve",              0,      0,         0,      NULL}, // GPU sieve
+     {   BARRETT79_MUL32_GS,  "cl_barrett32_79_gs",   10,     10,         1,      NULL}, // one kernel for all vector sizes
+     {   BARRETT77_MUL32_GS,  "cl_barrett32_77_gs",   64,     77,         1,      NULL}, // one kernel for all vector sizes
+     {   BARRETT76_MUL32_GS,  "cl_barrett32_76_gs",   64,     10,         1,      NULL}, // one kernel for all vector sizes
+     {   BARRETT92_MUL32_GS,  "cl_barrett32_92_gs",   65,     10,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT88_MUL32_GS,  "cl_barrett32_88_gs",   65,     10,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT87_MUL32_GS,  "cl_barrett32_87_gs",   65,     10,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT73_MUL15_GS,  "cl_barrett15_73_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT69_MUL15_GS,  "cl_barrett15_69_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT70_MUL15_GS,  "cl_barrett15_70_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT71_MUL15_GS,  "cl_barrett15_71_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
+};
+
+/* save-save
      {   BARRETT79_MUL32_GS,  "cl_barrett32_79_gs",   64,     79,         1,      NULL}, // one kernel for all vector sizes
      {   BARRETT77_MUL32_GS,  "cl_barrett32_77_gs",   64,     77,         1,      NULL}, // one kernel for all vector sizes
      {   BARRETT76_MUL32_GS,  "cl_barrett32_76_gs",   64,     76,         1,      NULL}, // one kernel for all vector sizes
@@ -106,9 +122,7 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     88,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     83,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL}, // one kernel for all vector sizes
-};
-
-
+*/
 void printArray(const char * Name, const cl_uint * Data, const cl_uint len, cl_uint hex=0)
 {
   cl_uint i, o, c, val;
@@ -465,7 +479,7 @@ int init_CL(int num_streams, cl_int devnumber)
       dev_from  = --devnumber;  // index from 0
     }
   }
-  printf("Get device info - "); fflush(NULL);
+  printf("Get device info - "); fflush(stdout);
    
   for (i=dev_from; i<dev_to; i++)
   {
@@ -660,7 +674,7 @@ int init_CL(int num_streams, cl_int devnumber)
 #else
   printf("Compiling kernels .");
 #endif
-  fflush(NULL);
+  fflush(stdout);
   // program_options can be overridden by setting en environment variable AMD_OCL_BUILD_OPTIONS
 
   status = clBuildProgram(program, 1, &devices[devnumber], program_options, NULL, NULL);
@@ -705,17 +719,20 @@ int init_CL(int num_streams, cl_int devnumber)
 
   free(source);
   /* get kernels by name */
-  for (i=_TEST_MOD_; i<UNKNOWN_KERNEL; i++)
+  if (mystuff.gpu_sieving == 0)
   {
-    putchar('.'); fflush(stdout);
-    kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
-    if(status != CL_SUCCESS)
+    for (i=_TEST_MOD_; i<UNKNOWN_KERNEL; i++)
     {
-      std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
-      return 1;
+      putchar('.'); fflush(stdout);
+      kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
+      if(status != CL_SUCCESS)
+      {
+        std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
+        return 1;
+      }
     }
   }
-  if (mystuff.gpu_sieving == 1)
+  else
   {
     for (i=CL_CALC_BIT_TO_CLEAR; i<=BARRETT82_MUL15_GS; i++)
     {
@@ -1903,17 +1920,19 @@ int run_gs_kernel(cl_kernel kernel, cl_uint numblocks, cl_uint shared_mem_requir
 {
   /*
 __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const __global uint * restrict bit_array, const uint bits_to_process, __local ushort *smem, const int shiftcount,
-                           __private int192_t bb, __global uint * restrict RES, const int bit_max64
+                           __private int192_t bb, __global uint * restrict RES, const int bit_max64, const uint shared_mem_allocated
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
          )
 */
   // params 1 (k_base) and 6 (bb) are already set when entering this function
-  cl_int status;
+  cl_int   status;
+  cl_event run_event;
   size_t   globalThreads=numblocks*256;
   size_t   localThreads=256;
 
+  shared_mem_required = (shared_mem_required + 128) & 0xFFFFFF80; // 128-byte-multiple
   if (new_class)
   {
     new_class = 0;
@@ -1985,13 +2004,23 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&tmp);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (gpu_sieve_processing_size)\n";
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (bit_max64)\n";
+  		return 1;
+  	}
+
+    status = clSetKernelArg(kernel, 
+                    9, 
+                    sizeof(cl_uint), 
+                    (void *)&shared_mem_required);
+    if(status != CL_SUCCESS) 
+  	{ 
+  		std::cerr<< "Error " << status << ": Setting kernel argument. (shared_mem_required)\n";
   		return 1;
   	}
 
 #ifdef CHECKS_MODBASECASE
       status = clSetKernelArg(l_kernel, 
-                    9, 
+                    10, 
                     sizeof(cl_mem), 
                     (void *)&mystuff.d_modbasecase_debug);
       if(status != CL_SUCCESS) 
@@ -2010,7 +2039,12 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                  &localThreads,
                  0,
                  NULL,
-                 NULL); // no need to wait for anything - they will be processed serially, and we read the results synchronously.
+#ifdef CL_PERFORMANCE_INFO
+                 &run_event
+#else
+                 NULL
+#endif
+                 ); // no need to wait for anything - they will be processed serially, and we read the results synchronously.
 
   if(status != CL_SUCCESS) 
 	{ 
@@ -2018,6 +2052,37 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
 		return 1;
 	}
   clFlush(QUEUE);
+#ifdef CL_PERFORMANCE_INFO
+  clFinish(QUEUE);
+  cl_ulong startTime=0;  // device time in nanosecs
+  cl_ulong endTime=1000;
+  /* Get kernel profiling info */
+  status = clGetEventProfilingInfo(run_event,
+                                CL_PROFILING_COMMAND_START,
+                                sizeof(cl_ulong),
+                                &startTime,
+                                0);
+  if(status != CL_SUCCESS)
+ 	{ 
+		std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+    return RET_ERROR;
+  }
+  status = clGetEventProfilingInfo(run_event,
+                                CL_PROFILING_COMMAND_END,
+                                sizeof(cl_ulong),
+                                &endTime,
+                                0);
+  if(status != CL_SUCCESS) 
+ 	{ 
+		std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+    return RET_ERROR;
+  }
+  std::cout<< "TF using " << globalThreads << " threads: " << (endTime - startTime)/1e6 << " ms ("
+                       << globalThreads * 1e3 / (endTime - startTime) << " M/s), " <<
+                       mystuff.gpu_sieve_size * 1e3 / (endTime - startTime) << " M FCs/s TF'd (after sieving)\n";
+  clReleaseEvent(mystuff.copy_events[0]);
+#endif
+
 	return 0;
 }
 
@@ -2363,10 +2428,6 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
           k_base.d2 = 0;
           status = run_gs_kernel32(kernel_info[use_kernel].kernel, numblocks, shared_mem_required, k_base, b_192, shiftcount);
         }
-
-        k_base.d0 = (int) (k_min & 0xFFFFFFFF);
-        k_base.d1 = (int) (k_min >> 32);
-        k_base.d2 = 0;
 
         // Count the number of blocks processed
         count += numblocks;

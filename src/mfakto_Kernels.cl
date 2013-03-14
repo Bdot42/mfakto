@@ -41,7 +41,7 @@ Version 0.13
 #define WA_FOR_CATALYST11_10_BUG
 
 // TRACE_KERNEL: higher is more trace, 0-5 currently used
-#define TRACE_KERNEL 0
+#define TRACE_KERNEL 5
 
 // If above tracing is on, only the thread with the ID below will trace
 #define TRACE_TID 0
@@ -171,7 +171,7 @@ in this case f is written into the RES array. */
     if(f.d2 != 0 || f.d1 != 0 || f.d0 != 1)	/* 1 isn't really a factor ;) */
     {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-      printf("tid=%ld found factor: q=%x:%x:%x\n", get_local_id(0), f.d2.s0, f.d1.s0, f.d0.s0);
+      printf((__constant char *)"tid=%ld found factor: q=%x:%x:%x\n", get_local_id(0), f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
       index=ATOMIC_INC(RES[0]);
       if(index < 10)				/* limit to 10 factors per class */
@@ -234,7 +234,7 @@ there. */
   if( ((a.d2|a.d1)==0 && a.d0==1) )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-    printf("tid=%ld found factor: q=%x:%x:%x\n", get_local_id(0), f.d2.s0, f.d1.s0, f.d0.s0);
+    printf((__constant char *)"tid=%ld found factor: q=%x:%x:%x\n", get_local_id(0), f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     index=ATOMIC_INC(RES[0]);
@@ -391,7 +391,7 @@ are "out of range".
   }
 #endif
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf("mod_simple_96: q=%x:%x:%x, n=%x:%x:%x, nf=%G, qf=%G, qi=%x\n",
+    if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, n=%x:%x:%x, nf=%G, qf=%G, qi=%x\n",
         q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
 #endif
 
@@ -403,7 +403,7 @@ are "out of range".
   nn.d2 += mul_hi(n.d1, qi) + n.d2* qi;
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf("mod_simple_96: nn=%x:%x:%x\n",
+    if (tid==TRACE_TID) printf((__constant char*)"mod_simple_96: nn=%x:%x:%x\n",
         nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
@@ -532,7 +532,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 )
 {
   __private uint i,f, tid;
-  int180_v resv = {{0,0,0,0}};
+  int180_v resv;
   int90_v a, as, b, r, m;
   tid = get_global_id(0);
   float_v ff = 1.0f;
@@ -540,7 +540,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 
 //  barrier(CLK_GLOBAL_MEM_FENCE);
 #if (TRACE_KERNEL > 0)
-    printf("kernel tracing level %d enabled\n", TRACE_KERNEL);
+    printf((__constant char *)"kernel tracing level %d enabled\n", TRACE_KERNEL);
 #endif
   a.d0=1;
   a.d1=0;
@@ -548,12 +548,15 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   a.d3=0x0003;
   a.d4=0x7000;
   a.d5=0x0010;
+
+  square_90_180(&resv, a);
+
   /*
   b=invmod2pow90(a);
   r=neginvmod2pow90(a);
 
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf("test: a=%x:%x:%x:%x:%x:%x, invmod2pow90(a)=%x:%x:%x:%x:%x:%x(b)  neg= %x:%x:%x:%x:%x:%x(r)\n",
+  if (tid==TRACE_TID) printf((__constant char *)"test: a=%x:%x:%x:%x:%x:%x, invmod2pow90(a)=%x:%x:%x:%x:%x:%x(b)  neg= %x:%x:%x:%x:%x:%x(r)\n",
         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
         b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
         r.d5.s0, r.d4.s0, r.d3.s0, r.d2.s0, r.d1.s0, r.d0.s0);
@@ -562,7 +565,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   mul_90(&b, a, b);
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("test: a*b= %x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"test: a*b= %x:%x:%x:%x:%x:%x\n",
         b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0);
 #endif
   ff= CONVERT_FLOAT_RTP_V(mad24(a.d5, 32768u, a.d4));
@@ -585,7 +588,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 #endif
 
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf("test: as=%x:%x:%x:%x:%x:%x, -a=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"test: as=%x:%x:%x:%x:%x:%x, -a=%x:%x:%x:%x:%x:%x\n",
         as.d5.s0, as.d4.s0, as.d3.s0, as.d2.s0, as.d1.s0, as.d0.s0,
         b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0);
 #endif
@@ -593,14 +596,14 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   m = mod_REDC90(as, a, r);
 
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf("test: mod_REDC90(as, a, r)=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"test: mod_REDC90(as, a, r)=%x:%x:%x:%x:%x:%x\n",
         m.d5.s0, m.d4.s0, m.d3.s0, m.d2.s0, m.d1.s0, m.d0.s0);
 #endif
 
   m = squaremod_REDC90(as, a, r);
 
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf("test: mulmod_REDC90(as, as, a, r)=%x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"test: mulmod_REDC90(as, as, a, r)=%x:%x:%x:%x:%x:%x\n",
         m.d5.s0, m.d4.s0, m.d3.s0, m.d2.s0, m.d1.s0, m.d0.s0);
 #endif
 
@@ -613,7 +616,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 
   mul_90_180_no_low3(&resv, a, b);
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("test: a=%x:%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x:%x:%x:%x:...\n",
+  if (tid==TRACE_TID) printf((__constant char *)"test: a=%x:%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x:%x:%x:%x:...\n",
         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
         b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
         resv.db.s0, resv.da.s0, resv.d9.s0, resv.d8.s0, resv.d7.s0, resv.d6.s0, resv.d5.s0, resv.d4.s0, resv.d3.s0);
@@ -621,7 +624,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   inc_if_ge_90(&a, a, b);
   mul_90_180_no_low3(&resv, a, b);
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("test: a=%x:%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x:%x:%x:%x:...\n",
+  if (tid==TRACE_TID) printf((__constant char *)"test: a=%x:%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x:%x:%x:%x:...\n",
         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
         b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
         resv.db.s0, resv.da.s0, resv.d9.s0, resv.d8.s0, resv.d7.s0, resv.d6.s0, resv.d5.s0, resv.d4.s0, resv.d3.s0);
@@ -645,7 +648,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   res[30] = r.d5.s0 + r.d4.s0 + r.d3.s0 + r.d2.s0 + r.d1.s0 + r.d0.s0;
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("test: %x:%x:120x0 / a=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"test: %x:%x:120x0 / a=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x\n",
         i, f, 
         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
         r.d5.s0, r.d4.s0, r.d3.s0, r.d2.s0, r.d1.s0, r.d0.s0);
@@ -669,7 +672,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 #endif
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf("test: %x:%x:120x0 / b=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"test: %x:%x:120x0 / b=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x\n",
         i, f, 
         b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
         r.d5.s0, r.d4.s0, r.d3.s0, r.d2.s0, r.d1.s0, r.d0.s0);
@@ -680,7 +683,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   if (1 == 1)
   {
     i=ATOMIC_INC(res[0]);
-    printf("thread %d: i=%d, res[0]=%d\n", get_global_id(0), i, res[0]);
+    printf((__constant char *)"thread %d: i=%d, res[0]=%d\n", get_global_id(0), i, res[0]);
 
     if(i<10)				/* limit to 10 results */
     {

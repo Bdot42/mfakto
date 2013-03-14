@@ -1022,11 +1022,14 @@ int main(int argc, char **argv)
   if(mystuff.verbosity >= 1)
   {
     printf("Compiletime options\n");
+    if (mystuff.gpu_sieving == 0)
+    {
 #ifdef SIEVE_SIZE_LIMIT
-    printf("  SIEVE_SIZE_LIMIT          %dkiB\n", SIEVE_SIZE_LIMIT);
-    printf("  SIEVE_SIZE                %dbits\n", SIEVE_SIZE);
+      printf("  SIEVE_SIZE_LIMIT          %dkiB\n", SIEVE_SIZE_LIMIT);
+      printf("  SIEVE_SIZE                %dbits\n", SIEVE_SIZE);
 #endif
-    printf("  SIEVE_SPLIT               %d\n", SIEVE_SPLIT);
+      printf("  SIEVE_SPLIT               %d\n", SIEVE_SPLIT);
+    }
   }
   if(mystuff.gpu_sieving == 0 && SIEVE_SPLIT > mystuff.sieve_primes_min)
   {
@@ -1104,7 +1107,7 @@ int main(int argc, char **argv)
     {
       mystuff.gpu_type = GPU_VLIW5;
     }
-    else if (strstr(deviceinfo.d_name, "RV7"))         // 4xxx
+    else if (strstr(deviceinfo.d_name, "RV7"))         // 4xxx (ATI RV 7xx)
     {
       mystuff.gpu_type = GPU_VLIW5;
       gpu_types[mystuff.gpu_type].CE_per_multiprocessor = 40; // though VLIW5, only 40 instead of 80 compute elements
