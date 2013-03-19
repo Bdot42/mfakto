@@ -41,7 +41,7 @@ Version 0.13
 #define WA_FOR_CATALYST11_10_BUG
 
 // TRACE_KERNEL: higher is more trace, 0-5 currently used
-#define TRACE_KERNEL 5
+#define TRACE_KERNEL 0
 
 // If above tracing is on, only the thread with the ID below will trace
 #define TRACE_TID 0
@@ -173,7 +173,7 @@ in this case f is written into the RES array. */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
       printf((__constant char *)"tid=%ld found factor: q=%x:%x:%x\n", get_local_id(0), f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
-      index=ATOMIC_INC(RES[0]);
+      int index=ATOMIC_INC(RES[0]);
       if(index < 10)				/* limit to 10 factors per class */
       {
         RES[index * 3 + 1] = f.d2;
@@ -237,7 +237,7 @@ there. */
     printf((__constant char *)"tid=%ld found factor: q=%x:%x:%x\n", get_local_id(0), f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
-    index=ATOMIC_INC(RES[0]);
+    int index=ATOMIC_INC(RES[0]);
     if(index<10)				/* limit to 10 factors per class */
     {
       RES[index*3 + 1]=f.d2;
@@ -509,21 +509,22 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   }
 }
 
-#ifdef CL_GPU_SIEVE
-#include "gpusieve.cl"
-#endif
 #include "barrett15.cl"  // mul24-based barrett 73-bit kernel using a word size of 15 bit
 #include "barrett.cl"   // one kernel file for 32-bit-barrett of different vector sizes (1, 2, 4, 8, 16)
-#define EVAL_RES(x) EVAL_RES_b(x)  // no check for f==1 if running the "big" version
-#include "mul24.cl" // one kernel file for 24-bit-kernels of different vector sizes (1, 2, 4, 8, 16)
-#include "barrett24.cl"  // mul24-based barrett 72-bit kernel (all vector sizes)
-#include "montgomery.cl"  // montgomery kernels
 
-#define _63BIT_MUL24_K
-#undef EVAL_RES
-#define EVAL_RES(x) EVAL_RES_a(x)
-#include "mul24.cl" // include again, now for small factors < 64 bit
+#ifdef CL_GPU_SIEVE
+  #include "gpusieve.cl"
+#else
+  #include "mul24.cl" // one kernel file for 24-bit-kernels of different vector sizes (1, 2, 4, 8, 16)
+  #include "barrett24.cl"  // mul24-based barrett 72-bit kernel (all vector sizes)
+  #include "montgomery.cl"  // montgomery kernels
+  #define EVAL_RES(x) EVAL_RES_b(x)  // no check for f==1 if running the "big" version
 
+  #define _63BIT_MUL24_K
+  #undef EVAL_RES
+  #define EVAL_RES(x) EVAL_RES_a(x)
+  #include "mul24.cl" // include again, now for small factors < 64 bit
+#endif
 
 // this kernel is only used for a quick test at startup - no need to be correct ;-)
 // currently this kernel is used for testing what happens without atomics when multiple factors are found
@@ -533,7 +534,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 {
   __private uint i,f, tid;
   int180_v resv;
-  int90_v a, as, b, r, m;
+  int90_v a, b, r;
   tid = get_global_id(0);
   float_v ff = 1.0f;
 
@@ -637,6 +638,13 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
   */
 #if (VECTOR_SIZE > 1)
+  b.d0=11;
+  b.d1=0;
+  b.d2=0x0;
+  b.d3=0x0;
+  b.d4=0x0;
+  b.d5=0x3FFF;
+
   i=mad24(resv.db.s0, 32768u, resv.da.s0)>>2;
   f=(mad24(resv.db.s0, 32768u, resv.da.s0)<<30) + mad24(resv.d9.s0, 32768u, resv.d8.s0);
   div_180_90(&r, i, a, ff

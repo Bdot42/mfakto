@@ -78,11 +78,11 @@ than an equal SIEVE_SIZE_LIMIT #define.
    pure times needed to copy the data over, and to test the FC's of the chunk
    (pure run time per kernel invokation) - best measure to compare changes in
    the kernels, or drivers. */
-#define CL_PERFORMANCE_INFO
+// #define CL_PERFORMANCE_INFO
 
 
 /* Tell the OpenCL compiler to create debuggable code for the Kernels */
-//#define CL_DEBUG
+//define CL_DEBUG
 
 /* in order to more efficiently trace/debug the kernels, this define makes
    the factor to be found the first candidate during the selftest, so that

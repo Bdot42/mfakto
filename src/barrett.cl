@@ -404,7 +404,6 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
   __private float_v qf;
   __private uint_v qi, tmp, carry;
   __private int192_v nn;
-  __private int96_v tmp96;
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
@@ -661,58 +660,7 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
   
   return;
 
-// nn = n * qi
-  nn.d0  = n.d0 * qi;
-  nn.d1  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d1 += tmp;
-  nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
-#ifndef CHECKS_MODBASECASE
-  nn.d2 += mul_hi(n.d1, qi) + n.d2* qi;
-#else
-  tmp    = mul_hi(n.d1, qi);
-  nn.d2 += tmp;
-  nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  tmp    = n.d2* qi;
-  nn.d2 += tmp;
-  nn.d3 += AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  nn.d3 += mul_hi(n.d2, qi);
-#endif  
-
-//  q = q - nn
-  carry= AS_UINT_V((nn.d0 > q.d0) ? 1 : 0);
-  q.d0 = q.d0 - nn.d0;
-
-  tmp  = q.d1 - nn.d1 - carry;
-  carry= AS_UINT_V(((tmp > q.d1) || (carry && AS_UINT_V(tmp == q.d1))) ? 1 : 0);
-  q.d1 = tmp;
-
-#ifndef CHECKS_MODBASECASE
-  q.d2 = q.d2 - nn.d2 - carry;
-#else
-  tmp  = q.d2 - nn.d2 - carry;
-  carry= AS_UINT_V(((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2))) ? 1 : 0);
-  q.d2 = tmp;
-
-  q.d3 = q.d3 - nn.d3 - carry;
-#endif
-
-//  res->d0=q.d0;
-//  res->d1=q.d1;
-//  res->d2=q.d2;
-  tmp96.d0=q.d0;
-  tmp96.d1=q.d1;
-  tmp96.d2=q.d2;
-  
-  MODBASECASE_NONZERO_ERROR(q.d5, 6, 5, 9);
-  MODBASECASE_NONZERO_ERROR(q.d4, 6, 4, 10);
-  MODBASECASE_NONZERO_ERROR(q.d3, 6, 3, 11);
-
-/*
-qi is allways a little bit too small, this is OK for all steps except the last
-one. Sometimes the result is a little bit bigger than n
-*/
-  inc_if_ge_96(res, tmp96, n);
+// not finishing the final multiplication/subtraction/comparison leaves the result off by 1 at most.
 }
 
 
@@ -731,7 +679,6 @@ DIV_160_96 here. */
   __private float_v qf;
   __private uint_v qi, tmp, carry;
   __private int192_v nn;
-  __private int96_v tmp96;
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
@@ -983,58 +930,7 @@ DIV_160_96 here. */
 
   return;
 
-// nn = n * qi
-  nn.d0  = n.d0 * qi;
-  nn.d1  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d1 += tmp;
-  nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
-#ifndef CHECKS_MODBASECASE
-  nn.d2 += mul_hi(n.d1, qi) + n.d2* qi;
-#else
-  tmp    = mul_hi(n.d1, qi);
-  nn.d2 += tmp;
-  nn.d3  = AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  tmp    = n.d2* qi;
-  nn.d2 += tmp;
-  nn.d3 += AS_UINT_V((tmp > nn.d2)? 1 : 0);
-  nn.d3 += mul_hi(n.d2, qi);
-#endif  
-
-//  q = q - nn
-  carry= AS_UINT_V((nn.d0 > q.d0) ? 1 : 0);
-  q.d0 = q.d0 - nn.d0;
-
-  tmp  = q.d1 - nn.d1 - carry;
-  carry= AS_UINT_V(((tmp > q.d1) || (carry && AS_UINT_V(tmp == q.d1))) ? 1 : 0);
-  q.d1 = tmp;
-
-#ifndef CHECKS_MODBASECASE
-  q.d2 = q.d2 - nn.d2 - carry;
-#else
-  tmp  = q.d2 - nn.d2 - carry;
-  carry= AS_UINT_V(((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2))) ? 1 : 0);
-  q.d2 = tmp;
-
-  q.d3 = q.d3 - nn.d3 - carry;
-#endif
-
-//  res->d0=q.d0;
-//  res->d1=q.d1;
-//  res->d2=q.d2;
-  tmp96.d0=q.d0;
-  tmp96.d1=q.d1;
-  tmp96.d2=q.d2;
-  
-  MODBASECASE_NONZERO_ERROR(q.d5, 6, 5, 9);
-  MODBASECASE_NONZERO_ERROR(q.d4, 6, 4, 10);
-  MODBASECASE_NONZERO_ERROR(q.d3, 6, 3, 11);
-
-/*
-qi is allways a little bit too small, this is OK for all steps except the last
-one. Sometimes the result is a little bit bigger than n
-*/
-  inc_if_ge_96(res, tmp96, n);
+// not finishing the final multiplication/subtraction/comparison leaves the result off by 1 at most.
 }
 
 #undef DIV_160_96
@@ -4959,8 +4855,13 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_b(sf)
 #endif
 }
-__kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const __global uint * restrict bit_array, const uint bits_to_process, __local uint *smem, const int shiftcount,
-                           __private int192_t bb, __global uint * restrict RES, const int bit_max64, const uint shared_mem_allocated
+
+__kernel void cl_barrett32_77_gs(__private uint exponent, const int96_t k_base,
+                                 const __global uint * restrict bit_array,
+                                 const uint bits_to_process, __local ushort *smem,
+                                 const int shiftcount, __private int192_t bb,
+                                 __global uint * restrict RES, const int bit_max64,
+                                 const uint shared_mem_allocated // only used to verify assumptions
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
@@ -4971,31 +4872,30 @@ a is precomputed on host ONCE.
 */
 {
   int i, words_per_thread, initial_shifter_value, sieve_word, k_bit_base, total_bit_count;
-  __local   uint     bitcount[256];	// Each thread of our block puts bit-counts here
-  __private int96_t  exp96, my_k_base, f_base;
-  __private int96_v  a, u, f;
+  __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
+  __private int96_v  my_k_base, a, u, f;
   __private int192_v tmp192, b;
   __private int96_v  tmp96;
   __private float_v  ff;
-  __private uint     tid=get_global_id(0), tmp;
+  __private uint     tid=get_global_id(0), lid=get_local_id(0);
   __private uint_v   tmp_v, carry;
 
   // Get pointer to section of the bit_array this thread is processing.
 
   words_per_thread = bits_to_process / 8192;
-  bit_array += get_group_id(0) * bits_to_process / 32 + get_local_id(0) * words_per_thread;
+  bit_array += get_group_id(0) * bits_to_process / 32 + lid * words_per_thread;
 
 #if (TRACE_KERNEL > 0)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: exp=%d=%x, k=%x:%x:%x, bits=%d, shift=%d, bit_max64=%d, bb=%x:%x:%x:%x:%x:%x\n",
-        exp, exp, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max64, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0);
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max64, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0);
 #endif
 
 
 // Count number of bits set in this thread's word(s) from the bit_array
 
-  bitcount[get_local_id(0)] = 0;
+  bitcount[lid] = 0;
   for (i = 0; i < words_per_thread; i++)
-    bitcount[get_local_id(0)] +=  popcount(bit_array[i]);
+    bitcount[lid] +=  popcount(bit_array[i]);
 
   barrier(CLK_LOCAL_MEM_FENCE);
 #if (TRACE_KERNEL > 3)
@@ -5011,38 +4911,38 @@ a is precomputed on host ONCE.
 
   // First five tallies remain within one warp.  Should be in lock-step.
   // AMD devs always run 16 threads at once => just 4 tallies
-  if (get_local_id(0) & 1)        // If we are running on any thread 0bxxxxxxx1, tally neighbor's count.
-    bitcount[get_local_id(0)] += bitcount[get_local_id(0) - 1];
+  if (lid & 1)        // If we are running on any thread 0bxxxxxxx1, tally neighbor's count.
+    bitcount[lid] += bitcount[lid - 1];
 
-  barrier(CLK_LOCAL_MEM_FENCE);
 #if (TRACE_KERNEL > 3)
+  barrier(CLK_LOCAL_MEM_FENCE);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: bitcount1: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ..., %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
         bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9],
          bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
 #endif
 
-  if (get_local_id(0) & 2)        // If we are running on any thread 0bxxxxxx1x, tally neighbor's count.
-    bitcount[get_local_id(0)] += bitcount[(get_local_id(0) - 2) | 1];
+  if (lid & 2)        // If we are running on any thread 0bxxxxxx1x, tally neighbor's count.
+    bitcount[lid] += bitcount[(lid - 2) | 1];
 
-  barrier(CLK_LOCAL_MEM_FENCE);
 #if (TRACE_KERNEL > 3)
+  barrier(CLK_LOCAL_MEM_FENCE);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: bitcount2: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ..., %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
         bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9],
          bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
 #endif
 
-  if (get_local_id(0) & 4)        // If we are running on any thread 0bxxxxx1xx, tally neighbor's count.
-    bitcount[get_local_id(0)] += bitcount[(get_local_id(0) - 4) | 3];
+  if (lid & 4)        // If we are running on any thread 0bxxxxx1xx, tally neighbor's count.
+    bitcount[lid] += bitcount[(lid - 4) | 3];
 
-  barrier(CLK_LOCAL_MEM_FENCE);
 #if (TRACE_KERNEL > 3)
+  barrier(CLK_LOCAL_MEM_FENCE);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: bitcount4: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ..., %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
         bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9],
          bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
 #endif
 
-  if (get_local_id(0) & 8)        // If we are running on any thread 0bxxxx1xxx, tally neighbor's count.
-    bitcount[get_local_id(0)] += bitcount[(get_local_id(0) - 8) | 7];
+  if (lid & 8)        // If we are running on any thread 0bxxxx1xxx, tally neighbor's count.
+    bitcount[lid] += bitcount[(lid - 8) | 7];
 
   barrier(CLK_LOCAL_MEM_FENCE);
 #if (TRACE_KERNEL > 3)
@@ -5051,8 +4951,8 @@ a is precomputed on host ONCE.
          bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
 #endif
 
- if (get_local_id(0) & 16)       // If we are running on any thread 0bxxx1xxxx, tally neighbor's count.
-    bitcount[get_local_id(0)] += bitcount[(get_local_id(0) - 16) | 15];
+ if (lid & 16)       // If we are running on any thread 0bxxx1xxxx, tally neighbor's count.
+    bitcount[lid] += bitcount[(lid - 16) | 15];
 
   // Further tallies are across warps.  Must synchronize
   barrier(CLK_LOCAL_MEM_FENCE);
@@ -5062,8 +4962,8 @@ a is precomputed on host ONCE.
          bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
 #endif
 
-  if (get_local_id(0)  & 32)      // If we are running on any thread 0bxx1xxxxx, tally neighbor's count.
-    bitcount[get_local_id(0)] += bitcount[(get_local_id(0) - 32) | 31];
+  if (lid  & 32)      // If we are running on any thread 0bxx1xxxxx, tally neighbor's count.
+    bitcount[lid] += bitcount[(lid - 32) | 31];
 
   barrier(CLK_LOCAL_MEM_FENCE);
 #if (TRACE_KERNEL > 3)
@@ -5072,8 +4972,8 @@ a is precomputed on host ONCE.
          bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
 #endif
 
-  if (get_local_id(0) & 64)       // If we are running on any thread 0bx1xxxxxx, tally neighbor's count.
-    bitcount[get_local_id(0)] += bitcount[(get_local_id(0) - 64) | 63];
+  if (lid & 64)       // If we are running on any thread 0bx1xxxxxx, tally neighbor's count.
+    bitcount[lid] += bitcount[(lid - 64) | 63];
 
   barrier(CLK_LOCAL_MEM_FENCE);
 #if (TRACE_KERNEL > 3)
@@ -5082,8 +4982,8 @@ a is precomputed on host ONCE.
          bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
 #endif
 
-  if (get_local_id(0) & 128)       // If we are running on any thread 0b1xxxxxxx, tally neighbor's count.
-    bitcount[get_local_id(0)] += bitcount[127];
+  if (lid & 128)       // If we are running on any thread 0b1xxxxxxx, tally neighbor's count.
+    bitcount[lid] += bitcount[127];
 
   // At this point, bitcount[...] contains the total number of bits for the indexed
   // thread plus all lower-numbered threads.  I.e., bitcount[255] is the total count.
@@ -5109,14 +5009,14 @@ a is precomputed on host ONCE.
 // Loop til this thread's section of the bit array is finished.
 
   sieve_word = *bit_array;
-  k_bit_base = get_local_id(0) * words_per_thread * 32;
-  for (i = total_bit_count - bitcount[get_local_id(0)]; ; i++) {
+  k_bit_base = lid * words_per_thread * 32;
+  for (i = total_bit_count - bitcount[lid]; ; i++) {
     int bit_to_test;
 
 // Make sure we have a non-zero sieve word
 
-    while (sieve_word == 0) {
-      if (--words_per_thread == 0) break;
+    while (sieve_word == 0 && (--words_per_thread > 0))
+    {
       sieve_word = *++bit_array;
       k_bit_base += 32;
     }
@@ -5132,7 +5032,7 @@ a is precomputed on host ONCE.
 
 // Copy the k value to the shared memory array
 
-    smem[i] = k_bit_base + bit_to_test;
+    smem[i] = convert_ushort(k_bit_base + bit_to_test);
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: smem[%d]=%d\n",
         i, k_bit_base + bit_to_test);
@@ -5152,62 +5052,58 @@ a is precomputed on host ONCE.
 // Now we can start TFing candidates.
 
 // Init some stuff that will be used for all k's tested
-
-  initial_shifter_value = exp << (32 - shiftcount);	// Initial shifter value
-
 // Compute factor corresponding to first sieve bit in this block.
 
-  // Compute base k value
-  my_k_base.d0 = mad24(NUM_CLASSES, mul24(bits_to_process, get_group_id(0)), k_base.d0);
-  my_k_base.d1 = k_base.d1 + mul_hi(NUM_CLASSES, mul24(bits_to_process, get_group_id(0))) + (k_base.d0 > my_k_base.d0)? 1u : 0u;	/* k is limited to 2^64 -1 so there is no need for k.d2 */
-  // k_base.d0 = __add_cc (k_base.d0, __umul32  (blockIdx.x * bits_to_process, NUM_CLASSES));
-  // k_base.d1 = __addc   (k_base.d1, __umul32hi(blockIdx.x * bits_to_process, NUM_CLASSES)); /* k values are limited to 64 bits */
+  initial_shifter_value = exponent << (32 - shiftcount);	// Initial shifter value
 
-  // Compute k * exp
-  f_base.d0 = my_k_base.d0 * exp;
-  tmp       = mul_hi(my_k_base.d0, exp);
-  f_base.d1 = tmp + my_k_base.d1 * exp;
-  f_base.d2 = mul_hi(my_k_base.d1, exp) + (tmp > f_base.d1)? 1 : 0;
-
-  // f_base.d0 =                                      __umul32(k_base.d0, exp);
-  // f_base.d1 = __add_cc(__umul32hi(k_base.d0, exp), __umul32(k_base.d1, exp));
-  // f_base.d2 = __addc  (__umul32hi(k_base.d1, exp),                       0);
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: k_base=%x:%x, k_base*exp=%x:%x:%x, shift=%d, shifted exp=%#x\n",
-        my_k_base.d1, my_k_base.d0, f_base.d2, f_base.d1, f_base.d0, shiftcount, initial_shifter_value);
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: shift=%d, shifted exp=%#x\n",
+        shiftcount, initial_shifter_value);
 #endif
 
-  // Compute f_base = 2 * k * exp + 1
-  f_base.d2 = amd_bitalign(f_base.d2, f_base.d1, 31);
-  f_base.d1 = amd_bitalign(f_base.d1, f_base.d0, 31);
-//  f_base.d2 = (f_base.d2 << 1) | (f_base.d1 >> 31);
-//  f_base.d1 = (f_base.d1 << 1) | (f_base.d0 >> 31);
-  f_base.d0 = f_base.d0 << 1 + 1;
-
-// Loop til the k values written to shared memory are exhausted
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: k_base=%x:%x, f_base=%x:%x:%x, shift=%d, shifted exp=%#x\n",
-        my_k_base.d1, my_k_base.d0, f_base.d2, f_base.d1, f_base.d0, shiftcount, initial_shifter_value);
-#endif
-
-  for (i = get_local_id(0); i < total_bit_count; i += 256) // THREADS_PER_BLOCK
+  for (i = lid; i < total_bit_count; i += 256) // THREADS_PER_BLOCK
   {
-    int96_v f;
-    uint k_delta;
+    uint_v k_delta;
 
 // Get the (k - k_base) value to test
 
-    k_delta = smem[i];  // PERF: we should read VECTORSIZE elements per thread
+    k_delta.x = mad24(bits_to_process, get_group_id(0), smem[i]);
+    i += 256;
+    k_delta.y = mad24(bits_to_process, get_group_id(0), smem[i]);
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
-    f.d0 = f_base.d0 + mul24(k_delta, 2u * NUM_CLASSES) * exp;
-    f.d1 = f_base.d1 + mul_hi(mul24(k_delta, 2u * NUM_CLASSES), exp) + (f_base.d0 > f.d0)? 1u : 0u;
-    f.d2 = f_base.d2 + (f_base.d1 > f.d1 || (f_base.d1 == f.d1 && f_base.d0 > f.d0))? 1u : 0u;
+    my_k_base.d0 = mad24(NUM_CLASSES, k_delta, k_base.d0);
+    my_k_base.d1 = k_base.d1 + mul_hi(NUM_CLASSES, k_delta) + AS_UINT_V((k_base.d0 > my_k_base.d0)? 1u : 0u);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+
+    f.d0   = my_k_base.d0 * exponent;
+    tmp_v  = mul_hi(my_k_base.d0, exponent);
+    f.d1   = my_k_base.d1 * exponent + tmp_v;
+    f.d2   = mul_hi(my_k_base.d1, exponent) + AS_UINT_V((f.d1 < tmp_v) ? 1u : 0u);
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: smem[%d]=%d (k_delta), f=%x:%x:%x\n",
-        i, k_delta, f.d2.s0, f.d1.s0, f.d0.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
+        i-256, smem[i-256], k_delta.s0, my_k_base.d0.s0, my_k_base.d1.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
+        i, smem[i], k_delta.s0, my_k_base.d0.s0, my_k_base.d1.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+#endif
+
+    ++f.d1.y;
+
+    // Compute f = 2 * k * exp + 1, both vector components at once
+    f.d2 = amd_bitalign(f.d2, f.d1, 31);
+    f.d1 = amd_bitalign(f.d1, f.d0, 31);
+    f.d0 = (f.d0 << 1) + 1;
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: f=%x:%x:%x, %x:%x:%x\n",
+        f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+#endif
+
+#ifdef OLD_METHOD
+    f.d0.y = f_base.d0 + mul24(k_delta, 2u * NUM_CLASSES) * exponent;
+    f.d1.y = f_base.d1 + mul_hi(mul24(k_delta, 2u * NUM_CLASSES), exponent) + (f_base.d0 > f.d0.y)? 1u : 0u;
+    f.d2.y = f_base.d2 + (f_base.d1 > f.d1.y || (f_base.d1 == f.d1.y && f_base.d0 > f.d0.y))? 1u : 0u;
 #endif
 
 /*
