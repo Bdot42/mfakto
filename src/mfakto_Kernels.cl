@@ -36,8 +36,9 @@ Version 0.13
     Since we've shown that 47 is a factor, 2^23-1 is not prime.
  */
 
-// Starting with Catalyst 11.10, not all parameters were passed to the kernel
+// Starting with Catalyst 11.10, not all parameters are passed to the kernel
 // -> replace user-defined struct with uint8
+// still needed as of cat 13.1
 #define WA_FOR_CATALYST11_10_BUG
 
 // TRACE_KERNEL: higher is more trace, 0-5 currently used
@@ -515,10 +516,10 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 #ifdef CL_GPU_SIEVE
   #include "gpusieve.cl"
 #else
+  #define EVAL_RES(x) EVAL_RES_b(x)  // no check for f==1 if running the "big" version
   #include "mul24.cl" // one kernel file for 24-bit-kernels of different vector sizes (1, 2, 4, 8, 16)
   #include "barrett24.cl"  // mul24-based barrett 72-bit kernel (all vector sizes)
   #include "montgomery.cl"  // montgomery kernels
-  #define EVAL_RES(x) EVAL_RES_b(x)  // no check for f==1 if running the "big" version
 
   #define _63BIT_MUL24_K
   #undef EVAL_RES

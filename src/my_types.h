@@ -77,7 +77,7 @@ typedef struct
 
 /* 192bit (6x 32bit) integer
 D=d0 + d1*(2^32) + d2*(2^64) + ... */
-typedef struct
+typedef struct _int192_t
 {
   cl_uint d0,d1,d2,d3,d4,d5;
 }int192;

@@ -4859,7 +4859,12 @@ Precalculated here since it is the same for all steps in the following loop */
 __kernel void cl_barrett32_77_gs(__private uint exponent, const int96_t k_base,
                                  const __global uint * restrict bit_array,
                                  const uint bits_to_process, __local ushort *smem,
-                                 const int shiftcount, __private int192_t bb,
+                                 const int shiftcount,
+#ifdef WA_FOR_CATALYST11_10_BUG
+                                 const uint8 b_in,
+#else
+                                 __private int192_t bb,
+#endif
                                  __global uint * restrict RES, const int bit_max64,
                                  const uint shared_mem_allocated // only used to verify assumptions
 #ifdef CHECKS_MODBASECASE
@@ -4879,6 +4884,9 @@ a is precomputed on host ONCE.
   __private float_v  ff;
   __private uint     tid=get_global_id(0), lid=get_local_id(0);
   __private uint_v   tmp_v, carry;
+#ifdef WA_FOR_CATALYST11_10_BUG
+  __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+#endif
 
   // Get pointer to section of the bit_array this thread is processing.
 
@@ -5069,7 +5077,7 @@ a is precomputed on host ONCE.
 
     k_delta.x = mad24(bits_to_process, get_group_id(0), smem[i]);
     i += 256;
-    k_delta.y = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.y = mad24(bits_to_process, (uint)get_group_id(0), (uint)((i < total_bit_count) ? smem[i] : 0xFFFF));
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
@@ -5083,9 +5091,11 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i-256, smem[i-256], k_delta.s0, my_k_base.d0.s0, my_k_base.d1.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i-256, smem[i-256], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s0, my_k_base.d0.s0, my_k_base.d1.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+        i, smem[i], k_delta.s1, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+    if (k_delta.x == 0 || k_delta.y == 0) printf((__constant char *)"cl_barrett32_77_gs: tid=%d, kdelta x: %d, y: %d\n",
+      lid, k_delta.x, k_delta.y);
 #endif
 
     ++f.d1.y;
@@ -5095,9 +5105,12 @@ a is precomputed on host ONCE.
     f.d1 = amd_bitalign(f.d1, f.d0, 31);
     f.d0 = (f.d0 << 1) + 1;
 
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: f=%x:%x:%x, %x:%x:%x\n",
-        f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+#if (TRACE_KERNEL > 0)
+    if (tid==TRACE_TID)
+       printf((__constant char *)"lid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
+        lid, get_group_id(0), i-256, smem[i-256], i, smem[i], k_delta.x, k_delta.y, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+    if (f.d0.s0 == 0x6c467957 || f.d0.s1 == 0x6c467957) printf((__constant char *)"cl_barrett32_77_gs:tid=%d: f=%x:%x:%x, %x:%x:%x\n",
+        tid, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif
 
 #ifdef OLD_METHOD
@@ -5174,8 +5187,8 @@ Precalculated here since it is the same for all steps in the following loop */
     if(shifter&0x80000000)shl_192(&b);	// "optional multiply by 2" in Prime 95 documentation
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x (b)\n",
+        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
 
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)

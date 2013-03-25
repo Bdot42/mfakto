@@ -1868,7 +1868,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   return run_gs_kernel(kernel, numblocks, shared_mem_required, shiftcount);
 }
 
-int run_gs_kernel32(cl_kernel kernel, cl_uint numblocks, cl_uint shared_mem_required, int96 k_base, int192 b_in, cl_uint shiftcount)
+int run_gs_kernel32(cl_kernel kernel, cl_uint numblocks, cl_uint shared_mem_required, int96 k_base, int192 b_preinit, cl_uint shiftcount)
 {
   cl_int   status;
   /*
@@ -1880,12 +1880,21 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
          )
 */
   // first set the specific params that don't change per block: b_in
+#ifdef WA_FOR_CATALYST11_10_BUG
+    cl_uint8 b_in={{b_preinit.d0, b_preinit.d1, b_preinit.d2, b_preinit.d3, b_preinit.d4, b_preinit.d5, 0, 0}};
+#endif
+
   if (new_class)
   {
     status = clSetKernelArg(kernel, 
                     6, 
-                    sizeof(int192), 
+#ifdef WA_FOR_CATALYST11_10_BUG
+                    sizeof(cl_uint8),
                     (void *)&b_in
+#else
+                    sizeof(int192), 
+                    (void *)&b_preinit
+#endif
         );
     if(status != CL_SUCCESS) 
   	{ 
@@ -1895,7 +1904,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   }
 #ifdef DETAILED_INFO
     printf("run_gs_kernel32: b=%x:%x:%x:%x:%x:%x, shift=%d\n",
-      b_in.d5, b_in.d4, b_in.d3, b_in.d2, b_in.d1, b_in.d0, shiftcount);
+      b_preinit.d5, b_preinit.d4, b_preinit.d3, b_preinit.d2, b_preinit.d1, b_preinit.d0, shiftcount);
 #endif
 
   // now the params that change everytime
