@@ -1862,7 +1862,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
 		return 1;
 	}
 #ifdef DETAILED_INFO
-  printf("run_gs_kernel32: k_base=%x:%x:%x\n", k_base.d2, k_base.d1, k_base.d0);
+  printf("run_gs_kernel15: k_base=%x:%x:%x\n", k_base.d2, k_base.d1, k_base.d0);
 #endif
     
   return run_gs_kernel(kernel, numblocks, shared_mem_required, shiftcount);
@@ -1941,7 +1941,10 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   size_t   globalThreads=numblocks*256;
   size_t   localThreads=256;
 
-  shared_mem_required = (shared_mem_required + 128) & 0xFFFFFF80; // 128-byte-multiple
+  shared_mem_required = (shared_mem_required + 127) & 0xFFFFFF80; // 128-byte-multiple
+#ifdef DETAILED_INFO
+  printf("run_gs_kernel: shared_mem: %u, loc/glob threads: %u/%u\n", shared_mem_required, localThreads, globalThreads);
+#endif
   if (new_class)
   {
     new_class = 0;
@@ -2324,7 +2327,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   else if (mystuff->gpu_sieve_primes < 67894) shared_mem_required = 24;	// 21814 primes expect 21.93%
   else shared_mem_required = 22;					// 67894 primes expect 19.94%
 #endif
-  shared_mem_required = mystuff->gpu_sieve_processing_size * sizeof (int) * shared_mem_required / 100;
+  shared_mem_required = mystuff->gpu_sieve_processing_size * sizeof (short) * shared_mem_required / 100;
 
   while((k_min <= k_max) || (running > 0))
   {
