@@ -4894,7 +4894,7 @@ a is precomputed on host ONCE.
   bit_array += get_group_id(0) * bits_to_process / 32 + lid * words_per_thread;
 
 #if (TRACE_KERNEL > 0)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: exp=%d=%x, k=%x:%x:%x, bits=%d, shift=%d, bit_max64=%d, bb=%x:%x:%x:%x:%x:%x\n",
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max64=%d, bb=%x:%x:%x:%x:%x:%x\n",
         exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max64, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0);
 #endif
 
@@ -5093,12 +5093,10 @@ a is precomputed on host ONCE.
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
         i-256, smem[i-256], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s1, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+        i, smem[i], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
     if (k_delta.x == 0 || k_delta.y == 0) printf((__constant char *)"cl_barrett32_77_gs: tid=%d, kdelta x: %d, y: %d\n",
       lid, k_delta.x, k_delta.y);
 #endif
-
-    ++f.d1.y;
 
     // Compute f = 2 * k * exp + 1, both vector components at once
     f.d2 = amd_bitalign(f.d2, f.d1, 31);
@@ -5107,7 +5105,7 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 0)
     if (tid==TRACE_TID)
-       printf((__constant char *)"lid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
+       printf((__constant char *)"cl_barrett32_77_gs: lid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
         lid, get_group_id(0), i-256, smem[i-256], i, smem[i], k_delta.x, k_delta.y, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
     if (f.d0.s0 == 0x6c467957 || f.d0.s1 == 0x6c467957) printf((__constant char *)"cl_barrett32_77_gs:tid=%d: f=%x:%x:%x, %x:%x:%x\n",
         tid, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
@@ -5252,8 +5250,8 @@ Precalculated here since it is the same for all steps in the following loop */
 
   a = sub_if_gte_96(a,f);	// final adjustment in case a >= f
 #if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: f=%x:%x:%x, final a = %x:%x:%x \n",
-         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: f=%x:%x:%x, %x:%x:%x final a = %x:%x:%x, %x:%x:%x \n",
+         f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1, a.d2.s0, a.d1.s0, a.d0.s0, a.d2.s1, a.d1.s1, a.d0.s1 );
 #endif
 
 /* finally check if we found a factor and write the factor to RES[] */

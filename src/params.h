@@ -42,7 +42,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 
 /* EXTENDED_SELFTEST will add about 30k additional tests to the -st2 test */
-// #define EXTENDED_SELFTEST
+#define EXTENDED_SELFTEST
 
 
 /******************
@@ -65,7 +65,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 
 /* disable sieve code to measure raw GPU performance */
-#define RAW_GPU_BENCH
+//#define RAW_GPU_BENCH
 
 
 /* issue lots of additional trace output from the C-part of the program
@@ -87,7 +87,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 /* in order to more efficiently trace/debug the kernels, this define makes
    the factor to be found the first candidate during the selftest, so that
    debugging/tracing thread 0 of the first block should yield a factor found result */
-//#define DEBUG_FACTOR_FIRST
+#define DEBUG_FACTOR_FIRST
 
 
 /******************************************************************************
