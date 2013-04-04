@@ -71,7 +71,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 /* issue lots of additional trace output from the C-part of the program
    (see mfakto_kernels.cl - TRACE_KERNEL and TRACE_TID for how to trace the
    kernel execution, kernel trace does not require a rebuild) */
-#define DETAILED_INFO
+// #define DETAILED_INFO
 
 
 /* enable the OpenCL built-in performance measurement. This will print the
@@ -87,7 +87,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 /* in order to more efficiently trace/debug the kernels, this define makes
    the factor to be found the first candidate during the selftest, so that
    debugging/tracing thread 0 of the first block should yield a factor found result */
-#define DEBUG_FACTOR_FIRST
+// #define DEBUG_FACTOR_FIRST
 
 
 /******************************************************************************

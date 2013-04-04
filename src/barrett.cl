@@ -4876,7 +4876,7 @@ shiftcount is used for precomputing without mod
 a is precomputed on host ONCE.
 */
 {
-  int i, words_per_thread, initial_shifter_value, sieve_word, k_bit_base, total_bit_count;
+  __private uint     i, words_per_thread, initial_shifter_value, sieve_word, k_bit_base, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int96_v  my_k_base, a, u, f;
   __private int192_v tmp192, b;
@@ -4891,11 +4891,11 @@ a is precomputed on host ONCE.
   // Get pointer to section of the bit_array this thread is processing.
 
   words_per_thread = bits_to_process / 8192;
-  bit_array += get_group_id(0) * bits_to_process / 32 + lid * words_per_thread;
+  bit_array += mul24(tid, words_per_thread);
 
 #if (TRACE_KERNEL > 0)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max64=%d, bb=%x:%x:%x:%x:%x:%x\n",
-        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max64, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0);
+    if (lid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max64=%d, bb=%x:%x:%x:%x:%x:%x, wpt=%u, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max64, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, words_per_thread, bit_array);
 #endif
 
 
@@ -4918,7 +4918,7 @@ a is precomputed on host ONCE.
 // CAUTION:  Following requires 256 threads per block
 
   // First five tallies remain within one warp.  Should be in lock-step.
-  // AMD devs always run 16 threads at once => just 4 tallies
+  // AMD devs always run 16 threads at once => just 4 tallies PERF: optimize this (does removing the barriers improve performance at all?)
   if (lid & 1)        // If we are running on any thread 0bxxxxxxx1, tally neighbor's count.
     bitcount[lid] += bitcount[lid - 1];
 
@@ -5075,13 +5075,13 @@ a is precomputed on host ONCE.
 
 // Get the (k - k_base) value to test
 
-    k_delta.x = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.x = mad24(bits_to_process, get_group_id(0), smem[i]);   // PERF: faster to just use i+1 and i+=512 in the loop?
     i += 256;
     k_delta.y = mad24(bits_to_process, (uint)get_group_id(0), (uint)((i < total_bit_count) ? smem[i] : 0xFFFF));
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
-    my_k_base.d0 = mad24(NUM_CLASSES, k_delta, k_base.d0);
+    my_k_base.d0 = k_base.d0 + NUM_CLASSES * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
     my_k_base.d1 = k_base.d1 + mul_hi(NUM_CLASSES, k_delta) + AS_UINT_V((k_base.d0 > my_k_base.d0)? 1u : 0u);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
 
     f.d0   = my_k_base.d0 * exponent;
@@ -5094,7 +5094,7 @@ a is precomputed on host ONCE.
         i-256, smem[i-256], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
         i, smem[i], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
-    if (k_delta.x == 0 || k_delta.y == 0) printf((__constant char *)"cl_barrett32_77_gs: tid=%d, kdelta x: %d, y: %d\n",
+    if (gid == 4703) printf((__constant char *)"cl_barrett32_77_gs: tid=%d, kdelta x: %d, y: %d\n",
       lid, k_delta.x, k_delta.y);
 #endif
 
@@ -5104,11 +5104,9 @@ a is precomputed on host ONCE.
     f.d0 = (f.d0 << 1) + 1;
 
 #if (TRACE_KERNEL > 0)
-    if (tid==TRACE_TID)
-       printf((__constant char *)"cl_barrett32_77_gs: lid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, get_group_id(0), i-256, smem[i-256], i, smem[i], k_delta.x, k_delta.y, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
-    if (f.d0.s0 == 0x6c467957 || f.d0.s1 == 0x6c467957) printf((__constant char *)"cl_barrett32_77_gs:tid=%d: f=%x:%x:%x, %x:%x:%x\n",
-        tid, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+    if (lid==TRACE_TID || get_group_id(0) == 4703)
+       printf((__constant char *)"cl_barrett32_77_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
+        lid, tid, get_group_id(0), i-256, smem[i-256], i, smem[i], k_delta.x, k_delta.y, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif
 
 #ifdef OLD_METHOD
