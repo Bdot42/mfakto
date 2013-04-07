@@ -455,7 +455,7 @@ other return value
     }
 #ifdef DEBUG_FACTOR_FIRST
     // The following line is just for debugging: it makes sure that the factor to be found is the first k being tested (so the first trace should show finding the factor)
-    k_min = k_hint - 2*4620;
+    k_min = k_hint;
 #endif
   }
 

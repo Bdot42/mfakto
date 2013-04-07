@@ -4890,7 +4890,7 @@ a is precomputed on host ONCE.
 
   // Get pointer to section of the bit_array this thread is processing.
 
-  words_per_thread = bits_to_process / 8192;
+  words_per_thread = bits_to_process / 8192; // 256 threads * 32 bits per word
   bit_array += mul24(tid, words_per_thread);
 
 #if (TRACE_KERNEL > 0)
@@ -5006,7 +5006,7 @@ a is precomputed on host ONCE.
 #endif
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: total bitcount=%d = %d bytes, %d bytes allocated\n",
-        bitcount[255], bitcount[255]*4, shared_mem_allocated);
+        bitcount[255], bitcount[255]*sizeof(short), shared_mem_allocated);
 #endif
 
 //POSSIBLE OPTIMIZATION - bitcounts and smem could use the same memory space if we'd read bitcount into a register
@@ -5094,7 +5094,7 @@ a is precomputed on host ONCE.
         i-256, smem[i-256], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
         i, smem[i], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
-    if (gid == 4703) printf((__constant char *)"cl_barrett32_77_gs: tid=%d, kdelta x: %d, y: %d\n",
+    if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_77_gs: tid=%d, kdelta x: %d, y: %d\n",
       lid, k_delta.x, k_delta.y);
 #endif
 

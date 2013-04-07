@@ -260,23 +260,24 @@ void print_status_line(mystuff_t *mystuff)
       }
       else if(mystuff->stats.progressformat[i+1] == 'n')
       {
-        if (mystuff->stats.cpu_wait == -2.0f) {		// Hack to indicate GPU sieving kernel
-	  if(mystuff->stats.grid_count < (1000000000 / mystuff->gpu_sieve_processing_size + 1))
-	    index += sprintf(buffer + index, "%6.2fM", (double)mystuff->stats.grid_count * mystuff->gpu_sieve_processing_size / 1000000.0);
-	  else
-	    index += sprintf(buffer + index, "%6.2fG", (double)mystuff->stats.grid_count * mystuff->gpu_sieve_processing_size / 1000000000.0);
-	} else {					// CPU sieving
-	  if(((unsigned long long int)mystuff->threads_per_grid * (unsigned long long int)mystuff->stats.grid_count) < 1000000000ULL)
+        if (mystuff->gpu_sieving == 1)
+        {
+          if(mystuff->stats.grid_count < (1000000000 / mystuff->gpu_sieve_processing_size + 1))
+            index += sprintf(buffer + index, "%6.2fM", (double)mystuff->stats.grid_count * mystuff->gpu_sieve_processing_size / 1000000.0);
+          else
+            index += sprintf(buffer + index, "%6.2fG", (double)mystuff->stats.grid_count * mystuff->gpu_sieve_processing_size / 1000000000.0);
+        } else {					// CPU sieving
+          if(((unsigned long long int)mystuff->threads_per_grid * (unsigned long long int)mystuff->stats.grid_count) < 1000000000ULL)
             index += sprintf(buffer + index, "%6.2fM", (double)mystuff->threads_per_grid * (double)mystuff->stats.grid_count / 1000000.0);
           else
-	    index += sprintf(buffer + index, "%6.2fG", (double)mystuff->threads_per_grid * (double)mystuff->stats.grid_count / 1000000000.0);
-	}
+            index += sprintf(buffer + index, "%6.2fG", (double)mystuff->threads_per_grid * (double)mystuff->stats.grid_count / 1000000000.0);
+        }
       }
       else if(mystuff->stats.progressformat[i+1] == 'r')
       {
-        if (mystuff->stats.cpu_wait == -2.0f)		// Hack to indicate GPU sieving kernel
+        if (mystuff->gpu_sieving == 1)
           val = (double)mystuff->stats.grid_count * mystuff->gpu_sieve_processing_size / ((double)mystuff->stats.class_time * 1000.0);
-	else						// CPU sieving
+        else						// CPU sieving
           val = (double)mystuff->threads_per_grid * (double)mystuff->stats.grid_count / ((double)mystuff->stats.class_time * 1000.0);
         
         if(val <= 999.99f) index += sprintf(buffer + index, "%6.2f", val);
@@ -284,9 +285,9 @@ void print_status_line(mystuff_t *mystuff)
       }
       else if(mystuff->stats.progressformat[i+1] == 's')
       {
-        if (mystuff->stats.cpu_wait == -2.0f)		// Hack to indicate GPU sieving kernel
-	  index += sprintf(buffer + index, "%7d", mystuff->gpu_sieve_primes-1);  // Output number of odd primes sieved
-	else						// CPU sieving
+        if (mystuff->gpu_sieving == 1)
+          index += sprintf(buffer + index, "%7d", mystuff->gpu_sieve_primes-1);  // Output number of odd primes sieved
+        else						// CPU sieving
           index += sprintf(buffer + index, "%7d", mystuff->sieve_primes);
       }
       else if(mystuff->stats.progressformat[i+1] == 'w')
@@ -345,7 +346,7 @@ void print_status_line(mystuff_t *mystuff)
       else /* '%' + unknown format character -> just print "%<character>" */
       {
         buffer[index++] = '%';
-        buffer[index++] = mystuff->stats.progressformat[i+1];
+        --i; // advance i only by 1, with the +=2 below. This way, we don't run over the end of the string if the last char is '%'
       }
 
       i += 2;
@@ -364,7 +365,8 @@ void print_status_line(mystuff_t *mystuff)
     if(mystuff->printmode == 1)index += sprintf(buffer + index, "\r");
     else                       index += sprintf(buffer + index, "\n");
   }
-  if(mystuff->mode > MODE_SELFTEST_SHORT && mystuff->printmode == 0)
+
+  if((mystuff->mode > MODE_SELFTEST_SHORT) && (mystuff->printmode == 0))
   {
     index += sprintf(buffer + index, "\n");
   }

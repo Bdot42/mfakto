@@ -64,7 +64,9 @@ than an equal SIEVE_SIZE_LIMIT #define.
 //#define DEBUG_STREAM_SCHEDULE_CHECK
 
 
-/* disable sieve code to measure raw GPU performance */
+/* disable sieve code to measure raw GPU performance
+   if kernel invocation fails with "Error -4: Enqueuing kernel(clEnqueueNDRangeKernel)",
+   then the GPUSieveProcessSize is too large - set it to 8 for this mode.*/
 //#define RAW_GPU_BENCH
 
 
@@ -99,9 +101,9 @@ than an equal SIEVE_SIZE_LIMIT #define.
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.13pre2" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.13pre3" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.13pre2-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.13pre3-Win" /* DO NOT CHANGE! */
 #endif
 
 

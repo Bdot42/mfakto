@@ -227,6 +227,10 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 
 	// Loop finding a suitable SIEVE_PRIMES value.  Initial value sieves primes below around 1.05M.
 
+#ifdef DETAILED_INFO
+  printf("gpusieve_init: adjusting gpu_sieve_primes: %d, ", mystuff->gpu_sieve_primes);
+#endif
+
 	for ( ; ; mystuff->gpu_sieve_primes += threadsPerBlock) {
 
 		// compute how many "rows" of the primes info array each thread will be responsible for
@@ -263,6 +267,9 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 		// We've found the SIEVE_PRIMES value to use
 		break;
 	}
+#ifdef DETAILED_INFO
+  printf("using gpu_sieve_primes=%d\n", mystuff->gpu_sieve_primes);
+#endif
 
 	// find seed primes
 	primes = (cl_uint *) malloc (mystuff->gpu_sieve_primes * sizeof (cl_uint));
@@ -552,7 +559,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 
 void gpusieve_init_exponent (mystuff_t *mystuff)
 {
-static cl_uint	last_exponent_initialized = 0;
+  static cl_uint last_exponent_initialized = 0;
 
 #ifdef RAW_GPU_BENCH
 	// Quick hack (leave bit array set to all ones) to eliminate sieve time from GPU-code benchmarks.
