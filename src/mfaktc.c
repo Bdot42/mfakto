@@ -381,12 +381,22 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
   GPUKernels         use_kernel = AUTOSELECT_KERNEL;
   cl_uint            i;
 
-  for (i = 0; i < UNKNOWN_KERNEL && (*k)[i] < UNKNOWN_KERNEL; i++)
+  if (mystuff->gpu_sieving == 1)
   {
-    if (kernel_possible((*k)[i], mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage))
+    if (kernel_possible(BARRETT77_MUL32_GS, mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage))
     {
-      use_kernel = (*k)[i];
-      break;
+      use_kernel = BARRETT77_MUL32_GS; // TODO let it select suitable kernels
+    }
+  }
+  else
+  {
+    for (i = 0; i < UNKNOWN_KERNEL && (*k)[i] < UNKNOWN_KERNEL; i++)
+    {
+      if (kernel_possible((*k)[i], mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage))
+      {
+        use_kernel = (*k)[i];
+        break;
+      }
     }
   }
   return use_kernel;
@@ -467,7 +477,7 @@ other return value
   }
 
   if(use_kernel == AUTOSELECT_KERNEL)
-  {  // this is the speed order for VLIW4, Cayman (HD6970)
+  {
     use_kernel = find_fastest_kernel(mystuff);
 
     if(use_kernel == AUTOSELECT_KERNEL)
@@ -536,7 +546,6 @@ other return value
 
         if (mystuff->gpu_sieving == 1)
         {
-          use_kernel = BARRETT77_MUL32_GS; // TODO let it select suitable kernels
           gpusieve_init_class(mystuff, k_min+cur_class);
           if ((use_kernel >= BARRETT79_MUL32_GS) && (use_kernel <= BARRETT82_MUL15_GS))
           {
