@@ -668,6 +668,8 @@ int init_CL(int num_streams, cl_int devnumber)
   if (mystuff.small_exp == 1)
     strcat(program_options, " -DSMALL_EXP");
 
+  if (mystuff.CompileOptions[0])  // if mfakto.ini defined compile options, override the default with them
+    strcpy(program_options, mystuff.CompileOptions);
 
 #ifdef DETAILED_INFO
   printf("Compiling kernels (build options: \"%s\").", program_options);

@@ -285,7 +285,7 @@ typedef struct
   char resultfile[51];
   char V5UserID[51];                   /* primenet V5UserID and ComputerID */
   char ComputerID[51];                 /* currently only used for screen/result output */
-  char CompileOptions[51];             /* additional compile options */
+  char CompileOptions[151];             /* additional compile options */
 
 }mystuff_t;			/* FIXME: proper name needed */
 

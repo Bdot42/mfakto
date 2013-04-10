@@ -676,7 +676,7 @@ int read_config(mystuff_t *mystuff)
 
   /*****************************************************************************/
 
-  if(my_read_string(mystuff->inifile, "OCLCompileOptions", mystuff->CompileOptions, 50))
+  if(my_read_string(mystuff->inifile, "OCLCompileOptions", mystuff->CompileOptions, 150))
   {
     mystuff->CompileOptions[0]='\0';
   }
