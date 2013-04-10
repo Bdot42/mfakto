@@ -676,6 +676,16 @@ int read_config(mystuff_t *mystuff)
 
   /*****************************************************************************/
 
+  if(my_read_string(mystuff->inifile, "OCLCompileOptions", mystuff->CompileOptions, 50))
+  {
+    mystuff->CompileOptions[0]='\0';
+  }
+  else
+  {
+    if(mystuff->verbosity >= 1)printf("  Additional compile options %s\n", mystuff->CompileOptions);
+  }
+
+  /*****************************************************************************/
   return 0;
 }
 

@@ -274,8 +274,8 @@ typedef struct
   cl_uint  small_exp;
   cl_uint  print_timestamp;
   cl_uint  quit;
-  cl_ulong cpu_mask;        /* CPU affinity mask for the siever thread */
-  cl_int  verbosity;        /* -1 = uninitialized, 0 = reduced number of screen printfs, 1= default, >= 2 = some additional printfs */
+  cl_ulong cpu_mask;         /* CPU affinity mask for the siever thread */
+  cl_int   verbosity;        /* -1 = uninitialized, 0 = reduced number of screen printfs, 1= default, >= 2 = some additional printfs */
   cl_uint  selftestsize;
 
   stats_t  stats;            /* stats for the status line */
@@ -285,6 +285,7 @@ typedef struct
   char resultfile[51];
   char V5UserID[51];                   /* primenet V5UserID and ComputerID */
   char ComputerID[51];                 /* currently only used for screen/result output */
+  char CompileOptions[51];             /* additional compile options */
 
 }mystuff_t;			/* FIXME: proper name needed */
 

@@ -12,7 +12,7 @@ mfaktc (mfakto) is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-                                
+
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
@@ -135,9 +135,9 @@ mul_96_192() are two carries from res.d1 to res.d2. So ignoring the digits
 res.d0 and res.d1 the result of mul_96_192_no_low() is 0 to 2 lower than
 of mul_96_192().
 {
-  
+
   __private uint_v tmp;
-  
+
   res->d2  = mul_hi(a.d1, b.d0);
 
   tmp      = mul_hi(a.d0, b.d1);
@@ -206,7 +206,7 @@ res.d0, res.d1 and res.d2 the result of mul_96_192_no_low() is 0 to 4 lower
 than of mul_96_192().
  */
 {
-  
+
   __private uint_v tmp;
 
   res->d3  = mul_hi(a.d2, b.d0);
@@ -343,7 +343,7 @@ Adding x*x to a few carries will not cascade the carry
   res->d2 += tmp;
   res->d3 += AS_UINT_V((tmp > res->d2)? 1 : 0);
 
-  tmp      = a.d0 * TWOad2;  
+  tmp      = a.d0 * TWOad2;
   res->d2 += tmp;
   res->d3 += AS_UINT_V((tmp > res->d2)? 1 : 0);
 
@@ -414,7 +414,7 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
     q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
   #endif
   qf= CONVERT_FLOAT_V(q.d4);
-#endif  
+#endif
   qf*= 2097152.0f;
 
   qi=CONVERT_UINT_V(qf*nf);
@@ -501,7 +501,7 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
   // shiftleft nn 23 bits
 #ifdef CHECKS_MODBASECASE
   nn.d4 =                  nn.d3 >> 9;
-#endif  
+#endif
 //  nn.d3 = amd_bitalign(nn.d3, nn.d2, 9);
   nn.d3 = (nn.d3 << 23) + (nn.d2 >> 9);
   nn.d2 = amd_bitalign(nn.d2, nn.d1, 9);
@@ -551,7 +551,7 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
   qi <<= 3;
 
 // nn = n * qi
-  
+
   nn.d0 = n.d0 * qi;
   nn.d1  = mul_hi(n.d0, qi);
   tmp    = n.d1* qi;
@@ -586,7 +586,7 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
   qf*= 131072.0f;
-  
+
   qi= CONVERT_UINT_V(qf*nf);
 
   MODBASECASE_QI_ERROR(1<<22, 4, qi, 5);
@@ -595,7 +595,7 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
   res->d0 = qi << 15;
   res->d1 = res->d1 + tmp;
   res->d2 = res->d2 + AS_UINT_V((tmp > res->d1)? 1 : 0);
-  
+
 // nn = n * qi
   nn.d0  = n.d0 * qi;
   nn.d1  = mul_hi(n.d0, qi);
@@ -648,7 +648,7 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
   qf= CONVERT_FLOAT_V(q.d3);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d1);
-  
+
   qi= CONVERT_UINT_V(qf*nf);
 
   MODBASECASE_QI_ERROR(1<<20, 5, qi, 8);
@@ -657,7 +657,7 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
   carry    = AS_UINT_V((qi > res->d0)? 1 : 0);
   res->d1 += carry;
   res->d2 += AS_UINT_V((carry > res->d1)? 1 : 0);
-  
+
   return;
 
 // not finishing the final multiplication/subtraction/comparison leaves the result off by 1 at most.
@@ -689,7 +689,7 @@ DIV_160_96 here. */
     q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
   #endif
   qf= CONVERT_FLOAT_V(q.d4);
-#endif  
+#endif
   qf*= 2097152.0f;
 
   qi=CONVERT_UINT_V(qf*nf);
@@ -774,7 +774,7 @@ DIV_160_96 here. */
   // shiftleft nn 23 bits
 #ifdef CHECKS_MODBASECASE
   nn.d5 =                  nn.d4 >> 9;
-#endif  
+#endif
   nn.d4 = (nn.d4 << 23) + (nn.d3 >> 9);
   nn.d3 = (nn.d3 << 23) + (nn.d2 >> 9);
   nn.d2 = (nn.d2 << 23) + (nn.d1 >> 9);
@@ -821,7 +821,7 @@ DIV_160_96 here. */
   qi <<= 3;
 
 // nn = n * qi
-  
+
   nn.d1 = n.d0 * qi;
   nn.d2  = mul_hi(n.d0, qi);
   tmp    = n.d1* qi;
@@ -856,7 +856,7 @@ DIV_160_96 here. */
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
   qf*= 131072.0f;
-  
+
   qi= CONVERT_UINT_V(qf*nf);
 
   MODBASECASE_QI_ERROR(1<<22, 4, qi, 5);
@@ -865,7 +865,7 @@ DIV_160_96 here. */
   res->d0 = qi << 15;
   res->d1 = res->d1 + tmp;
   res->d2 = res->d2 + AS_UINT_V((tmp > res->d1)? 1 : 0);
-  
+
 // nn = n * qi
   nn.d0  = n.d0 * qi;
   nn.d1  = mul_hi(n.d0, qi);
@@ -918,7 +918,7 @@ DIV_160_96 here. */
   qf= CONVERT_FLOAT_V(q.d3);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d1);
-  
+
   qi= CONVERT_UINT_V(qf*nf);
 
   MODBASECASE_QI_ERROR(1<<20, 5, qi, 8);
@@ -1025,7 +1025,7 @@ bit_max64 is bit_max - 64!
   // this mad_hi actually improves performance!
   k.d0 = mad24(t, 4620u, k_base.d0);
   k.d1 = mad_hi(t, 4620u, k_base.d1) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
-        
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -1057,10 +1057,9 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
-//  ff= 1.0f / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
-        
-        
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+//  ff= 1.0f / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
 
@@ -1121,7 +1120,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
                    , bit_max64, limit, modbasecase_debug);
 #endif
-  
+
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
         tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
@@ -1170,7 +1169,7 @@ Precalculated here since it is the same for all steps in the following loop */
     carry    = AS_UINT_V(((tmp96.d1 > b.d1) || (carry && AS_UINT_V(tmp96.d1 == b.d1))) ? 1 : 0);
 
     tmp96.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
@@ -1228,7 +1227,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_barrett32_92: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -1276,7 +1275,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_b(se)
   EVAL_RES_b(sf)
 #endif
- 
+
 }
 __kernel void cl_barrett32_87(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
@@ -1366,7 +1365,7 @@ bit_max64 is bit_max - 64!
   //k.d1 = k_base.d1 + mul_hi(t, 4620u) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
   k.d0 = mad24(t, 4620u, k_base.d0);
   k.d1 = mul_hi(t, 4620u)+ k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */  // bad mad_hi
-        
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -1398,8 +1397,8 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
 //  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
-        
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
 
@@ -1488,7 +1487,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d1 = tmp;
 
     a.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0);
@@ -1549,7 +1548,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_barrett32_87: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -1597,7 +1596,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_b(se)
   EVAL_RES_b(sf)
 #endif
- 
+
 }
 __kernel void cl_barrett32_88(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
@@ -1687,7 +1686,7 @@ bit_max64 is bit_max - 64!
   //k.d1 = k_base.d1 + mul_hi(t, 4620u) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
   k.d0 = mad24(t, 4620u, k_base.d0);
   k.d1 = mul_hi(t, 4620u) + k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */  // bad mad_hi
-        
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -1719,8 +1718,8 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
 //  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
-        
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
 
@@ -1810,7 +1809,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d1 = tmp;
 
     a.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (a)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0);
@@ -1866,7 +1865,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_barrett32_88: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -1914,7 +1913,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_b(se)
   EVAL_RES_b(sf)
 #endif
- 
+
 }
 
 __kernel void cl_barrett32_79(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
@@ -2000,7 +1999,7 @@ a is precomputed on host ONCE.
   k.d0 = mad24(t, 4620u, k_base.d0);
 //  k.d1 = mad_hi(t, 4620u, k_base.d1) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
   k.d1 = mul_hi(t, 4620u) + k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */  // bad mad_hi
-        
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -2030,7 +2029,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d4 = 0xFFFFFFFF;						// tmp is nearly 2^(81)
   tmp192.d3 = 0xFFFFFFFF;
@@ -2101,7 +2100,7 @@ Precalculated here since it is the same for all steps in the following loop */
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
         tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
- 
+
   exp<<= 32 - shiftcount;
   while(exp)
   {
@@ -2115,7 +2114,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
     a.d1 = b.d3;
     a.d2 = b.d4;
-    
+
     mul_96_192_no_low3(&tmp192, a, u);					// tmp192 = (b / (2^80)) * u
 
 #if (TRACE_KERNEL > 3)
@@ -2142,7 +2141,7 @@ Precalculated here since it is the same for all steps in the following loop */
     tmp96.d1 = tmp;
 
     tmp96.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
@@ -2179,7 +2178,7 @@ Precalculated here since it is the same for all steps in the following loop */
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79: f=%x:%x:%x, final a = %x:%x:%x \n",
          f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
-  
+
 /* finally check if we found a factor and write the factor to RES[] */
 #if (VECTOR_SIZE == 1)
   if( ((a.d2|a.d1)==0 && a.d0==1) )
@@ -2187,7 +2186,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_barrett32_79: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -2315,7 +2314,7 @@ a is precomputed on host ONCE.
 //MAD only available for float
   k.d0 = mad24(t, 4620u, k_base.d0);
   k.d1 = mul_hi(t, 4620u) + k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
-        
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett76: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -2427,7 +2426,7 @@ Precalculated here since it is the same for all steps in the following loop */
     if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett76: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
         tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
- 
+
   exp<<= 32 - shiftcount;
   while(exp)
   {
@@ -2441,7 +2440,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
     a.d1 = b.d3;
     a.d2 = b.d4;
-    
+
     mul_96_192_no_low3(&tmp192, a, u);					// tmp192 = (b / (2^80)) * u
 
 #if (TRACE_KERNEL > 3)
@@ -2468,7 +2467,7 @@ Precalculated here since it is the same for all steps in the following loop */
     tmp96.d1 = tmp;
 
     tmp96.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
@@ -2530,7 +2529,7 @@ Precalculated here since it is the same for all steps in the following loop */
          a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
 
-  
+
 /* finally check if we found a factor and write the factor to RES[] */
 #if (VECTOR_SIZE == 1)
   if( ((a.d2|a.d1)==0 && a.d0==1) )
@@ -2538,7 +2537,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"mfakto_cl_barrett76: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -2665,7 +2664,7 @@ a is precomputed on host ONCE.
 //MAD only available for float
   k.d0 = mad24(t, 4620u, k_base.d0);
   k.d1 = mul_hi(t, 4620u) + k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
-        
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -2745,7 +2744,7 @@ Precalculated here since it is the same for all steps in the following loop */
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         bb.d2, bb.d1, bb.d0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
- 
+
   exp<<= 32 - shiftcount;
   while(exp)
   {
@@ -2760,7 +2759,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
     a.d1 = b.d3;
     a.d2 = b.d4;
-    
+
     mul_96_192_no_low3(&tmp192, a, u);					// tmp192 = (b / (2^80)) * u
 
 #if (TRACE_KERNEL > 3)
@@ -2787,7 +2786,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d1 = tmp;
 
     a.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
@@ -2829,7 +2828,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_barrett32_77: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -3062,7 +3061,7 @@ Precalculated here since it is the same for all steps in the following loop */
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79_ns: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
         tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
- 
+
   exp<<= 32 - shiftcount;
   while(exp)
   {
@@ -3076,7 +3075,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
     a.d1 = b.d3;
     a.d2 = b.d4;
-    
+
     mul_96_192_no_low3(&tmp192, a, u);					// tmp192 = (b / (2^80)) * u
 
 #if (TRACE_KERNEL > 3)
@@ -3103,7 +3102,7 @@ Precalculated here since it is the same for all steps in the following loop */
     tmp96.d1 = tmp;
 
     tmp96.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
@@ -3141,7 +3140,7 @@ Precalculated here since it is the same for all steps in the following loop */
          a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
 
-  
+
 /* finally check if we found a factor and write the factor to RES[] */
 #if (VECTOR_SIZE == 1)
   if( ((a.d2|a.d1)==0 && a.d0==1) )
@@ -3149,7 +3148,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_barrett32_88: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -3297,7 +3296,7 @@ bit_max64 is bit_max - 64!
   // this mad_hi actually improves performance!
   k.d0 = mad24(t, 4620u, k_base.d0);
   k.d1 = mad_hi(t, 4620u, k_base.d1) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
-        
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -3329,10 +3328,9 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
-//  ff= 1.0f / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
-        
-        
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+//  ff= 1.0f / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
 
@@ -3393,7 +3391,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
                    , bit_max64, limit, modbasecase_debug);
 #endif
-  
+
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
         tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
@@ -3442,7 +3440,7 @@ Precalculated here since it is the same for all steps in the following loop */
     carry    = AS_UINT_V(((tmp96.d1 > b.d1) || (carry && AS_UINT_V(tmp96.d1 == b.d1))) ? 1 : 0);
 
     tmp96.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
@@ -3500,7 +3498,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_barrett32_92: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -3548,7 +3546,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_b(se)
   EVAL_RES_b(sf)
 #endif
- 
+
 }
 __kernel void cl_barrett32_87_gs(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
@@ -3638,7 +3636,7 @@ bit_max64 is bit_max - 64!
   //k.d1 = k_base.d1 + mul_hi(t, 4620u) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
   k.d0 = mad24(t, 4620u, k_base.d0);
   k.d1 = mul_hi(t, 4620u)+ k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */  // bad mad_hi
-        
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -3670,8 +3668,8 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
 //  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
-        
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
 
@@ -3760,7 +3758,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d1 = tmp;
 
     a.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0);
@@ -3821,7 +3819,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_barrett32_87: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -3869,7 +3867,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_b(se)
   EVAL_RES_b(sf)
 #endif
- 
+
 }
 __kernel void cl_barrett32_88_gs(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
@@ -3959,7 +3957,7 @@ bit_max64 is bit_max - 64!
   //k.d1 = k_base.d1 + mul_hi(t, 4620u) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
   k.d0 = mad24(t, 4620u, k_base.d0);
   k.d1 = mul_hi(t, 4620u) + k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */  // bad mad_hi
-        
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -3991,8 +3989,8 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
 //  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
-        
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
 
@@ -4082,7 +4080,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d1 = tmp;
 
     a.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (a)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0);
@@ -4138,7 +4136,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_barrett32_88: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -4186,7 +4184,7 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_b(se)
   EVAL_RES_b(sf)
 #endif
- 
+
 }
 
 __kernel void cl_barrett32_79_gs(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
@@ -4272,7 +4270,7 @@ a is precomputed on host ONCE.
   k.d0 = mad24(t, 4620u, k_base.d0);
 //  k.d1 = mad_hi(t, 4620u, k_base.d1) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
   k.d1 = mul_hi(t, 4620u) + k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */  // bad mad_hi
-        
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -4302,7 +4300,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero. 
+  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d4 = 0xFFFFFFFF;						// tmp is nearly 2^(81)
   tmp192.d3 = 0xFFFFFFFF;
@@ -4373,7 +4371,7 @@ Precalculated here since it is the same for all steps in the following loop */
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
         tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
- 
+
   exp<<= 32 - shiftcount;
   while(exp)
   {
@@ -4387,7 +4385,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
     a.d1 = b.d3;
     a.d2 = b.d4;
-    
+
     mul_96_192_no_low3(&tmp192, a, u);					// tmp192 = (b / (2^80)) * u
 
 #if (TRACE_KERNEL > 3)
@@ -4414,7 +4412,7 @@ Precalculated here since it is the same for all steps in the following loop */
     tmp96.d1 = tmp;
 
     tmp96.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
@@ -4451,7 +4449,7 @@ Precalculated here since it is the same for all steps in the following loop */
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79: f=%x:%x:%x, final a = %x:%x:%x \n",
          f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
-  
+
 /* finally check if we found a factor and write the factor to RES[] */
 #if (VECTOR_SIZE == 1)
   if( ((a.d2|a.d1)==0 && a.d0==1) )
@@ -4459,7 +4457,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_barrett32_79: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -4587,7 +4585,7 @@ a is precomputed on host ONCE.
 //MAD only available for float
   k.d0 = mad24(t, 4620u, k_base.d0);
   k.d1 = mul_hi(t, 4620u) + k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
-        
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett76: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -4699,7 +4697,7 @@ Precalculated here since it is the same for all steps in the following loop */
     if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett76: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
         tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
- 
+
   exp<<= 32 - shiftcount;
   while(exp)
   {
@@ -4713,7 +4711,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
     a.d1 = b.d3;
     a.d2 = b.d4;
-    
+
     mul_96_192_no_low3(&tmp192, a, u);					// tmp192 = (b / (2^80)) * u
 
 #if (TRACE_KERNEL > 3)
@@ -4740,7 +4738,7 @@ Precalculated here since it is the same for all steps in the following loop */
     tmp96.d1 = tmp;
 
     tmp96.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
@@ -4802,7 +4800,7 @@ Precalculated here since it is the same for all steps in the following loop */
          a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
 
-  
+
 /* finally check if we found a factor and write the factor to RES[] */
 #if (VECTOR_SIZE == 1)
   if( ((a.d2|a.d1)==0 && a.d0==1) )
@@ -4810,7 +4808,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"mfakto_cl_barrett76: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -5069,15 +5067,49 @@ a is precomputed on host ONCE.
         shiftcount, initial_shifter_value);
 #endif
 
-  for (i = lid; i < total_bit_count; i += 256) // THREADS_PER_BLOCK
+  for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
   {
     uint_v k_delta;
 
 // Get the (k - k_base) value to test
 
-    k_delta.x = mad24(bits_to_process, get_group_id(0), smem[i]);   // PERF: faster to just use i+1 and i+=512 in the loop?
-    i += 256;
-    k_delta.y = mad24(bits_to_process, (uint)get_group_id(0), (uint)((i < total_bit_count) ? smem[i] : 0xFFFF));
+#if (VECTOR_SIZE == 1)
+    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
+#elif (VECTOR_SIZE == 2)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+#elif (VECTOR_SIZE == 4)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+#elif (VECTOR_SIZE == 8)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
+    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
+    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
+    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+#elif (VECTOR_SIZE == 16)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
+    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
+    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
+    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
+    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
+    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
+    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
+    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12);
+    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13];
+    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
+    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
+#endif
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
@@ -5098,7 +5130,7 @@ a is precomputed on host ONCE.
       lid, k_delta.x, k_delta.y);
 #endif
 
-    // Compute f = 2 * k * exp + 1, both vector components at once
+    // Compute f = 2 * k * exp + 1
     f.d2 = amd_bitalign(f.d2, f.d1, 31);
     f.d1 = amd_bitalign(f.d1, f.d0, 31);
     f.d0 = (f.d0 << 1) + 1;
@@ -5106,17 +5138,11 @@ a is precomputed on host ONCE.
 #if (TRACE_KERNEL > 0)
     if (lid==TRACE_TID || get_group_id(0) == 4703)
        printf((__constant char *)"cl_barrett32_77_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i-256, smem[i-256], i, smem[i], k_delta.x, k_delta.y, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
-#endif
-
-#ifdef OLD_METHOD
-    f.d0.y = f_base.d0 + mul24(k_delta, 2u * NUM_CLASSES) * exponent;
-    f.d1.y = f_base.d1 + mul_hi(mul24(k_delta, 2u * NUM_CLASSES), exponent) + (f_base.d0 > f.d0.y)? 1u : 0u;
-    f.d2.y = f_base.d2 + (f_base.d1 > f.d1.y || (f_base.d1 == f.d1.y && f_base.d0 > f.d0.y))? 1u : 0u;
+        lid, tid, get_group_id(0), i-256, smem[i-256], i, smem[i], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif
 
 /*
-ff = f as float, needed in mod_160_96().
+ff = 1/f as float, needed in div_160_96().
 Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1) + 1;		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
@@ -5175,7 +5201,7 @@ Precalculated here since it is the same for all steps in the following loop */
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         bb.d2, bb.d1, bb.d0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
- 
+
   uint shifter = initial_shifter_value;
   while(shifter)
   {
@@ -5190,7 +5216,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
     a.d1 = b.d3;
     a.d2 = b.d4;
-    
+
     mul_96_192_no_low3(&tmp192, a, u);					// tmp192 = (b / (2^80)) * u
 
 #if (TRACE_KERNEL > 3)
@@ -5217,7 +5243,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d1 = tmp_v;
 
     a.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
@@ -5259,7 +5285,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_barrett32_77: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {

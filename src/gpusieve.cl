@@ -126,7 +126,8 @@ __inline int mod_p (int x, const int p, const int pinv)
 	int	r;
 
 	r = mul_hi (x, pinv);	// quotient = x * inverse_of_p
-	x = x - p * r;		  	// x mod p (but may be too large by one p)
+  x = x - p * r;		  	// x mod p (but may be too large by one p)
+//  x = x - mul24(p, r);		  	// PERF: mul24 brings no performance benefit here (on VLIW5), probably we'd need to vectorize to make a difference
 	r = x - p;	          // x mod p (the alternative return value)
 	r = (r >= 0) ? r : x;
 
@@ -162,7 +163,8 @@ __inline int sloppy_mod_p (int x, int p, int pinv)
 	int	q, r;
 
 	q = mul_hi (x, pinv);		// quotient = x * inverse_of_p
-	r = x - q * p;			// x mod p (but may be too small or large by one-half p)
+  r = x - q * p;			// x mod p (but may be too small or large by one-half p)
+//	r = x - mul24(q, p);			// PERF: mul24 brings no performance benefit here (on VLIW5), probably we'd need to vectorize to make a difference
 
 #ifdef GWDEBUG
 	if ((uint) pinv != gen_sloppy_pinv (p))
