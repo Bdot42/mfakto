@@ -410,9 +410,9 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
   qf= CONVERT_FLOAT_V(q.d5);
   qf= qf * 4294967296.0f;  // combining this and the the below 2M multiplier makes it slower!
 #else
-  #ifdef CHECKS_MODBASECASE
+#ifdef CHECKS_MODBASECASE
     q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
-  #endif
+#endif
   qf= CONVERT_FLOAT_V(q.d4);
 #endif
   qf*= 2097152.0f;
@@ -685,9 +685,9 @@ DIV_160_96 here. */
   qf= CONVERT_FLOAT_V(q.d5);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d4);
 #else
-  #ifdef CHECKS_MODBASECASE
+#ifdef CHECKS_MODBASECASE
     q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
-  #endif
+#endif
   qf= CONVERT_FLOAT_V(q.d4);
 #endif
   qf*= 2097152.0f;
@@ -5105,8 +5105,8 @@ a is precomputed on host ONCE.
     k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
     k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
     k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
-    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12);
-    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13];
+    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
+    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
     k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
     k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
 #endif
@@ -5144,195 +5144,115 @@ a is precomputed on host ONCE.
 /*
 ff = 1/f as float, needed in div_160_96().
 Precalculated here since it is the same for all steps in the following loop */
-  ff= CONVERT_FLOAT_RTP_V(f.d2);
-  ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1) + 1;		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
-
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-
-  tmp192.d4 = 0xFFFFFFFF;						// tmp192 is nearly 2^(81)
-  tmp192.d3 = 0xFFFFFFFF;
-  tmp192.d2 = 0xFFFFFFFF;
-  tmp192.d1 = 0xFFFFFFFF;
-  tmp192.d0 = 0xFFFFFFFF;
+    ff= CONVERT_FLOAT_RTP_V(f.d2);
+    ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1) + 1;		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
+  
+    ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  
+    tmp192.d4 = 0xFFFFFFFF;						// tmp192 is nearly 2^(81)
+    tmp192.d3 = 0xFFFFFFFF;
+    tmp192.d2 = 0xFFFFFFFF;
+    tmp192.d1 = 0xFFFFFFFF;
+    tmp192.d0 = 0xFFFFFFFF;
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: f=%x:%x:%x, ff=%G\n",
-        f.d2.s0, f.d1.s0, f.d0.s0, ff.s0);
+      if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: f=%x:%x:%x, ff=%G\n",
+          f.d2.s0, f.d1.s0, f.d0.s0, ff.s0);
 #endif
-
+  
 #ifndef CHECKS_MODBASECASE
-  div_160_96(&u,tmp192,f,ff);						// u = floor(2^(80*2) / f)
+    div_160_96(&u,tmp192,f,ff);						// u = floor(2^(80*2) / f)
 #else
-  div_160_96(&u,tmp192,f,ff,modbasecase_debug);				// u = floor((2^80)*2 / f)
+    div_160_96(&u,tmp192,f,ff,modbasecase_debug);				// u = floor((2^80)*2 / f)
 #endif
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: u=%x:%x:%x, ff=%G\n",
-        u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+      if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: u=%x:%x:%x, ff=%G\n",
+          u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
 #endif
-
-// bb is still the preprocessed scalar passed in to the kernel - it is widened here to the required vector size automatically
-  a.d0 = bb.d2;// & 0xFFFF8000;						// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
-  a.d1 = bb.d3;
-  a.d2 = bb.d4;
-
-  mul_96_192_no_low3(&tmp192, a, u);					// tmp192 = (b / (2^80)) * u
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: a=%x:%x:%x * u = %x:%x:%x:...\n",
-        a.d2.s0, a.d1.s0, a.d0.s0, tmp192.d5.s0, tmp192.d4.s0, tmp192.d3.s0);
-#endif
-
-  a.d0 = tmp192.d3;							// a = ((b / (2^80)) * u) / (2^80)
-  a.d1 = tmp192.d4;							// this includes the shiftleft by 32 bits, read above...
-  a.d2 = tmp192.d5;
-
-  mul_96(&tmp96, a, f);							// tmp96 = (((b / (2^80)) * u) / (2^80)) * f
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
-        a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
-#endif
-  // bb.d0-bb.d1 are all zero due to preprocessing on the host
-  // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
-  a.d0 = -tmp96.d0;                // Compute the remainder, we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-  a.d1 = -tmp96.d1 - AS_UINT_V((tmp96.d0 > 0) ? 1 : 0 );
-  a.d2 = bb.d2-tmp96.d2 - AS_UINT_V(((tmp96.d1 | tmp96.d0) > 0) ? 1 : 0 );	 // if any bit of d0 or d1 is set, we'll have a borrow here
-
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
-        bb.d2, bb.d1, bb.d0, a.d2.s0, a.d1.s0, a.d0.s0);
-#endif
-
-  uint shifter = initial_shifter_value;
-  while(shifter)
-  {
-    square_96_160(&b, a);						// b = a^2
-    if(shifter&0x80000000)shl_192(&b);	// "optional multiply by 2" in Prime 95 documentation
-
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x (b)\n",
-        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
-#endif
-
-    a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
-    a.d1 = b.d3;
-    a.d2 = b.d4;
-
+  
+  // bb is still the preprocessed scalar passed in to the kernel - it is widened here to the required vector size automatically
+    a.d0 = bb.d2;// & 0xFFFF8000;						// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
+    a.d1 = bb.d3;
+    a.d2 = bb.d4;
+  
     mul_96_192_no_low3(&tmp192, a, u);					// tmp192 = (b / (2^80)) * u
-
+  
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x * u = %x:%x:%x:...\n",
-        a.d2.s0, a.d1.s0, a.d0.s0, tmp192.d5.s0, tmp192.d4.s0, tmp192.d3.s0);
+      if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: a=%x:%x:%x * u = %x:%x:%x:...\n",
+          a.d2.s0, a.d1.s0, a.d0.s0, tmp192.d5.s0, tmp192.d4.s0, tmp192.d3.s0);
 #endif
-
+  
     a.d0 = tmp192.d3;							// a = ((b / (2^80)) * u) / (2^80)
     a.d1 = tmp192.d4;							// this includes the shiftleft by 32 bits, read above...
     a.d2 = tmp192.d5;
-
-    mul_96(&tmp96, a, f);						// tmp96 = (((b / (2^80)) * u) / (2^80)) * f
-
+  
+    mul_96(&tmp96, a, f);							// tmp96 = (((b / (2^80)) * u) / (2^80)) * f
+  
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
-        a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
+      if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
+          a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
-
-    carry= AS_UINT_V((tmp96.d0 > b.d0) ? 1 : 0);
-    a.d0 = b.d0 - tmp96.d0;
-
-    tmp_v  = b.d1 - tmp96.d1 - carry;
-    carry= AS_UINT_V(((tmp_v > b.d1) || (carry && AS_UINT_V(tmp_v == b.d1))) ? 1 : 0);
-    a.d1 = tmp_v;
-
-    a.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-
+    // bb.d0-bb.d1 are all zero due to preprocessing on the host
+    // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
+    a.d0 = -tmp96.d0;                // Compute the remainder, we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+    a.d1 = -tmp96.d1 - AS_UINT_V((tmp96.d0 > 0) ? 1 : 0 );
+    a.d2 = bb.d2-tmp96.d2 - AS_UINT_V(((tmp96.d1 | tmp96.d0) > 0) ? 1 : 0 );	 // if any bit of d0 or d1 is set, we'll have a borrow here
+  
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
-        b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
+          bb.d2, bb.d1, bb.d0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
-
-    shifter+=shifter;
-  }
-
-  tmp96.d0 = a.d0;
-  tmp96.d1 = a.d1;
-  tmp96.d2 = a.d2;
-
-#ifndef CHECKS_MODBASECASE
-  mod_simple_96(&a, tmp96, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-);					// adjustment, plain barrett returns N = AB mod M where N < 3M!
-#else
-    int limit = 6;
-    if(bit_max64 == 15) limit = 9;					// bit_max == 79, due to decreased accuracy of mul_96_192_no_low3() above we need a higher threshold
-    mod_simple_96(&a, tmp96, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                   , 79 - 64, limit << (15 - bit_max64), modbasecase_debug);	// limit is 6 * 2^(79 - bit_max)
-#endif
-
-  a = sub_if_gte_96(a,f);	// final adjustment in case a >= f
-#if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: f=%x:%x:%x, %x:%x:%x final a = %x:%x:%x, %x:%x:%x \n",
-         f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1, a.d2.s0, a.d1.s0, a.d0.s0, a.d2.s1, a.d1.s1, a.d0.s1 );
-#endif
-
-/* finally check if we found a factor and write the factor to RES[] */
-#if (VECTOR_SIZE == 1)
-  if( ((a.d2|a.d1)==0 && a.d0==1) )
-  {
-#if (TRACE_KERNEL > 0)  // trace this for any thread
-    printf((__constant char *)"cl_barrett32_77: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
-#endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
-    tid=ATOMIC_INC(RES[0]);
-    if(tid<10)				/* limit to 10 factors per class */
+  
+    uint shifter = initial_shifter_value;
+    while(shifter)
     {
-      RES[tid*3 + 1]=f.d2;
-      RES[tid*3 + 2]=f.d1;
-      RES[tid*3 + 3]=f.d0;
-    }
-  }
-#elif (VECTOR_SIZE == 2)
-  EVAL_RES_b(x)
-  EVAL_RES_b(y)
-#elif (VECTOR_SIZE == 3)
-  EVAL_RES_b(x)
-  EVAL_RES_b(y)
-  EVAL_RES_b(z)
-#elif (VECTOR_SIZE == 4)
-  EVAL_RES_b(x)
-  EVAL_RES_b(y)
-  EVAL_RES_b(z)
-  EVAL_RES_b(w)
-#elif (VECTOR_SIZE == 8)
-  EVAL_RES_b(s0)
-  EVAL_RES_b(s1)
-  EVAL_RES_b(s2)
-  EVAL_RES_b(s3)
-  EVAL_RES_b(s4)
-  EVAL_RES_b(s5)
-  EVAL_RES_b(s6)
-  EVAL_RES_b(s7)
-#elif (VECTOR_SIZE == 16)
-  EVAL_RES_b(s0)
-  EVAL_RES_b(s1)
-  EVAL_RES_b(s2)
-  EVAL_RES_b(s3)
-  EVAL_RES_b(s4)
-  EVAL_RES_b(s5)
-  EVAL_RES_b(s6)
-  EVAL_RES_b(s7)
-  EVAL_RES_b(s8)
-  EVAL_RES_b(s9)
-  EVAL_RES_b(sa)
-  EVAL_RES_b(sb)
-  EVAL_RES_b(sc)
-  EVAL_RES_b(sd)
-  EVAL_RES_b(se)
-  EVAL_RES_b(sf)
+      square_96_160(&b, a);						// b = a^2
+      if(shifter&0x80000000)shl_192(&b);	// "optional multiply by 2" in Prime 95 documentation
+  
+#if (TRACE_KERNEL > 2)
+      if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x (b)\n",
+          shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
-}
+  
+      a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
+      a.d1 = b.d3;
+      a.d2 = b.d4;
+  
+      mul_96_192_no_low3(&tmp192, a, u);					// tmp192 = (b / (2^80)) * u
+  
+#if (TRACE_KERNEL > 3)
+      if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x * u = %x:%x:%x:...\n",
+          a.d2.s0, a.d1.s0, a.d0.s0, tmp192.d5.s0, tmp192.d4.s0, tmp192.d3.s0);
+#endif
+  
+      a.d0 = tmp192.d3;							// a = ((b / (2^80)) * u) / (2^80)
+      a.d1 = tmp192.d4;							// this includes the shiftleft by 32 bits, read above...
+      a.d2 = tmp192.d5;
+  
+      mul_96(&tmp96, a, f);						// tmp96 = (((b / (2^80)) * u) / (2^80)) * f
+  
+#if (TRACE_KERNEL > 3)
+      if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
+          a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
+#endif
+  
+      carry= AS_UINT_V((tmp96.d0 > b.d0) ? 1 : 0);
+      a.d0 = b.d0 - tmp96.d0;
+  
+      tmp_v  = b.d1 - tmp96.d1 - carry;
+      carry= AS_UINT_V(((tmp_v > b.d1) || (carry && AS_UINT_V(tmp_v == b.d1))) ? 1 : 0);
+      a.d1 = tmp_v;
+  
+      a.d2 = b.d2 - tmp96.d2 - carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
+  
+#if (TRACE_KERNEL > 3)
+      if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
+          b.d2.s0, b.d1.s0, b.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
+#endif
+  
+      shifter+=shifter;
+    }
+  
+    mod_simple_96_and_check_big_factor96(a, f, ff, RES);
+  }
 }
 #endif
