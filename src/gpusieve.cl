@@ -87,6 +87,13 @@ __constant uint sieving128KCrossover = (primesBelow128K - primesNotSieved - prim
 __constant uint sieving1MCrossover = (primesBelow1M - primesNotSieved - primesHandledWithSpecialCode) / threadsPerBlock - 3;  // bug - awkward hard coded -3 here
 							// Number of thread loops processing primes below 1M
 
+// array for bit-shifting
+
+__constant uint two_pow_n_32[] = {1<<0,  1<<1,  1<<2,  1<<3,  1<<4,  1<<5,  1<<6,  1<<7,  1<<8,  1<<9,  1<<10, 1<<11, 1<<12, 1<<13, 1<<14, 1<<15,
+                                  1<<16, 1<<17, 1<<18, 1<<19, 1<<20, 1<<21, 1<<22, 1<<23, 1<<24, 1<<25, 1<<26, 1<<27, 1<<28, 1<<29, 1<<30, 1<<31,
+                                      0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+                                      0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0};
+
 // Bit masks for small prime sieving
 
 #define BITSLL11 (1 | (1<<11) | (1<<22))
@@ -577,10 +584,25 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 
 	  for (j = 0; ; )
     {
+      /*
+      mask  = two_pow_n_32[i37];
+      mask |= two_pow_n_32[i41];
+      mask |= two_pow_n_32[i43];
+      mask |= two_pow_n_32[i47];
+      mask |= two_pow_n_32[i53];
+      mask |= two_pow_n_32[i59];
+      mask |= two_pow_n_32[i61];
+      */
+      mask = (i37 > 31) << i37;
+      mask |= ((i41 > 31) << i41) | ((i43 > 31) << i43);
+      mask |= ((i47 > 31) << i47) | ((i53 > 31) << i53);
+      mask |= ((i59 > 31) << i59) | ((i61 > 31) << i61);
+      /*
       mask = i37 > 31 ? 0 : (1 << i37);
       mask |= (i41 > 31 ? 0 : (1 << i41)) | (i43 > 31 ? 0 : (1 << i43));
       mask |= (i47 > 31 ? 0 : (1 << i47)) | (i53 > 31 ? 0 : (1 << i53));
       mask |= (i59 > 31 ? 0 : (1 << i59)) | (i61 > 31 ? 0 : (1 << i61));
+      */
 
 		  locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + j] |= mask;
 
