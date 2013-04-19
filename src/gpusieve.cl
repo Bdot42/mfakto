@@ -584,7 +584,9 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 
 	  for (j = 0; ; )
     {
+      // three block doing the same for performance tests.
       /*
+      // this one ist close to the fastest on VLIW5
       mask  = two_pow_n_32[i37];
       mask |= two_pow_n_32[i41];
       mask |= two_pow_n_32[i43];
@@ -593,16 +595,20 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
       mask |= two_pow_n_32[i59];
       mask |= two_pow_n_32[i61];
       */
+      
+      /*
+      // slow on VLIW5
       mask = (i37 > 31) << i37;
       mask |= ((i41 > 31) << i41) | ((i43 > 31) << i43);
       mask |= ((i47 > 31) << i47) | ((i53 > 31) << i53);
       mask |= ((i59 > 31) << i59) | ((i61 > 31) << i61);
-      /*
+      */
+
+      // this one ist fastest on VLIW5
       mask = i37 > 31 ? 0 : (1 << i37);
       mask |= (i41 > 31 ? 0 : (1 << i41)) | (i43 > 31 ? 0 : (1 << i43));
       mask |= (i47 > 31 ? 0 : (1 << i47)) | (i53 > 31 ? 0 : (1 << i53));
       mask |= (i59 > 31 ? 0 : (1 << i59)) | (i61 > 31 ? 0 : (1 << i61));
-      */
 
 		  locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + j] |= mask;
 
@@ -1430,3 +1436,182 @@ if (factor_mod_p != 0)
 		*pinfo32 = (*pinfo32 & mask) + bit_to_clear;
 	}
 }	
+
+
+/* This function is used at the beginning of each GPU-sieve TF-kernel in order to extract the bits from the sieve.
+   returns total number of bits set */
+
+uint extract_bits(const uint bits_to_process, const uint tid, const uint lid, __local ushort *bitcount, __local ushort *smem, const __global uint * restrict bit_array)
+{
+  __private uint     i, words_per_thread, sieve_word, k_bit_base, total_bit_count;
+
+  // Get pointer to section of the bit_array this thread is processing.
+
+  words_per_thread = bits_to_process / 8192; // 256 threads * 32 bits per word
+  bit_array += mul24(tid, words_per_thread);
+
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max64=%d, bb=%x:%x:%x:%x:%x:%x, wpt=%u, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max64, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, words_per_thread, bit_array);
+#endif
+
+
+// Count number of bits set in this thread's word(s) from the bit_array
+
+  bitcount[lid] = 0;
+  for (i = 0; i < words_per_thread; i++)
+    bitcount[lid] +=  popcount(bit_array[i]);
+
+  barrier(CLK_LOCAL_MEM_FENCE);
+#if (TRACE_SIEVE_KERNEL > 3)
+    if (tid==TRACE_SIEVE_TID){ printf((__constant char *)"extract_bits: bitcount0: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d,",
+        bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9]);
+        printf((__constant char *)" ..., %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+         bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
+    }
+#endif
+
+// Create total count of bits set in block up to and including this threads popcnt.
+// Kudos to Rocke Verser for the population counting code.
+// CAUTION:  Following requires 256 threads per block
+
+  // First five tallies remain within one warp.  Should be in lock-step.
+  // AMD devs always run 16 threads at once => just 4 tallies PERF: optimize this (does removing the barriers improve performance at all?)
+  if (lid & 1)        // If we are running on any thread 0bxxxxxxx1, tally neighbor's count.
+    bitcount[lid] += bitcount[lid - 1];
+
+#if (TRACE_SIEVE_KERNEL > 3)
+  barrier(CLK_LOCAL_MEM_FENCE);
+    if (tid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: bitcount1: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ..., %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+        bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9],
+         bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
+#endif
+
+  if (lid & 2)        // If we are running on any thread 0bxxxxxx1x, tally neighbor's count.
+    bitcount[lid] += bitcount[(lid - 2) | 1];
+
+#if (TRACE_SIEVE_KERNEL > 3)
+  barrier(CLK_LOCAL_MEM_FENCE);
+    if (tid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: bitcount2: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ..., %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+        bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9],
+         bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
+#endif
+
+  if (lid & 4)        // If we are running on any thread 0bxxxxx1xx, tally neighbor's count.
+    bitcount[lid] += bitcount[(lid - 4) | 3];
+
+#if (TRACE_SIEVE_KERNEL > 3)
+  barrier(CLK_LOCAL_MEM_FENCE);
+    if (tid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: bitcount4: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ..., %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+        bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9],
+         bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
+#endif
+
+  if (lid & 8)        // If we are running on any thread 0bxxxx1xxx, tally neighbor's count.
+    bitcount[lid] += bitcount[(lid - 8) | 7];
+
+  barrier(CLK_LOCAL_MEM_FENCE);
+#if (TRACE_SIEVE_KERNEL > 3)
+    if (tid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: bitcount8: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ..., %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+        bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9],
+         bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
+#endif
+
+ if (lid & 16)       // If we are running on any thread 0bxxx1xxxx, tally neighbor's count.
+    bitcount[lid] += bitcount[(lid - 16) | 15];
+
+  // Further tallies are across warps.  Must synchronize
+  barrier(CLK_LOCAL_MEM_FENCE);
+#if (TRACE_SIEVE_KERNEL > 3)
+    if (tid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: bitcount16: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ..., %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+        bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9],
+         bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
+#endif
+
+  if (lid  & 32)      // If we are running on any thread 0bxx1xxxxx, tally neighbor's count.
+    bitcount[lid] += bitcount[(lid - 32) | 31];
+
+  barrier(CLK_LOCAL_MEM_FENCE);
+#if (TRACE_SIEVE_KERNEL > 3)
+    if (tid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: bitcount32: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ..., %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+        bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9],
+         bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
+#endif
+
+  if (lid & 64)       // If we are running on any thread 0bx1xxxxxx, tally neighbor's count.
+    bitcount[lid] += bitcount[(lid - 64) | 63];
+
+  barrier(CLK_LOCAL_MEM_FENCE);
+#if (TRACE_SIEVE_KERNEL > 3)
+    if (tid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: bitcount64: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ..., %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+        bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9],
+         bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
+#endif
+
+  if (lid & 128)       // If we are running on any thread 0b1xxxxxxx, tally neighbor's count.
+    bitcount[lid] += bitcount[127];
+
+  // At this point, bitcount[...] contains the total number of bits for the indexed
+  // thread plus all lower-numbered threads.  I.e., bitcount[255] is the total count.
+
+  barrier(CLK_LOCAL_MEM_FENCE);
+  total_bit_count = bitcount[255];
+
+#if (TRACE_SIEVE_KERNEL > 3)
+    if (tid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: bitcounts: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ..., %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+        bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9],
+         bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
+#endif
+#if (TRACE_SIEVE_KERNEL > 1)
+    if (tid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: total bitcount=%d = %d bytes, %d bytes allocated\n",
+        bitcount[255], bitcount[255]*sizeof(short), shared_mem_allocated);
+#endif
+
+//POSSIBLE OPTIMIZATION - bitcounts and smem could use the same memory space if we'd read bitcount into a register
+// and sync threads before doing any writes to smem.
+
+//POSSIBLE SANITY CHECK -- is there any way to test if total_bit_count exceeds the amount of shared memory allocated?
+
+// Loop til this thread's section of the bit array is finished.
+
+  sieve_word = *bit_array;
+  k_bit_base = lid * words_per_thread * 32;
+  for (i = total_bit_count - bitcount[lid]; ; i++) {
+    int bit_to_test;
+
+// Make sure we have a non-zero sieve word
+
+    while (sieve_word == 0 && (--words_per_thread > 0))
+    {
+      sieve_word = *++bit_array;
+      k_bit_base += 32;
+    }
+
+// Check if this thread has processed all its set bits
+
+    if (sieve_word == 0) break;
+
+// Find a bit to test in the sieve word
+
+    bit_to_test = 31 - clz(sieve_word);
+    sieve_word &= ~(1 << bit_to_test);
+
+// Copy the k value to the shared memory array
+
+    smem[i] = convert_ushort(k_bit_base + bit_to_test);
+#if (TRACE_SIEVE_KERNEL > 2)
+    if (tid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: smem[%d]=%d\n",
+        i, k_bit_base + bit_to_test);
+#endif
+  }
+
+  barrier(CLK_LOCAL_MEM_FENCE);
+
+#if (TRACE_SIEVE_KERNEL > 3)
+  if (tid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: smem: [0]%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ..., [246]%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, ... , [%d]%d, %d\n",
+        smem[0], smem[1], smem[2], smem[3], smem[4], smem[5], smem[6], smem[7], smem[8], smem[9],
+        smem[246], smem[247], smem[248], smem[249], smem[250], smem[251], smem[252], smem[253], smem[254], smem[255],
+        total_bit_count-2, smem[total_bit_count-2], smem[total_bit_count-1]);
+#endif
+  return total_bit_count;
+}

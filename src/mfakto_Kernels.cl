@@ -510,9 +510,6 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   }
 }
 
-#include "barrett15.cl"  // mul24-based barrett 73-bit kernel using a word size of 15 bit
-#include "barrett.cl"   // one kernel file for 32-bit-barrett of different vector sizes (1, 2, 4, 8, 16)
-
 #ifdef CL_GPU_SIEVE
   #include "gpusieve.cl"
 #else
@@ -526,6 +523,9 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   #define EVAL_RES(x) EVAL_RES_a(x)
   #include "mul24.cl" // include again, now for small factors < 64 bit
 #endif
+
+#include "barrett15.cl"  // mul24-based barrett 73-bit kernel using a word size of 15 bit
+#include "barrett.cl"   // one kernel file for 32-bit-barrett of different vector sizes (1, 2, 4, 8, 16)
 
 // this kernel is only used for a quick test at startup - no need to be correct ;-)
 // currently this kernel is used for testing what happens without atomics when multiple factors are found
