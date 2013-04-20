@@ -68,44 +68,43 @@ kernel_info_t       kernel_info[] = {
   /*   kernel (in sequence) | kernel function name | bit_min | bit_max | stages? | loaded kernel pointer */
      {   AUTOSELECT_KERNEL,   "auto",                  0,      0,         0,      NULL},
      {   _TEST_MOD_,          "test_k",                0,      0,         0,      NULL}, // used for various tests
-     {   _95BIT_64_OpenCL,    "cl_barrett32_79_ns",   64,     79,         0,      NULL}, // no sieved input (test all FC's)
      {   _71BIT_MUL24,        "mfakto_cl_71",         61,     71,         1,      NULL},
-     {   _63BIT_MUL24,        "mfakto_cl_63",          0,     64,         1,      NULL},
-     {   BARRETT70_MUL24,     "cl_barrett24_70",      64,     70,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT79_MUL32,     "cl_barrett32_79",      64,     79,         1,      NULL}, // one kernel for all vector sizes
-     {   BARRETT77_MUL32,     "cl_barrett32_77",      64,     77,         1,      NULL}, // one kernel for all vector sizes
-     {   BARRETT76_MUL32,     "cl_barrett32_76",      64,     76,         1,      NULL}, // one kernel for all vector sizes
-     {   BARRETT92_MUL32,     "cl_barrett32_92",      65,     92,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT88_MUL32,     "cl_barrett32_88",      65,     88,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT87_MUL32,     "cl_barrett32_87",      65,     87,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT73_MUL15,     "cl_barrett15_73",      60,     73,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT69_MUL15,     "cl_barrett15_69",      60,     69,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT70_MUL15,     "cl_barrett15_70",      60,     70,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT71_MUL15,     "cl_barrett15_71",      60,     71,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     88,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL}, // one kernel for all vector sizes
-     {   MG62,                "cl_mg62",              10,     62,         1,      NULL}, // one kernel for all vector sizes
-     {   MG88,                "cl_mg88",              10,     87,         1,      NULL}, // one kernel for all vector sizes
+     {   _63BIT_MUL24,        "mfakto_cl_63",         58,     64,         1,      NULL},
+     {   BARRETT70_MUL24,     "cl_barrett24_70",      64,     70,         0,      NULL},
+     {   BARRETT79_MUL32,     "cl_barrett32_79",      64,     79,         1,      NULL},
+     {   BARRETT77_MUL32,     "cl_barrett32_77",      64,     77,         1,      NULL},
+     {   BARRETT76_MUL32,     "cl_barrett32_76",      64,     76,         1,      NULL},
+     {   BARRETT92_MUL32,     "cl_barrett32_92",      65,     92,         0,      NULL},
+     {   BARRETT88_MUL32,     "cl_barrett32_88",      65,     88,         0,      NULL},
+     {   BARRETT87_MUL32,     "cl_barrett32_87",      65,     87,         0,      NULL},
+     {   BARRETT73_MUL15,     "cl_barrett15_73",      60,     73,         0,      NULL},
+     {   BARRETT69_MUL15,     "cl_barrett15_69",      60,     69,         0,      NULL},
+     {   BARRETT70_MUL15,     "cl_barrett15_70",      60,     70,         0,      NULL},
+     {   BARRETT71_MUL15,     "cl_barrett15_71",      60,     71,         0,      NULL},
+     {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     88,         0,      NULL},
+     {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL},
+     {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL},
+     {   MG62,                "cl_mg62",              58,     62,         1,      NULL},
+     {   MG88,                "cl_mg88",              58,     87,         1,      NULL},
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         0,      NULL}, // end of automatic loading
      {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         0,      NULL}, // slow shift-cmp-sub kernel: removed
      {   BARRETT92_64_OpenCL, "cl_barrett32_92",      64,     92,         0,      NULL}, // mapped to 32-bit barrett so far
      {   CL_CALC_BIT_TO_CLEAR, "CalcBitToClear",       0,      0,         0,      NULL}, // called by gpusieve_init_class
      {   CL_CALC_MOD_INV,     "CalcModularInverses",   0,      0,         0,      NULL}, // called by gpusieve_init_exponent
      {   CL_SIEVE,            "SegSieve",              0,      0,         0,      NULL}, // GPU sieve
-     {   BARRETT79_MUL32_GS,  "cl_barrett32_79_gs",   10,     10,         1,      NULL}, // one kernel for all vector sizes
-     {   BARRETT77_MUL32_GS,  "cl_barrett32_77_gs",   64,     77,         1,      NULL}, // one kernel for all vector sizes
-     {   BARRETT76_MUL32_GS,  "cl_barrett32_76_gs",   64,     10,         1,      NULL}, // one kernel for all vector sizes
-     {   BARRETT92_MUL32_GS,  "cl_barrett32_92_gs",   65,     10,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT88_MUL32_GS,  "cl_barrett32_88_gs",   65,     10,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT87_MUL32_GS,  "cl_barrett32_87_gs",   65,     10,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT73_MUL15_GS,  "cl_barrett15_73_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT69_MUL15_GS,  "cl_barrett15_69_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT70_MUL15_GS,  "cl_barrett15_70_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT71_MUL15_GS,  "cl_barrett15_71_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     10,         0,      NULL}, // one kernel for all vector sizes
+     {   BARRETT79_MUL32_GS,  "cl_barrett32_79_gs",   64,     10,         1,      NULL}, // keep the GPU-sieve-based kernels in the same order as their CPU-siev versions
+     {   BARRETT77_MUL32_GS,  "cl_barrett32_77_gs",   64,     77,         1,      NULL},
+     {   BARRETT76_MUL32_GS,  "cl_barrett32_76_gs",   64,     10,         1,      NULL},
+     {   BARRETT92_MUL32_GS,  "cl_barrett32_92_gs",   65,     10,         0,      NULL},
+     {   BARRETT88_MUL32_GS,  "cl_barrett32_88_gs",   65,     10,         0,      NULL},
+     {   BARRETT87_MUL32_GS,  "cl_barrett32_87_gs",   65,     10,         0,      NULL},
+     {   BARRETT73_MUL15_GS,  "cl_barrett15_73_gs",   60,     10,         0,      NULL},
+     {   BARRETT69_MUL15_GS,  "cl_barrett15_69_gs",   60,     10,         0,      NULL},
+     {   BARRETT70_MUL15_GS,  "cl_barrett15_70_gs",   60,     10,         0,      NULL},
+     {   BARRETT71_MUL15_GS,  "cl_barrett15_71_gs",   60,     10,         0,      NULL},
+     {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     10,         0,      NULL},
+     {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     10,         0,      NULL},
+     {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     10,         0,      NULL},
 };
 
 /* save-save
@@ -1790,21 +1789,7 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
 		return 1;
 	}
 
-  if (kernel_info[_95BIT_64_OpenCL].kernel == l_kernel)
-  {
-    status = clEnqueueNDRangeKernel(QUEUE,
-                 l_kernel,
-                 2,
-                 NULL,
-                 globalThreads,
-                 localThreads,
-                 0,
-                 NULL,       // this one does not copy anything, so no need to wait
-                 &mystuff.exec_events[stream]);
-  }
-  else
-  {
-    status = clEnqueueNDRangeKernel(QUEUE,
+  status = clEnqueueNDRangeKernel(QUEUE,
                  l_kernel,
                  2,
                  NULL,
@@ -1813,7 +1798,6 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
                  1,
                  &mystuff.copy_events[stream], // wait for the k_tab write to finish
                  &mystuff.exec_events[stream]);
-  }
   if(status != CL_SUCCESS) 
 	{ 
 		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel), stream " << stream << "\n";
@@ -2341,13 +2325,8 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 #ifdef DEBUG_STREAM_SCHEDULE
       printf(" STREAM_SCHEDULE: preprocessing on h_ktab[%d]\n", h_ktab_index);
 #endif
-    
-      if (use_kernel == _95BIT_64_OpenCL) // no sieving at all for this kernel
-      {
-        k_min_grid[h_ktab_index] = k_min;
-        k_diff = NUM_CLASSES * (unsigned long long int) mystuff->threads_per_grid;
-      }
-      else if (mystuff->gpu_sieving == 0)
+
+      if (mystuff->gpu_sieving == 0)
       {
         sieve_candidates(mystuff->threads_per_grid, mystuff->h_ktab[h_ktab_index], mystuff->sieve_primes);
         k_diff=mystuff->h_ktab[h_ktab_index][mystuff->threads_per_grid-1]+1;
@@ -2501,7 +2480,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               k_base.d4 =  k_min_grid[i] >> 60;
               status = run_kernel15(kernel_info[use_kernel].kernel, mystuff->exponent, k_base, i, b_in, mystuff->d_RES, shiftcount, mystuff->bit_max_stage);
             }
-            else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == _95BIT_64_OpenCL) || (use_kernel == MG62))
+            else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == MG62))
             {
               int96 k;
               k.d0 = (cl_uint) k_min_grid[i];
@@ -2610,7 +2589,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 		         	  std::cerr<< "Error " << status << ": Release exec event object. (clReleaseEvent)\n";
 		         	  return RET_ERROR;
     	       	}
-              if (use_kernel != _95BIT_64_OpenCL && !mystuff->gpu_sieving)  status = clReleaseEvent(mystuff->copy_events[i]);
+              if (!mystuff->gpu_sieving) status = clReleaseEvent(mystuff->copy_events[i]);
              	if(status != CL_SUCCESS) 
            	  { 
 		          	std::cerr<< "Error " << status << ": Release copy event object. (clReleaseEvent)\n";

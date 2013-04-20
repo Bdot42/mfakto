@@ -92,20 +92,30 @@ unsigned long long int calculate_k(unsigned int exp, int bits)
 }
 
 
-int kernel_possible(int kernel, cl_uint exp, cl_uint bit_min, cl_uint bit_max)
+int kernel_possible(int kernel, mystuff_t *mystuff)
 /* returns 1 if the selected kernel can handle the assignment, 0 otherwise
 The variables exp, bit_min and bit_max must be a valid assignment! */
 {
-  int ret = 0;
-  kernel_info_t k = kernel_info[kernel];
+  int ret = 1;
+  kernel_info_t k;
 
-  if (bit_min >= k.bit_min  &&  bit_max <= k.bit_max  &&  (k.stages || (bit_max - bit_min) == 1)) ret = 1;
-  
-  exp++;	//exp is currently unused in this function...
-  
+  // if GPU-sieving: check that we have an appropriate kernel
+  if (mystuff->gpu_sieving == 1)
+  {
+    if ((kernel >= BARRETT79_MUL32) && (kernel <= BARRETT82_MUL15))
+      kernel += BARRETT79_MUL32_GS - BARRETT79_MUL32;  // adjust: if asked for the CPU version, check the GPU one
+    if ((kernel < BARRETT79_MUL32_GS) || (kernel > BARRETT82_MUL15_GS))
+      ret = 0;  // no GPU version available
+  }
+
+  k = kernel_info[kernel];
+  // check the kernel's limits
+  if (mystuff->bit_min < k.bit_min  ||
+      mystuff->bit_max_stage > k.bit_max  ||
+      ((k.stages == 0) && (mystuff->bit_max_stage - mystuff->bit_min) > 1))
+    ret = 0;  // out-of-bounds or multiple bit stages requested but not supported by the kernel
   return ret;
 }
-
 
 int class_needed(unsigned int exp, unsigned long long int k_min, int c)
 {
@@ -135,7 +145,7 @@ typedef GPUKernels kernel_precedence[UNKNOWN_KERNEL];
 
 GPUKernels find_fastest_kernel(mystuff_t *mystuff)
 {
-  /* searches the kernel precedence list of the GPU for the first on that is capable of running the assignment */
+  /* searches the kernel precedence list of the GPU for the first one that is capable of running the assignment */
   static kernel_precedence kernel_precedences [] = {
     /* sorted list of all kernels per GPU type, fastest first */
     {
@@ -160,7 +170,6 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       MG62,
       MG88,
 
-      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_VLIW4,  */
@@ -184,7 +193,6 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       MG62,
       MG88,
 
-      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_VLIW5,  */
@@ -208,7 +216,6 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       MG62,
       MG88,
 
-      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_GCN,    */
@@ -252,7 +259,6 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
     if ((st_data[ind].bit_min >= 74) && (st_data[ind].bit_min < 89))   kernels[j++] = MG88;              // 163.8 /  57.4
 */
 
-      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_CPU,    */
@@ -276,7 +282,6 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       MG62,
       MG88,
 
-      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_APU,    */
@@ -300,7 +305,6 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       MG62,
       MG88,
 
-      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_NVIDIA, */
@@ -324,7 +328,6 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       MG62,
       MG88,
 
-      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_INTEL,  */
@@ -348,7 +351,6 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       MG62,
       MG88,
 
-      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_UNKNOWN */
@@ -372,7 +374,6 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       MG62,
       MG88,
 
-      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL }
     
   };
@@ -380,29 +381,25 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
   kernel_precedence *k = &kernel_precedences[mystuff->gpu_type]; // select the row for the GPU we're running on / we're configured for
   GPUKernels         use_kernel = AUTOSELECT_KERNEL;
   cl_uint            i;
+  cl_uint            gpusieve_offset = 0;
 
   if (mystuff->gpu_sieving == 1)
   {
-    if (kernel_possible(BARRETT77_MUL32_GS, mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage))
-    {
-      use_kernel = BARRETT77_MUL32_GS; // TODO let it select suitable kernels
-    }
+    gpusieve_offset = BARRETT79_MUL32_GS - BARRETT79_MUL32;
   }
-  else
+
+  for (i = 0; i < UNKNOWN_KERNEL && (*k)[i] < UNKNOWN_KERNEL; i++)
   {
-    for (i = 0; i < UNKNOWN_KERNEL && (*k)[i] < UNKNOWN_KERNEL; i++)
+    if (kernel_possible((*k)[i], mystuff)) // if needed, this also checks that we have a _gs kernel
     {
-      if (kernel_possible((*k)[i], mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage))
-      {
-        use_kernel = (*k)[i];
-        break;
-      }
+      use_kernel = (GPUKernels)(gpusieve_offset + (*k)[i]);
+      break;
     }
   }
   return use_kernel;
 }
 
-int tf(mystuff_t *mystuff, int class_hint, unsigned long long int k_hint, enum GPUKernels use_kernel)
+int tf(mystuff_t *mystuff, int class_hint, cl_ulong k_hint, GPUKernels use_kernel)
 /*
 tf M<mystuff->exponent> from 2^<mystuff->bit_min> to 2^<mystuff->mystuff->bit_max_stage>
 
@@ -745,7 +742,7 @@ RET_ERROR we might have a serios problem
   unsigned int num_selftests=0, total_selftests=sizeof(st_data) / sizeof(st_data[0]);
   int f_class, selftests_to_run;
   int retval=1, ind;
-  enum GPUKernels kernels[UNKNOWN_KERNEL];
+  enum GPUKernels kernels[UNKNOWN_KERNEL], kernel_index;
   unsigned int index[] = {    46, 1518, 2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
                              70,   72,   73,  82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
@@ -753,7 +750,6 @@ RET_ERROR we might have a serios problem
                          };                          // mfakto special case (25-bit factor)
   // save the SievePrimes ini value as the selftest may lower it to fit small test-exponents
   unsigned int sieve_primes_save = mystuff->sieve_primes;
-  unsigned int kernel_index;
 
   if (type == MODE_SELFTEST_FULL)
     selftests_to_run = total_selftests;
@@ -793,7 +789,7 @@ RET_ERROR we might have a serios problem
     {
       for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index)
       {
-        if(kernel_possible(kernel_index, mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage)) kernels[j++] = kernel_index;
+        if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }
       // careful to not sieve out small test candidates
       mystuff->sieve_primes_upper_limit = sieve_sieve_primes_max(mystuff->exponent, mystuff->sieve_primes_max);
@@ -804,7 +800,7 @@ RET_ERROR we might have a serios problem
     {
       for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT82_MUL15_GS; ++kernel_index)
       {
-        if(kernel_possible(kernel_index, mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage)) kernels[j++] = kernel_index;
+        if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }
     }
 
