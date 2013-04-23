@@ -92,12 +92,12 @@ kernel_info_t       kernel_info[] = {
      {   CL_CALC_BIT_TO_CLEAR, "CalcBitToClear",       0,      0,         0,      NULL}, // called by gpusieve_init_class
      {   CL_CALC_MOD_INV,     "CalcModularInverses",   0,      0,         0,      NULL}, // called by gpusieve_init_exponent
      {   CL_SIEVE,            "SegSieve",              0,      0,         0,      NULL}, // GPU sieve
-     {   BARRETT79_MUL32_GS,  "cl_barrett32_79_gs",   64,     10,         1,      NULL}, // keep the GPU-sieve-based kernels in the same order as their CPU-siev versions
+     {   BARRETT79_MUL32_GS,  "cl_barrett32_79_gs",   64,     79,         1,      NULL}, // keep the GPU-sieve-based kernels in the same order as their CPU-sieve versions
      {   BARRETT77_MUL32_GS,  "cl_barrett32_77_gs",   64,     77,         1,      NULL},
-     {   BARRETT76_MUL32_GS,  "cl_barrett32_76_gs",   64,     10,         1,      NULL},
-     {   BARRETT92_MUL32_GS,  "cl_barrett32_92_gs",   65,     10,         0,      NULL},
-     {   BARRETT88_MUL32_GS,  "cl_barrett32_88_gs",   65,     10,         0,      NULL},
-     {   BARRETT87_MUL32_GS,  "cl_barrett32_87_gs",   65,     10,         0,      NULL},
+     {   BARRETT76_MUL32_GS,  "cl_barrett32_76_gs",   64,     76,         1,      NULL},
+     {   BARRETT92_MUL32_GS,  "cl_barrett32_92_gs",   65,     92,         0,      NULL},
+     {   BARRETT88_MUL32_GS,  "cl_barrett32_88_gs",   65,     88,         0,      NULL},
+     {   BARRETT87_MUL32_GS,  "cl_barrett32_87_gs",   65,     87,         0,      NULL},
      {   BARRETT73_MUL15_GS,  "cl_barrett15_73_gs",   60,     10,         0,      NULL},
      {   BARRETT69_MUL15_GS,  "cl_barrett15_69_gs",   60,     10,         0,      NULL},
      {   BARRETT70_MUL15_GS,  "cl_barrett15_70_gs",   60,     10,         0,      NULL},
@@ -108,12 +108,6 @@ kernel_info_t       kernel_info[] = {
 };
 
 /* save-save
-     {   BARRETT79_MUL32_GS,  "cl_barrett32_79_gs",   64,     79,         1,      NULL}, // one kernel for all vector sizes
-     {   BARRETT77_MUL32_GS,  "cl_barrett32_77_gs",   64,     77,         1,      NULL}, // one kernel for all vector sizes
-     {   BARRETT76_MUL32_GS,  "cl_barrett32_76_gs",   64,     76,         1,      NULL}, // one kernel for all vector sizes
-     {   BARRETT92_MUL32_GS,  "cl_barrett32_92_gs",   65,     92,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT88_MUL32_GS,  "cl_barrett32_88_gs",   65,     88,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT87_MUL32_GS,  "cl_barrett32_87_gs",   65,     87,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT73_MUL15_GS,  "cl_barrett15_73_gs",   60,     73,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT69_MUL15_GS,  "cl_barrett15_69_gs",   60,     69,         0,      NULL}, // one kernel for all vector sizes
      {   BARRETT70_MUL15_GS,  "cl_barrett15_70_gs",   60,     70,         0,      NULL}, // one kernel for all vector sizes
