@@ -2530,7 +2530,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               cl_ulong startTime=0;
               cl_ulong endTime=1000;
               /* Get kernel profiling info */
-              if (use_kernel != _95BIT_64_OpenCL && !mystuff->gpu_sieving) 
+              if (!mystuff->gpu_sieving) 
               {
                 status = clGetEventProfilingInfo(mystuff->copy_events[i],
                                   CL_PROFILING_COMMAND_START,

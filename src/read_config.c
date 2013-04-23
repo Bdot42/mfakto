@@ -232,6 +232,80 @@ int read_config(mystuff_t *mystuff)
 
   /*****************************************************************************/
 
+    if(my_read_int(mystuff->inifile, "NumStreams", &i))
+    {
+      printf("WARNING: Cannot read NumStreams from inifile, using default value (%d)\n",NUM_STREAMS_DEFAULT);
+      i=NUM_STREAMS_DEFAULT;
+    }
+    else
+    {
+      if(i>NUM_STREAMS_MAX)
+      {
+        printf("WARNING: Read NumStreams=%d from inifile, using max value (%d)\n",i,NUM_STREAMS_MAX);
+        i=NUM_STREAMS_MAX;
+      }
+      else if(i<NUM_STREAMS_MIN)
+      {
+        printf("WARNING: Read NumStreams=%d from inifile, using min value (%d)\n",i,NUM_STREAMS_MIN);
+        i=NUM_STREAMS_MIN;
+      }
+    }
+    if(mystuff->verbosity >= 1)printf("  NumStreams                %d\n",i);
+    mystuff->num_streams = i;
+
+  /*****************************************************************************/
+
+  /* CPU streams not used by mfakto
+    if(my_read_int(mystuff->inifile, "CPUStreams", &i))
+    {
+      printf("WARNING: Cannot read CPUStreams from inifile, using default value (%d)\n",CPU_STREAMS_DEFAULT);
+      i=CPU_STREAMS_DEFAULT;
+    }
+    else
+    {
+      if(i>CPU_STREAMS_MAX)
+      {
+        printf("WARNING: Read CPUStreams=%d from inifile, using max value (%d)\n",i,CPU_STREAMS_MAX);
+        i=CPU_STREAMS_MAX;
+      }
+      else if(i<CPU_STREAMS_MIN)
+      {
+        printf("WARNING: Read CPUStreams=%d from inifile, using min value (%d)\n",i,CPU_STREAMS_MIN);
+        i=CPU_STREAMS_MIN;
+      }
+    }
+    printf("  CPUStreams                %d\n",i);
+    mystuff->cpu_streams = i;
+    */
+  /*****************************************************************************/
+
+    if(my_read_int(mystuff->inifile, "GridSize", &i))
+    {
+      printf("WARNING: Cannot read GridSize from inifile, using default value (3)\n");
+      i = 3;
+    }
+    else
+    {
+      if(i > 4)
+      {
+        printf("WARNING: Read GridSize=%d from inifile, using max value (4)\n", i);
+        i = 4;
+      }
+      else if(i < 0)
+      {
+        printf("WARNING: Read GridSize=%d from inifile, using min value (0)\n", i);
+        i = 0;
+      }
+    }
+    if(mystuff->verbosity >= 1)printf("  GridSize                  %d\n",i);
+         if(i == 0)  mystuff->threads_per_grid_max =  131072;
+    else if(i == 1)  mystuff->threads_per_grid_max =  262144;
+    else if(i == 2)  mystuff->threads_per_grid_max =  524288;
+    else if(i == 3)  mystuff->threads_per_grid_max = 1048576;
+    else             mystuff->threads_per_grid_max = 2097152;
+
+  /*****************************************************************************/
+
     if(my_read_ulong(mystuff->inifile, "SieveCPUMask", &ul))
     {
       printf("WARNING: Cannot read SieveCPUMask from inifile, set to 0 by default\n");
@@ -241,10 +315,32 @@ int read_config(mystuff_t *mystuff)
   
     mystuff->cpu_mask = ul;
   /*****************************************************************************/
+  /* not used in mfakto (yet)
+    if(my_read_int(mystuff->inifile, "AllowSleep", &i))
+    {
+      printf("WARNING: Cannot read AllowSleep from inifile, set to 0 by default\n");
+      i=0;
+    }
+    else if(i != 0 && i != 1)
+    {
+      printf("WARNING: AllowSleep must be 0 or 1, set to 0 by default\n");
+      i=0;
+    }
+    if(mystuff->verbosity >= 1)
+    {
+      if(i == 0)printf("  AllowSleep                no\n");
+      else      printf("  AllowSleep                yes\n");
+    }
+    mystuff->allowsleep = i;
+    */
+/*****************************************************************************/
 
   }
   else // SieveOnGPU
   {
+    mystuff->num_streams = 1; // GPU sieve always uses only one stream
+    mystuff->threads_per_grid_max = 2097152; // not used for the GPU sieve - defined here to satisfy some calculations
+
     if(my_read_int(mystuff->inifile, "GPUSievePrimes", &i))
     {
       printf("WARNING: Cannot read GPUSievePrimes from inifile, using default value (%d)\n",GPU_SIEVE_PRIMES_DEFAULT);
@@ -318,81 +414,6 @@ int read_config(mystuff_t *mystuff)
     if(mystuff->verbosity >= 1)printf("  GPUSieveProcessSize       %dKi bits\n",i);
     mystuff->gpu_sieve_processing_size = i * 1024;
   }
-
-
-/*****************************************************************************/
-
-  if(my_read_int(mystuff->inifile, "NumStreams", &i))
-  {
-    printf("WARNING: Cannot read NumStreams from inifile, using default value (%d)\n",NUM_STREAMS_DEFAULT);
-    i=NUM_STREAMS_DEFAULT;
-  }
-  else
-  {
-    if(i>NUM_STREAMS_MAX)
-    {
-      printf("WARNING: Read NumStreams=%d from inifile, using max value (%d)\n",i,NUM_STREAMS_MAX);
-      i=NUM_STREAMS_MAX;
-    }
-    else if(i<NUM_STREAMS_MIN)
-    {
-      printf("WARNING: Read NumStreams=%d from inifile, using min value (%d)\n",i,NUM_STREAMS_MIN);
-      i=NUM_STREAMS_MIN;
-    }
-  }
-  if(mystuff->verbosity >= 1)printf("  NumStreams                %d\n",i);
-  mystuff->num_streams = i;
-
-/*****************************************************************************/
-
-/* CPU streams not used by mfakto
-  if(my_read_int(mystuff->inifile, "CPUStreams", &i))
-  {
-    printf("WARNING: Cannot read CPUStreams from inifile, using default value (%d)\n",CPU_STREAMS_DEFAULT);
-    i=CPU_STREAMS_DEFAULT;
-  }
-  else
-  {
-    if(i>CPU_STREAMS_MAX)
-    {
-      printf("WARNING: Read CPUStreams=%d from inifile, using max value (%d)\n",i,CPU_STREAMS_MAX);
-      i=CPU_STREAMS_MAX;
-    }
-    else if(i<CPU_STREAMS_MIN)
-    {
-      printf("WARNING: Read CPUStreams=%d from inifile, using min value (%d)\n",i,CPU_STREAMS_MIN);
-      i=CPU_STREAMS_MIN;
-    }
-  }
-  printf("  CPUStreams                %d\n",i);
-  mystuff->cpu_streams = i;
-  */
-/*****************************************************************************/
-
-  if(my_read_int(mystuff->inifile, "GridSize", &i))
-  {
-    printf("WARNING: Cannot read GridSize from inifile, using default value (3)\n");
-    i = 3;
-  }
-  else
-  {
-    if(i > 4)
-    {
-      printf("WARNING: Read GridSize=%d from inifile, using max value (4)\n", i);
-      i = 4;
-    }
-    else if(i < 0)
-    {
-      printf("WARNING: Read GridSize=%d from inifile, using min value (0)\n", i);
-      i = 0;
-    }
-  }
-  if(mystuff->verbosity >= 1)printf("  GridSize                  %d\n",i);
-       if(i == 0)  mystuff->threads_per_grid_max =  131072;
-  else if(i == 1)  mystuff->threads_per_grid_max =  262144;
-  else if(i == 2)  mystuff->threads_per_grid_max =  524288;
-  else if(i == 3)  mystuff->threads_per_grid_max = 1048576;
-  else             mystuff->threads_per_grid_max = 2097152;
 
 /*****************************************************************************/
 
@@ -565,25 +586,6 @@ int read_config(mystuff_t *mystuff)
   }
   if(mystuff->verbosity >= 2)printf("  ProgressFormat            \"%s\"\n", mystuff->stats.progressformat);
 
-
-/*****************************************************************************/
-
-  if(my_read_int(mystuff->inifile, "AllowSleep", &i))
-  {
-    printf("WARNING: Cannot read AllowSleep from inifile, set to 0 by default\n");
-    i=0;
-  }
-  else if(i != 0 && i != 1)
-  {
-    printf("WARNING: AllowSleep must be 0 or 1, set to 0 by default\n");
-    i=0;
-  }
-  if(mystuff->verbosity >= 1)
-  {
-    if(i == 0)printf("  AllowSleep                no\n");
-    else      printf("  AllowSleep                yes\n");
-  }
-  mystuff->allowsleep = i;
 
 /*****************************************************************************/
 

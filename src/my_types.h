@@ -269,7 +269,7 @@ typedef struct
 
   cl_uint  vectorsize;
   cl_uint  printmode;
-  cl_uint  allowsleep;
+//  cl_uint  allowsleep;    // not used in mfakto (yet)
   cl_uint  small_exp;
   cl_uint  print_timestamp;
   cl_uint  quit;
