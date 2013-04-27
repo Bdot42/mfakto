@@ -108,6 +108,18 @@ __constant uint two_pow_n_32[] = {1<<0,  1<<1,  1<<2,  1<<3,  1<<4,  1<<5,  1<<6
 
 #define PINFO_PAD1		1024			// Allows room for lots of initial bit_to_clr values
 
+#ifndef popcount
+uint popcount(uint x)
+{
+  x = (x & 0x55555555) + ((x >> 1) & 0x55555555);
+  x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+  x = (x & 0x07070707) + ((x >> 4) & 0x07070707);
+  x = (x & 0x000f000f) + ((x >> 8) & 0x000f000f);
+  x = (x & 0x0000000f) + ((x >> 16) & 0x0000000f);
+  return x;
+}
+#endif
+
 // Inline to calculate x mod p using 2^32 / p.  Returns positive remainder even when x is negative.
 // Assumes x is in the range -2^32 < x < p.  For this routine to work on only positive x values, we
 // would change the gen_pinv macro to not add one.
