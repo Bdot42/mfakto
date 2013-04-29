@@ -1917,9 +1917,11 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
 */
   // params 1 (k_base) and 6 (bb) are already set when entering this function
   cl_int   status;
-  cl_event run_event;
   size_t   globalThreads=numblocks*256;
   size_t   localThreads=256;
+#ifdef CL_PERFORMANCE_INFO
+  cl_event run_event;
+#endif
 
 //  shared_mem_required = (shared_mem_required + 127) & 0xFFFFFF80; // 128-byte-multiple
 #ifdef DETAILED_INFO

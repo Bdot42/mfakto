@@ -123,6 +123,9 @@
     <None Include="src\montgomery.cl">
       <Filter>kernel files</Filter>
     </None>
+    <None Include="src\common.cl">
+      <Filter>kernel files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="kernel files">

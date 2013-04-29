@@ -67,40 +67,6 @@ void mul_96_192_no_low3(int192_v *const res, const int96_v a, const int96_v b);
  ****************************************
  ****************************************/
 
-int96_v sub_if_gte_96(const int96_v a, const int96_v b)
-/* return (a>b)?a-b:a */
-{
-  int96_v tmp;
-  /* do the subtraction and use tmp.d2 to decide if the result is valid (if a was > b) */
-
-  int_v carry= (b.d0 > a.d0);
-
-  tmp.d0 = a.d0 - b.d0;
-  tmp.d1 = a.d1 - b.d1 - AS_UINT_V(carry ? 1 : 0);
-  carry   = (tmp.d1 > a.d1) || ((tmp.d1 == a.d1) && carry);
-  tmp.d2 = a.d2 - b.d2 - AS_UINT_V(carry ? 1 : 0);
-
-  tmp.d0 = (tmp.d2 > a.d2) ? a.d0 : tmp.d0;
-  tmp.d1 = (tmp.d2 > a.d2) ? a.d1 : tmp.d1;
-  tmp.d2 = (tmp.d2 > a.d2) ? a.d2 : tmp.d2;
-
-  return tmp;
-}
-
-void inc_if_ge_96(int96_v * const res, const int96_v a, const int96_v b)
-{ /* if (a >= b) res++ */
-  __private uint_v ge, carry;
-
-  ge = AS_UINT_V(a.d2 == b.d2);
-  ge = AS_UINT_V(ge ? ((a.d1 == b.d1) ? (a.d0 >= b.d0) : (a.d1 > b.d1)) : (a.d2 > b.d2));
-
-  carry    = AS_UINT_V(ge ? 1 : 0);
-  res->d0 += carry;
-  carry    = AS_UINT_V((carry > res->d0)? 1 : 0);
-  res->d1 += carry;
-  res->d2 += AS_UINT_V((carry > res->d1)? 1 : 0);
-}
-
 void mul_96(int96_v * const res, const int96_v a, const int96_v b)
 /* res = a * b */
 {
@@ -862,161 +828,6 @@ DIV_160_96 here. */
 
 #undef DIV_160_96
 
-
-/*
- * read k from global memory and calculate the factor candidate
- * this is common for all CPU-sieve-based kernels
- */
-
-void calculate_FC32(const uint exponent, const uint tid, const __global uint * restrict k_tab, const int96_t k_base, __private int96_v * restrict const f)
-{
-  __private int96_t exp96;
-  __private uint_v t, tmp;
-  __private int96_v k;
-
-  exp96.d1=exponent>>31;exp96.d0=exponent+exponent;	// exp96 = 2 * exponent
-
-#if (VECTOR_SIZE == 1)
-  t    = k_tab[tid];
-#elif (VECTOR_SIZE == 2)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-#elif (VECTOR_SIZE == 3)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-#elif (VECTOR_SIZE == 4)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-  t.w  = k_tab[tid+3];
-#elif (VECTOR_SIZE == 8)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-#elif (VECTOR_SIZE == 16)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-  t.s8 = k_tab[tid+8];
-  t.s9 = k_tab[tid+9];
-  t.sa = k_tab[tid+10];
-  t.sb = k_tab[tid+11];
-  t.sc = k_tab[tid+12];
-  t.sd = k_tab[tid+13];
-  t.se = k_tab[tid+14];
-  t.sf = k_tab[tid+15];
-#endif
-//MAD only available for float
-  k.d0 = mad24(t, 4620u, k_base.d0);
-  k.d1 = mul_hi(t, 4620u) + k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
-        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
-#endif
-
-  f->d0  = k.d0 * exp96.d0 + 1;
-
-  tmp   = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
-  f->d2  = exp96.d1 ? k.d1 : 0;
-
-  f->d1  = mul_hi(k.d0, exp96.d0) + tmp;
-  f->d2 += AS_UINT_V((tmp > f->d1)? 1 : 0);
-
-  tmp   = k.d1 * exp96.d0;
-  f->d1 += tmp;
-
-  f->d2 += mul_hi(k.d1, exp96.d0) + AS_UINT_V((tmp > f->d1)? 1 : 0); 	// f = 2 * k * exp + 1
-}
-
-/*
- * read k from global memory and calculate the factor candidate
- * this is common for all CPU-sieve-based kernels
- * this version used mad_hi instead of mul_hi in 2 places - for some kernels this is faster
- */
-
-void calculate_FC32_mad(const uint exponent, const uint tid, const __global uint * restrict k_tab, const int96_t k_base, __private int96_v * restrict const f)
-{
-  __private int96_t exp96;
-  __private uint_v t, tmp;
-  __private int96_v k;
-
-  exp96.d1=exponent>>31;exp96.d0=exponent+exponent;	// exp96 = 2 * exponent
-
-#if (VECTOR_SIZE == 1)
-  t    = k_tab[tid];
-#elif (VECTOR_SIZE == 2)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-#elif (VECTOR_SIZE == 3)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-#elif (VECTOR_SIZE == 4)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-  t.w  = k_tab[tid+3];
-#elif (VECTOR_SIZE == 8)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-#elif (VECTOR_SIZE == 16)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-  t.s8 = k_tab[tid+8];
-  t.s9 = k_tab[tid+9];
-  t.sa = k_tab[tid+10];
-  t.sb = k_tab[tid+11];
-  t.sc = k_tab[tid+12];
-  t.sd = k_tab[tid+13];
-  t.se = k_tab[tid+14];
-  t.sf = k_tab[tid+15];
-#endif
-//MAD only available for float
-  k.d0 = mad24(t, 4620u, k_base.d0);
-  k.d1 = mul_hi(t, 4620u) + k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
-        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
-#endif
-
-  f->d0  = k.d0 * exp96.d0 + 1;
-
-  tmp   = exp96.d1 ? k.d0 : 0;  /* exp96.d1 is 0 or 1 */
-  f->d2  = exp96.d1 ? k.d1 : 0;
-
-  f->d1  = mad_hi(k.d0, exp96.d0, tmp);
-  f->d2 += AS_UINT_V((tmp > f->d1)? 1 : 0);
-
-  tmp   = k.d1 * exp96.d0;
-  f->d1 += tmp;
-
-  f->d2 += mad_hi(k.d1, exp96.d0, AS_UINT_V((tmp > f->d1)? 1 : 0)); 	// f = 2 * k * exp + 1
-}
 
 /*
  * TF 64-76 bits using 32-bit barrett:
@@ -1801,7 +1612,7 @@ Precalculated here since it is the same for all steps in the following loop */
  * now the actual kernels: first the ones based on the CPU sieve
  *
  * shiftcount is used for precomputing without mod
- * a is precomputed on host ONCE.
+ * b is precomputed on host ONCE.
  *
  * bit_max64 is bit_max - 64 (used in the "big" kernels only)
  */
