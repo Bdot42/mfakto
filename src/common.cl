@@ -179,6 +179,31 @@ uint popcount(uint x)
       } \
   }
 
+#define EVAL_RES_tmp75(comp) \
+  if((tmp.comp)==0) \
+  { \
+      int index = ATOMIC_INC(RES[0]); \
+      if (index < 10) \
+      { \
+        RES[index*3 + 1]=n.d4.comp;  \
+        RES[index*3 + 2]=mad24(n.d3.comp,0x8000u, n.d2.comp); \
+        RES[index*3 + 3]=mad24(n.d1.comp,0x8000u, n.d0.comp); \
+      } \
+  }
+
+#define EVAL_RES_tmp90(comp) \
+  if((tmp.comp)==0) \
+  { \
+      int index = ATOMIC_INC(RES[0]); \
+      if (index < 10) \
+      { \
+        RES[index*3 + 1]=mad24(n.d5.comp,0x8000u, n.d4.comp); \
+        RES[index*3 + 2]=mad24(n.d3.comp,0x8000u, n.d2.comp); \
+        RES[index*3 + 3]=mad24(n.d1.comp,0x8000u, n.d0.comp); \
+      } \
+  }
+
+
 void check_factor96(const int96_v f, const int96_v a, __global uint * const RES)
 /* Check whether f is a factor or not. If f != 1 and a == 1 then f is a factor,
 in this case f is written into the RES array. */
@@ -576,7 +601,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     nn.d2 += mul_hi(n.d1, qi) + n.d2* qi;
 
     tmp  = q.d1 - nn.d1;
-    tmp |= q.d2 - nn.d2 - AS_UINT_V(tmp > q.d1 ? 1 : 0);
+//    tmp |= q.d2 - nn.d2 - AS_UINT_V(tmp > q.d1 ? 1 : 0);
+    tmp |= q.d2 - nn.d2; // if we have a borrow here, then tmp will not be 0 anyway
 
 #if (VECTOR_SIZE == 1)
     if(tmp == 0)
@@ -717,6 +743,120 @@ are "out of range".
         res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
 #endif
 
+}
+
+void mod_simple_75_and_check_big_factor75(const int75_v q, const int75_v n, const float_v nf, __global uint * const RES)
+/*
+This function is a combination of mod_simple_96(), check_big_factor96() and an additional correction step.
+If q mod n == 1 then n is a factor and written into the RES array.
+q must be less than 100n!
+*/
+{
+  __private float_v qf;
+  __private uint_v qi, tmp;
+  __private int75_v nn;
+
+  qf = CONVERT_FLOAT_V(mad24(q.d4, 32768u, q.d3));
+  qf = qf * 32768.0f;
+  
+  qi = CONVERT_UINT_V(qf*nf);
+
+/* at this point the quotient still is sometimes to small (the error is 1 in this case)
+--> final res odd and qi correct: n might be a factor
+    final res odd and qi too small: n can't be a factor (because the correct res is even)
+    final res even and qi correct: n can't be a factor (because the res is even)
+    final res even and qi too small: n might be a factor
+so we compare the LSB of qi and q.d0, if they are the same (both even or both odd) the res (without correction) would be even. In this case increment qi by one.*/
+
+  qi += ((~qi) ^ q.d0) & 1;
+ 
+  nn.d0  = mad24(n.d0, qi, 1);
+  nn.d1  = nn.d0 >> 15;
+  nn.d0 &= 0x7FFF;
+
+#if (VECTOR_SIZE == 1)
+  if(q.d0 == nn.d0)
+#else
+  if(any(q.d0 == nn.d0)) /* the lowest word of the final result would be 1 for at least one of the vector components (only in this case n might be a factor) */
+#endif
+  { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
+        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+#endif
+
+// nn = n * qi
+    nn.d1  = mad24(n.d1, qi, nn.d1);
+    nn.d2  = mad24(n.d2, qi, nn.d1 >> 15);
+    nn.d3  = mad24(n.d3, qi, nn.d2 >> 15);
+    nn.d4  = mad24(n.d4, qi, nn.d3 >> 15);
+    nn.d1 &= 0x7FFF;
+    nn.d2 &= 0x7FFF;
+    nn.d3 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+    if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#5: nn=%x:%x:%x:%x:%x\n",
+        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+#endif
+
+// for the subtraction we don't need to evaluate any borrow: if any component is >0, then we won't have a factor anyway
+    tmp  = q.d1 - nn.d1;
+    tmp |= q.d2 - nn.d2;
+    tmp |= q.d3 - nn.d3;
+    tmp |= q.d4 - nn.d4;
+
+#if (VECTOR_SIZE == 1)
+    if(tmp == 0)
+    {
+      int index;
+      index =ATOMIC_INC(RES[0]);
+      if(index < 10)                              /* limit to 10 factors per class */
+      {
+        RES[index*3 + 1]=n.d4.comp;
+        RES[index*3 + 2]=mad24(n.d3.comp,0x8000u, n.d2.comp);
+        RES[index*3 + 3]=mad24(n.d1.comp,0x8000u, n.d0.comp);
+      }
+    }
+#elif (VECTOR_SIZE == 2)
+    EVAL_RES_tmp75(x)
+    EVAL_RES_tmp75(y)
+#elif (VECTOR_SIZE == 3)
+    EVAL_RES_tmp75(x)
+    EVAL_RES_tmp75(y)
+    EVAL_RES_tmp75(z)
+#elif (VECTOR_SIZE == 4)
+    EVAL_RES_tmp75(x)
+    EVAL_RES_tmp75(y)
+    EVAL_RES_tmp75(z)
+    EVAL_RES_tmp75(w)
+#elif (VECTOR_SIZE == 8)
+    EVAL_RES_tmp75(s0)
+    EVAL_RES_tmp75(s1)
+    EVAL_RES_tmp75(s2)
+    EVAL_RES_tmp75(s3)
+    EVAL_RES_tmp75(s4)
+    EVAL_RES_tmp75(s5)
+    EVAL_RES_tmp75(s6)
+    EVAL_RES_tmp75(s7)
+#elif (VECTOR_SIZE == 16)
+    EVAL_RES_tmp75(s0)
+    EVAL_RES_tmp75(s1)
+    EVAL_RES_tmp75(s2)
+    EVAL_RES_tmp75(s3)
+    EVAL_RES_tmp75(s4)
+    EVAL_RES_tmp75(s5)
+    EVAL_RES_tmp75(s6)
+    EVAL_RES_tmp75(s7)
+    EVAL_RES_tmp75(s8)
+    EVAL_RES_tmp75(s9)
+    EVAL_RES_tmp75(sa)
+    EVAL_RES_tmp75(sb)
+    EVAL_RES_tmp75(sc)
+    EVAL_RES_tmp75(sd)
+    EVAL_RES_tmp75(se)
+    EVAL_RES_tmp75(sf)
+#endif
+  }
 }
 
 
@@ -905,6 +1045,122 @@ are "out of range".
   if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90#6: res=%x:%x:%x:%x:%x:%x\n",
         res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
 #endif
+}
+
+void mod_simple_90_and_check_big_factor90(const int90_v q, const int90_v n, const float_v nf, __global uint * const RES)
+/*
+This function is a combination of mod_simple_96(), check_big_factor96() and an additional correction step.
+If q mod n == 1 then n is a factor and written into the RES array.
+q must be less than 100n!
+*/
+{
+  __private float_v qf;
+  __private uint_v qi, tmp;
+  __private int90_v nn;
+
+  qf = CONVERT_FLOAT_V(mad24(q.d5, 32768u, q.d4));  // q.d3 needed?
+  qf = qf * 1073741824.0f;
+  
+  qi = CONVERT_UINT_V(qf*nf);
+/* at this point the quotient still is sometimes to small (the error is 1 in this case)
+--> final res odd and qi correct: n might be a factor
+    final res odd and qi too small: n can't be a factor (because the correct res is even)
+    final res even and qi correct: n can't be a factor (because the res is even)
+    final res even and qi too small: n might be a factor
+so we compare the LSB of qi and q.d0, if they are the same (both even or both odd) the res (without correction) would be even. In this case increment qi by one.*/
+
+  qi += ((~qi) ^ q.d0) & 1;
+ 
+  nn.d0  = mad24(n.d0, qi, 1);
+  nn.d1  = nn.d0 >> 15;
+  nn.d0 &= 0x7FFF;
+
+#if (VECTOR_SIZE == 1)
+  if(q.d0 == nn.d0)
+#else
+  if(any(q.d0 == nn.d0)) /* the lowest word of the final result would be 1 for at least one of the vector components (only in this case n might be a factor) */
+#endif
+  { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+#endif
+
+// nn = n * qi
+    nn.d1  = mad24(n.d1, qi, nn.d1);
+    nn.d2  = mad24(n.d2, qi, nn.d1 >> 15);
+    nn.d3  = mad24(n.d3, qi, nn.d2 >> 15);
+    nn.d4  = mad24(n.d4, qi, nn.d3 >> 15);
+    nn.d5  = mad24(n.d5, qi, nn.d4 >> 15);
+    nn.d1 &= 0x7FFF;
+    nn.d2 &= 0x7FFF;
+    nn.d3 &= 0x7FFF;
+    nn.d4 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+    if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90_a#: nn=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+#endif
+
+// for the subtraction we don't need to evaluate any borrow: if any component is >0, then we won't have a factor anyway
+    tmp  = q.d1 - nn.d1;
+    tmp |= q.d2 - nn.d2;
+    tmp |= q.d3 - nn.d3;
+    tmp |= q.d4 - nn.d4;
+    tmp |= q.d5 - nn.d5;
+
+#if (VECTOR_SIZE == 1)
+    if(tmp == 0)
+    {
+      int index;
+      index =ATOMIC_INC(RES[0]);
+      if(index < 10)                              /* limit to 10 factors per class */
+      {
+        RES[index*3 + 1]=mad24(n.d5.comp,0x8000u, n.d4.comp);
+        RES[index*3 + 2]=mad24(n.d3.comp,0x8000u, n.d2.comp);
+        RES[index*3 + 3]=mad24(n.d1.comp,0x8000u, n.d0.comp);
+      }
+    }
+#elif (VECTOR_SIZE == 2)
+    EVAL_RES_tmp90(x)
+    EVAL_RES_tmp90(y)
+#elif (VECTOR_SIZE == 3)
+    EVAL_RES_tmp90(x)
+    EVAL_RES_tmp90(y)
+    EVAL_RES_tmp90(z)
+#elif (VECTOR_SIZE == 4)
+    EVAL_RES_tmp90(x)
+    EVAL_RES_tmp90(y)
+    EVAL_RES_tmp90(z)
+    EVAL_RES_tmp90(w)
+#elif (VECTOR_SIZE == 8)
+    EVAL_RES_tmp90(s0)
+    EVAL_RES_tmp90(s1)
+    EVAL_RES_tmp90(s2)
+    EVAL_RES_tmp90(s3)
+    EVAL_RES_tmp90(s4)
+    EVAL_RES_tmp90(s5)
+    EVAL_RES_tmp90(s6)
+    EVAL_RES_tmp90(s7)
+#elif (VECTOR_SIZE == 16)
+    EVAL_RES_tmp90(s0)
+    EVAL_RES_tmp90(s1)
+    EVAL_RES_tmp90(s2)
+    EVAL_RES_tmp90(s3)
+    EVAL_RES_tmp90(s4)
+    EVAL_RES_tmp90(s5)
+    EVAL_RES_tmp90(s6)
+    EVAL_RES_tmp90(s7)
+    EVAL_RES_tmp90(s8)
+    EVAL_RES_tmp90(s9)
+    EVAL_RES_tmp90(sa)
+    EVAL_RES_tmp90(sb)
+    EVAL_RES_tmp90(sc)
+    EVAL_RES_tmp90(sd)
+    EVAL_RES_tmp90(se)
+    EVAL_RES_tmp90(sf)
+#endif
+  }
 }
 
 

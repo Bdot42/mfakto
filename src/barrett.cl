@@ -1648,7 +1648,7 @@ __kernel void cl_barrett32_76(__private uint exponent, const int96_t k_base, con
         exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
-  check_barrett32_76(exponent<<= 32 - shiftcount, f, tid, bb, RES);
+  check_barrett32_76(exponent << (32 - shiftcount), f, tid, bb, RES);
 }
 
 __kernel void cl_barrett32_77(__private uint exponent, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
@@ -1680,7 +1680,7 @@ __kernel void cl_barrett32_77(__private uint exponent, const int96_t k_base, con
         exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
-  check_barrett32_77(exponent<<= 32 - shiftcount, f, tid, bb, RES);
+  check_barrett32_77(exponent << (32 - shiftcount), f, tid, bb, RES);
 }
 
 __kernel void cl_barrett32_79(__private uint exponent, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
@@ -1712,7 +1712,7 @@ __kernel void cl_barrett32_79(__private uint exponent, const int96_t k_base, con
         exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
-  check_barrett32_79(exponent<<= 32 - shiftcount, f, tid, bb, RES);
+  check_barrett32_79(exponent << (32 - shiftcount), f, tid, bb, RES);
 }
 
 __kernel void cl_barrett32_87(__private uint exponent, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
@@ -1744,7 +1744,7 @@ __kernel void cl_barrett32_87(__private uint exponent, const int96_t k_base, con
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
-  check_barrett32_87(exponent<<= 32 - shiftcount, f, tid, bb, bit_max64-1, RES);
+  check_barrett32_87(exponent << (32 - shiftcount), f, tid, bb, bit_max64-1, RES);
 }
 
 __kernel void cl_barrett32_88(__private uint exponent, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
@@ -1776,7 +1776,7 @@ __kernel void cl_barrett32_88(__private uint exponent, const int96_t k_base, con
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
-  check_barrett32_88(exponent<<= 32 - shiftcount, f, tid, bb, bit_max64-1, RES);
+  check_barrett32_88(exponent << (32 - shiftcount), f, tid, bb, bit_max64-1, RES);
 }
 
 __kernel void cl_barrett32_92(__private uint exponent, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
@@ -1807,7 +1807,7 @@ __kernel void cl_barrett32_92(__private uint exponent, const int96_t k_base, con
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
-  check_barrett32_92(exponent<<= 32 - shiftcount, f, tid, bb, bit_max64-1, RES);
+  check_barrett32_92(exponent << (32 - shiftcount), f, tid, bb, bit_max64-1, RES);
 }
 
 #else

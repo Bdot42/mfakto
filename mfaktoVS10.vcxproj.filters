@@ -72,9 +72,6 @@
     <ClInclude Include="src/signal_handler.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src\tf_debug.h">
-      <Filter>header files</Filter>
-    </ClInclude>
     <ClInclude Include="src/timer.h">
       <Filter>header files</Filter>
     </ClInclude>
@@ -84,14 +81,17 @@
     <ClInclude Include="src\gpusieve.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src\datatypes.h">
-      <Filter>header files</Filter>
-    </ClInclude>
     <ClInclude Include="src\perftest.h">
       <Filter>header files</Filter>
     </ClInclude>
     <ClInclude Include="src\output.h">
       <Filter>header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\datatypes.h">
+      <Filter>kernel files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tf_debug.h">
+      <Filter>kernel files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

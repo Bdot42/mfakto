@@ -134,7 +134,9 @@ typedef struct _int180_v
 #define CONVERT_FLOAT_RTP_V convert_float
 #define CONVERT_UINT_V convert_uint
 #define CONVERT_ULONG_V convert_ulong
-#define AS_UINT_V as_uint
+// AS_UINT is applied only to logical results. For vector operations, these are 0 (false) or -1 (true)
+// For scalar operations, they result in 0 (false) or 1 (true) ==> to unify, negate here
+#define AS_UINT_V -as_uint
 
 #else
 typedef struct _int72_v
