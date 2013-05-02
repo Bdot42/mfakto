@@ -394,7 +394,7 @@ int test_copy(cl_uint par)
 
         if(status != CL_SUCCESS) 
 	      {  
-	          std::cout<<"Error " << status << ": Copying h_ktab(clEnqueueWriteBuffer)\n";
+	          std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_ktab(clEnqueueWriteBuffer)\n";
             return RET_ERROR;
 	      }
 
@@ -421,7 +421,7 @@ int test_copy(cl_uint par)
 
         if(status != CL_SUCCESS) 
 	      {  
-	          std::cout<<"Error " << status << ": Copying h_ktab(clEnqueueWriteBuffer)\n";
+	          std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_ktab(clEnqueueWriteBuffer)\n";
             return RET_ERROR;
 	      }
 
@@ -453,7 +453,7 @@ int test_copy(cl_uint par)
 
         if(status != CL_SUCCESS) 
 	      {  
-	          std::cout<<"Error " << status << ": Copying h_ktab(clEnqueueWriteBuffer)\n";
+	          std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_ktab(clEnqueueWriteBuffer)\n";
             return RET_ERROR;
 	      }
 
@@ -472,7 +472,7 @@ int test_copy(cl_uint par)
                                 0);
       if(status != CL_SUCCESS)
      	{ 
-	    	std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+	    	std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
         return RET_ERROR;
       }
       status = clGetEventProfilingInfo(mystuff.copy_events[i],
@@ -482,13 +482,13 @@ int test_copy(cl_uint par)
                                 0);
       if(status != CL_SUCCESS) 
  	    { 
-		    std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+		    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
         return RET_ERROR;
       }
       status = clReleaseEvent(mystuff.copy_events[i]);
       if(status != CL_SUCCESS) 
       { 
-	  	  std::cerr<< "Error " << status << ": Release in event object. (clReleaseEvent)\n";
+	  	  std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release in event object. (clReleaseEvent)\n";
       }
 
 //      printf("     %lld ns (%lld - %lld)\n", endTime-startTime, endTime, startTime);
@@ -537,7 +537,7 @@ int test_copy(cl_uint par)
 
       if(status != CL_SUCCESS) 
       {  
-	          std::cout<<"Error " << status << ": Copying h_ktab(clEnqueueWriteBuffer)\n";
+	          std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_ktab(clEnqueueWriteBuffer)\n";
             return RET_ERROR;
 	    }
 

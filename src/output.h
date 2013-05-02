@@ -32,7 +32,6 @@ void print_status_line(mystuff_t *mystuff);
 void print_result_line(mystuff_t *mystuff, int factorsfound);
 void print_factor(mystuff_t *mystuff, int factor_number, char *factor);
 double primenet_ghzdays(unsigned int exp, int bit_min, int bit_max);
-const char* ClErrorString( const cl_int errcode );
 #ifdef __cplusplus
 }
 #endif

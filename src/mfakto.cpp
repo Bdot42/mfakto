@@ -188,7 +188,7 @@ int init_CLstreams(void)
                       &status);
     if(status != CL_SUCCESS) 
   	{ 
-	  	std::cout<<"Error " << status << ": clCreateBuffer (h_ktab[" << i << "]) \n";
+	  	std::cout<<"Error " << status << " (" << ClErrorString(status) << "): clCreateBuffer (h_ktab[" << i << "]) \n";
 	  	return 1;
 	  }
   }
@@ -204,7 +204,7 @@ int init_CLstreams(void)
                     &status);
   if(status != CL_SUCCESS) 
   { 
-		std::cout<<"Error " << status << ": clCreateBuffer (d_RES)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): clCreateBuffer (d_RES)\n";
 		return 1;
 	}
 #ifdef CHECKS_MODBASECASE
@@ -220,7 +220,7 @@ int init_CLstreams(void)
                     &status);
   if(status != CL_SUCCESS) 
   {
-		std::cout<<"Error " << status << ": clCreateBuffer (d_modbasecase_debug)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): clCreateBuffer (d_modbasecase_debug)\n";
 		return 1;
 	}
 #endif
@@ -240,7 +240,7 @@ int init_CLstreams(void)
                       (void *)&mystuff.d_calc_bit_to_clear_info);
     if(status != CL_SUCCESS)
 	  {
-		  std::cout<<"Error " << status << ": Setting kernel argument. (d_calc_bit_to_clear_info)\n";
+		  std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_calc_bit_to_clear_info)\n";
 		  return 1;
 	  }
 
@@ -253,7 +253,7 @@ int init_CLstreams(void)
                       (void *)&mystuff.d_calc_bit_to_clear_info);
     if(status != CL_SUCCESS)
 	  {
-		  std::cout<<"Error " << status << ": Setting kernel argument. (d_calc_bit_to_clear_info)\n";
+		  std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_calc_bit_to_clear_info)\n";
 		  return 1;
 	  }
     status = clSetKernelArg(kernel_info[CL_CALC_BIT_TO_CLEAR].kernel,
@@ -262,7 +262,7 @@ int init_CLstreams(void)
                       (void *)&mystuff.d_sieve_info);
     if(status != CL_SUCCESS)
 	  {
-		  std::cout<<"Error " << status << ": Setting kernel argument. (d_sieve_info)\n";
+		  std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_sieve_info)\n";
 		  return 1;
 	  }
 
@@ -274,7 +274,7 @@ int init_CLstreams(void)
                       (void *)&mystuff.d_bitarray);
     if(status != CL_SUCCESS)
 	  {
-		  std::cout<<"Error " << status << ": Setting kernel argument. (d_bitarray)\n";
+		  std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_bitarray)\n";
 		  return 1;
 	  }
     status = clSetKernelArg(kernel_info[CL_SIEVE].kernel,
@@ -283,7 +283,7 @@ int init_CLstreams(void)
                       (void *)&mystuff.d_sieve_info);
     if(status != CL_SUCCESS)
 	  {
-		  std::cout<<"Error " << status << ": Setting kernel argument. (d_sieve_info)\n";
+		  std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_sieve_info)\n";
 		  return 1;
 	  }
     // param 2 (primes_per_thread) is variable, can't set it now.
@@ -311,7 +311,7 @@ int init_CL(int num_streams, cl_int devnumber)
   status = clGetPlatformIDs(0, NULL, &numplatforms);
   if(status != CL_SUCCESS)
   {
-    std::cerr << "Error " << status << ": clGetPlatformsIDs(num)\n";
+    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformsIDs(num)\n";
     return 1;
   }
 
@@ -328,7 +328,7 @@ int init_CL(int num_streams, cl_int devnumber)
     status = clGetPlatformIDs(numplatforms, platformlist, NULL);
     if(status != CL_SUCCESS)
     {
-      std::cerr << "Error " << status << ": clGetPlatformsIDs\n";
+      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformsIDs\n";
       return 1;
     }
 
@@ -344,7 +344,7 @@ int init_CL(int num_streams, cl_int devnumber)
                         sizeof(buf), buf, NULL);
         if(status != CL_SUCCESS)
         {
-          std::cerr << "Error " << status << ": clGetPlatformInfo(VENDOR)\n";
+          std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformInfo(VENDOR)\n";
           return 1;
         }
         std::cout << "OpenCL Platform " << i+1 << "/" << numplatforms << ": " << buf;
@@ -353,7 +353,7 @@ int init_CL(int num_streams, cl_int devnumber)
                         sizeof(buf), buf, NULL);
         if(status != CL_SUCCESS)
         {
-          std::cerr << "Error " << status << ": clGetPlatformInfo(VERSION)\n";
+          std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformInfo(VERSION)\n";
           return 1;
         }
         std::cout << ", Version: " << buf << std::endl;
@@ -372,7 +372,7 @@ int init_CL(int num_streams, cl_int devnumber)
                         sizeof(buf), buf, NULL);
       if(status != CL_SUCCESS)
       {
-        std::cerr << "Error " << status << ": clGetPlatformInfo(VENDOR)\n";
+        std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformInfo(VENDOR)\n";
         return 1;
       }
       if(strcmp(buf, "Advanced Micro Devices, Inc.") == 0)
@@ -386,7 +386,7 @@ int init_CL(int num_streams, cl_int devnumber)
                         sizeof(buf), buf, NULL);
       if(status != CL_SUCCESS)
       {
-        std::cerr << "Error " << status << ": clGetPlatformInfo(VERSION)\n";
+        std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformInfo(VERSION)\n";
         return 1;
       }
       std::cout << ", Version: " << buf << std::endl;
@@ -411,13 +411,13 @@ int init_CL(int num_streams, cl_int devnumber)
     context = clCreateContextFromType(cps, CL_DEVICE_TYPE_CPU, NULL, NULL, &status);
     if(status != CL_SUCCESS) 
   	{  
-   	  std::cerr << "Error " << status << ": clCreateContextFromType(CPU)\n";
+   	  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateContextFromType(CPU)\n";
 	    return 1; 
     }
   }
   else if(status != CL_SUCCESS) 
 	{  
-		std::cerr << "Error " << status << ": clCreateContextFromType(GPU)\n";
+		std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateContextFromType(GPU)\n";
 		return 1;
   }
 
@@ -425,7 +425,7 @@ int init_CL(int num_streams, cl_int devnumber)
   status = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(num_devices), &num_devices, NULL);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr << "Error " << status << ": clGetContextInfo(CL_CONTEXT_NUM_DEVICES) - assuming one device\n";
+		std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_CONTEXT_NUM_DEVICES) - assuming one device\n";
 		// return 1;
     num_devices = 1;
 	}
@@ -433,7 +433,7 @@ int init_CL(int num_streams, cl_int devnumber)
   status = clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, NULL, &dev_s);
   if(status != CL_SUCCESS) 
 	{  
-		std::cerr << "Error " << status << ": clGetContextInfo(numdevs)\n";
+		std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(numdevs)\n";
 		return 1;
 	}
 
@@ -453,7 +453,7 @@ int init_CL(int num_streams, cl_int devnumber)
   status = clGetContextInfo(context, CL_CONTEXT_DEVICES, dev_s*sizeof(cl_device_id), devices, NULL);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr << "Error " << status << ": clGetContextInfo(devices)\n";
+		std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(devices)\n";
 		return 1;
 	}
 
@@ -479,79 +479,79 @@ int init_CL(int num_streams, cl_int devnumber)
     status = clGetDeviceInfo(devices[i], CL_DEVICE_NAME, sizeof(deviceinfo.d_name), deviceinfo.d_name, NULL);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_NAME)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_NAME)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, sizeof(deviceinfo.d_ver), deviceinfo.d_ver, NULL);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_VERSION)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_VERSION)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_VENDOR, sizeof(deviceinfo.v_name), deviceinfo.v_name, NULL);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_VENDOR)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_VENDOR)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DRIVER_VERSION, sizeof(deviceinfo.dr_version), deviceinfo.dr_version, NULL);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DRIVER_VERSION)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DRIVER_VERSION)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS, sizeof(deviceinfo.exts), deviceinfo.exts, NULL);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_EXTENSIONS)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_EXTENSIONS)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, sizeof(deviceinfo.gl_cache), &deviceinfo.gl_cache, NULL);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(deviceinfo.gl_mem), &deviceinfo.gl_mem, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_GLOBAL_MEM_SIZE)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_GLOBAL_MEM_SIZE)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(deviceinfo.max_clock), &deviceinfo.max_clock, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(deviceinfo.units), &deviceinfo.units, NULL);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_MAX_COMPUTE_UNITS)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_MAX_COMPUTE_UNITS)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(deviceinfo.wg_size), &deviceinfo.wg_size, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(deviceinfo.w_dim), &deviceinfo.w_dim, NULL);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(deviceinfo.wi_sizes), deviceinfo.wi_sizes, NULL);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_MAX_WORK_ITEM_SIZES)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_MAX_WORK_ITEM_SIZES)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(deviceinfo.l_mem), &deviceinfo.l_mem, NULL);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_LOCAL_MEM_SIZE)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_LOCAL_MEM_SIZE)\n";
 	  	return 1;
 	  }
     
@@ -589,7 +589,7 @@ int init_CL(int num_streams, cl_int devnumber)
   commandQueue = clCreateCommandQueue(context, devices[devnumber], props, &status);
   if(status != CL_SUCCESS)
 	{
-    std::cerr << "Error " << status << ": clCreateCommandQueue(dev#" << devnumber+1 << ")\n";
+    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueue(dev#" << devnumber+1 << ")\n";
 		return 1;
 	}
 
@@ -598,7 +598,7 @@ int init_CL(int num_streams, cl_int devnumber)
   commandQueuePrf = clCreateCommandQueue(context, devices[devnumber], props, &status);
   if(status != CL_SUCCESS)
 	{
-    std::cerr << "Error " << status << ": clCreateCommandQueuePrf(dev#" << devnumber+1 << ")\n";
+    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueuePrf(dev#" << devnumber+1 << ")\n";
 		return 1;
 	}
 
@@ -634,7 +634,7 @@ int init_CL(int num_streams, cl_int devnumber)
   program = clCreateProgramWithSource(context, 1, (const char **)&source, &size, &status);
 	if(status != CL_SUCCESS)
 	{
-	  std::cerr << "Error " << status << ": clCreateProgramWithSource\n";
+	  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateProgramWithSource\n";
 	  return 1;
 	}
 
@@ -684,7 +684,7 @@ int init_CL(int num_streams, cl_int devnumber)
                 buildLogSize, buildLog, &buildLogSize);
       if(logstatus != CL_SUCCESS)
       {
-        std::cerr << "Error " << logstatus << ": clGetProgramBuildInfo failed.";
+        std::cerr << "Error " << logstatus << " (" << ClErrorString(logstatus) << "): clGetProgramBuildInfo failed.";
         return 1;
       }
       buildLog = (char*)calloc(buildLogSize,1);
@@ -698,7 +698,7 @@ int init_CL(int num_streams, cl_int devnumber)
                 buildLogSize, buildLog, NULL);
       if(logstatus != CL_SUCCESS)
       {
-        std::cerr << "Error " << logstatus << ": clGetProgramBuildInfo failed.";
+        std::cerr << "Error " << logstatus << " (" << ClErrorString(logstatus) << "): clGetProgramBuildInfo failed.";
         free(buildLog);
         return 1;
       }
@@ -708,7 +708,7 @@ int init_CL(int num_streams, cl_int devnumber)
       std::cout << " \tEND OF BUILD OUTPUT\n";
       free(buildLog);
     }
-		std::cerr<<"Error " << status << ": clBuildProgram\n";
+		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): clBuildProgram\n";
 		return 1; 
   }
 
@@ -722,7 +722,7 @@ int init_CL(int num_streams, cl_int devnumber)
       kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
       if(status != CL_SUCCESS)
       {
-        std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
+        std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
         return 1;
       }
     }
@@ -735,7 +735,7 @@ int init_CL(int num_streams, cl_int devnumber)
       kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
       if(status != CL_SUCCESS)
       {
-        std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
+        std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
         return 1;
       }
     }
@@ -775,7 +775,7 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
                     (void *)&device_big_bit_array);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr<<"Error " << status << ": Setting kernel argument. (device_big_bit_array)\n";
+		  std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (device_big_bit_array)\n";
 		  return 1;
 	  }
     status = clSetKernelArg(kernel_info[CL_SIEVE].kernel,
@@ -784,7 +784,7 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
                     (void *)&device_pinfo);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr<<"Error " << status << ": Setting kernel argument. (device_pinfo)\n";
+		  std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (device_pinfo)\n";
 		  return 1;
 	  }
     status = clSetKernelArg(kernel_info[CL_SIEVE].kernel,
@@ -793,7 +793,7 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
                     (void *)&primes_per_thread);
     if(status != CL_SUCCESS)
 	  {
-		  std::cerr<<"Error " << status << ": Setting kernel argument. (primes_per_thread)\n";
+		  std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (primes_per_thread)\n";
 		  return 1;
 	  }
   }
@@ -808,7 +808,7 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
                  &run_event);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)" << "\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)" << "\n";
 		return 1;
 	}
   clFinish(QUEUE);
@@ -823,7 +823,7 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
                                 0);
               if(status != CL_SUCCESS)
  	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
                 return RET_ERROR;
               }
               status = clGetEventProfilingInfo(copy_event,
@@ -833,7 +833,7 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
                                 0);
               if(status != CL_SUCCESS) 
  	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
                 return RET_ERROR;
               }
               printf("primes array copied in %2.2f ms (%4.2f MB/s), ", (endTime - startTime)/1e6,
@@ -845,7 +845,7 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
                                 0);
               if(status != CL_SUCCESS)
  	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
                 return RET_ERROR;
               }
               status = clGetEventProfilingInfo(run_event,
@@ -855,7 +855,7 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
                                 0);
               if(status != CL_SUCCESS)
  	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
                 return RET_ERROR;
               }
               printf("proc'd in %2.2f ms (%3.2f M/s)\n", (endTime - startTime)/1e6, double(globalThreads) *1e3/ (endTime - startTime));
@@ -863,13 +863,13 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
               status = clReleaseEvent(copy_event);
               if(status != CL_SUCCESS) 
               { 
-		         	  std::cerr<< "Error " << status << ": Release copy event object. (clReleaseEvent)\n";
+		         	  std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release copy event object. (clReleaseEvent)\n";
 		         	  return RET_ERROR;
     	       	}
               status = clReleaseEvent(run_event);
              	if(status != CL_SUCCESS) 
            	  { 
-		          	std::cerr<< "Error " << status << ": Release run event object. (clReleaseEvent)\n";
+		          	std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release run event object. (clReleaseEvent)\n";
 		         	  return RET_ERROR;
             	}
 
@@ -914,7 +914,7 @@ cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_ev
                     (void *)&mystuff.exponent);
   if(status != CL_SUCCESS)
 	{
-	  std::cout<<"Error " << status << ": Setting kernel argument. (exponent)\n";
+	  std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (exponent)\n";
 	  return 1;
 	}
 
@@ -933,7 +933,7 @@ cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_ev
                  run_event);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)" << "\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)" << "\n";
 		return 1;
 	}
 #ifdef CL_PERFORMANCE_INFO
@@ -948,7 +948,7 @@ cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_ev
                                 0);
               if(status != CL_SUCCESS)
  	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
                 return RET_ERROR;
               }
               status = clGetEventProfilingInfo(*run_event,
@@ -958,7 +958,7 @@ cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_ev
                                 0);
               if(status != CL_SUCCESS)
  	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
                 return RET_ERROR;
               }
               printf("CalcModularInverses in %2.2f us (%3.2f M/s)\n", (endTime - startTime)/1e3, double(globalThreads) *1e3/ (endTime - startTime));
@@ -981,7 +981,7 @@ cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_ev
     
   if(status != CL_SUCCESS) 
 	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer d_calc_bit_to_clear_info failed. (clEnqueueReadBuffer)\n";
+    std::cout << "Error " << status << " (" << ClErrorString(status) << "): clEnqueueReadBuffer d_calc_bit_to_clear_info failed. (clEnqueueReadBuffer)\n";
 		return 1;
   }
 
@@ -1018,7 +1018,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
                     (void *)&mystuff.exponent);
     if(status != CL_SUCCESS)
   	{
-  		std::cout<<"Error " << status << ": Setting kernel argument. (exp)\n";
+  		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (exp)\n";
     	return 1;
     }
 	}
@@ -1028,7 +1028,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
                     (void *)&k_min);
   if(status != CL_SUCCESS)
 	{
-		std::cout<<"Error " << status << ": Setting kernel argument. (k_min)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (k_min)\n";
 		return 1;
 	}
 
@@ -1047,7 +1047,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
                  run_event);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)\n";
 		return 1;
 	}
   clFlush(QUEUE);
@@ -1064,7 +1064,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
                                 0);
   if(status != CL_SUCCESS)
  	{ 
-		std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
     return RET_ERROR;
   }
   status = clGetEventProfilingInfo(*run_event,
@@ -1074,7 +1074,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
                                 0);
   if(status != CL_SUCCESS) 
  	{ 
-		std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
     return RET_ERROR;
   }
   std::cout<< "CalcBitToClear " << globalThreads << " primes: " << (endTime - startTime)/1e3 << " us ("
@@ -1097,7 +1097,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
     
   if(status != CL_SUCCESS) 
 	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer d_calc_bit_to_clear_info failed. (clEnqueueReadBuffer)\n";
+    std::cout << "Error " << status << " (" << ClErrorString(status) << "): clEnqueueReadBuffer d_calc_bit_to_clear_info failed. (clEnqueueReadBuffer)\n";
 		return 1;
   }
 
@@ -1117,7 +1117,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
     
   if(status != CL_SUCCESS) 
 	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer h_sieve_info failed. (clEnqueueReadBuffer)\n";
+    std::cout << "Error " << status << " (" << ClErrorString(status) << "): clEnqueueReadBuffer h_sieve_info failed. (clEnqueueReadBuffer)\n";
 		return 1;
   }
 
@@ -1155,7 +1155,7 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
                     (void *)&maxp);
     if(status != CL_SUCCESS)
   	{
-  		std::cout<<"Error " << status << ": Setting kernel argument. (exp)\n";
+  		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (exp)\n";
     	return 1;
     }
 	}
@@ -1175,7 +1175,7 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
                  run_event);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)\n";
 		return 1;
 	}
   clFlush(QUEUE);
@@ -1192,7 +1192,7 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
                                 0);
   if(status != CL_SUCCESS)
  	{ 
-		std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
     return RET_ERROR;
   }
   status = clGetEventProfilingInfo(*run_event,
@@ -1202,7 +1202,7 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
                                 0);
   if(status != CL_SUCCESS) 
  	{ 
-		std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
     return RET_ERROR;
   }
   std::cout<< "sieve using " << globalThreads << " threads: " << (endTime - startTime)/1e6 << " ms ("
@@ -1227,7 +1227,7 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
     
   if(status != CL_SUCCESS) 
 	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer h_sieve_info failed. (clEnqueueReadBuffer)\n";
+    std::cout << "Error " << status << " (" << ClErrorString(status) << "): clEnqueueReadBuffer h_sieve_info failed. (clEnqueueReadBuffer)\n";
 		return 1;
   }
 
@@ -1247,7 +1247,7 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
     
   if(status != CL_SUCCESS) 
 	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer h_sieve_info failed. (clEnqueueReadBuffer)\n";
+    std::cout << "Error " << status << " (" << ClErrorString(status) << "): clEnqueueReadBuffer h_sieve_info failed. (clEnqueueReadBuffer)\n";
 		return 1;
   }
 
@@ -1276,7 +1276,7 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
                     (void *)&hi);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cout<<"Error " << status << ": Setting kernel argument. (hi)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (hi)\n";
 		return 1;
 	}
   status = clSetKernelArg(kernel_info[_TEST_MOD_].kernel, 
@@ -1285,7 +1285,7 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
                     (void *)&lo);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cout<<"Error " << status << ": Setting kernel argument. (lo)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (lo)\n";
 		return 1;
 	}
   status = clSetKernelArg(kernel_info[_TEST_MOD_].kernel, 
@@ -1294,7 +1294,7 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
                     (void *)&q);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cout<<"Error " << status << ": Setting kernel argument. (q)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (q)\n";
 		return 1;
 	}
   status = clSetKernelArg(kernel_info[_TEST_MOD_].kernel, 
@@ -1303,7 +1303,7 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
                     (void *)&qr);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cout<<"Error " << status << ": Setting kernel argument. (qr)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (qr)\n";
 		return 1;
 	}
   status = clSetKernelArg(kernel_info[_TEST_MOD_].kernel, 
@@ -1312,7 +1312,7 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
                     (void *)&mystuff.d_RES);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cout<<"Error " << status << ": Setting kernel argument. (RES)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (RES)\n";
 		return 1;
 	}
   // dummy arg if KERNEL_TRACE is enabled: ignore errors if not.
@@ -1328,14 +1328,14 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
                  &mod_evt);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<< "Error " << status << ": Enqueueing kernel(clEnqueueTask)\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueueing kernel(clEnqueueTask)\n";
 		return 1;
 	}
 
   status = clWaitForEvents(1, &mod_evt); 
   if(status != CL_SUCCESS) 
   { 
-	  std::cerr<< "Error " << status << ": Waiting for mod call to finish. (clWaitForEvents)\n";
+	  std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Waiting for mod call to finish. (clWaitForEvents)\n";
 	  return 1;
   }
   #ifdef CL_PERFORMANCE_INFO
@@ -1349,7 +1349,7 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
                                 0);
               if(status != CL_SUCCESS)
  	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
                 return 1;
               }
               status = clGetEventProfilingInfo(mod_evt,
@@ -1359,7 +1359,7 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
                                 0);
               if(status != CL_SUCCESS)
  	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
                 return 1;
               }
               std::cout<< "mod_kernel finished in " << (endTime - startTime)/1e3 << " us.\n" ;
@@ -1368,7 +1368,7 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
   status = clReleaseEvent(mod_evt);
   if(status != CL_SUCCESS) 
   { 
-		std::cerr<< "Error " << status << ": Release mod event object. (clReleaseEvent)\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release mod event object. (clReleaseEvent)\n";
 	  return 1;
   }
   status = clEnqueueReadBuffer(QUEUE,
@@ -1383,7 +1383,7 @@ int run_mod_kernel(cl_ulong hi, cl_ulong lo, cl_ulong q, cl_float qr, cl_ulong *
     
   if(status != CL_SUCCESS) 
 	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer RES failed. (clEnqueueReadBuffer)\n";
+    std::cout << "Error " << status << " (" << ClErrorString(status) << "): clEnqueueReadBuffer RES failed. (clEnqueueReadBuffer)\n";
 		return 1;
   }
   *res_hi = mystuff.h_RES[0];
@@ -1426,7 +1426,7 @@ __kernel void barrett15_73(__private uint exp, const int75_t k_base, const __glo
                     (void *)&shiftcount);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (shiftcount)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (shiftcount)\n";
   		return 1;
   	}
 
@@ -1436,7 +1436,7 @@ __kernel void barrett15_73(__private uint exp, const int75_t k_base, const __glo
                     (void *)&b_in);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (b_in)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (b_in)\n";
   		return 1;
   	}
       /* the bit_max for the barrett kernels (the others ignore it) */
@@ -1446,7 +1446,7 @@ __kernel void barrett15_73(__private uint exp, const int75_t k_base, const __glo
                       (void *)&bin_max);
       if(status != CL_SUCCESS) 
       { 
-        std::cerr<<"Warning " << status << ": Setting kernel argument. (bit_max)\n";
+        std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_max)\n";
       }
 #ifdef CHECKS_MODBASECASE
       status = clSetKernelArg(l_kernel, 
@@ -1455,7 +1455,7 @@ __kernel void barrett15_73(__private uint exp, const int75_t k_base, const __glo
                     (void *)&mystuff.d_modbasecase_debug);
       if(status != CL_SUCCESS) 
   	  { 
-	  	  std::cerr<<"Error " << status << ": Setting kernel argument. (d_modbasecase_debug)\n";
+	  	  std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_modbasecase_debug)\n";
   		  return 1;
   	  }
 #endif
@@ -1472,7 +1472,7 @@ __kernel void barrett15_73(__private uint exp, const int75_t k_base, const __glo
                     (void *)&k_base);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<<"Error " << status << ": Setting kernel argument. (k_base)\n";
+		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (k_base)\n";
 		return 1;
 	}
 #ifdef DETAILED_INFO
@@ -1524,7 +1524,7 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
                     (void *)&shiftcount);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (shiftcount)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (shiftcount)\n";
   		return 1;
   	}
 #ifdef WA_FOR_CATALYST11_10_BUG
@@ -1543,7 +1543,7 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
         );
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (b_preinit)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (b_preinit)\n";
   		return 1;
   	}
     argnum=6;
@@ -1556,7 +1556,7 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
                       (void *)&bin_min63);
       if(status != CL_SUCCESS) 
       { 
-        std::cerr<<"Warning " << status << ": Setting kernel argument. (bit_min)\n";
+        std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_min)\n";
       }
       argnum=7;
   	}
@@ -1569,7 +1569,7 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
                     (void *)&mystuff.d_modbasecase_debug);
       if(status != CL_SUCCESS) 
   	  { 
-	  	  std::cerr<<"Error " << status << ": Setting kernel argument. (d_modbasecase_debug)\n";
+	  	  std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_modbasecase_debug)\n";
   		  return 1;
   	  }
     }
@@ -1586,7 +1586,7 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
                     (void *)&k_base);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<<"Error " << status << ": Setting kernel argument. (k_base)\n";
+		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (k_base)\n";
 		return 1;
 	}
 #ifdef DETAILED_INFO
@@ -1613,7 +1613,7 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
                     (void *)&b_preinit);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (b_preinit)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (b_preinit)\n";
   		return 1;
   	}
 
@@ -1624,7 +1624,7 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
                     (void *)&bin_min63);
     if(status != CL_SUCCESS) 
   	{ 
-	  	std::cerr<<"Warning " << status << ": Setting kernel argument. (bit_min)\n";
+	  	std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_min)\n";
   		
   	}
 #ifdef DETAILED_INFO
@@ -1639,7 +1639,7 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
                     (void *)&k_base);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<<"Error " << status << ": Setting kernel argument. (k_base)\n";
+		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (k_base)\n";
 		return 1;
 	}
 #ifdef DETAILED_INFO
@@ -1663,7 +1663,7 @@ int run_barrett_kernel32(cl_kernel l_kernel, cl_uint exp, int96 k_base, int stre
                     (void *)&shiftcount);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (shiftcount)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (shiftcount)\n";
   		return 1;
   	}
 
@@ -1683,7 +1683,7 @@ int run_barrett_kernel32(cl_kernel l_kernel, cl_uint exp, int96 k_base, int stre
         );
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (b_preinit)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (b_preinit)\n";
   		return 1;
   	}
 
@@ -1694,7 +1694,7 @@ int run_barrett_kernel32(cl_kernel l_kernel, cl_uint exp, int96 k_base, int stre
                     (void *)&bin_min63);
     if(status != CL_SUCCESS) 
   	{ 
-	  	std::cerr<<"Warning " << status << ": Setting kernel argument. (bit_min)\n";
+	  	std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_min)\n";
   		
   	}
 #ifdef CHECKS_MODBASECASE
@@ -1704,7 +1704,7 @@ int run_barrett_kernel32(cl_kernel l_kernel, cl_uint exp, int96 k_base, int stre
                     (void *)&mystuff.d_modbasecase_debug);
     if(status != CL_SUCCESS) 
 	  { 
-   	  std::cerr<<"Error " << status << ": Setting kernel argument. (d_modbasecase_debug)\n";
+   	  std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_modbasecase_debug)\n";
 		  return 1;
 	  }
 #endif
@@ -1721,7 +1721,7 @@ int run_barrett_kernel32(cl_kernel l_kernel, cl_uint exp, int96 k_base, int stre
                     (void *)&k_base);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<<"Error " << status << ": Setting kernel argument. (k_base)\n";
+		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (k_base)\n";
 		return 1;
 	}
 #ifdef DETAILED_INFO
@@ -1755,7 +1755,7 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
                     (void *) &exp);
     if(status != CL_SUCCESS) 
 	  { 
-	  	std::cerr<<"Error " << status << ": Setting kernel argument. (exp)\n";
+	  	std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (exp)\n";
 	  	return 1;
   	}
 
@@ -1766,7 +1766,7 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
                     (void *)&res);
     if(status != CL_SUCCESS) 
   	{ 
-	  	std::cerr<<"Error " << status << ": Setting kernel argument. (res)\n";
+	  	std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (res)\n";
   		return 1;
   	}
 
@@ -1779,7 +1779,7 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
                     (void *)&k_tab);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<<"Error " << status << ": Setting kernel argument. (k_tab)\n";
+		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (k_tab)\n";
 		return 1;
 	}
 
@@ -1794,7 +1794,7 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
                  &mystuff.exec_events[stream]);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel), stream " << stream << "\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel), stream " << stream << "\n";
 		return 1;
 	}
   clFlush(QUEUE);
@@ -1822,7 +1822,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
         );
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (b_in)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (b_in)\n";
   		return 1;
   	}
   }
@@ -1838,7 +1838,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&k_base);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<<"Error " << status << ": Setting kernel argument. (k_base)\n";
+		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (k_base)\n";
 		return 1;
 	}
 #ifdef DETAILED_INFO
@@ -1878,7 +1878,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
         );
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (b_in)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (b_in)\n";
   		return 1;
   	}
   }
@@ -1894,7 +1894,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&k_base);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<<"Error " << status << ": Setting kernel argument. (k_base)\n";
+		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (k_base)\n";
 		return 1;
 	}
 #ifdef DETAILED_INFO
@@ -1936,7 +1936,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&mystuff.exponent);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (exponent)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (exponent)\n";
   		return 1;
   	}
 
@@ -1946,7 +1946,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&mystuff.d_bitarray);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (d_bitarray)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_bitarray)\n";
   		return 1;
   	}
 
@@ -1956,7 +1956,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&mystuff.gpu_sieve_processing_size);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (gpu_sieve_processing_size)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (gpu_sieve_processing_size)\n";
   		return 1;
   	}
 
@@ -1966,7 +1966,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     NULL);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (smem)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (smem)\n";
   		return 1;
   	}
 
@@ -1976,7 +1976,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&shiftcount);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (gpu_sieve_processing_size)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (gpu_sieve_processing_size)\n";
   		return 1;
   	}
 
@@ -1986,7 +1986,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&mystuff.d_RES);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (d_bitarray)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_bitarray)\n";
   		return 1;
   	}
 
@@ -1998,7 +1998,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&tmp);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (bit_max64)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_max64)\n";
   		return 1;
   	}
 
@@ -2008,7 +2008,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&shared_mem_required);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << ": Setting kernel argument. (shared_mem_required)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (shared_mem_required)\n";
   		return 1;
   	}
 
@@ -2019,7 +2019,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&mystuff.d_modbasecase_debug);
       if(status != CL_SUCCESS) 
   	  { 
-	  	  std::cerr<<"Error " << status << ": Setting kernel argument. (d_modbasecase_debug)\n";
+	  	  std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_modbasecase_debug)\n";
   		  return 1;
   	  }
 #endif
@@ -2042,7 +2042,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
 
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)\n";
 		return 1;
 	}
   clFlush(QUEUE);
@@ -2058,7 +2058,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                                 0);
   if(status != CL_SUCCESS)
  	{ 
-		std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
     return RET_ERROR;
   }
   status = clGetEventProfilingInfo(run_event,
@@ -2068,13 +2068,13 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                                 0);
   if(status != CL_SUCCESS) 
  	{ 
-		std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
     return RET_ERROR;
   }
   std::cout<< "TF using " << globalThreads << " threads: " << (endTime - startTime)/1e6 << " ms ("
                        << globalThreads * 1e3 / (endTime - startTime) << " M/s), " <<
-                       mystuff.gpu_sieve_size * 1e3 / (endTime - startTime) << " M FCs/s TF'd (after sieving)\n";
-  clReleaseEvent(mystuff.copy_events[0]);
+                       mystuff.gpu_sieve_size * 1e3 / (endTime - startTime) << " M FCs/s TF'd (incl. sieving)\n";
+  clReleaseEvent(run_event);
 #endif
 
 	return 0;
@@ -2102,7 +2102,7 @@ int cleanup_CL(void)
   status = clReleaseProgram(program);
   if(status != CL_SUCCESS)
 	{
-		std::cerr<<"Error" << status << ": clReleaseProgram\n";
+		std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseProgram\n";
 		return 1; 
 	}
   for (i=0; i<mystuff.num_streams; i++)
@@ -2110,7 +2110,7 @@ int cleanup_CL(void)
     status = clReleaseMemObject(mystuff.d_ktab[i]);
     if(status != CL_SUCCESS)
   	{
-	  	std::cerr<<"Error" << status << ": clReleaseMemObject (d_ktab" << i << ")\n";
+	  	std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (d_ktab" << i << ")\n";
   		return 1; 
   	}
     free(mystuff.h_ktab[i]);
@@ -2118,7 +2118,7 @@ int cleanup_CL(void)
 	status = clReleaseMemObject(mystuff.d_RES);
   if(status != CL_SUCCESS)
 	{
-		std::cerr<<"Error" << status << ": clReleaseMemObject (d_RES)\n";
+		std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (d_RES)\n";
 		return 1; 
 	}
   free(mystuff.h_RES);
@@ -2126,7 +2126,7 @@ int cleanup_CL(void)
 	status = clReleaseMemObject(mystuff.d_modbasecase_debug);
   if(status != CL_SUCCESS)
 	{
-		std::cerr<<"Error" << status << ": clReleaseMemObject (d_modbasecase_debug)\n";
+		std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (d_modbasecase_debug)\n";
 		return 1; 
 	}
   free(mystuff.h_modbasecase_debug);
@@ -2139,19 +2139,19 @@ int cleanup_CL(void)
   status = clReleaseCommandQueue(commandQueue);
   if(status != CL_SUCCESS)
 	{
-		std::cerr<<"Error" << status << ": clReleaseCommandQueue\n";
+		std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseCommandQueue\n";
 		return 1;
 	}
   if (commandQueuePrf) status = clReleaseCommandQueue(commandQueuePrf);
   if(status != CL_SUCCESS)
 	{
-		std::cerr<<"Error" << status << ": clReleaseCommandQueuePrf\n";
+		std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseCommandQueuePrf\n";
 		return 1;
 	  status = clReleaseContext(context);
   }
   if(status != CL_SUCCESS)
 	{
-		std::cerr<<"Error" << status << ": clReleaseContext\n";
+		std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseContext\n";
 		return 1;
 	}
   if(devices != NULL)
@@ -2159,6 +2159,9 @@ int cleanup_CL(void)
       free(devices);
       devices = NULL;
   }
+  clReleaseContext(context);
+  context = NULL;
+
 	return 0;
 }
 
@@ -2210,7 +2213,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
                 &mystuff->copy_events[0]);
   if(status != CL_SUCCESS) 
 	{  
-		std::cout<<"Error " << status << ": Copying h_RES(clEnqueueWriteBuffer)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_RES(clEnqueueWriteBuffer)\n";
 		return RET_ERROR; // # factors found ;-)
 	}
 #ifdef CHECKS_MODBASECASE
@@ -2227,7 +2230,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
                 NULL);
   if(status != CL_SUCCESS) 
 	{  
-		std::cout<<"Error " << status << ": Copying h_modbasecase_debug(clEnqueueWriteBuffer)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_modbasecase_debug(clEnqueueWriteBuffer)\n";
 		return RET_ERROR; // # factors found ;-)
 	}
 #endif
@@ -2343,7 +2346,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 
         if(status != CL_SUCCESS) 
 	      {  
-	          std::cout<<"Error " << status << ": Copying h_ktab(clEnqueueWriteBuffer)\n";
+	          std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_ktab(clEnqueueWriteBuffer)\n";
             return RET_ERROR; // # factors found ;-)
 	      }
       }
@@ -2490,7 +2493,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
             }
             if(status != CL_SUCCESS) 
             { 
-	            std::cerr<< "Error " << status << ": Starting kernel " << kernel_info[use_kernel].kernelname << ". (run_kernel)\n";
+	            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Starting kernel " << kernel_info[use_kernel].kernelname << ". (run_kernel)\n";
 	    	      return RET_ERROR;
             }
 
@@ -2514,7 +2517,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 #endif
             if(status != CL_SUCCESS) 
             { 
-	            std::cerr<< "Error " << status << ": Querying event " << i << ". (clGetEventInfo)\n";
+	            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Querying event " << i << ". (clGetEventInfo)\n";
 	    	      return RET_ERROR;
             }
             if (event_status > CL_COMPLETE) /* still running: CL_QUEUED=3 (command has been enqueued in the command-queue),
@@ -2541,7 +2544,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
                                   0);
                 if(status != CL_SUCCESS)
                 { 
-                  std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+                  std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
                   return RET_ERROR;
                 }
                 status = clGetEventProfilingInfo(mystuff->copy_events[i],
@@ -2551,7 +2554,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
                                   0);
                 if(status != CL_SUCCESS) 
                 { 
-                  std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+                  std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
                   return RET_ERROR;
                 }
                 printf("%d FCs copied in %2.2f ms (%4.2f MB/s), ", mystuff->threads_per_grid, (endTime - startTime)/1e6,
@@ -2564,7 +2567,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
                                 0);
               if(status != CL_SUCCESS)
  	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
                 return RET_ERROR;
               }
               status = clGetEventProfilingInfo(mystuff->exec_events[i],
@@ -2574,7 +2577,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
                                 0);
               if(status != CL_SUCCESS)
  	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
                 return RET_ERROR;
               }
               printf("proc'd in %2.2f ms (%3.2f M/s)\n", (endTime - startTime)/1e6, double(mystuff->threads_per_grid) *1e3/ (endTime - startTime));
@@ -2582,19 +2585,19 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               status = clReleaseEvent(mystuff->exec_events[i]);
               if(status != CL_SUCCESS) 
               { 
-		         	  std::cerr<< "Error " << status << ": Release exec event object. (clReleaseEvent)\n";
+		         	  std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release exec event object. (clReleaseEvent)\n";
 		         	  return RET_ERROR;
     	       	}
               if (!mystuff->gpu_sieving) status = clReleaseEvent(mystuff->copy_events[i]);
              	if(status != CL_SUCCESS) 
            	  { 
-		          	std::cerr<< "Error " << status << ": Release copy event object. (clReleaseEvent)\n";
+		          	std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release copy event object. (clReleaseEvent)\n";
 		         	  return RET_ERROR;
             	}
 
               if (event_status < CL_COMPLETE) // error
               {
-	              std::cerr<< "Error " << event_status << " during execution of block " << count << " in h_ktab[" << i << "]\n";
+	              std::cerr<< "Error " << event_status << " (" << ClErrorString(status) << "): during execution of block " << count << " in h_ktab[" << i << "]\n";
 	    	        return RET_ERROR;
               }
               else
@@ -2651,7 +2654,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
         status = clWaitForEvents(1, &mystuff->exec_events[i]); // wait for completion
         if(status != CL_SUCCESS) 
         { 
-	        std::cerr<< "Error " << status << ": Waiting for kernel call to finish. (clWaitForEvents)\n";
+	        std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Waiting for kernel call to finish. (clWaitForEvents)\n";
 	      	return RET_ERROR;
         }
       }
@@ -2699,7 +2702,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     
   if(status != CL_SUCCESS) 
 	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer RES failed.\n";
+    std::cout << "Error " << status << " (" << ClErrorString(status) << "): clEnqueueReadBuffer RES failed.\n";
     return RET_ERROR;
   }
 
@@ -2720,7 +2723,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     
   if(status != CL_SUCCESS) 
 	{ 
-    std::cout << "Error " << status << ": clEnqueueReadBuffer modbasecase_debug failed.\n";
+    std::cout << "Error " << status << " (" << ClErrorString(status) << "): clEnqueueReadBuffer modbasecase_debug failed.\n";
     return RET_ERROR;
   }
 
@@ -2809,7 +2812,7 @@ void CL_test(cl_int devnumber)
   status = clGetPlatformIDs(0, NULL, &numplatforms);
   if(status != CL_SUCCESS)
   {
-    std::cerr << "Error " << status << ": clGetPlatformsIDs(num)\n";
+    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformsIDs(num)\n";
   }
 
   if(numplatforms > 0)
@@ -2818,7 +2821,7 @@ void CL_test(cl_int devnumber)
     status = clGetPlatformIDs(numplatforms, platformlist, NULL);
     if(status != CL_SUCCESS)
     {
-      std::cerr << "Error " << status << ": clGetPlatformsIDs\n";
+      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformsIDs\n";
     }
 
     if (devnumber > 10) // platform number specified as part of -d
@@ -2832,7 +2835,7 @@ void CL_test(cl_int devnumber)
                         sizeof(buf), buf, NULL);
         if(status != CL_SUCCESS)
         {
-          std::cerr << "Error " << status << ": clGetPlatformInfo(VENDOR)\n";
+          std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformInfo(VENDOR)\n";
         }
         std::cout << "OpenCL Platform " << i+1 << "/" << numplatforms << ": " << buf;
 
@@ -2840,7 +2843,7 @@ void CL_test(cl_int devnumber)
                         sizeof(buf), buf, NULL);
         if(status != CL_SUCCESS)
         {
-          std::cerr << "Error " << status << ": clGetPlatformInfo(VERSION)\n";
+          std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformInfo(VERSION)\n";
         }
         std::cout << ", Version: " << buf << std::endl;
       }
@@ -2856,7 +2859,7 @@ void CL_test(cl_int devnumber)
                         sizeof(buf), buf, NULL);
       if(status != CL_SUCCESS)
       {
-        std::cerr << "Error " << status << ": clGetPlatformInfo(VENDOR)\n";
+        std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformInfo(VENDOR)\n";
       }
       if(strcmp(buf, "Advanced Micro Devices, Inc.") == 0)
       {
@@ -2868,7 +2871,7 @@ void CL_test(cl_int devnumber)
                         sizeof(buf), buf, NULL);
       if(status != CL_SUCCESS)
       {
-        std::cerr << "Error " << status << ": clGetPlatformInfo(VERSION)\n";
+        std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformInfo(VERSION)\n";
       }
       std::cout << ", Version: " << buf << std::endl;
     }
@@ -2890,26 +2893,26 @@ void CL_test(cl_int devnumber)
     context = clCreateContextFromType(cps, CL_DEVICE_TYPE_CPU, NULL, NULL, &status);
     if(status != CL_SUCCESS) 
   	{  
-   	  std::cerr << "Error " << status << ": clCreateContextFromType(CPU)\n";
+   	  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateContextFromType(CPU)\n";
     }
   }
   else if(status != CL_SUCCESS) 
 	{  
-		std::cerr << "Error " << status << ": clCreateContextFromType(GPU)\n";
+		std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateContextFromType(GPU)\n";
   }
 
   cl_uint num_devices;
   status = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(num_devices), &num_devices, NULL);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr << "Error " << status << ": clGetContextInfo(CL_CONTEXT_NUM_DEVICES) - assuming one device\n";
+		std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_CONTEXT_NUM_DEVICES) - assuming one device\n";
     num_devices = 1;
 	}
 
   status = clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, NULL, &dev_s);
   if(status != CL_SUCCESS) 
 	{  
-		std::cerr << "Error " << status << ": clGetContextInfo(numdevs)\n";
+		std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(numdevs)\n";
 	}
 
 	if(dev_s == 0)
@@ -2926,7 +2929,7 @@ void CL_test(cl_int devnumber)
   status = clGetContextInfo(context, CL_CONTEXT_DEVICES, dev_s*sizeof(cl_device_id), devices, NULL);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cerr << "Error " << status << ": clGetContextInfo(devices)\n";
+		std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(devices)\n";
 	}
 
   devnumber = devnumber % 10;  // use only the last digit as device number, counting from 1
@@ -2950,67 +2953,67 @@ void CL_test(cl_int devnumber)
     status = clGetDeviceInfo(devices[i], CL_DEVICE_NAME, sizeof(deviceinfo.d_name), deviceinfo.d_name, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_NAME)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_NAME)\n";
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, sizeof(deviceinfo.d_ver), deviceinfo.d_ver, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_VERSION)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_VERSION)\n";
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_VENDOR, sizeof(deviceinfo.v_name), deviceinfo.v_name, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_VENDOR)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_VENDOR)\n";
 	  }
     status = clGetDeviceInfo(devices[i], CL_DRIVER_VERSION, sizeof(deviceinfo.dr_version), deviceinfo.dr_version, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DRIVER_VERSION)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DRIVER_VERSION)\n";
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS, sizeof(deviceinfo.exts), deviceinfo.exts, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_EXTENSIONS)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_EXTENSIONS)\n";
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, sizeof(deviceinfo.gl_cache), &deviceinfo.gl_cache, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE)\n";
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(deviceinfo.gl_mem), &deviceinfo.gl_mem, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_GLOBAL_MEM_SIZE)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_GLOBAL_MEM_SIZE)\n";
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(deviceinfo.max_clock), &deviceinfo.max_clock, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY)\n";
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(deviceinfo.units), &deviceinfo.units, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_MAX_COMPUTE_UNITS)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_MAX_COMPUTE_UNITS)\n";
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(deviceinfo.wg_size), &deviceinfo.wg_size, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE)\n";
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(deviceinfo.w_dim), &deviceinfo.w_dim, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS)\n";
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(deviceinfo.wi_sizes), deviceinfo.wi_sizes, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_MAX_WORK_ITEM_SIZES)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_MAX_WORK_ITEM_SIZES)\n";
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(deviceinfo.l_mem), &deviceinfo.l_mem, NULL);
     if(status != CL_SUCCESS) 
 	  { 
-		  std::cerr << "Error " << status << ": clGetContextInfo(CL_DEVICE_LOCAL_MEM_SIZE)\n";
+		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_LOCAL_MEM_SIZE)\n";
 	  }
     
     std::cout << "Device " << i+1  << "/" << num_devices << ": " << deviceinfo.d_name << " (" << deviceinfo.v_name << "),\ndevice version: "
@@ -3059,7 +3062,7 @@ void CL_test(cl_int devnumber)
   program = clCreateProgramWithSource(context, 1, (const char **)&source, &size, &status);
 	if(status != CL_SUCCESS) 
 	{ 
-	  std::cerr << "Error " << status << ": clCreateProgramWithSource\n";
+	  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateProgramWithSource\n";
 	}
 
   status = clBuildProgram(program, 1, &devices[devnumber], "-O3 -I. -DVECTOR_SIZE=4", NULL, NULL);
@@ -3071,7 +3074,7 @@ void CL_test(cl_int devnumber)
                 buildLogSize, buildLog, &buildLogSize);
       if(logstatus != CL_SUCCESS)
       {
-        std::cerr << "Error " << logstatus << ": clGetProgramBuildInfo failed.";
+        std::cerr << "Error " << logstatus << " (" << ClErrorString(logstatus) << "): clGetProgramBuildInfo failed.";
       }
       buildLog = (char*)calloc(buildLogSize,1);
       if(buildLog == NULL)
@@ -3083,7 +3086,7 @@ void CL_test(cl_int devnumber)
                 buildLogSize, buildLog, NULL);
       if(logstatus != CL_SUCCESS)
       {
-        std::cerr << "Error " << logstatus << ": clGetProgramBuildInfo failed.";
+        std::cerr << "Error " << logstatus << " (" << ClErrorString(logstatus) << "): clGetProgramBuildInfo failed.";
         free(buildLog);
       }
 
@@ -3091,7 +3094,7 @@ void CL_test(cl_int devnumber)
       std::cout << buildLog << std::endl;
       std::cout << " \tEND OF BUILD OUTPUT\n";
       free(buildLog);
-		std::cerr<<"Error " << status << ": clBuildProgram\n";
+		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): clBuildProgram\n";
   }
 
   free(source);  
@@ -3104,7 +3107,7 @@ void CL_test(cl_int devnumber)
     kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
     if(status != CL_SUCCESS) 
   	{  
-  		std::cerr<<"Error " << status << ": Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
+  		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Creating Kernel " << kernel_info[i].kernelname << " from program. (clCreateKernel)\n";
   	}
   }
 
@@ -3131,7 +3134,7 @@ void CL_test(cl_int devnumber)
                       &status);
     if(status != CL_SUCCESS) 
   	{ 
-	  	std::cout<<"Error " << status << ": clCreateBuffer (h_ktab[" << i << "]) \n";
+	  	std::cout<<"Error " << status << " (" << ClErrorString(status) << "): clCreateBuffer (h_ktab[" << i << "]) \n";
 	  }
   }
   if( (mystuff.h_RES = (cl_uint *) malloc(32 * sizeof(cl_uint))) == NULL )
@@ -3145,7 +3148,7 @@ void CL_test(cl_int devnumber)
                     &status);
   if(status != CL_SUCCESS) 
   { 
-		std::cout<<"Error " << status << ": clCreateBuffer (d_RES)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): clCreateBuffer (d_RES)\n";
 	}
 
 
@@ -3168,7 +3171,7 @@ void CL_test(cl_int devnumber)
                     (void *)&hi);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cout<<"Error " << status << ": Setting kernel argument. (hi)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (hi)\n";
 	}
   status = clSetKernelArg(kernel_info[_TEST_MOD_].kernel, 
                     1, 
@@ -3176,7 +3179,7 @@ void CL_test(cl_int devnumber)
                     (void *)&lo);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cout<<"Error " << status << ": Setting kernel argument. (lo)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (lo)\n";
 	}
   status = clSetKernelArg(kernel_info[_TEST_MOD_].kernel, 
                     2, 
@@ -3184,7 +3187,7 @@ void CL_test(cl_int devnumber)
                     (void *)&q);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cout<<"Error " << status << ": Setting kernel argument. (q)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (q)\n";
 	}
   status = clSetKernelArg(kernel_info[_TEST_MOD_].kernel, 
                     3, 
@@ -3192,7 +3195,7 @@ void CL_test(cl_int devnumber)
                     (void *)&qr);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cout<<"Error " << status << ": Setting kernel argument. (qr)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (qr)\n";
 	}
   status = clSetKernelArg(kernel_info[_TEST_MOD_].kernel, 
                     4, 
@@ -3200,7 +3203,7 @@ void CL_test(cl_int devnumber)
                     (void *)&mystuff.d_RES);
   if(status != CL_SUCCESS) 
 	{ 
-		std::cout<<"Error " << status << ": Setting kernel argument. (RES)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (RES)\n";
 	}
   // dummy arg if KERNEL_TRACE is enabled: ignore errors if not.
   status = clSetKernelArg(kernel_info[_TEST_MOD_].kernel, 
@@ -3232,7 +3235,7 @@ void CL_test(cl_int devnumber)
                   &in_evt);
     if(status != CL_SUCCESS) 
     {  
-      std::cout<<"Error " << status << ": Copying h_RES(clEnqueueWriteBuffer)\n";
+      std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_RES(clEnqueueWriteBuffer)\n";
     }
 
 
@@ -3258,7 +3261,7 @@ void CL_test(cl_int devnumber)
                  &mod_evt);
     if(status != CL_SUCCESS) 
 	  { 
-	  	std::cerr<< "Error " << status << ": Enqueuing kernel(clEnqueueNDRangeKernel)\n";
+	  	std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)\n";
 	  }
 
     /*
@@ -3270,7 +3273,7 @@ void CL_test(cl_int devnumber)
     }
     if(status != CL_SUCCESS) 
     { 
-  	  std::cerr<< "Error " << status << ": Waiting for mod call to finish. (clWaitForEvents)\n";
+  	  std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Waiting for mod call to finish. (clWaitForEvents)\n";
     }
     */
 
@@ -3286,7 +3289,7 @@ void CL_test(cl_int devnumber)
     
     if(status != CL_SUCCESS) 
     { 
-      std::cerr << "Error " << status << ": clEnqueueReadBuffer RES failed. (clEnqueueReadBuffer)\n";
+      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clEnqueueReadBuffer RES failed. (clEnqueueReadBuffer)\n";
     }
 
     try
@@ -3300,7 +3303,7 @@ void CL_test(cl_int devnumber)
 
     if(status != CL_SUCCESS) 
     { 
-	  	std::cerr<< "Error " << status << ": clFinish\n";
+	  	std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): clFinish\n";
     }
 
     /* Get kernel profiling info */
@@ -3311,7 +3314,7 @@ void CL_test(cl_int devnumber)
                                 0);
      if(status != CL_SUCCESS)
  	   { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(startTime)\n";
+		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
               }
               status = clGetEventProfilingInfo(mod_evt,
                                 CL_PROFILING_COMMAND_END,
@@ -3320,26 +3323,26 @@ void CL_test(cl_int devnumber)
                                 0);
               if(status != CL_SUCCESS)
  	            { 
-		            std::cerr<< "Error " << status << " in clGetEventProfilingInfo.(endTime)\n";
+		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
               }
  //             std::cout<< "mod_kernel finished in " << (endTime - startTime)/1e3 << " us.\n" ;
 
     status = clReleaseEvent(in_evt);
     if(status != CL_SUCCESS) 
     { 
-	  	std::cerr<< "Error " << status << ": Release in event object. (clReleaseEvent)\n";
+	  	std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release in event object. (clReleaseEvent)\n";
     }
 
     status = clReleaseEvent(mod_evt);
     if(status != CL_SUCCESS) 
     { 
-	  	std::cerr<< "Error " << status << ": Release mod event object. (clReleaseEvent)\n";
+	  	std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release mod event object. (clReleaseEvent)\n";
     }
 
     status = clReleaseEvent(res_evt);
     if(status != CL_SUCCESS) 
     { 
-	  	std::cerr<< "Error " << status << ": Release res event object. (clReleaseEvent)\n";
+	  	std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release res event object. (clReleaseEvent)\n";
     }
 
 

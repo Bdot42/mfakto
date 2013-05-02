@@ -186,7 +186,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
                         &status);
   if(status != CL_SUCCESS) 
   { 
-	  std::cout<<"Error " << status << ": clCreateBuffer (d_bitarray)\n";
+	  std::cout<<"Error " << status << " (" << ClErrorString(status) << "): clCreateBuffer (d_bitarray)\n";
   	return 1;
 	}
 
@@ -210,7 +210,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
                 NULL);  // primes are written to GPU only once at startup
   if(status != CL_SUCCESS) 
   { 
-    std::cout<<"Error " << status << ": clEnqueueWriteBuffer (d_bitarray)\n";
+    std::cout<<"Error " << status << " (" << ClErrorString(status) << "): clEnqueueWriteBuffer (d_bitarray)\n";
  	  return 1;
   }
 #endif  
@@ -517,7 +517,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
                         &status);
   if(status != CL_SUCCESS)
   {
-		std::cout<<"Error " << status << ": clCreateBuffer (d_sieve_info)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): clCreateBuffer (d_sieve_info)\n";
   	return 1;
 	}
 
@@ -538,7 +538,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
                           &status);
   if(status != CL_SUCCESS)
   {
-		std::cout<<"Error " << status << ": clCreateBuffer (d_calc_bit_to_clear_info)\n";
+		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): clCreateBuffer (d_calc_bit_to_clear_info)\n";
   	return 1;
 	}
 
@@ -631,7 +631,7 @@ int gpusieve_free (mystuff_t *mystuff)
 	status = clReleaseMemObject(mystuff->d_bitarray);
   if(status != CL_SUCCESS)
 	{
-		std::cerr<<"Error" << status << ": clReleaseMemObject (mystuff->d_bitarray)\n";
+		std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (mystuff->d_bitarray)\n";
 		return 1; 
 	}
   free(mystuff->h_bitarray);
@@ -639,7 +639,7 @@ int gpusieve_free (mystuff_t *mystuff)
 	status = clReleaseMemObject(mystuff->d_calc_bit_to_clear_info);
   if(status != CL_SUCCESS)
 	{
-		std::cerr<<"Error" << status << ": clReleaseMemObject (mystuff->d_calc_bit_to_clear_info)\n";
+		std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (mystuff->d_calc_bit_to_clear_info)\n";
 		return 1; 
 	}
   free(mystuff->h_calc_bit_to_clear_info);
@@ -647,7 +647,7 @@ int gpusieve_free (mystuff_t *mystuff)
 	status = clReleaseMemObject(mystuff->d_sieve_info);
   if(status != CL_SUCCESS)
 	{
-		std::cerr<<"Error" << status << ": clReleaseMemObject (mystuff->d_sieve_info)\n";
+		std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (mystuff->d_sieve_info)\n";
 		return 1; 
 	}
   free(mystuff->h_sieve_info);

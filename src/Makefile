@@ -46,13 +46,13 @@ LDFLAGS = $(OPTIMIZE_FLAG) $(AMD_APP_LIB) -lOpenCL
 
 CSRC  = sieve.c timer.c parse.c read_config.c mfaktc.c checkpoint.c \
 	signal_handler.c filelocking.c output.c
-CLSRC = mfakto_Kernels.cl barrett.cl barrett15.cl barrett24.cl mul24.cl sieve.cl
+CLSRC = barrett15.cl  barrett24.cl  barrett.cl  common.cl  gpusieve.cl  mfakto_Kernels.cl  montgomery.cl  mul24.cl
 
 COBJS  = $(CSRC:.c=.o) mfakto.o gpusieve.o perftest.o
 
 ##############################################################################
 
-all: ../mfakto ../barrett.cl ../mfakto_Kernels.cl ../montgomery.cl ../mul24.cl ../gpusieve.cl ../barrett24.cl ../barrett15.cl ../datatypes.h ../tf_debug.h
+all: ../mfakto ../barrett15.cl  ../barrett24.cl  ../barrett.cl  ../common.cl  ../gpusieve.cl  ../mfakto_Kernels.cl  ../montgomery.cl  ../mul24.cl ../datatypes.h ../tf_debug.h
 
 ../mfakto : $(COBJS)
 	$(LD) $^ $(LDFLAGS) -o $@
