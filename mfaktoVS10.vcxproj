@@ -64,7 +64,6 @@
     <None Include="src\mfakto.ini" />
     <None Include="src\montgomery.cl" />
     <None Include="src\mul24.cl" />
-    <None Include="src\sieve.cl" />
     <None Include="todo.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

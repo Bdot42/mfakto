@@ -111,9 +111,6 @@
     <None Include="src\mul24.cl">
       <Filter>kernel files</Filter>
     </None>
-    <None Include="src\sieve.cl">
-      <Filter>kernel files</Filter>
-    </None>
     <None Include="src\mfakto.ini" />
     <None Include="src\gpusieve.cl">
       <Filter>kernel files</Filter>

@@ -21,7 +21,7 @@ along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
-
+#include <CL/cl.h>
 #include "params.h"
 #include "my_types.h"
 #include "output.h"
@@ -484,4 +484,139 @@ example using M50,000,000 from 2^69-2^70:
 {
   // just use the 65-bit constant, that's close enough
   return 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1);
+}
+
+const char* ClErrorString( const cl_int errcode )
+{
+  switch ( errcode )
+  {
+    case CL_SUCCESS:                            // 0
+      return "Success";
+    case CL_DEVICE_NOT_FOUND:                   // -1
+      return "Device not found";
+    case CL_DEVICE_NOT_AVAILABLE:               // -2
+      return "Device not available";
+    case CL_COMPILER_NOT_AVAILABLE:             // -3
+      return "Compiler not available";
+    case CL_MEM_OBJECT_ALLOCATION_FAILURE:      // -4
+      return "Memory object allocation failure";
+    case CL_OUT_OF_RESOURCES:                   // -5
+      return "Out of resources";
+    case CL_OUT_OF_HOST_MEMORY:                 // -6
+      return "Out of host memory";
+    case CL_PROFILING_INFO_NOT_AVAILABLE:       // -7
+      return "Profiling information not available";
+    case CL_MEM_COPY_OVERLAP:                   // -8
+      return "Memory copy overlap";
+    case CL_IMAGE_FORMAT_MISMATCH:              // -9
+      return "Image format mismatch";
+    case CL_IMAGE_FORMAT_NOT_SUPPORTED:         // -10
+      return "Image format not supported";
+    case CL_BUILD_PROGRAM_FAILURE:              // -11
+      return "Build program failure";
+    case CL_MAP_FAILURE:                        // -12
+      return "Map failure";
+    case CL_MISALIGNED_SUB_BUFFER_OFFSET:       // -13
+      return "Misaligned sub-buffer offset";
+    case CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST: // -14
+      return "Exec status error for events in wait list";
+    case CL_COMPILE_PROGRAM_FAILURE:            // -15
+      return "Compile program failure";
+    case CL_LINKER_NOT_AVAILABLE:               // -16
+      return "Linker not available";
+    case CL_LINK_PROGRAM_FAILURE:               // -17
+      return "Link program failure";
+    case CL_DEVICE_PARTITION_FAILED:            // -18
+      return "Device partition failed";
+    case CL_KERNEL_ARG_INFO_NOT_AVAILABLE:      // -19
+      return "Kernel argument info not available";
+
+
+    case CL_INVALID_VALUE:                      // -30
+      return "Invalid value";
+    case CL_INVALID_DEVICE_TYPE:                // -31
+      return "Invalid device type";
+    case CL_INVALID_PLATFORM:                   // -32
+      return "Invalid platform";
+    case CL_INVALID_DEVICE:                     // -33
+      return "Invalid device";
+    case CL_INVALID_CONTEXT:                    // -34
+      return "Invalid context";
+    case CL_INVALID_QUEUE_PROPERTIES:           // -35
+      return "Invalid queue properties";
+    case CL_INVALID_COMMAND_QUEUE:              // -36
+      return "Invalid command queue";
+    case CL_INVALID_HOST_PTR:                   // -37
+      return "Invalid host pointer";
+    case CL_INVALID_MEM_OBJECT:                 // -38
+      return "Invalid memory object";
+    case CL_INVALID_IMAGE_FORMAT_DESCRIPTOR:    // -39
+      return "Invalid image format descriptor";
+    case CL_INVALID_IMAGE_SIZE:                 // -40
+      return "Invalid image size";
+    case CL_INVALID_SAMPLER:                    // -41
+      return "Invalid sampler";
+    case CL_INVALID_BINARY:                     // -42
+      return "Invalid binary";
+    case CL_INVALID_BUILD_OPTIONS:              // -43
+      return "Invalid build options";
+    case CL_INVALID_PROGRAM:                    // -44
+      return "Invalid program";
+    case CL_INVALID_PROGRAM_EXECUTABLE:         // -45
+      return "Invalid program executable";
+    case CL_INVALID_KERNEL_NAME:                // -46
+      return "Invalid kernel name";
+    case CL_INVALID_KERNEL_DEFINITION:          // -47
+      return "Invalid kernel definition";
+    case CL_INVALID_KERNEL:                     // -48
+      return "Invalid kernel";
+    case CL_INVALID_ARG_INDEX:                  // -49
+      return "Invalid argument index";
+    case CL_INVALID_ARG_VALUE:                  // -50
+      return "Invalid argument size";
+    case CL_INVALID_ARG_SIZE:                   // -51
+      return "Invalid argument size";
+    case CL_INVALID_KERNEL_ARGS:                // -52
+      return "Invalid kernel arguments";
+    case CL_INVALID_WORK_DIMENSION:             // -53
+      return "Invalid work dimension";
+    case CL_INVALID_WORK_GROUP_SIZE:            // -54
+      return "Invalid work group size";
+    case CL_INVALID_WORK_ITEM_SIZE:             // -55
+      return "Invalid work item size";
+    case CL_INVALID_GLOBAL_OFFSET:              // -56
+      return "Invalid global offset";
+    case CL_INVALID_EVENT_WAIT_LIST:            // -57
+      return "Invalid event wait list";
+    case CL_INVALID_EVENT:                      // -58
+      return "Invalid event";
+    case CL_INVALID_OPERATION:                  // -59
+      return "Invalid operation";
+    case CL_INVALID_GL_OBJECT:                  // -60
+      return "Invalid OpenGL object";
+    case CL_INVALID_BUFFER_SIZE:                // -61
+      return "Invalid buffer size";
+    case CL_INVALID_MIP_LEVEL:                  // -62
+      return "Invalid miplevel";
+    case CL_INVALID_GLOBAL_WORK_SIZE:           // -63
+      return "Invalid global work size";
+    case CL_INVALID_PROPERTY:                   // -64
+      return "Invalid property";
+    case CL_INVALID_IMAGE_DESCRIPTOR:           // -65
+      return "Invalid image descriptor";
+    case CL_INVALID_COMPILER_OPTIONS:           // -66
+      return "Invalid compiler options";
+    case CL_INVALID_LINKER_OPTIONS:             // -67
+      return "Invalid linker options";
+    case CL_INVALID_DEVICE_PARTITION_COUNT:     // -68
+      return "Invalid device partition count";
+
+
+    case RET_ERROR:                             // 1000000001
+      return "Internal mfakto error";
+    case RET_QUIT:                              // 1000000002
+      return "Exit due to Ctrl-C or signal";
+    default:
+      return "Unkown errorcode";
+  }
 }
