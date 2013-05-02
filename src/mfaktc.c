@@ -657,7 +657,7 @@ k_max and k_min are used as 64bit temporary integers here...
         
         f_low  &= 0x00FFFFFF;
       }
-      else if (((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15)) || (use_kernel == MG88))
+      else if (((use_kernel >= BARRETT73_MUL15_GS) && (use_kernel <= BARRETT82_MUL15_GS)) ||((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15)) || (use_kernel == MG88))
       {
         // 30 bits per reported result int
         f_hi  <<= 4;
