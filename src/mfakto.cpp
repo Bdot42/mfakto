@@ -99,12 +99,12 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL32_GS,  "cl_barrett32_88_gs",   65,     88,         0,      NULL},
      {   BARRETT87_MUL32_GS,  "cl_barrett32_87_gs",   65,     87,         0,      NULL},
      {   BARRETT73_MUL15_GS,  "cl_barrett15_73_gs",   60,     73,         0,      NULL},
-     {   BARRETT69_MUL15_GS,  "cl_barrett15_69_gs",   60,     10,         0,      NULL},
-     {   BARRETT70_MUL15_GS,  "cl_barrett15_70_gs",   60,     10,         0,      NULL},
+     {   BARRETT69_MUL15_GS,  "cl_barrett15_69_gs",   60,     69,         0,      NULL},
+     {   BARRETT70_MUL15_GS,  "cl_barrett15_70_gs",   60,     70,         0,      NULL},
      {   BARRETT71_MUL15_GS,  "cl_barrett15_71_gs",   60,     71,         0,      NULL},
-     {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     10,         0,      NULL},
-     {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     10,         0,      NULL},
-     {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     10,         0,      NULL},
+     {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     88,         0,      NULL},
+     {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     83,         0,      NULL},
+     {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL},
 };
 
 /* save-save
@@ -2177,8 +2177,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   int144 b_preinit = {0};
   int192 b_192 = {0};
   cl_uint8 b_in = {{0}};
-  int96  factor;
-
+  int96  factor, prev_factor = {0};
   cl_uint  factorsfound=0;
   cl_uint  shiftcount, ln2b, count=1, shared_mem_required, numblocks;
   cl_ulong b_preinit_lo, b_preinit_mid, b_preinit_hi;
@@ -2761,18 +2760,30 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     }
   }
 
-
-  factorsfound=mystuff->h_RES[0];
+  factorsfound = mystuff->h_RES[0];
   for(i=0; (i<factorsfound) && (i<10); i++)
   {
     factor.d2  = mystuff->h_RES[i*3 + 1];
     factor.d1  = mystuff->h_RES[i*3 + 2];
     factor.d0  = mystuff->h_RES[i*3 + 3];
+    // the GPU sieve may report the same factor multiple times.
+    // also, exclude the trivial "factor" 1 here (though not a duplicate)
+    if ((factor.d2 == prev_factor.d2 && factor.d1 == prev_factor.d1 && factor.d0 == prev_factor.d0) ||
+        (factor.d2 == 0 && factor.d1 == 0 && factor.d0 == 1))
+    {
+//#ifdef DETAILED_INFO
+      printf("Skipping duplicate factor %x:%x:%x\n", factor.d2, factor.d1, factor.d0);
+//#endif
+      if (factorsfound > i) memmove(&mystuff->h_RES[i*3 + 1], &mystuff->h_RES[i*3 + 4], 3*sizeof(int)*(factorsfound-i));
+      mystuff->h_RES[0] = --factorsfound;
+      continue;
+    }
+
     if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24))
     {
-      print_dez72(factor,string);
+      print_dez72(factor, string);
     }
-    else if (((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15)) || (use_kernel == MG88))
+    else if (((use_kernel >= BARRETT73_MUL15_GS) && (use_kernel <= BARRETT82_MUL15_GS)) ||((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15)) || (use_kernel == MG88))
     {
       print_dez90(factor, string);
     }
@@ -2781,6 +2792,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
       print_dez96(factor, string);
     }
     print_factor(mystuff, i, string);
+    prev_factor = factor;
   }
   if(factorsfound>=10)
   {

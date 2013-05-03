@@ -815,7 +815,6 @@ RET_ERROR we might have a serios problem
       else           st_unknown++;
 #ifdef DETAILED_INFO
       printf("Test %d finished, so far suc: %d, no: %d, wr: %d, unk: %d\n", num_selftests, st_success, st_nofactor, st_wrongfactor, st_unknown);
-      fflush(NULL);
 #endif
       if (mystuff->quit) break;
     }

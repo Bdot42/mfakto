@@ -2823,7 +2823,7 @@ __kernel void cl_barrett15_88(__private uint exponent, const int75_t k_base, con
  ****************************************/
 
 
-__kernel void cl_barrett15_73_gs(const uint exponent, const int75_t k_base,
+__kernel void cl_barrett15_69_gs(const uint exponent, const int75_t k_base,
                                  const __global uint * restrict bit_array,
                                  const uint bits_to_process, __local ushort *smem,
                                  const int shiftcount, const uint8 b_in,
@@ -2856,7 +2856,7 @@ __kernel void cl_barrett15_73_gs(const uint exponent, const int75_t k_base,
   exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
         shiftcount, initial_shifter_value, total_bit_count);
 #endif
 
@@ -2943,14 +2943,141 @@ __kernel void cl_barrett15_73_gs(const uint exponent, const int75_t k_base,
     f.d3 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x\n",
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x\n",
         i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 
-    check_barrett15_73(initial_shifter_value, f, tid, bb, bit_max, RES);
+    check_barrett15_69(initial_shifter_value, f, tid, bb, bit_max, RES);
   }
 }
 
+__kernel void cl_barrett15_70_gs(const uint exponent, const int75_t k_base,
+                                 const __global uint * restrict bit_array,
+                                 const uint bits_to_process, __local ushort *smem,
+                                 const int shiftcount, const uint8 b_in,
+                                 __global uint * restrict RES, const int bit_max,
+                                 const uint shared_mem_allocated // only used to verify assumptions
+#ifdef CHECKS_MODBASECASE
+         , __global uint * restrict modbasecase_debug
+#endif
+         )
+{
+  __private uint     i, initial_shifter_value, total_bit_count;
+  __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
+  __private int75_v  k, f;
+  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint_v   tmp_v;
+  __private int150_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+  __private int75_t exp75;
+
+  // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
+  total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
+
+// Here, all warps in our block have placed their candidates in shared memory.
+// Now we can start TFing candidates.
+
+// Init some stuff that will be used for all k's tested  <== this makes the OpenCL compiler abort, supposed to be fixed in Cat 13.4
+// Compute factor corresponding to first sieve bit in this block.
+
+  initial_shifter_value = exponent << (32 - shiftcount);	// Initial shifter value
+
+  exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
+        shiftcount, initial_shifter_value, total_bit_count);
+#endif
+
+  for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
+  {
+    // if i == total_bit_count-1, then we may read up to VECTOR_SIZE-1 elements beyond the array (uninitialized).
+    // this can result in the same factor being reported up to VECTOR_SIZE times.
+
+    uint_v k_delta;
+
+// Get the (k - k_base) value to test
+
+#if (VECTOR_SIZE == 1)
+    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
+#elif (VECTOR_SIZE == 2)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+#elif (VECTOR_SIZE == 4)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+#elif (VECTOR_SIZE == 8)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
+    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
+    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
+    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+#elif (VECTOR_SIZE == 16)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
+    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
+    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
+    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
+    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
+    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
+    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
+    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
+    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
+    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
+    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
+#endif
+
+// Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
+
+    k.d0 =                mad24(NUM_CLASSES, k_delta & 0x7FFF, k_base.d0);  // k_delta can exceed 2^24
+    k.d1 = (k.d0 >> 15) + mad24(NUM_CLASSES, k_delta >> 15, k_base.d1);  // k is limited to 2^64 -1
+    k.d2 = (k.d1 >> 15) + k_base.d2;
+    k.d3 = (k.d2 >> 15) + k_base.d3;
+    k.d4 = (k.d3 >> 15) + k_base.d4;
+
+    k.d0 &= 0x7FFF;
+    k.d1 &= 0x7FFF;
+    k.d2 &= 0x7FFF;
+    k.d3 &= 0x7FFF;
+
+    f.d0 = mad24(k.d0, exp75.d0, 1u);  // exp75 = 2*exponent ==> f = 2kp+1
+
+    f.d1 = mad24(k.d1, exp75.d0, f.d0 >> 15);
+    f.d1 = mad24(k.d0, exp75.d1, f.d1);
+    f.d0 &= 0x7FFF;
+
+    f.d2 = mad24(k.d2, exp75.d0, f.d1 >> 15);
+    f.d2 = mad24(k.d1, exp75.d1, f.d2);
+    f.d2 = mad24(k.d0, exp75.d2, f.d2);  // PERF: if we limit exp at kernel compile time to 2^29, then we can skip exp75.d2 here and above.
+    f.d1 &= 0x7FFF;
+
+    f.d3 = mad24(k.d3, exp75.d0, f.d2 >> 15);
+    f.d3 = mad24(k.d2, exp75.d1, f.d3);
+    f.d3 = mad24(k.d1, exp75.d2, f.d3);
+//  f.d3 = mad24(k.d0, exp75.d3, f.d3);    // exp75.d3 = 0
+    f.d2 &= 0x7FFF;
+
+    f.d4 = mad24(k.d4, exp75.d0, f.d3 >> 15);  // PERF: see above
+    f.d4 = mad24(k.d3, exp75.d1, f.d4);
+    f.d4 = mad24(k.d2, exp75.d2, f.d4);
+    f.d3 &= 0x7FFF;
+
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x\n",
+        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+#endif
+
+    check_barrett15_70(initial_shifter_value, f, tid, bb, bit_max, RES);
+  }
+}
 
 __kernel void cl_barrett15_71_gs(const uint exponent, const int75_t k_base,
                                  const __global uint * restrict bit_array,
@@ -3080,1886 +3207,536 @@ __kernel void cl_barrett15_71_gs(const uint exponent, const int75_t k_base,
   }
 }
 
-__kernel void cl_barrett15_70_gs(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
-                           const uint8 b_in, __global uint * restrict RES, const int bit_max
+__kernel void cl_barrett15_73_gs(const uint exponent, const int75_t k_base,
+                                 const __global uint * restrict bit_array,
+                                 const uint bits_to_process, __local ushort *smem,
+                                 const int shiftcount, const uint8 b_in,
+                                 __global uint * restrict RES, const int bit_max,
+                                 const uint shared_mem_allocated // only used to verify assumptions
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
          )
-/*
-shiftcount is used for precomputing without mod
-a is precomputed on host ONCE.
-
-*/
 {
-  __private int75_t exp75;
-  __private int75_v a, u, f, k;
-  __private int150_v b, tmp150;
-  __private int75_v tmp75;
-  __private float_v ff;
-  __private uint tid, bit_max_75=76-bit_max, bit_max_60=bit_max-61; //bit_max is 61 .. 74
-  __private uint tmp, bit_max75_mult = 1 << bit_max_75; /* used for bit shifting... */
-  __private uint_v t;
-
-  // b > 2^60, 8 fields of the uint8 for d4-db, da and db not used in this kernel (only for bit_max > 73)
+  __private uint     i, initial_shifter_value, total_bit_count;
+  __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
+  __private int75_v  k, f;
+  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint_v   tmp_v;
   __private int150_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+  __private int75_t exp75;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+  // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
+  total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
 
-  // exp75.d4=0;exp75.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
-  exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent
+// Here, all warps in our block have placed their candidates in shared memory.
+// Now we can start TFing candidates.
 
-#if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: exp=%d, x2=%x:%x:%x, b=%x:%x:%x:%x:%x:%x:%x:%x:0:0, k_base=%x:%x:%x:%x:%x, bit_max=%d\n",
-        exponent, exp75.d2, exp75.d1, exp75.d0, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, bb.d3, bb.d2, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
+// Init some stuff that will be used for all k's tested  <== this makes the OpenCL compiler abort, supposed to be fixed in Cat 13.4
+// Compute factor corresponding to first sieve bit in this block.
+
+  initial_shifter_value = exponent << (32 - shiftcount);	// Initial shifter value
+
+  exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
+        shiftcount, initial_shifter_value, total_bit_count);
 #endif
+
+  for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
+  {
+    // if i == total_bit_count-1, then we may read up to VECTOR_SIZE-1 elements beyond the array (uninitialized).
+    // this can result in the same factor being reported up to VECTOR_SIZE times.
+
+    uint_v k_delta;
+
+// Get the (k - k_base) value to test
 
 #if (VECTOR_SIZE == 1)
-  t    = k_tab[tid];
+    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
 #elif (VECTOR_SIZE == 2)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-#elif (VECTOR_SIZE == 3)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
 #elif (VECTOR_SIZE == 4)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-  t.w  = k_tab[tid+3];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
 #elif (VECTOR_SIZE == 8)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
+    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
+    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
+    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
 #elif (VECTOR_SIZE == 16)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-  t.s8 = k_tab[tid+8];
-  t.s9 = k_tab[tid+9];
-  t.sa = k_tab[tid+10];
-  t.sb = k_tab[tid+11];
-  t.sc = k_tab[tid+12];
-  t.sd = k_tab[tid+13];
-  t.se = k_tab[tid+14];
-  t.sf = k_tab[tid+15];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
+    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
+    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
+    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
+    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
+    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
+    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
+    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
+    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
+    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
+    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
 #endif
-  a.d0 = t & 0x7FFF;
-  a.d1 = t >> 15;  // t is 24 bits at most
 
-  k.d0  = mad24(a.d0, 4620u, k_base.d0);
-  k.d1  = mad24(a.d1, 4620u, k_base.d1) + (k.d0 >> 15);
-  k.d0 &= 0x7FFF;
-  k.d2  = (k.d1 >> 15) + k_base.d2;
-  k.d1 &= 0x7FFF;
-  k.d3  = (k.d2 >> 15) + k_base.d3;
-  k.d2 &= 0x7FFF;
-  k.d4  = (k.d3 >> 15) + k_base.d4;  // PERF: k.d4 = 0, normally. Can we limit k to 2^60?
-  k.d3 &= 0x7FFF;
-        
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
-#endif
-		// f = 2 * k * exp + 1
-  f.d0 = mad24(k.d0, exp75.d0, 1u);
+// Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
-  f.d1 = mad24(k.d1, exp75.d0, f.d0 >> 15);
-  f.d1 = mad24(k.d0, exp75.d1, f.d1);
-  f.d0 &= 0x7FFF;
+    k.d0 =                mad24(NUM_CLASSES, k_delta & 0x7FFF, k_base.d0);  // k_delta can exceed 2^24
+    k.d1 = (k.d0 >> 15) + mad24(NUM_CLASSES, k_delta >> 15, k_base.d1);  // k is limited to 2^64 -1
+    k.d2 = (k.d1 >> 15) + k_base.d2;
+    k.d3 = (k.d2 >> 15) + k_base.d3;
+    k.d4 = (k.d3 >> 15) + k_base.d4;
 
-  f.d2 = mad24(k.d2, exp75.d0, f.d1 >> 15);
-  f.d2 = mad24(k.d1, exp75.d1, f.d2);
-  f.d2 = mad24(k.d0, exp75.d2, f.d2);  // PERF: if we limit exp at kernel compile time to 2^29, then we can skip exp75.d2 here and above.
-  f.d1 &= 0x7FFF;
+    k.d0 &= 0x7FFF;
+    k.d1 &= 0x7FFF;
+    k.d2 &= 0x7FFF;
+    k.d3 &= 0x7FFF;
 
-  f.d3 = mad24(k.d3, exp75.d0, f.d2 >> 15);
-  f.d3 = mad24(k.d2, exp75.d1, f.d3);
-  f.d3 = mad24(k.d1, exp75.d2, f.d3);
+    f.d0 = mad24(k.d0, exp75.d0, 1u);  // exp75 = 2*exponent ==> f = 2kp+1
+
+    f.d1 = mad24(k.d1, exp75.d0, f.d0 >> 15);
+    f.d1 = mad24(k.d0, exp75.d1, f.d1);
+    f.d0 &= 0x7FFF;
+
+    f.d2 = mad24(k.d2, exp75.d0, f.d1 >> 15);
+    f.d2 = mad24(k.d1, exp75.d1, f.d2);
+    f.d2 = mad24(k.d0, exp75.d2, f.d2);  // PERF: if we limit exp at kernel compile time to 2^29, then we can skip exp75.d2 here and above.
+    f.d1 &= 0x7FFF;
+
+    f.d3 = mad24(k.d3, exp75.d0, f.d2 >> 15);
+    f.d3 = mad24(k.d2, exp75.d1, f.d3);
+    f.d3 = mad24(k.d1, exp75.d2, f.d3);
 //  f.d3 = mad24(k.d0, exp75.d3, f.d3);    // exp75.d3 = 0
-  f.d2 &= 0x7FFF;
+    f.d2 &= 0x7FFF;
 
-  f.d4 = mad24(k.d4, exp75.d0, f.d3 >> 15);  // PERF: see above
-  f.d4 = mad24(k.d3, exp75.d1, f.d4);
-  f.d4 = mad24(k.d2, exp75.d2, f.d4);
-  f.d3 &= 0x7FFF;
-
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: k_tab[%d]=%x, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x, shift=%d\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
-#endif
-/*
-ff = f as float, needed in mod_192_96() and div_192_96().
-Precalculated here since it is the same for all steps in the following loop */
-  ff= CONVERT_FLOAT_RTP_V(mad24(f.d4, 32768u, f.d3));
-  ff= ff * 32768.0f + CONVERT_FLOAT_RTP_V(f.d2);   // f.d1 needed?
-
-  ff= as_float(0x3f7ffffd) / ff;   // we rounded ff towards plus infinity, and round all other results towards zero. 
-        
-  tmp = 1 << (bit_max - 61);	// tmp150 = 2^(74 + bits in f)
-  
-  // tmp150.d0 .. d8 =0
-  // PERF: as div is only used here, use all those zeros directly in there
-  //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper part (15 bits) of a 150-bit value. The lower 135 bits are all zero implicitely
-
-  div_150_75(&u, tmp, f, ff
-#if (TRACE_KERNEL > 1)
-                  , tid
-#endif
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
-);						// u = floor(tmp150 / f)
+    f.d4 = mad24(k.d4, exp75.d0, f.d3 >> 15);  // PERF: see above
+    f.d4 = mad24(k.d3, exp75.d1, f.d4);
+    f.d4 = mad24(k.d2, exp75.d2, f.d4);
+    f.d3 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: u=%x:%x:%x:%x:%x, ff=%G\n",
-        u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
-#endif
-  a.d0 = mad24(bb.d5, bit_max75_mult, (bb.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-  a.d1 = mad24(bb.d6, bit_max75_mult, (bb.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-  a.d2 = mad24(bb.d7, bit_max75_mult, (bb.d6 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-  a.d3 = mad24(bb.d8, bit_max75_mult, (bb.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-  a.d4 = mad24(bb.d9, bit_max75_mult, (bb.d8 >> bit_max_60));		        	// a = b / (2^bit_max)
-
-  mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x\n",
+        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 
-  a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d1 = tmp150.d6;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d2 = tmp150.d7;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d3 = tmp150.d8;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d4 = tmp150.d9;		        	// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-
-  mul_75(&tmp75, a, f);							// tmp75 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
-#endif
-    // bb.d0-bb.d3 are 0 due to preprocessing on the host, thus always require a borrow
-  a.d0 = (-tmp75.d0) & 0x7FFF;
-  a.d1 = (-tmp75.d1 - AS_UINT_V((a.d0 > 0) ? 1 : 0 ));
-  a.d2 = (-tmp75.d2 - AS_UINT_V((a.d1 > 0x7FFF) ? 1 : 0 ));
-  a.d3 = (-tmp75.d3 - AS_UINT_V((a.d2 > 0x7FFF) ? 1 : 0 ));
-  a.d4 = (bb.d4-tmp75.d4 - AS_UINT_V((a.d3 > 0x7FFF) ? 1 : 0 )) & 0x7FFF;
-  a.d1 &= 0x7FFF;
-  a.d2 &= 0x7FFF;
-  a.d3 &= 0x7FFF;
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
-        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
-#endif
-  
-  exponent<<= 32 - shiftcount;
-  while(exponent)
-  {
-    square_75_150(&b, a);						// b = a^2
-
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        exponent, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
-#endif
-    a.d0 = mad24(b.d5, bit_max75_mult, (b.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-    a.d1 = mad24(b.d6, bit_max75_mult, (b.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-    a.d2 = mad24(b.d7, bit_max75_mult, (b.d6 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-    a.d3 = mad24(b.d8, bit_max75_mult, (b.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-    a.d4 = mad24(b.d9, bit_max75_mult, (b.d8 >> bit_max_60));       			// a = b / (2^bit_max)
-
-    mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
-#endif
-    a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d1 = tmp150.d6;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d2 = tmp150.d7;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d3 = tmp150.d8;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d4 = tmp150.d9;		        	// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-
-    mul_75(&tmp75, a, f);						// tmp75 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
-#endif
-    a.d0 = (b.d0 - tmp75.d0) & 0x7FFF;
-    a.d1 = (b.d1 - tmp75.d1 - AS_UINT_V((a.d0 > b.d0) ? 1 : 0 ));
-    a.d2 = (b.d2 - tmp75.d2 - AS_UINT_V((a.d1 > b.d1) ? 1 : 0 ));
-    a.d3 = (b.d3 - tmp75.d3 - AS_UINT_V((a.d2 > b.d2) ? 1 : 0 ));
-    a.d4 = (b.d4 - tmp75.d4 - AS_UINT_V((a.d3 > b.d3) ? 1 : 0 ));
-    a.d1 &= 0x7FFF;
-    a.d2 &= 0x7FFF;
-    a.d3 &= 0x7FFF;
-    a.d4 &= 0x7FFF;
-    
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
-        b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
-#endif
-
-    if(exponent&0x80000000)shl_75(&a);					// "optional multiply by 2" in Prime 95 documentation
-
-#ifdef CHECKS_MODBASECASE
-// a.d4 must not exceed 0x7fff, otherwise the following squaring may overflow
-#endif
-
-    exponent+=exponent;
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, a= %x:%x:%x:%x:%x\n",
-        exponent, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
+    check_barrett15_73(initial_shifter_value, f, tid, bb, bit_max, RES);
   }
-
-#ifndef CHECKS_MODBASECASE
-    mod_simple_75(&tmp75, a, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                 );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
-#else
-    int limit = 6;
-    if(bit_max_75 == 2) limit = 8;					// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-    if(bit_max_75 == 3) limit = 7;					// bit_max == 66, ...
-    mod_simple_75(&tmp75, a, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                   , bit_max_75, limit, modbasecase_debug);
-#endif
-
-#ifndef CHECKS_MODBASECASE
-  a = sub_if_gte_75(tmp75,f);	// final adjustment in case a >= f
-#else
-  tmp75 = sub_if_gte_75(tmp75,f);
-  a = sub_if_gte_75(tmp75,f);
-  if( tmp75.d0 != a.d0 )  // f is odd, so it is sufficient to compare the last part
-  {
-    printf((__constant char *)"EEEEEK, final a was >= f\n");
-  }
-#endif
-
-#if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: f=%x:%x:%x:%x:%x, final a =%x:%x:%x:%x:%x \n",
-         f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0,
-         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
-
-/* finally check if we found a factor and write the factor to RES[] */
-#if (VECTOR_SIZE == 1)
-  if( ((a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
-  {
-/* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
-    tid=ATOMIC_INC(RES[0]);
-    if(tid<10)				/* limit to 10 factors per class */
-    {
-      RES[tid*3 + 1]=f.d4;
-      RES[tid*3 + 2]=mad24(f.d3,0x8000u, f.d2);  // that's now 30 bits per int
-      RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
-    }
-  }
-#elif (VECTOR_SIZE == 2)
-  EVAL_RES_75(x)
-  EVAL_RES_75(y)
-#elif (VECTOR_SIZE == 3)
-  EVAL_RES_75(x)
-  EVAL_RES_75(y)
-  EVAL_RES_75(z)
-#elif (VECTOR_SIZE == 4)
-  EVAL_RES_75(x)
-  EVAL_RES_75(y)
-  EVAL_RES_75(z)
-  EVAL_RES_75(w)
-#elif (VECTOR_SIZE == 8)
-  EVAL_RES_75(s0)
-  EVAL_RES_75(s1)
-  EVAL_RES_75(s2)
-  EVAL_RES_75(s3)
-  EVAL_RES_75(s4)
-  EVAL_RES_75(s5)
-  EVAL_RES_75(s6)
-  EVAL_RES_75(s7)
-#elif (VECTOR_SIZE == 16)
-  EVAL_RES_75(s0)
-  EVAL_RES_75(s1)
-  EVAL_RES_75(s2)
-  EVAL_RES_75(s3)
-  EVAL_RES_75(s4)
-  EVAL_RES_75(s5)
-  EVAL_RES_75(s6)
-  EVAL_RES_75(s7)
-  EVAL_RES_75(s8)
-  EVAL_RES_75(s9)
-  EVAL_RES_75(sa)
-  EVAL_RES_75(sb)
-  EVAL_RES_75(sc)
-  EVAL_RES_75(sd)
-  EVAL_RES_75(se)
-  EVAL_RES_75(sf)
-#endif
 }
 
-__kernel void cl_barrett15_69_gs(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
-                           const uint8 b_in, __global uint * restrict RES, const int bit_max
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
-/*
-shiftcount is used for precomputing without mod
-a is precomputed on host ONCE.
-
-*/
-{
-  __private int75_t exp75;
-  __private int75_v a, u, f, k;
-  __private int150_v b, tmp150;
-  __private int75_v tmp75;
-  __private float_v ff;
-  __private uint tid, bit_max_75=76-bit_max, bit_max_60=bit_max-61; //bit_max is 61 .. 70
-  __private uint tmp, bit_max75_mult = 1 << bit_max_75; /* used for bit shifting... */
-  __private uint_v t;
-
-  // b > 2^60, 8 fields of the uint8 for d4-db, da and db not used in this kernel (only for bit_max > 73)
-  __private int150_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
-
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
-
-  // exp75.d4=0;exp75.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
-  exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent
-
-#if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: exp=%d, x2=%x:%x:%x, b=%x:%x:%x:%x:%x:%x:%x:%x:0:0, k_base=%x:%x:%x:%x:%x, bit_max=%d\n",
-        exponent, exp75.d2, exp75.d1, exp75.d0, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, bb.d3, bb.d2, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
-#endif
-
-#if (VECTOR_SIZE == 1)
-  t    = k_tab[tid];
-#elif (VECTOR_SIZE == 2)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-#elif (VECTOR_SIZE == 3)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-#elif (VECTOR_SIZE == 4)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-  t.w  = k_tab[tid+3];
-#elif (VECTOR_SIZE == 8)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-#elif (VECTOR_SIZE == 16)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-  t.s8 = k_tab[tid+8];
-  t.s9 = k_tab[tid+9];
-  t.sa = k_tab[tid+10];
-  t.sb = k_tab[tid+11];
-  t.sc = k_tab[tid+12];
-  t.sd = k_tab[tid+13];
-  t.se = k_tab[tid+14];
-  t.sf = k_tab[tid+15];
-#endif
-  a.d0 = t & 0x7FFF;
-  a.d1 = t >> 15;  // t is 24 bits at most
-
-  k.d0  = mad24(a.d0, 4620u, k_base.d0);
-  k.d1  = mad24(a.d1, 4620u, k_base.d1) + (k.d0 >> 15);
-  k.d0 &= 0x7FFF;
-  k.d2  = (k.d1 >> 15) + k_base.d2;
-  k.d1 &= 0x7FFF;
-  k.d3  = (k.d2 >> 15) + k_base.d3;
-  k.d2 &= 0x7FFF;
-  k.d4  = (k.d3 >> 15) + k_base.d4;  // PERF: k.d4 = 0, normally. Can we limit k to 2^60?
-  k.d3 &= 0x7FFF;
-        
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
-#endif
-		// f = 2 * k * exp + 1
-  f.d0 = mad24(k.d0, exp75.d0, 1u);
-
-  f.d1 = mad24(k.d1, exp75.d0, f.d0 >> 15);
-  f.d1 = mad24(k.d0, exp75.d1, f.d1);
-  f.d0 &= 0x7FFF;
-
-  f.d2 = mad24(k.d2, exp75.d0, f.d1 >> 15);
-  f.d2 = mad24(k.d1, exp75.d1, f.d2);
-  f.d2 = mad24(k.d0, exp75.d2, f.d2);  // PERF: if we limit exp at kernel compile time to 2^29, then we can skip exp75.d2 here and above.
-  f.d1 &= 0x7FFF;
-
-  f.d3 = mad24(k.d3, exp75.d0, f.d2 >> 15);
-  f.d3 = mad24(k.d2, exp75.d1, f.d3);
-  f.d3 = mad24(k.d1, exp75.d2, f.d3);
-//  f.d3 = mad24(k.d0, exp75.d3, f.d3);    // exp75.d3 = 0
-  f.d2 &= 0x7FFF;
-
-  f.d4 = mad24(k.d4, exp75.d0, f.d3 >> 15);  // PERF: see above
-  f.d4 = mad24(k.d3, exp75.d1, f.d4);
-  f.d4 = mad24(k.d2, exp75.d2, f.d4);
-  f.d3 &= 0x7FFF;
-
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: k_tab[%d]=%x, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x, shift=%d\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
-#endif
-/*
-ff = f as float, needed in mod_192_96() and div_192_96().
-Precalculated here since it is the same for all steps in the following loop */
-  ff= CONVERT_FLOAT_RTP_V(mad24(f.d4, 32768u, f.d3));
-  ff= ff * 32768.0f + CONVERT_FLOAT_RTP_V(f.d2);   // f.d1 needed?
-
-  ff= as_float(0x3f7ffffd) / ff;   // we rounded ff towards plus infinity, and round all other results towards zero. 
-        
-  tmp = 1 << (bit_max - 61);	// tmp150 = 2^(74 + bits in f)
-  
-  // tmp150.d0 .. d8 =0
-  // PERF: as div is only used here, use all those zeros directly in there
-  //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper part (15 bits) of a 150-bit value. The lower 135 bits are all zero implicitely
-
-  div_150_75(&u, tmp, f, ff
-#if (TRACE_KERNEL > 1)
-                  , tid
-#endif
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
-);						// u = floor(tmp150 / f)
-
-#if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: u=%x:%x:%x:%x:%x, ff=%G\n",
-        u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
-#endif
-  a.d0 = mad24(bb.d5, bit_max75_mult, (bb.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-  a.d1 = mad24(bb.d6, bit_max75_mult, (bb.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-  a.d2 = mad24(bb.d7, bit_max75_mult, (bb.d6 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-  a.d3 = mad24(bb.d8, bit_max75_mult, (bb.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-  a.d4 = mad24(bb.d9, bit_max75_mult, (bb.d8 >> bit_max_60));		        	// a = b / (2^bit_max)
-
-  mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
-#endif
-
-  a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d1 = tmp150.d6;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d2 = tmp150.d7;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d3 = tmp150.d8;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-  a.d4 = tmp150.d9;		        	// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-
-  mul_75(&tmp75, a, f);							// tmp75 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
-#endif
-    // bb.d0-bb.d3 are 0 due to preprocessing on the host, thus always require a borrow
-  a.d0 = (-tmp75.d0) & 0x7FFF;
-  a.d1 = (-tmp75.d1 - AS_UINT_V((a.d0 > 0) ? 1 : 0 ));
-  a.d2 = (-tmp75.d2 - AS_UINT_V((a.d1 > 0x7FFF) ? 1 : 0 ));
-  a.d3 = (-tmp75.d3 - AS_UINT_V((a.d2 > 0x7FFF) ? 1 : 0 ));
-  a.d4 = (bb.d4-tmp75.d4 - AS_UINT_V((a.d3 > 0x7FFF) ? 1 : 0 )) & 0x7FFF;
-  a.d1 &= 0x7FFF;
-  a.d2 &= 0x7FFF;
-  a.d3 &= 0x7FFF;
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
-        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
-#endif
-  
-  exponent<<= 32 - shiftcount;
-  while(exponent)
-  {
-    square_75_150(&b, a);						// b = a^2
-
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        exponent, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
-#endif
-    a.d0 = mad24(b.d5, bit_max75_mult, (b.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-    a.d1 = mad24(b.d6, bit_max75_mult, (b.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-    a.d2 = mad24(b.d7, bit_max75_mult, (b.d6 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-    a.d3 = mad24(b.d8, bit_max75_mult, (b.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
-    a.d4 = mad24(b.d9, bit_max75_mult, (b.d8 >> bit_max_60));       			// a = b / (2^bit_max)
-
-    mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
-#endif
-    a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d1 = tmp150.d6;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d2 = tmp150.d7;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d3 = tmp150.d8;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    a.d4 = tmp150.d9;		        	// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-
-    mul_75(&tmp75, a, f);						// tmp75 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
-#endif
-    a.d0 = (b.d0 - tmp75.d0) & 0x7FFF;
-    a.d1 = (b.d1 - tmp75.d1 - AS_UINT_V((a.d0 > b.d0) ? 1 : 0 ));
-    a.d2 = (b.d2 - tmp75.d2 - AS_UINT_V((a.d1 > b.d1) ? 1 : 0 ));
-    a.d3 = (b.d3 - tmp75.d3 - AS_UINT_V((a.d2 > b.d2) ? 1 : 0 ));
-    a.d4 = (b.d4 - tmp75.d4 - AS_UINT_V((a.d3 > b.d3) ? 1 : 0 ));
-    a.d1 &= 0x7FFF;
-    a.d2 &= 0x7FFF;
-    a.d3 &= 0x7FFF;
-    a.d4 &= 0x7FFF;
-    
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
-        b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
-#endif
-
-    if(exponent&0x80000000)shl_75(&a);					// "optional multiply by 2" in Prime 95 documentation
-
-#ifdef CHECKS_MODBASECASE
-// a.d4 must not exceed 0x7fff, otherwise the following squaring may overflow
-#endif
-
-    exponent+=exponent;
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, a= %x:%x:%x:%x:%x\n",
-        exponent, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
-  }
-
-#ifndef CHECKS_MODBASECASE
-    mod_simple_75(&tmp75, a, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                 );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
-#else
-    int limit = 6;
-    if(bit_max_75 == 2) limit = 8;					// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-    if(bit_max_75 == 3) limit = 7;					// bit_max == 66, ...
-    mod_simple_75(&tmp75, a, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                   , bit_max_75, limit, modbasecase_debug);
-#endif
-
-#ifndef CHECKS_MODBASECASE
-  a = sub_if_gte_75(tmp75,f);	// final adjustment in case a >= f
-#else
-  tmp75 = sub_if_gte_75(tmp75,f);
-  a = sub_if_gte_75(tmp75,f);
-  if( tmp75.d0 != a.d0 )  // f is odd, so it is sufficient to compare the last part
-  {
-    printf((__constant char *)"EEEEEK, final a was >= f\n");
-  }
-#endif
-
-#if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: f=%x:%x:%x:%x:%x, final a =%x:%x:%x:%x:%x \n",
-         f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0,
-         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
-
-/* finally check if we found a factor and write the factor to RES[] */
-#if (VECTOR_SIZE == 1)
-  if( ((a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
-  {
-/* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
-    tid=ATOMIC_INC(RES[0]);
-    if(tid<10)				/* limit to 10 factors per class */
-    {
-      RES[tid*3 + 1]=f.d4;
-      RES[tid*3 + 2]=mad24(f.d3,0x8000u, f.d2);  // that's now 30 bits per int
-      RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
-    }
-  }
-#elif (VECTOR_SIZE == 2)
-  EVAL_RES_75(x)
-  EVAL_RES_75(y)
-#elif (VECTOR_SIZE == 3)
-  EVAL_RES_75(x)
-  EVAL_RES_75(y)
-  EVAL_RES_75(z)
-#elif (VECTOR_SIZE == 4)
-  EVAL_RES_75(x)
-  EVAL_RES_75(y)
-  EVAL_RES_75(z)
-  EVAL_RES_75(w)
-#elif (VECTOR_SIZE == 8)
-  EVAL_RES_75(s0)
-  EVAL_RES_75(s1)
-  EVAL_RES_75(s2)
-  EVAL_RES_75(s3)
-  EVAL_RES_75(s4)
-  EVAL_RES_75(s5)
-  EVAL_RES_75(s6)
-  EVAL_RES_75(s7)
-#elif (VECTOR_SIZE == 16)
-  EVAL_RES_75(s0)
-  EVAL_RES_75(s1)
-  EVAL_RES_75(s2)
-  EVAL_RES_75(s3)
-  EVAL_RES_75(s4)
-  EVAL_RES_75(s5)
-  EVAL_RES_75(s6)
-  EVAL_RES_75(s7)
-  EVAL_RES_75(s8)
-  EVAL_RES_75(s9)
-  EVAL_RES_75(sa)
-  EVAL_RES_75(sb)
-  EVAL_RES_75(sc)
-  EVAL_RES_75(sd)
-  EVAL_RES_75(se)
-  EVAL_RES_75(sf)
-#endif
-}
 
 
 /****************************************
  ****************************************
- * 15-bit based 90-bit barrett-kernels
+ * 15-bit based 90-bit barrett-kernels based on GPU sieve
  *
  ****************************************
  ****************************************/
 
-__kernel void cl_barrett15_88_gs(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
-                           const uint8 b_in, __global uint * restrict RES, const int bit_max
+__kernel void cl_barrett15_82_gs(const uint exponent, const int75_t k_base,
+                                 const __global uint * restrict bit_array,
+                                 const uint bits_to_process, __local ushort *smem,
+                                 const int shiftcount, const uint8 b_in,
+                                 __global uint * restrict RES, const int bit_max,
+                                 const uint shared_mem_allocated // only used to verify assumptions
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
          )
-/*
-shiftcount is used for precomputing without mod
-a is precomputed on host ONCE.
-
-*/
 {
-  __private int90_t exp90;
-  __private int90_v a, u, f, k;
-  __private int180_v b, tmp180;
-  __private int90_v tmp90;
-  __private float_v ff;
-  __private uint tmp, tid, bit_max_bot, bit_max_mult;
-  __private uint_v t;
-
-  // implicitely assume b > 2^60 and use the 8 fields of the uint8 for d4-db
+  __private uint     i, initial_shifter_value, total_bit_count;
+  __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
+  __private int75_v  k;
+  __private int90_v  f;
+  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint_v   tmp_v;
   __private int180_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5, b_in.s6, b_in.s7};
+  __private int75_t  exp75;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+  // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
+  total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
 
-  // exp90.d4=0;exp90.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
-  exp90.d2=exponent>>29;exp90.d1=(exponent>>14)&0x7FFF;exp90.d0=(exponent<<1)&0x7FFF;	// exp90 = 2 * exponent
+// Here, all warps in our block have placed their candidates in shared memory.
+// Now we can start TFing candidates.
 
-#if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: exp=%d, x2=%x:%x:%x, b=%x:%x:%x:%x:%x:%x:%x:%x:0:0:0:0, k_base=%x:%x:%x:%x:%x, bit_max=%d\n",
-        exponent, exp90.d2, exp90.d1, exp90.d0, bb.db, bb.da, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
+// Init some stuff that will be used for all k's tested  <== this makes the OpenCL compiler abort, supposed to be fixed in Cat 13.4
+// Compute factor corresponding to first sieve bit in this block.
+
+  initial_shifter_value = exponent << (32 - shiftcount);	// Initial shifter value
+
+  exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
+        shiftcount, initial_shifter_value, total_bit_count);
 #endif
+
+  for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
+  {
+    // if i == total_bit_count-1, then we may read up to VECTOR_SIZE-1 elements beyond the array (uninitialized).
+    // this can result in the same factor being reported up to VECTOR_SIZE times.
+
+    uint_v k_delta;
+
+// Get the (k - k_base) value to test
 
 #if (VECTOR_SIZE == 1)
-  t    = k_tab[tid];
+    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
 #elif (VECTOR_SIZE == 2)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-#elif (VECTOR_SIZE == 3)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
 #elif (VECTOR_SIZE == 4)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-  t.w  = k_tab[tid+3];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
 #elif (VECTOR_SIZE == 8)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
+    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
+    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
+    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
 #elif (VECTOR_SIZE == 16)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-  t.s8 = k_tab[tid+8];
-  t.s9 = k_tab[tid+9];
-  t.sa = k_tab[tid+10];
-  t.sb = k_tab[tid+11];
-  t.sc = k_tab[tid+12];
-  t.sd = k_tab[tid+13];
-  t.se = k_tab[tid+14];
-  t.sf = k_tab[tid+15];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
+    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
+    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
+    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
+    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
+    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
+    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
+    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
+    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
+    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
+    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
 #endif
-  a.d0 = t & 0x7FFF;
-  a.d1 = t >> 15;  // t is 24 bits at most
 
-  k.d0  = mad24(a.d0, 4620u, k_base.d0);
-  k.d1  = mad24(a.d1, 4620u, k_base.d1) + (k.d0 >> 15);
-  k.d0 &= 0x7FFF;
-  k.d2  = (k.d1 >> 15) + k_base.d2;
-  k.d1 &= 0x7FFF;
-  k.d3  = (k.d2 >> 15) + k_base.d3;
-  k.d2 &= 0x7FFF;
-  k.d4  = (k.d3 >> 15) + k_base.d4;  // PERF: k.d4 = 0, normally. Can we limit k to 2^60?
-  k.d3 &= 0x7FFF;
-        
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
-#endif
-		// f = 2 * k * exponent + 1
-  f.d0 = mad24(k.d0, exp90.d0, 1u);
+// Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
-  f.d1 = mad24(k.d1, exp90.d0, f.d0 >> 15);
-  f.d1 = mad24(k.d0, exp90.d1, f.d1);
-  f.d0 &= 0x7FFF;
+    k.d0 =                mad24(NUM_CLASSES, k_delta & 0x7FFF, k_base.d0);  // k_delta can exceed 2^24
+    k.d1 = (k.d0 >> 15) + mad24(NUM_CLASSES, k_delta >> 15, k_base.d1);  // k is limited to 2^64 -1
+    k.d2 = (k.d1 >> 15) + k_base.d2;
+    k.d3 = (k.d2 >> 15) + k_base.d3;
+    k.d4 = (k.d3 >> 15) + k_base.d4;
 
-  f.d2 = mad24(k.d2, exp90.d0, f.d1 >> 15);
-  f.d2 = mad24(k.d1, exp90.d1, f.d2);
-  f.d2 = mad24(k.d0, exp90.d2, f.d2);  // PERF: if we limit exponent at kernel compile time to 2^29, then we can skip exp90.d2 here and above.
-  f.d1 &= 0x7FFF;
+    k.d0 &= 0x7FFF;
+    k.d1 &= 0x7FFF;
+    k.d2 &= 0x7FFF;
+    k.d3 &= 0x7FFF;
 
-  f.d3 = mad24(k.d3, exp90.d0, f.d2 >> 15);
-  f.d3 = mad24(k.d2, exp90.d1, f.d3);
-  f.d3 = mad24(k.d1, exp90.d2, f.d3);
-//  f.d3 = mad24(k.d0, exp90.d3, f.d3);    // exp90.d3 = 0
-  f.d2 &= 0x7FFF;
+    f.d0 = mad24(k.d0, exp75.d0, 1u);  // exp75 = 2*exponent ==> f = 2kp+1
 
-  f.d4 = mad24(k.d4, exp90.d0, f.d3 >> 15);  // PERF: see above
-  f.d4 = mad24(k.d3, exp90.d1, f.d4);
-  f.d4 = mad24(k.d2, exp90.d2, f.d4);
-  f.d3 &= 0x7FFF;
+    f.d1 = mad24(k.d1, exp75.d0, f.d0 >> 15);
+    f.d1 = mad24(k.d0, exp75.d1, f.d1);
+    f.d0 &= 0x7FFF;
 
-//  f.d5 = mad24(k.d5, exp90.d0, f.d4 >> 15);  // k.d5 = 0
-  f.d5 = mad24(k.d4, exp90.d1, f.d4 >> 15);
-  f.d5 = mad24(k.d3, exp90.d2, f.d5);
-  f.d4 &= 0x7FFF;
+    f.d2 = mad24(k.d2, exp75.d0, f.d1 >> 15);
+    f.d2 = mad24(k.d1, exp75.d1, f.d2);
+    f.d2 = mad24(k.d0, exp75.d2, f.d2);  // PERF: if we limit exp at kernel compile time to 2^29, then we can skip exp75.d2 here and above.
+    f.d1 &= 0x7FFF;
 
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: k_tab[%d]=%x, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x, shift=%d\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
-#endif
-/*
-ff = f as float, needed in mod_192_96() and div_192_96().
-Precalculated here since it is the same for all steps in the following loop */
-  ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
-  ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // at factor size 60 bits, this gives 30 significant bits
+    f.d3 = mad24(k.d3, exp75.d0, f.d2 >> 15);
+    f.d3 = mad24(k.d2, exp75.d1, f.d3);
+    f.d3 = mad24(k.d1, exp75.d2, f.d3);
+//  f.d3 = mad24(k.d0, exp75.d3, f.d3);    // exp75.d3 = 0
+    f.d2 &= 0x7FFF;
 
-  //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  //ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  ff = as_float(0x3f7ffffd) / ff;   // we rounded ff towards plus infinity, and round all other results towards zero.
+    f.d4 = mad24(k.d4, exp75.d0, f.d3 >> 15);  // PERF: see above
+    f.d4 = mad24(k.d3, exp75.d1, f.d4);
+    f.d4 = mad24(k.d2, exp75.d2, f.d4);
+    f.d3 &= 0x7FFF;
 
-  // we need u=2^(2*bit_max)/f. As bit_max is between 60 and 90, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
-
-  tmp = 1 << (bit_max - 61);	// tmp180 = 2^(89 + bits in f)
-  
-  // tmp180.d7 = 0; tmp180.d6 = 0; tmp180.d5 = 0; tmp180.d4 = 0; tmp180.d3 = 0; tmp180.d2 = 0; tmp180.d1 = 0; tmp180.d0 = 0;
-  // PERF: as div is only used here, use all those zeros directly in there
-  //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp180.db contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
-
-  div_180_90(&u, tmp, f, ff
-#if (TRACE_KERNEL > 1)
-                  , tid
-#endif
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
-);						// u = floor(tmp180 / f)
-
+    f.d5 = mad24(k.d4, exp75.d1, f.d4 >> 15);  // PERF: see above
+    f.d5 = mad24(k.d3, exp75.d2, f.d5);
+    f.d4 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
-        u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x\n",
+        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 
-  if (bit_max > 75)  // need to distiguish how far to shift; the same branch will be taken by all threads
-  {
-    //bit_max is 76 .. 89
-    bit_max_bot  = bit_max-76;
-    bit_max_mult = 1 << (91-bit_max);
-
-    // a.d<n> = bb.d<n+5> >> bit_max_bot + bb.d<n+6> << top_bit_max
-
-    //PERF: min limit of bb? bit_max > 75 ==> bb > 2^150 ==> d0..d9=0
-    a.d0 = mad24(bb.d6, bit_max_mult, (bb.d5 >> bit_max_bot))&0x7FFF;			// a = floor(b / 2 ^ (bits_in_f - 1))
-    a.d1 = mad24(bb.d7, bit_max_mult, (bb.d6 >> bit_max_bot))&0x7FFF;
-    a.d2 = mad24(bb.d8, bit_max_mult, (bb.d7 >> bit_max_bot))&0x7FFF;
-    a.d3 = mad24(bb.d9, bit_max_mult, (bb.d8 >> bit_max_bot))&0x7FFF;
-    a.d4 = mad24(bb.da, bit_max_mult, (bb.d9 >> bit_max_bot))&0x7FFF;
-    a.d5 = mad24(bb.db, bit_max_mult, (bb.da >> bit_max_bot));
+    check_barrett15_82(initial_shifter_value, f, tid, bb, bit_max, RES);
   }
-  else
-  {
-    //bit_max is 61 .. 75
-    bit_max_bot  = bit_max-61;
-    bit_max_mult = 1 << (76-bit_max);
-
-    // a.d<n> = bb.d<n+4> >> bit_max_bot + bb.d<n+5> << top_bit_max
-
-    //PERF: min limit of bb? bit_max >= 60 ==> bb >= 2^120 ==> d0..d7=0
-    a.d0 = mad24(bb.d5, bit_max_mult, (bb.d4 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-    a.d1 = mad24(bb.d6, bit_max_mult, (bb.d5 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-    a.d2 = mad24(bb.d7, bit_max_mult, (bb.d6 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-    a.d3 = mad24(bb.d8, bit_max_mult, (bb.d7 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-    a.d4 = mad24(bb.d9, bit_max_mult, (bb.d8 >> bit_max_bot))&0x7FFF;		 	// a = b / (2^bit_max)
-    a.d5 = mad24(bb.da, bit_max_mult, (bb.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
-  }
-      // PERF: could be no_low_5
-  mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0, tmp180.d5.s0, tmp180.d4.s0);
-#endif
-
-  a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
-  a.d1 = tmp180.d7;
-  a.d2 = tmp180.d8;
-  a.d3 = tmp180.d9;
-  a.d4 = tmp180.da;
-  a.d5 = tmp180.db;
-
-  mul_90(&tmp90, a, f);							// tmp90 = quotient * f, we only compute the low 90-bits here
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: a=%x:%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x:%x (tmp)\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
-#endif
-    // bb.d0-bb.d3 are 0
-  tmp90.d0 = (-tmp90.d0) & 0x7FFF;
-  tmp90.d1 = (-tmp90.d1 - AS_UINT_V((tmp90.d0 > 0) ? 1 : 0 ));
-  tmp90.d2 = (-tmp90.d2 - AS_UINT_V((tmp90.d1 > 0x7FFF) ? 1 : 0 ));
-  tmp90.d3 = (-tmp90.d3 - AS_UINT_V((tmp90.d2 > 0x7FFF) ? 1 : 0 ));
-  tmp90.d4 = (bb.d4-tmp90.d4 - AS_UINT_V((tmp90.d3 > 0x7FFF) ? 1 : 0 ));
-  tmp90.d5 = (bb.d5-tmp90.d5 - AS_UINT_V((tmp90.d4 > 0x7FFF) ? 1 : 0 ));
-  tmp90.d1 &= 0x7FFF;
-  tmp90.d2 &= 0x7FFF;
-  tmp90.d3 &= 0x7FFF;
-  tmp90.d4 &= 0x7FFF;
-  tmp90.d5 &= 0x7FFF;
-
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (tmp)\n",
-        bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
-#endif
-    ///
-    ///// here it starts to become different between the 3 6x15bit kernels
-    ///
-#ifndef CHECKS_MODBASECASE
-  mod_simple_90(&a, tmp90, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-               );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
-#else
-  int limit = 6;
-  if(bit_max_90 == 2) limit = 8;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-  if(bit_max_90 == 3) limit = 7;						// bit_max == 66, ...
-  mod_simple_90(&a, tmp90, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                   , bit_max_90, limit, modbasecase_debug);
-#endif
-  
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: tmp=%x:%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x (a)\n",
-        tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0,
-        f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
-  exponent<<= 32 - shiftcount;
-  while(exponent)
-  {
-    square_90_180(&b, a);						// b = a^2
-
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        exponent, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.db.s0, b.da.s0, b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
-#endif
-    if (bit_max > 75)  // need to distiguish how far to shift
-    {
-      a.d0 = mad24(b.d6, bit_max_mult, (b.d5 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d1 = mad24(b.d7, bit_max_mult, (b.d6 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d2 = mad24(b.d8, bit_max_mult, (b.d7 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d3 = mad24(b.d9, bit_max_mult, (b.d8 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d4 = mad24(b.da, bit_max_mult, (b.d9 >> bit_max_bot))&0x7FFF;		 	// a = b / (2^bit_max)
-      a.d5 = mad24(b.db, bit_max_mult, (b.da >> bit_max_bot));		       	// a = b / (2^bit_max)
-    }
-    else
-    {
-      a.d0 = mad24(b.d5, bit_max_mult, (b.d4 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d1 = mad24(b.d6, bit_max_mult, (b.d5 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d2 = mad24(b.d7, bit_max_mult, (b.d6 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d3 = mad24(b.d8, bit_max_mult, (b.d7 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d4 = mad24(b.d9, bit_max_mult, (b.d8 >> bit_max_bot))&0x7FFF;		 	// a = b / (2^bit_max)
-      a.d5 = mad24(b.da, bit_max_mult, (b.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
-    }
-      // PERF: could be no_low_5
-    mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0, tmp180.d5.s0, tmp180.d4.s0);
-#endif
-
-    a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
-    a.d1 = tmp180.d7;
-    a.d2 = tmp180.d8;
-    a.d3 = tmp180.d9;
-    a.d4 = tmp180.da;
-    a.d5 = tmp180.db;
-
-    mul_90(&tmp90, a, f);							// tmp90 = quotient * f, we only compute the low 90-bits here
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x:%x (tmp)\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
-#endif
-    tmp90.d0 = (b.d0 - tmp90.d0) & 0x7FFF;
-    tmp90.d1 = (b.d1 - tmp90.d1 - AS_UINT_V((tmp90.d0 > b.d0) ? 1 : 0 ));
-    tmp90.d2 = (b.d2 - tmp90.d2 - AS_UINT_V((tmp90.d1 > b.d1) ? 1 : 0 ));
-    tmp90.d3 = (b.d3 - tmp90.d3 - AS_UINT_V((tmp90.d2 > b.d2) ? 1 : 0 ));
-    tmp90.d4 = (b.d4 - tmp90.d4 - AS_UINT_V((tmp90.d3 > b.d3) ? 1 : 0 ));
-    tmp90.d5 = (b.d5 - tmp90.d5 - AS_UINT_V((tmp90.d4 > b.d4) ? 1 : 0 ));
-    tmp90.d1 &= 0x7FFF;
-    tmp90.d2 &= 0x7FFF;
-    tmp90.d3 &= 0x7FFF;
-    tmp90.d4 &= 0x7FFF;
-    tmp90.d5 &= 0x7FFF;
-    
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (tmp)\n",
-        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
-#endif
-    if(exponent&0x80000000)shl_90(&tmp90);			// "optional multiply by 2" in Prime 95 documentation, can be up to 91 bits (16 in tmp90.d5)
-
-#ifndef CHECKS_MODBASECASE
-    mod_simple_90(&a, tmp90, f, ff   // can handle 91 bits tmp90
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                 );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
-#else
-    int limit = 6;
-    if(bit_max_90 == 2) limit = 8;					// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-    if(bit_max_90 == 3) limit = 7;					// bit_max == 66, ...
-    mod_simple_90(&a, tmp90, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                   , bit_max_90, limit, modbasecase_debug);
-#endif
-
-    exponent+=exponent;
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x (a)\n",
-        exponent, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0,
-        f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
-  }
-
-
-#ifndef CHECKS_MODBASECASE
-  a = sub_if_gte_90(a,f);	// final adjustment in case a >= f
-#else
-  tmp90 = sub_if_gte_90(a,f);
-  a = sub_if_gte_90(tmp90,f);
-  if( tmp90.d0 != a.d0 )  // f is odd, so it is sufficient to compare the last part
-  {
-    printf((__constant char *)"EEEEEK, final a was >= f\n");
-  }
-#endif
-  ///
-  ////// starting from here, the 3 6x15bit kernels are the same again
-  ///
-#if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: f=%x:%x:%x:%x:%x:%x, final a = %x:%x:%x:%x:%x:%x \n",
-         f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0,
-         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
-
-/* finally check if we found a factor and write the factor to RES[] */
-#if (VECTOR_SIZE == 1)
-  if( ((a.d5|a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
-  {
-/* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
-    tid=ATOMIC_INC(RES[0]);
-    if(tid<10)				/* limit to 10 factors per class */
-    {
-      RES[tid*3 + 1]=mad24(f.d5,0x8000u, f.d4);
-      RES[tid*3 + 2]=mad24(f.d3,0x8000u, f.d2);  // that's now 30 bits per int
-      RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
-    }
-  }
-#elif (VECTOR_SIZE == 2)
-  EVAL_RES_90(x)
-  EVAL_RES_90(y)
-#elif (VECTOR_SIZE == 3)
-  EVAL_RES_90(x)
-  EVAL_RES_90(y)
-  EVAL_RES_90(z)
-#elif (VECTOR_SIZE == 4)
-  EVAL_RES_90(x)
-  EVAL_RES_90(y)
-  EVAL_RES_90(z)
-  EVAL_RES_90(w)
-#elif (VECTOR_SIZE == 8)
-  EVAL_RES_90(s0)
-  EVAL_RES_90(s1)
-  EVAL_RES_90(s2)
-  EVAL_RES_90(s3)
-  EVAL_RES_90(s4)
-  EVAL_RES_90(s5)
-  EVAL_RES_90(s6)
-  EVAL_RES_90(s7)
-#elif (VECTOR_SIZE == 16)
-  EVAL_RES_90(s0)
-  EVAL_RES_90(s1)
-  EVAL_RES_90(s2)
-  EVAL_RES_90(s3)
-  EVAL_RES_90(s4)
-  EVAL_RES_90(s5)
-  EVAL_RES_90(s6)
-  EVAL_RES_90(s7)
-  EVAL_RES_90(s8)
-  EVAL_RES_90(s9)
-  EVAL_RES_90(sa)
-  EVAL_RES_90(sb)
-  EVAL_RES_90(sc)
-  EVAL_RES_90(sd)
-  EVAL_RES_90(se)
-  EVAL_RES_90(sf)
-#endif
- 
 }
 
-__kernel void cl_barrett15_83_gs(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
-                           const uint8 b_in, __global uint * restrict RES, const int bit_max
+__kernel void cl_barrett15_83_gs(const uint exponent, const int75_t k_base,
+                                 const __global uint * restrict bit_array,
+                                 const uint bits_to_process, __local ushort *smem,
+                                 const int shiftcount, const uint8 b_in,
+                                 __global uint * restrict RES, const int bit_max,
+                                 const uint shared_mem_allocated // only used to verify assumptions
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
          )
-/*
-shiftcount is used for precomputing without mod
-a is precomputed on host ONCE.
-
-*/
 {
-  __private int90_t exp90;
-  __private int90_v a, u, f, k;
-  __private int180_v b, tmp180;
-  __private int90_v tmp90;
-  __private float_v ff;
-  __private uint tmp, tid, bit_max_bot, bit_max_mult;
-  __private uint_v t;
-
-  // implicitely assume b > 2^60 and use the 8 fields of the uint8 for d4-db
+  __private uint     i, initial_shifter_value, total_bit_count;
+  __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
+  __private int75_v  k;
+  __private int90_v  f;
+  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint_v   tmp_v;
   __private int180_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5, b_in.s6, b_in.s7};
+  __private int75_t  exp75;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+  // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
+  total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
 
-  // exp90.d4=0;exp90.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
-  exp90.d2=exponent>>29;exp90.d1=(exponent>>14)&0x7FFF;exp90.d0=(exponent<<1)&0x7FFF;	// exp90 = 2 * exponent
+// Here, all warps in our block have placed their candidates in shared memory.
+// Now we can start TFing candidates.
 
-#if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: exp=%d, x2=%x:%x:%x, b=%x:%x:%x:%x:%x:%x:%x:%x:0:0:0:0, k_base=%x:%x:%x:%x:%x, bit_max=%d\n",
-        exponent, exp90.d2, exp90.d1, exp90.d0, bb.db, bb.da, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
+// Init some stuff that will be used for all k's tested  <== this makes the OpenCL compiler abort, supposed to be fixed in Cat 13.4
+// Compute factor corresponding to first sieve bit in this block.
+
+  initial_shifter_value = exponent << (32 - shiftcount);	// Initial shifter value
+
+  exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
+        shiftcount, initial_shifter_value, total_bit_count);
 #endif
 
+  for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
+  {
+    // if i == total_bit_count-1, then we may read up to VECTOR_SIZE-1 elements beyond the array (uninitialized).
+    // this can result in the same factor being reported up to VECTOR_SIZE times.
+
+    uint_v k_delta;
+
+// Get the (k - k_base) value to test
+
 #if (VECTOR_SIZE == 1)
-  t    = k_tab[tid];
+    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
 #elif (VECTOR_SIZE == 2)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-#elif (VECTOR_SIZE == 3)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
 #elif (VECTOR_SIZE == 4)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-  t.w  = k_tab[tid+3];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
 #elif (VECTOR_SIZE == 8)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
+    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
+    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
+    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
 #elif (VECTOR_SIZE == 16)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-  t.s8 = k_tab[tid+8];
-  t.s9 = k_tab[tid+9];
-  t.sa = k_tab[tid+10];
-  t.sb = k_tab[tid+11];
-  t.sc = k_tab[tid+12];
-  t.sd = k_tab[tid+13];
-  t.se = k_tab[tid+14];
-  t.sf = k_tab[tid+15];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
+    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
+    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
+    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
+    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
+    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
+    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
+    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
+    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
+    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
+    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
 #endif
-  a.d0 = t & 0x7FFF;
-  a.d1 = t >> 15;  // t is 24 bits at most
 
-  k.d0  = mad24(a.d0, 4620u, k_base.d0);
-  k.d1  = mad24(a.d1, 4620u, k_base.d1) + (k.d0 >> 15);
-  k.d0 &= 0x7FFF;
-  k.d2  = (k.d1 >> 15) + k_base.d2;
-  k.d1 &= 0x7FFF;
-  k.d3  = (k.d2 >> 15) + k_base.d3;
-  k.d2 &= 0x7FFF;
-  k.d4  = (k.d3 >> 15) + k_base.d4;  // PERF: k.d4 = 0, normally. Can we limit k to 2^60?
-  k.d3 &= 0x7FFF;
-        
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
-#endif
-		// f = 2 * k * exp + 1
-  f.d0 = mad24(k.d0, exp90.d0, 1u);
+// Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
-  f.d1 = mad24(k.d1, exp90.d0, f.d0 >> 15);
-  f.d1 = mad24(k.d0, exp90.d1, f.d1);
-  f.d0 &= 0x7FFF;
+    k.d0 =                mad24(NUM_CLASSES, k_delta & 0x7FFF, k_base.d0);  // k_delta can exceed 2^24
+    k.d1 = (k.d0 >> 15) + mad24(NUM_CLASSES, k_delta >> 15, k_base.d1);  // k is limited to 2^64 -1
+    k.d2 = (k.d1 >> 15) + k_base.d2;
+    k.d3 = (k.d2 >> 15) + k_base.d3;
+    k.d4 = (k.d3 >> 15) + k_base.d4;
 
-  f.d2 = mad24(k.d2, exp90.d0, f.d1 >> 15);
-  f.d2 = mad24(k.d1, exp90.d1, f.d2);
-  f.d2 = mad24(k.d0, exp90.d2, f.d2);  // PERF: if we limit exp at kernel compile time to 2^29, then we can skip exp90.d2 here and above.
-  f.d1 &= 0x7FFF;
+    k.d0 &= 0x7FFF;
+    k.d1 &= 0x7FFF;
+    k.d2 &= 0x7FFF;
+    k.d3 &= 0x7FFF;
 
-  f.d3 = mad24(k.d3, exp90.d0, f.d2 >> 15);
-  f.d3 = mad24(k.d2, exp90.d1, f.d3);
-  f.d3 = mad24(k.d1, exp90.d2, f.d3);
-//  f.d3 = mad24(k.d0, exp90.d3, f.d3);    // exp90.d3 = 0
-  f.d2 &= 0x7FFF;
+    f.d0 = mad24(k.d0, exp75.d0, 1u);  // exp75 = 2*exponent ==> f = 2kp+1
 
-  f.d4 = mad24(k.d4, exp90.d0, f.d3 >> 15);  // PERF: see above
-  f.d4 = mad24(k.d3, exp90.d1, f.d4);
-  f.d4 = mad24(k.d2, exp90.d2, f.d4);
-  f.d3 &= 0x7FFF;
+    f.d1 = mad24(k.d1, exp75.d0, f.d0 >> 15);
+    f.d1 = mad24(k.d0, exp75.d1, f.d1);
+    f.d0 &= 0x7FFF;
 
-//  f.d5 = mad24(k.d5, exp90.d0, f.d4 >> 15);  // k.d5 = 0
-  f.d5 = mad24(k.d4, exp90.d1, f.d4 >> 15);
-  f.d5 = mad24(k.d3, exp90.d2, f.d5);
-  f.d4 &= 0x7FFF;
+    f.d2 = mad24(k.d2, exp75.d0, f.d1 >> 15);
+    f.d2 = mad24(k.d1, exp75.d1, f.d2);
+    f.d2 = mad24(k.d0, exp75.d2, f.d2);  // PERF: if we limit exp at kernel compile time to 2^29, then we can skip exp75.d2 here and above.
+    f.d1 &= 0x7FFF;
 
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: k_tab[%d]=%x, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x, shift=%d\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
-#endif
-/*
-ff = f as float, needed in mod_192_96() and div_192_96().
-Precalculated here since it is the same for all steps in the following loop */
-  ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
-  ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // f.d1 needed?
+    f.d3 = mad24(k.d3, exp75.d0, f.d2 >> 15);
+    f.d3 = mad24(k.d2, exp75.d1, f.d3);
+    f.d3 = mad24(k.d1, exp75.d2, f.d3);
+//  f.d3 = mad24(k.d0, exp75.d3, f.d3);    // exp75.d3 = 0
+    f.d2 &= 0x7FFF;
 
-  //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  //ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  ff = as_float(0x3f7ffffd) / ff;   // we rounded ff towards plus infinity, and round all other results towards zero. 
+    f.d4 = mad24(k.d4, exp75.d0, f.d3 >> 15);  // PERF: see above
+    f.d4 = mad24(k.d3, exp75.d1, f.d4);
+    f.d4 = mad24(k.d2, exp75.d2, f.d4);
+    f.d3 &= 0x7FFF;
 
-  // we need u=2^(2*bit_max)/f. As bit_max is between 60 and 90, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
-
-  tmp = 1 << (bit_max - 61);	// tmp180 = 2^(89 + bits in f)
-  
-  // tmp180.d7 = 0; tmp180.d6 = 0; tmp180.d5 = 0; tmp180.d4 = 0; tmp180.d3 = 0; tmp180.d2 = 0; tmp180.d1 = 0; tmp180.d0 = 0;
-  // PERF: as div is only used here, use all those zeros directly in there
-  //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp180.db contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
-
-  div_180_90(&u, tmp, f, ff
-#if (TRACE_KERNEL > 1)
-                  , tid
-#endif
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
-);						// u = floor(tmp180 / f)
-
+    f.d5 = mad24(k.d4, exp75.d1, f.d4 >> 15);  // PERF: see above
+    f.d5 = mad24(k.d3, exp75.d2, f.d5);
+    f.d4 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
-        u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x\n",
+        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 
-  if (bit_max > 75)  // need to distiguish how far to shift; the same branch will be taken by all threads
-  {
-    //bit_max is 76 .. 89
-    bit_max_bot  = bit_max-76;
-    bit_max_mult = 1 << (91-bit_max);
-
-    // a.d<n> = bb.d<n+5> >> bit_max_bot + bb.d<n+6> << top_bit_max
-
-    //PERF: min limit of bb? bit_max > 75 ==> bb > 2^150 ==> d0..d9=0
-    a.d0 = mad24(bb.d6, bit_max_mult, (bb.d5 >> bit_max_bot))&0x7FFF;			// a = floor(b / 2 ^ (bits_in_f - 1))
-    a.d1 = mad24(bb.d7, bit_max_mult, (bb.d6 >> bit_max_bot))&0x7FFF;
-    a.d2 = mad24(bb.d8, bit_max_mult, (bb.d7 >> bit_max_bot))&0x7FFF;
-    a.d3 = mad24(bb.d9, bit_max_mult, (bb.d8 >> bit_max_bot))&0x7FFF;
-    a.d4 = mad24(bb.da, bit_max_mult, (bb.d9 >> bit_max_bot))&0x7FFF;
-    a.d5 = mad24(bb.db, bit_max_mult, (bb.da >> bit_max_bot));
+    check_barrett15_83(initial_shifter_value, f, tid, bb, bit_max, RES);
   }
-  else
-  {
-    //bit_max is 61 .. 75
-    bit_max_bot  = bit_max-61;
-    bit_max_mult = 1 << (76-bit_max);
-
-    // a.d<n> = bb.d<n+4> >> bit_max_bot + bb.d<n+5> << top_bit_max
-
-    //PERF: min limit of bb? bit_max >= 60 ==> bb >= 2^120 ==> d0..d7=0
-    a.d0 = mad24(bb.d5, bit_max_mult, (bb.d4 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-    a.d1 = mad24(bb.d6, bit_max_mult, (bb.d5 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-    a.d2 = mad24(bb.d7, bit_max_mult, (bb.d6 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-    a.d3 = mad24(bb.d8, bit_max_mult, (bb.d7 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-    a.d4 = mad24(bb.d9, bit_max_mult, (bb.d8 >> bit_max_bot))&0x7FFF;		 	// a = b / (2^bit_max)
-    a.d5 = mad24(bb.da, bit_max_mult, (bb.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
-  }
-      // PERF: could be no_low_5
-  mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0, tmp180.d5.s0, tmp180.d4.s0);
-#endif
-
-  a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
-  a.d1 = tmp180.d7;
-  a.d2 = tmp180.d8;
-  a.d3 = tmp180.d9;
-  a.d4 = tmp180.da;
-  a.d5 = tmp180.db;
-
-  mul_90(&tmp90, a, f);							// tmp90 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: a=%x:%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x:%x (tmp)\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
-#endif
-  // bb.d0-bb.d3 are 0
-  a.d0 = (-tmp90.d0) & 0x7FFF;
-  a.d1 = (-tmp90.d1 - AS_UINT_V((a.d0 > 0) ? 1 : 0 ));
-  a.d2 = (-tmp90.d2 - AS_UINT_V((a.d1 > 0x7FFF) ? 1 : 0 ));
-  a.d3 = (-tmp90.d3 - AS_UINT_V((a.d2 > 0x7FFF) ? 1 : 0 ));
-  a.d4 = (bb.d4-tmp90.d4 - AS_UINT_V((a.d3 > 0x7FFF) ? 1 : 0 ));
-  a.d5 = (bb.d5-tmp90.d5 - AS_UINT_V((a.d4 > 0x7FFF) ? 1 : 0 ));
-  a.d1 &= 0x7FFF;
-  a.d2 &= 0x7FFF;
-  a.d3 &= 0x7FFF;
-  a.d4 &= 0x7FFF;
-  a.d5 &= 0x7FFF;
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (a)\n",
-        bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
-#endif
-    ///
-    ///// here it starts to become different between the 3 6x15bit kernels
-    ///
-  exponent<<= 32 - shiftcount;
-  while(exponent)
-  {
-    square_90_180(&b, a);						// b = a^2
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        exponent, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.db.s0, b.da.s0, b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
-#endif
-    if(exponent&0x80000000)
-    {
-      shl_180(&b);					// "optional multiply by 2" in Prime 95 documentation
-
-#if (TRACE_KERNEL > 3)
-      if (tid==TRACE_TID) printf((__constant char *)"loop: shl: %x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        b.db.s0, b.da.s0, b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
-#endif
-    }
-
-    if (bit_max > 75)  // need to distiguish how far to shift
-    {
-      a.d0 = mad24(b.d6, bit_max_mult, (b.d5 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d1 = mad24(b.d7, bit_max_mult, (b.d6 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d2 = mad24(b.d8, bit_max_mult, (b.d7 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d3 = mad24(b.d9, bit_max_mult, (b.d8 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d4 = mad24(b.da, bit_max_mult, (b.d9 >> bit_max_bot))&0x7FFF;		 	// a = b / (2^bit_max)
-      a.d5 = mad24(b.db, bit_max_mult, (b.da >> bit_max_bot));		       	// a = b / (2^bit_max)
-    }
-    else
-    {
-      a.d0 = mad24(b.d5, bit_max_mult, (b.d4 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d1 = mad24(b.d6, bit_max_mult, (b.d5 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d2 = mad24(b.d7, bit_max_mult, (b.d6 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d3 = mad24(b.d8, bit_max_mult, (b.d7 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d4 = mad24(b.d9, bit_max_mult, (b.d8 >> bit_max_bot))&0x7FFF;		 	// a = b / (2^bit_max)
-      a.d5 = mad24(b.da, bit_max_mult, (b.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
-    }
-      // PERF: could be no_low_5
-    mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0, tmp180.d5.s0, tmp180.d4.s0);
-#endif
-    a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
-    a.d1 = tmp180.d7;
-    a.d2 = tmp180.d8;
-    a.d3 = tmp180.d9;
-    a.d4 = tmp180.da;
-    a.d5 = tmp180.db;
-
-    mul_90(&tmp90, a, f);						// tmp90 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x:%x (tmp)\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
-#endif
-    // PERF: faster to compare against 0x7fff instead of b.dx?
-    a.d0 = (b.d0 - tmp90.d0) & 0x7FFF;
-    a.d1 = (b.d1 - tmp90.d1 - AS_UINT_V((a.d0 > b.d0) ? 1 : 0 ));
-    a.d2 = (b.d2 - tmp90.d2 - AS_UINT_V((a.d1 > b.d1) ? 1 : 0 ));
-    a.d3 = (b.d3 - tmp90.d3 - AS_UINT_V((a.d2 > b.d2) ? 1 : 0 ));
-    a.d4 = (b.d4 - tmp90.d4 - AS_UINT_V((a.d3 > b.d3) ? 1 : 0 ));
-    a.d5 = (b.d5 - tmp90.d5 - AS_UINT_V((a.d4 > b.d4) ? 1 : 0 ));
-    a.d1 &= 0x7FFF;
-    a.d2 &= 0x7FFF;
-    a.d3 &= 0x7FFF;
-    a.d4 &= 0x7FFF;
-    a.d5 &= 0x7FFF;
-    
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (a)\n",
-        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
-#endif
-
-    exponent+=exponent;
-  }
-
-#ifndef CHECKS_MODBASECASE
-    mod_simple_90(&tmp90, a, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                 );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
-#else
-    int limit = 6;
-    if(bit_max_90 == 2) limit = 8;					// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-    if(bit_max_90 == 3) limit = 7;					// bit_max == 66, ...
-    mod_simple_90(&tmp90, a, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                   , bit_max_90, limit, modbasecase_debug);
-#endif
-
-#ifndef CHECKS_MODBASECASE
-  a = sub_if_gte_90(tmp90,f);	// final adjustment in case a >= f
-#else
-  tmp90 = sub_if_gte_90(tmp90,f);
-  a = sub_if_gte_90(tmp90,f);
-  if( tmp90.d0 != a.d0 )  // f is odd, so it is sufficient to compare the last part
-  {
-    printf((__constant char *)"EEEEEK, final a was >= f\n");
-  }
-#endif
-
-#if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: f=%x:%x:%x:%x:%x:%x, final a = %x:%x:%x:%x:%x:%x \n",
-         f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0,
-         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
-  
-
-/* finally check if we found a factor and write the factor to RES[] */
-#if (VECTOR_SIZE == 1)
-  if( ((a.d5|a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
-  {
-/* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
-    tid=ATOMIC_INC(RES[0]);
-    if(tid<10)				/* limit to 10 factors per class */
-    {
-      RES[tid*3 + 1]=mad24(f.d5,0x8000u, f.d4);
-      RES[tid*3 + 2]=mad24(f.d3,0x8000u, f.d2);  // that's now 30 bits per int
-      RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
-    }
-  }
-#elif (VECTOR_SIZE == 2)
-  EVAL_RES_90(x)
-  EVAL_RES_90(y)
-#elif (VECTOR_SIZE == 3)
-  EVAL_RES_90(x)
-  EVAL_RES_90(y)
-  EVAL_RES_90(z)
-#elif (VECTOR_SIZE == 4)
-  EVAL_RES_90(x)
-  EVAL_RES_90(y)
-  EVAL_RES_90(z)
-  EVAL_RES_90(w)
-#elif (VECTOR_SIZE == 8)
-  EVAL_RES_90(s0)
-  EVAL_RES_90(s1)
-  EVAL_RES_90(s2)
-  EVAL_RES_90(s3)
-  EVAL_RES_90(s4)
-  EVAL_RES_90(s5)
-  EVAL_RES_90(s6)
-  EVAL_RES_90(s7)
-1
-#endif
- 
 }
 
-
-__kernel void cl_barrett15_82_gs(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
-                           const uint8 b_in, __global uint * restrict RES, const int bit_max
+__kernel void cl_barrett15_88_gs(const uint exponent, const int75_t k_base,
+                                 const __global uint * restrict bit_array,
+                                 const uint bits_to_process, __local ushort *smem,
+                                 const int shiftcount, const uint8 b_in,
+                                 __global uint * restrict RES, const int bit_max,
+                                 const uint shared_mem_allocated // only used to verify assumptions
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
          )
-/*
-shiftcount is used for precomputing without mod
-a is precomputed on host ONCE.
-
-*/
 {
-  __private int90_t exp90;
-  __private int90_v a, u, f, k;
-  __private int180_v b, tmp180;
-  __private int90_v tmp90;
-  __private float_v ff;
-  __private uint tmp, tid, bit_max_bot, bit_max_mult;
-  __private uint_v t;
-
-  // implicitely assume b > 2^60 and use the 8 fields of the uint8 for d4-db
+  __private uint     i, initial_shifter_value, total_bit_count;
+  __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
+  __private int75_v  k;
+  __private int90_v  f;
+  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint_v   tmp_v;
   __private int180_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5, b_in.s6, b_in.s7};
+  __private int75_t  exp75;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+  // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
+  total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
 
-  // exp90.d4=0;exp90.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exp to 2^29
-  exp90.d2=exponent>>29;exp90.d1=(exponent>>14)&0x7FFF;exp90.d0=(exponent<<1)&0x7FFF;	// exp90 = 2 * exponent
+// Here, all warps in our block have placed their candidates in shared memory.
+// Now we can start TFing candidates.
 
-#if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: exp=%d, x2=%x:%x:%x, b=%x:%x:%x:%x:%x:%x:%x:%x:0:0:0:0, k_base=%x:%x:%x:%x:%x, bit_max=%d\n",
-        exponent, exp90.d2, exp90.d1, exp90.d0, bb.db, bb.da, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0, bit_max);
+// Init some stuff that will be used for all k's tested  <== this makes the OpenCL compiler abort, supposed to be fixed in Cat 13.4
+// Compute factor corresponding to first sieve bit in this block.
+
+  initial_shifter_value = exponent << (32 - shiftcount);	// Initial shifter value
+
+  exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
+        shiftcount, initial_shifter_value, total_bit_count);
 #endif
+
+  for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
+  {
+    // if i == total_bit_count-1, then we may read up to VECTOR_SIZE-1 elements beyond the array (uninitialized).
+    // this can result in the same factor being reported up to VECTOR_SIZE times.
+
+    uint_v k_delta;
+
+// Get the (k - k_base) value to test
 
 #if (VECTOR_SIZE == 1)
-  t    = k_tab[tid];
+    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
 #elif (VECTOR_SIZE == 2)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-#elif (VECTOR_SIZE == 3)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
 #elif (VECTOR_SIZE == 4)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-  t.w  = k_tab[tid+3];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
 #elif (VECTOR_SIZE == 8)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
+    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
+    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
+    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
 #elif (VECTOR_SIZE == 16)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-  t.s8 = k_tab[tid+8];
-  t.s9 = k_tab[tid+9];
-  t.sa = k_tab[tid+10];
-  t.sb = k_tab[tid+11];
-  t.sc = k_tab[tid+12];
-  t.sd = k_tab[tid+13];
-  t.se = k_tab[tid+14];
-  t.sf = k_tab[tid+15];
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
+    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
+    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
+    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
+    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
+    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
+    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
+    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
+    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
+    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
+    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
 #endif
-  a.d0 = t & 0x7FFF;
-  a.d1 = t >> 15;  // t is 24 bits at most
 
-  k.d0  = mad24(a.d0, 4620u, k_base.d0);
-  k.d1  = mad24(a.d1, 4620u, k_base.d1) + (k.d0 >> 15);
-  k.d0 &= 0x7FFF;
-  k.d2  = (k.d1 >> 15) + k_base.d2;
-  k.d1 &= 0x7FFF;
-  k.d3  = (k.d2 >> 15) + k_base.d3;
-  k.d2 &= 0x7FFF;
-  k.d4  = (k.d3 >> 15) + k_base.d4;  // PERF: k.d4 = 0, normally. Can we limit k to 2^60?
-  k.d3 &= 0x7FFF;
-        
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
-#endif
-		// f = 2 * k * exp + 1
-  f.d0 = mad24(k.d0, exp90.d0, 1u);
+// Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
-  f.d1 = mad24(k.d1, exp90.d0, f.d0 >> 15);
-  f.d1 = mad24(k.d0, exp90.d1, f.d1);
-  f.d0 &= 0x7FFF;
+    k.d0 =                mad24(NUM_CLASSES, k_delta & 0x7FFF, k_base.d0);  // k_delta can exceed 2^24
+    k.d1 = (k.d0 >> 15) + mad24(NUM_CLASSES, k_delta >> 15, k_base.d1);  // k is limited to 2^64 -1
+    k.d2 = (k.d1 >> 15) + k_base.d2;
+    k.d3 = (k.d2 >> 15) + k_base.d3;
+    k.d4 = (k.d3 >> 15) + k_base.d4;
 
-  f.d2 = mad24(k.d2, exp90.d0, f.d1 >> 15);
-  f.d2 = mad24(k.d1, exp90.d1, f.d2);
-  f.d2 = mad24(k.d0, exp90.d2, f.d2);  // PERF: if we limit exp at kernel compile time to 2^29, then we can skip exp90.d2 here and above.
-  f.d1 &= 0x7FFF;
+    k.d0 &= 0x7FFF;
+    k.d1 &= 0x7FFF;
+    k.d2 &= 0x7FFF;
+    k.d3 &= 0x7FFF;
 
-  f.d3 = mad24(k.d3, exp90.d0, f.d2 >> 15);
-  f.d3 = mad24(k.d2, exp90.d1, f.d3);
-  f.d3 = mad24(k.d1, exp90.d2, f.d3);
-//  f.d3 = mad24(k.d0, exp90.d3, f.d3);    // exp90.d3 = 0
-  f.d2 &= 0x7FFF;
+    f.d0 = mad24(k.d0, exp75.d0, 1u);  // exp75 = 2*exponent ==> f = 2kp+1
 
-  f.d4 = mad24(k.d4, exp90.d0, f.d3 >> 15);  // PERF: see above
-  f.d4 = mad24(k.d3, exp90.d1, f.d4);
-  f.d4 = mad24(k.d2, exp90.d2, f.d4);
-  f.d3 &= 0x7FFF;
+    f.d1 = mad24(k.d1, exp75.d0, f.d0 >> 15);
+    f.d1 = mad24(k.d0, exp75.d1, f.d1);
+    f.d0 &= 0x7FFF;
 
-//  f.d5 = mad24(k.d5, exp90.d0, f.d4 >> 15);  // k.d5 = 0
-  f.d5 = mad24(k.d4, exp90.d1, f.d4 >> 15);
-  f.d5 = mad24(k.d3, exp90.d2, f.d5);
-  f.d4 &= 0x7FFF;
+    f.d2 = mad24(k.d2, exp75.d0, f.d1 >> 15);
+    f.d2 = mad24(k.d1, exp75.d1, f.d2);
+    f.d2 = mad24(k.d0, exp75.d2, f.d2);  // PERF: if we limit exp at kernel compile time to 2^29, then we can skip exp75.d2 here and above.
+    f.d1 &= 0x7FFF;
 
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: k_tab[%d]=%x, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x, shift=%d\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
-#endif
-/*
-ff = f as float, needed in mod_192_96() and div_192_96().
-Precalculated here since it is the same for all steps in the following loop */
-  ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
-  ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // f.d1 needed?
+    f.d3 = mad24(k.d3, exp75.d0, f.d2 >> 15);
+    f.d3 = mad24(k.d2, exp75.d1, f.d3);
+    f.d3 = mad24(k.d1, exp75.d2, f.d3);
+//  f.d3 = mad24(k.d0, exp75.d3, f.d3);    // exp75.d3 = 0
+    f.d2 &= 0x7FFF;
 
-  //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  //ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  ff = as_float(0x3f7ffffd) / ff;   // we rounded ff towards plus infinity, and round all other results towards zero. 
+    f.d4 = mad24(k.d4, exp75.d0, f.d3 >> 15);  // PERF: see above
+    f.d4 = mad24(k.d3, exp75.d1, f.d4);
+    f.d4 = mad24(k.d2, exp75.d2, f.d4);
+    f.d3 &= 0x7FFF;
 
-  // we need u=2^(2*bit_max)/f. As bit_max is between 60 and 90, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
-
-  tmp = 1 << (bit_max - 61);	// tmp180 = 2^(89 + bits in f)
-  
-  // tmp180.d7 = 0; tmp180.d6 = 0; tmp180.d5 = 0; tmp180.d4 = 0; tmp180.d3 = 0; tmp180.d2 = 0; tmp180.d1 = 0; tmp180.d0 = 0;
-  // PERF: as div is only used here, use all those zeros directly in there
-  //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp180.db contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
-
-  div_180_90(&u, tmp, f, ff
-#if (TRACE_KERNEL > 1)
-                  , tid
-#endif
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
-);						// u = floor(tmp180 / f)
-
+    f.d5 = mad24(k.d4, exp75.d1, f.d4 >> 15);  // PERF: see above
+    f.d5 = mad24(k.d3, exp75.d2, f.d5);
+    f.d4 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
-        u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x\n",
+        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 
-  if (bit_max > 75)  // need to distiguish how far to shift; the same branch will be taken by all threads
-  {
-    //bit_max is 76 .. 89
-    bit_max_bot  = bit_max-76;
-    bit_max_mult = 1 << (91-bit_max);
-
-    // a.d<n> = bb.d<n+5> >> bit_max_bot + bb.d<n+6> << top_bit_max
-
-    //PERF: min limit of bb? bit_max > 75 ==> bb > 2^150 ==> d0..d9=0
-    a.d0 = mad24(bb.d6, bit_max_mult, (bb.d5 >> bit_max_bot))&0x7FFF;			// a = floor(b / 2 ^ (bits_in_f - 1))
-    a.d1 = mad24(bb.d7, bit_max_mult, (bb.d6 >> bit_max_bot))&0x7FFF;
-    a.d2 = mad24(bb.d8, bit_max_mult, (bb.d7 >> bit_max_bot))&0x7FFF;
-    a.d3 = mad24(bb.d9, bit_max_mult, (bb.d8 >> bit_max_bot))&0x7FFF;
-    a.d4 = mad24(bb.da, bit_max_mult, (bb.d9 >> bit_max_bot))&0x7FFF;
-    a.d5 = mad24(bb.db, bit_max_mult, (bb.da >> bit_max_bot));
+    check_barrett15_88(initial_shifter_value, f, tid, bb, bit_max, RES);
   }
-  else
-  {
-    //bit_max is 61 .. 75
-    bit_max_bot  = bit_max-61;
-    bit_max_mult = 1 << (76-bit_max);
-
-    // a.d<n> = bb.d<n+4> >> bit_max_bot + bb.d<n+5> << top_bit_max
-
-    //PERF: min limit of bb? bit_max >= 60 ==> bb >= 2^120 ==> d0..d7=0
-    a.d0 = mad24(bb.d5, bit_max_mult, (bb.d4 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-    a.d1 = mad24(bb.d6, bit_max_mult, (bb.d5 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-    a.d2 = mad24(bb.d7, bit_max_mult, (bb.d6 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-    a.d3 = mad24(bb.d8, bit_max_mult, (bb.d7 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-    a.d4 = mad24(bb.d9, bit_max_mult, (bb.d8 >> bit_max_bot))&0x7FFF;		 	// a = b / (2^bit_max)
-    a.d5 = mad24(bb.da, bit_max_mult, (bb.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
-  }
-      // PERF: could be no_low_5
-  mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0, tmp180.d5.s0, tmp180.d4.s0);
-#endif
-  a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
-  a.d1 = tmp180.d7;
-  a.d2 = tmp180.d8;
-  a.d3 = tmp180.d9;
-  a.d4 = tmp180.da;
-  a.d5 = tmp180.db;
-
-  mul_90(&tmp90, a, f);							// tmp90 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: a=%x:%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x:%x (tmp)\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
-#endif
-    // all those bb.d0-bb.d3 are 0
-  a.d0 = (-tmp90.d0) & 0x7FFF;
-  a.d1 = (-tmp90.d1 - AS_UINT_V((a.d0 > 0) ? 1 : 0 ));
-  a.d2 = (-tmp90.d2 - AS_UINT_V((a.d1 > 0x7FFF) ? 1 : 0 ));
-  a.d3 = (-tmp90.d3 - AS_UINT_V((a.d2 > 0x7FFF) ? 1 : 0 ));
-  a.d4 = (bb.d4-tmp90.d4 - AS_UINT_V((a.d3 > 0x7FFF) ? 1 : 0 ));
-  a.d5 = (bb.d5-tmp90.d5 - AS_UINT_V((a.d4 > 0x7FFF) ? 1 : 0 ));
-  a.d1 &= 0x7FFF;
-  a.d2 &= 0x7FFF;
-  a.d3 &= 0x7FFF;
-  a.d4 &= 0x7FFF;
-  a.d5 &= 0x7FFF;
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (a)\n",
-        bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
-#endif
-    ///
-    ///// here it starts to become different between the 3 6x15bit kernels
-    ///
-
-  exponent<<= 32 - shiftcount;
-  while(exponent)
-  {
-    square_90_180(&b, a);						// b = a^2
-
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        exponent, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.db.s0, b.da.s0, b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
-#endif
-    if (bit_max > 75)  // need to distiguish how far to shift
-    {
-      a.d0 = mad24(b.d6, bit_max_mult, (b.d5 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d1 = mad24(b.d7, bit_max_mult, (b.d6 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d2 = mad24(b.d8, bit_max_mult, (b.d7 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d3 = mad24(b.d9, bit_max_mult, (b.d8 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d4 = mad24(b.da, bit_max_mult, (b.d9 >> bit_max_bot))&0x7FFF;		 	// a = b / (2^bit_max)
-      a.d5 = mad24(b.db, bit_max_mult, (b.da >> bit_max_bot));		       	// a = b / (2^bit_max)
-    }
-    else
-    {
-      a.d0 = mad24(b.d5, bit_max_mult, (b.d4 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d1 = mad24(b.d6, bit_max_mult, (b.d5 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d2 = mad24(b.d7, bit_max_mult, (b.d6 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d3 = mad24(b.d8, bit_max_mult, (b.d7 >> bit_max_bot))&0x7FFF;			// a = b / (2^bit_max)
-      a.d4 = mad24(b.d9, bit_max_mult, (b.d8 >> bit_max_bot))&0x7FFF;		 	// a = b / (2^bit_max)
-      a.d5 = mad24(b.da, bit_max_mult, (b.d9 >> bit_max_bot));		       	// a = b / (2^bit_max)
-    }
-      // PERF: could be no_low_5
-    mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)   
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loopl: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:%x:...\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0, tmp180.d5.s0, tmp180.d4.s0);
-#endif
-
-    a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
-    a.d1 = tmp180.d7;
-    a.d2 = tmp180.d8;
-    a.d3 = tmp180.d9;
-    a.d4 = tmp180.da;
-    a.d5 = tmp180.db;
-
-    mul_90(&tmp90, a, f);						// tmp90 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
-
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x:%x (tmp)\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
-#endif
-    a.d0 = (b.d0 - tmp90.d0) & 0x7FFF;
-    a.d1 = (b.d1 - tmp90.d1 - AS_UINT_V((a.d0 > b.d0) ? 1 : 0 ));
-    a.d2 = (b.d2 - tmp90.d2 - AS_UINT_V((a.d1 > b.d1) ? 1 : 0 ));
-    a.d3 = (b.d3 - tmp90.d3 - AS_UINT_V((a.d2 > b.d2) ? 1 : 0 ));
-    a.d4 = (b.d4 - tmp90.d4 - AS_UINT_V((a.d3 > b.d3) ? 1 : 0 ));
-    a.d5 = (b.d5 - tmp90.d5 - AS_UINT_V((a.d4 > b.d4) ? 1 : 0 ));
-    a.d1 &= 0x7FFF;
-    a.d2 &= 0x7FFF;
-    a.d3 &= 0x7FFF;
-    a.d4 &= 0x7FFF;
-    a.d5 &= 0x7FFF;
-    
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (a)\n",
-        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
-#endif
-
-    if(exponent&0x80000000)shl_90(&a);					// "optional multiply by 2" in Prime 95 documentation
-
-    exponent+=exponent;
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, a= %x:%x:%x:%x:%x:%x \n",
-        exponent, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
-  }
-
-#ifndef CHECKS_MODBASECASE
-    mod_simple_90(&tmp90, a, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                 );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
-#else
-    int limit = 6;
-    if(bit_max_90 == 2) limit = 8;					// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-    if(bit_max_90 == 3) limit = 7;					// bit_max == 66, ...
-    mod_simple_90(&tmp90, a, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                   , bit_max_90, limit, modbasecase_debug);
-#endif
-
-#ifndef CHECKS_MODBASECASE
-  a = sub_if_gte_90(tmp90,f);	// final adjustment in case a >= f
-#else
-  tmp90 = sub_if_gte_90(tmp90,f);
-  a = sub_if_gte_90(tmp90,f);
-  if( tmp90.d0 != a.d0 )  // f is odd, so it is sufficient to compare the last part
-  {
-    printf((__constant char *)"EEEEEK, final a was >= f\n");
-  }
-#endif
-
-#if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: f=%x:%x:%x:%x:%x:%x, final a = %x:%x:%x:%x:%x:%x \n",
-         f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0,
-         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
-
-/* finally check if we found a factor and write the factor to RES[] */
-#if (VECTOR_SIZE == 1)
-  if( ((a.d5|a.d4|a.d3|a.d2|a.d1)==0 && a.d0==1) )
-  {
-/* in contrast to the other kernels this barrett based kernel is only allowed for factors above 2^60 so there is no need to check for f != 1 */  
-    tid=ATOMIC_INC(RES[0]);
-    if(tid<10)				/* limit to 10 factors per class */
-    {
-      RES[tid*3 + 1]=mad24(f.d5,0x8000u, f.d4);
-      RES[tid*3 + 2]=mad24(f.d3,0x8000u, f.d2);  // that's now 30 bits per int
-      RES[tid*3 + 3]=mad24(f.d1,0x8000u, f.d0);  
-    }
-  }
-#elif (VECTOR_SIZE == 2)
-  EVAL_RES_90(x)
-  EVAL_RES_90(y)
-#elif (VECTOR_SIZE == 3)
-  EVAL_RES_90(x)
-  EVAL_RES_90(y)
-  EVAL_RES_90(z)
-#elif (VECTOR_SIZE == 4)
-  EVAL_RES_90(x)
-  EVAL_RES_90(y)
-  EVAL_RES_90(z)
-  EVAL_RES_90(w)
-#elif (VECTOR_SIZE == 8)
-  EVAL_RES_90(s0)
-  EVAL_RES_90(s1)
-  EVAL_RES_90(s2)
-  EVAL_RES_90(s3)
-  EVAL_RES_90(s4)
-  EVAL_RES_90(s5)
-  EVAL_RES_90(s6)
-  EVAL_RES_90(s7)
-#elif (VECTOR_SIZE == 16)
-  EVAL_RES_90(s0)
-  EVAL_RES_90(s1)
-  EVAL_RES_90(s2)
-  EVAL_RES_90(s3)
-  EVAL_RES_90(s4)
-  EVAL_RES_90(s5)
-  EVAL_RES_90(s6)
-  EVAL_RES_90(s7)
-  EVAL_RES_90(s8)
-  EVAL_RES_90(s9)
-  EVAL_RES_90(sa)
-  EVAL_RES_90(sb)
-  EVAL_RES_90(sc)
-  EVAL_RES_90(sd)
-  EVAL_RES_90(se)
-  EVAL_RES_90(sf)
-#endif
- 
 }
 #endif

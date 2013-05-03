@@ -403,16 +403,22 @@ void print_result_line(mystuff_t *mystuff, int factorsfound)
     if((mystuff->mode == MODE_NORMAL) && (mystuff->stats.class_counter < 960))
 #endif
     {
-      sprintf(string, "found %d factor%s for M%u from 2^%2d to 2^%2d (partially tested) [mfaktc %s %s]", factorsfound, (factorsfound > 1) ? "s" : "", mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, MFAKTO_VERSION, mystuff->stats.kernelname);
+      sprintf(string, "found %d factor%s for M%u from 2^%2d to 2^%2d (partially tested) [%s %s_%u]",
+         factorsfound, (factorsfound > 1) ? "s" : "", mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage,
+         MFAKTO_VERSION, mystuff->stats.kernelname, mystuff->vectorsize);
     }
     else
     {
-      sprintf(string, "found %d factor%s for M%u from 2^%2d to 2^%2d [mfaktc %s %s]", factorsfound, (factorsfound > 1) ? "s" : "", mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, MFAKTO_VERSION, mystuff->stats.kernelname);
+      sprintf(string, "found %d factor%s for M%u from 2^%2d to 2^%2d [%s %s_%u]",
+        factorsfound, (factorsfound > 1) ? "s" : "", mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage,
+        MFAKTO_VERSION, mystuff->stats.kernelname, mystuff->vectorsize);
     }
   }
   else
   {
-    sprintf(string, "no factor for M%u from 2^%d to 2^%d [mfaktc %s %s]", mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, MFAKTO_VERSION, mystuff->stats.kernelname);
+    sprintf(string, "no factor for M%u from 2^%d to 2^%d [%s %s_%u]",
+      mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage,
+      MFAKTO_VERSION, mystuff->stats.kernelname, mystuff->vectorsize);
   }
 
   if(mystuff->mode != MODE_SELFTEST_SHORT)
@@ -454,9 +460,15 @@ void print_factor(mystuff_t *mystuff, int factor_number, char *factor)
     if(mystuff->mode == MODE_NORMAL)
     {
 #ifndef MORE_CLASSES      
-      fprintf(resultfile, "%sM%u has a factor: %s [TF:%d:%d%s:mfaktc %s %s]\n", UID, mystuff->exponent, factor, mystuff->bit_min, mystuff->bit_max_stage, ((mystuff->stopafterfactor == 2) && (mystuff->stats.class_counter <  96)) ? "*" : "" , MFAKTO_VERSION, mystuff->stats.kernelname);
+      fprintf(resultfile, "%sM%u has a factor: %s [TF:%d:%d%s:%s %s_%u]\n",
+        UID, mystuff->exponent, factor, mystuff->bit_min, mystuff->bit_max_stage,
+        ((mystuff->stopafterfactor == 2) && (mystuff->stats.class_counter <  96)) ? "*" : "" ,
+        MFAKTO_VERSION, mystuff->stats.kernelname, mystuff->vectorsize);
 #else      
-      fprintf(resultfile, "%sM%u has a factor: %s [TF:%d:%d%s:mfaktc %s %s]\n", UID, mystuff->exponent, factor, mystuff->bit_min, mystuff->bit_max_stage, ((mystuff->stopafterfactor == 2) && (mystuff->stats.class_counter < 960)) ? "*" : "" , MFAKTO_VERSION, mystuff->stats.kernelname);
+      fprintf(resultfile, "%sM%u has a factor: %s [TF:%d:%d%s:%s %s_%u]\n",
+        UID, mystuff->exponent, factor, mystuff->bit_min, mystuff->bit_max_stage,
+        ((mystuff->stopafterfactor == 2) && (mystuff->stats.class_counter < 960)) ? "*" : "" ,
+        MFAKTO_VERSION, mystuff->stats.kernelname, mystuff->vectorsize);
 #endif
     }
   }
