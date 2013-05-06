@@ -839,7 +839,6 @@ Precalculated here since it is the same for all steps in the following loop */
   mod_simple_even_75_and_check_big_factor75(a, f, ff, RES);
 }
 
-#define TRACE_KERNEL 6
 void check_barrett15_70(uint shifter, const int75_v f, const uint tid, const int150_t bb, const uint bit_max, __global uint * restrict RES)
 {
   __private int75_v a, u;
@@ -932,7 +931,7 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d3 = mad24(b.d8, bit_max75_mult, (b.d7 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
     a.d4 = mad24(b.d9, bit_max75_mult, (b.d8 >> bit_max_60));       			// a = b / (2^bit_max)
 
-    mul_75_150_no_low5_big(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
+    mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
@@ -979,7 +978,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
   }
 
-  mod_simple_even_75_and_check_big_factor75(a, f, ff, RES);
+  mod_simple_75_and_check_big_factor75(a, f, ff, RES);
 }
 
 
