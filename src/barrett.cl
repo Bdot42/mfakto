@@ -953,7 +953,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
     shifter+=shifter;
   }
-  mod_simple_96_and_check_big_factor96(a, f, ff, RES);
+  mod_simple_even_96_and_check_big_factor96(a, f, ff, RES);
 }
 
 /*
@@ -1218,7 +1218,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
     shifter+=shifter;
   }
-  mod_simple_96_and_check_big_factor96(tmp96, f, ff, RES);
+  mod_simple_even_96_and_check_big_factor96(tmp96, f, ff, RES);
 }
 
 void check_barrett32_87(uint shifter, const int96_v f, const uint tid, const int192_t bb, const uint bit_max65, __global uint * restrict RES)
@@ -1340,7 +1340,7 @@ Precalculated here since it is the same for all steps in the following loop */
     }
     shifter+=shifter;
   }
-  mod_simple_96_and_check_big_factor96(a, f, ff, RES);
+  mod_simple_even_96_and_check_big_factor96(a, f, ff, RES);
 }
 
 void check_barrett32_88(uint shifter, const int96_v f, const uint tid, const int192_t bb, const uint bit_max65, __global uint * restrict RES)
@@ -1552,7 +1552,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x (b)\n",
-        exp, a.d2.s0, a.d1.s0, a.d0.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
     a.d0 = (b.d2 >> bit_max65) + (b.d3 << bit_max65_32); // a = b / (2 ^ (bits_in_f - 1)), a is at most 95 bits
     a.d1 = (b.d3 >> bit_max65) + (b.d4 << bit_max65_32); // this here is the reason bit_max needs to be 66 at least:
@@ -1605,7 +1605,7 @@ Precalculated here since it is the same for all steps in the following loop */
         shifter, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
   }
-  mod_simple_96_and_check_big_factor96(tmp96, f, ff, RES);
+  mod_simple_even_96_and_check_big_factor96(tmp96, f, ff, RES);
 }
 
 /*
@@ -1740,8 +1740,8 @@ __kernel void cl_barrett32_87(__private uint exponent, const int96_t k_base, con
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
-        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87: tid=%d, f=%x:%x:%x, shift=%d\n",
+        tid, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
   check_barrett32_87(exponent << (32 - shiftcount), f, tid, bb, bit_max64-1, RES);
@@ -1772,8 +1772,8 @@ __kernel void cl_barrett32_88(__private uint exponent, const int96_t k_base, con
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
-        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88: tid=%d, f=%x:%x:%x, shift=%d\n",
+        tid, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
   check_barrett32_88(exponent << (32 - shiftcount), f, tid, bb, bit_max64-1, RES);
@@ -1804,8 +1804,8 @@ __kernel void cl_barrett32_92(__private uint exponent, const int96_t k_base, con
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92: k_tab[%d]=%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
-        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92: tid=%d, f=%x:%x:%x, shift=%d\n",
+        tid, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
   check_barrett32_92(exponent << (32 - shiftcount), f, tid, bb, bit_max64-1, RES);
 }
@@ -1924,9 +1924,9 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_76_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i-256, smem[i-256], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_76_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
+        i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
     if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_76_gs: tid=%d, kdelta x: %d, y: %d\n",
       lid, k_delta.x, k_delta.y);
 #endif
@@ -1936,10 +1936,10 @@ a is precomputed on host ONCE.
     f.d1 = amd_bitalign(f.d1, f.d0, 31);
     f.d0 = (f.d0 << 1) + 1;
 
-#if (TRACE_KERNEL > 0)
-    if (lid==TRACE_TID || get_group_id(0) == 4703)
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID)
        printf((__constant char *)"cl_barrett32_76_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i-256, smem[i-256], i, smem[i], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+        lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif
 
     check_barrett32_76(initial_shifter_value, f, tid, bb, RES);
@@ -2050,9 +2050,9 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i-256, smem[i-256], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
+        i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
     if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_77_gs: tid=%d, kdelta x: %d, y: %d\n",
       lid, k_delta.x, k_delta.y);
 #endif
@@ -2062,10 +2062,10 @@ a is precomputed on host ONCE.
     f.d1 = amd_bitalign(f.d1, f.d0, 31);
     f.d0 = (f.d0 << 1) + 1;
 
-#if (TRACE_KERNEL > 0)
-    if (lid==TRACE_TID || get_group_id(0) == 4703)
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID)
        printf((__constant char *)"cl_barrett32_77_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i-256, smem[i-256], i, smem[i], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+        lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif
 
     check_barrett32_77(initial_shifter_value, f, tid, bb, RES);
@@ -2176,9 +2176,9 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i-256, smem[i-256], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
+        i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
     if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_79_gs: tid=%d, kdelta x: %d, y: %d\n",
       lid, k_delta.x, k_delta.y);
 #endif
@@ -2188,10 +2188,10 @@ a is precomputed on host ONCE.
     f.d1 = amd_bitalign(f.d1, f.d0, 31);
     f.d0 = (f.d0 << 1) + 1;
 
-#if (TRACE_KERNEL > 0)
-    if (lid==TRACE_TID || get_group_id(0) == 4703)
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID)
        printf((__constant char *)"cl_barrett32_79_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i-256, smem[i-256], i, smem[i], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+        lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif
 
     check_barrett32_79(initial_shifter_value, f, tid, bb, RES);
@@ -2302,9 +2302,9 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i-256, smem[i-256], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
+        i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
     if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_87_gs: tid=%d, kdelta x: %d, y: %d\n",
       lid, k_delta.x, k_delta.y);
 #endif
@@ -2314,10 +2314,10 @@ a is precomputed on host ONCE.
     f.d1 = amd_bitalign(f.d1, f.d0, 31);
     f.d0 = (f.d0 << 1) + 1;
 
-#if (TRACE_KERNEL > 0)
-    if (lid==TRACE_TID || get_group_id(0) == 4703)
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID)
        printf((__constant char *)"cl_barrett32_87_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i-256, smem[i-256], i, smem[i], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+        lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif
 
     check_barrett32_87(initial_shifter_value, f, tid, bb, bit_max64-1, RES);
@@ -2428,9 +2428,9 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i-256, smem[i-256], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
+        i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
     if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_88_gs: tid=%d, kdelta x: %d, y: %d\n",
       lid, k_delta.x, k_delta.y);
 #endif
@@ -2441,9 +2441,9 @@ a is precomputed on host ONCE.
     f.d0 = (f.d0 << 1) + 1;
 
 #if (TRACE_KERNEL > 0)
-    if (lid==TRACE_TID || get_group_id(0) == 4703)
+    if (tid==TRACE_TID)
        printf((__constant char *)"cl_barrett32_88_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i-256, smem[i-256], i, smem[i], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+        lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif
 
     check_barrett32_88(initial_shifter_value, f, tid, bb, bit_max64-1, RES);
@@ -2554,9 +2554,9 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i-256, smem[i-256], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
+        i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
     if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_92_gs: tid=%d, kdelta x: %d, y: %d\n",
       lid, k_delta.x, k_delta.y);
 #endif
@@ -2566,10 +2566,10 @@ a is precomputed on host ONCE.
     f.d1 = amd_bitalign(f.d1, f.d0, 31);
     f.d0 = (f.d0 << 1) + 1;
 
-#if (TRACE_KERNEL > 0)
-    if (lid==TRACE_TID || get_group_id(0) == 4703)
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID || get_group_id(0) == 4703)
        printf((__constant char *)"cl_barrett32_92_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i-256, smem[i-256], i, smem[i], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+        lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif
 
     check_barrett32_92(initial_shifter_value, f, tid, bb, bit_max64-1, RES);

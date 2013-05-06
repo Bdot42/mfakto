@@ -42,7 +42,7 @@ Version 0.13
 #define WA_FOR_CATALYST11_10_BUG
 
 // TRACE_KERNEL: higher is more trace, 0-5 currently used
-#define TRACE_KERNEL 0
+#define TRACE_KERNEL 2
 
 // If above tracing is on, only the thread with the ID below will trace
 #define TRACE_TID 0
@@ -254,6 +254,24 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
         r.d5.s0, r.d4.s0, r.d3.s0, r.d2.s0, r.d1.s0, r.d0.s0);
 #endif
 
+  int75_v a75, b75;
+  int150_v r75;
+
+  a75.d0=0x100a;
+  a75.d1=0x100a;
+  a75.d2=0x0001;
+  a75.d3=0x100a;
+  a75.d4=0x10001;
+  b75.d0=0x3000;
+  b75.d1=0x3000;
+  b75.d2=0x3000;
+  b75.d3=0x3000;
+  b75.d4=0x3000;
+
+  mul_75_150_no_low5_big(&r75, a75, b75);
+  printf("a=%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x:0:0:0:0\n",
+       a75.d4.s0, a75.d3.s0, a75.d2.s0, a75.d1.s0, a75.d0.s0, b75.d4.s0, b75.d3.s0, b75.d2.s0, b75.d1.s0, b75.d0.s0,
+       r75.d9.s0, r75.d8.s0, r75.d7.s0, r75.d6.s0, r75.d5.s0, r75.d4.s0);
 
   f=tid+1; // let the reported results start with 1
   if (1 == 1)

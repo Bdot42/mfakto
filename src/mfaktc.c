@@ -743,7 +743,7 @@ RET_ERROR we might have a serios problem
   int f_class, selftests_to_run;
   int retval=1, ind;
   enum GPUKernels kernels[UNKNOWN_KERNEL], kernel_index;
-  unsigned int index[] = {    46, 1518, 2,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+  unsigned int index[] = {    30,  25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
                              70,   72,   73,  82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
                            1547, 1552, 1556, 1557    // some factors below 2^95 (test 95 bit kernel)
@@ -787,7 +787,7 @@ RET_ERROR we might have a serios problem
 
     if (mystuff->gpu_sieving == 0)
     {
-      for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index)
+      for (kernel_index = _63BIT_MUL24; kernel_index <= BARRETT70_MUL15 /* < UNKNOWN_KERNEL*/; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }
@@ -798,7 +798,8 @@ RET_ERROR we might have a serios problem
     }
     else
     {
-      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT82_MUL15_GS; ++kernel_index)
+//      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT82_MUL15_GS; ++kernel_index)
+      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT70_MUL15_GS; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }
