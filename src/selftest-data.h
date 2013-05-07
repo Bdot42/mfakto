@@ -30,6 +30,9 @@ typedef struct _test_set
 
 static test_set st_data[] =
 {
+  // test failure of 82. 83, 88-bit kernels:
+    { 51027377, 76, 762832516479103ULL },   // M51027377 has a factor: 77850684812475802805663 (76.04 Bits)
+
 // generated out of the previous header file by 
 // sed -e s'/^exp\[[ 0-9]*\]=/  { /' -e s'/; bit_min\[[ 0-9]*\]=/, /'  -e s'/; k\[[ 0-9]*\]=/, /' -e s'/;/ },  /' st_data  >st_data.h
 //

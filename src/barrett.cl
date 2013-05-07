@@ -1153,12 +1153,12 @@ Precalculated here since it is the same for all steps in the following loop */
                );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
 #else
   int limit = 6;
-  if(bit_max64 == 15) limit = 9;					// bit_max == 79, due to decreased accuracy of mul_96_192_no_low3() above we need a higher threshold
+  if(bit_max65 == 15) limit = 9;					// bit_max == 79, due to decreased accuracy of mul_96_192_no_low3() above we need a higher threshold
   mod_simple_96(&a, tmp96, f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
-                   , 79 - 64, limit << (15 - bit_max64), modbasecase_debug);	// limit is 6 * 2^(79 - bit_max)
+                   , 79 - 64, limit << (14 - bit_max65), modbasecase_debug);	// limit is 6 * 2^(79 - bit_max)
 #endif
 
 #if (TRACE_KERNEL > 2)
@@ -1535,13 +1535,13 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #else
   int limit = 6;
-  if(bit_max64 == 1) limit = 8;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-  if(bit_max64 == 2) limit = 7;						// bit_max == 66, ...
+  if(bit_max65 == 1) limit = 8;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
+  if(bit_max65 == 2) limit = 7;						// bit_max == 66, ...
   mod_simple_96(&a, tmp96, f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
-                   , bit_max64, limit, modbasecase_debug);
+                   , bit_max65, limit, modbasecase_debug);
 #endif
 
 #if (TRACE_KERNEL > 2)
@@ -1614,7 +1614,7 @@ Precalculated here since it is the same for all steps in the following loop */
  * shiftcount is used for precomputing without mod
  * b is precomputed on host ONCE.
  *
- * bit_max64 is bit_max - 64 (used in the "big" kernels only)
+ * bit_max65 is bit_max - 65 (used in the "big" kernels only)
  */
 
 #ifndef CL_GPU_SIEVE
@@ -1625,7 +1625,7 @@ __kernel void cl_barrett32_76(__private uint exponent, const int96_t k_base, con
 #else
                            const __private int192_t bb,
 #endif
-                           __global uint * restrict RES, const int bit_max64
+                           __global uint * restrict RES, const int bit_max65
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
@@ -1657,7 +1657,7 @@ __kernel void cl_barrett32_77(__private uint exponent, const int96_t k_base, con
 #else
                            const __private int192_t bb,
 #endif
-                           __global uint * restrict RES, const int bit_max64
+                           __global uint * restrict RES, const int bit_max65
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
@@ -1689,7 +1689,7 @@ __kernel void cl_barrett32_79(__private uint exponent, const int96_t k_base, con
 #else
                            __private int192_t bb,
 #endif
-                           __global uint * restrict RES, const int bit_max64
+                           __global uint * restrict RES, const int bit_max65
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
@@ -1721,7 +1721,7 @@ __kernel void cl_barrett32_87(__private uint exponent, const int96_t k_base, con
 #else
                            __private int192_t bb,
 #endif
-                           __global uint * restrict RES, const int bit_max64
+                           __global uint * restrict RES, const int bit_max65
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
@@ -1744,7 +1744,7 @@ __kernel void cl_barrett32_87(__private uint exponent, const int96_t k_base, con
         tid, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
-  check_barrett32_87(exponent << (32 - shiftcount), f, tid, bb, bit_max64-1, RES);
+  check_barrett32_87(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES);
 }
 
 __kernel void cl_barrett32_88(__private uint exponent, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
@@ -1753,7 +1753,7 @@ __kernel void cl_barrett32_88(__private uint exponent, const int96_t k_base, con
 #else
                            __private int192_t bb,
 #endif
-                           __global uint * restrict RES, const int bit_max64
+                           __global uint * restrict RES, const int bit_max65
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
@@ -1776,7 +1776,7 @@ __kernel void cl_barrett32_88(__private uint exponent, const int96_t k_base, con
         tid, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
-  check_barrett32_88(exponent << (32 - shiftcount), f, tid, bb, bit_max64-1, RES);
+  check_barrett32_88(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES);
 }
 
 __kernel void cl_barrett32_92(__private uint exponent, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
@@ -1785,7 +1785,7 @@ __kernel void cl_barrett32_92(__private uint exponent, const int96_t k_base, con
 #else
                            __private int192_t bb,
 #endif
-                           __global uint * restrict RES, const int bit_max64
+                           __global uint * restrict RES, const int bit_max65
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
 #endif
@@ -1807,7 +1807,7 @@ __kernel void cl_barrett32_92(__private uint exponent, const int96_t k_base, con
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92: tid=%d, f=%x:%x:%x, shift=%d\n",
         tid, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
-  check_barrett32_92(exponent << (32 - shiftcount), f, tid, bb, bit_max64-1, RES);
+  check_barrett32_92(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES);
 }
 
 #else
@@ -1829,7 +1829,7 @@ __kernel void cl_barrett32_76_gs(__private uint exponent, const int96_t k_base,
 #else
                                  __private int192_t bb,
 #endif
-                                 __global uint * restrict RES, const int bit_max64,
+                                 __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
@@ -1955,7 +1955,7 @@ __kernel void cl_barrett32_77_gs(__private uint exponent, const int96_t k_base,
 #else
                                  __private int192_t bb,
 #endif
-                                 __global uint * restrict RES, const int bit_max64,
+                                 __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
@@ -2081,7 +2081,7 @@ __kernel void cl_barrett32_79_gs(__private uint exponent, const int96_t k_base,
 #else
                                  __private int192_t bb,
 #endif
-                                 __global uint * restrict RES, const int bit_max64,
+                                 __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
@@ -2207,7 +2207,7 @@ __kernel void cl_barrett32_87_gs(__private uint exponent, const int96_t k_base,
 #else
                                  __private int192_t bb,
 #endif
-                                 __global uint * restrict RES, const int bit_max64,
+                                 __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
@@ -2320,7 +2320,7 @@ a is precomputed on host ONCE.
         lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif
 
-    check_barrett32_87(initial_shifter_value, f, tid, bb, bit_max64-1, RES);
+    check_barrett32_87(initial_shifter_value, f, tid, bb, bit_max65, RES);
   }
 }
 
@@ -2333,7 +2333,7 @@ __kernel void cl_barrett32_88_gs(__private uint exponent, const int96_t k_base,
 #else
                                  __private int192_t bb,
 #endif
-                                 __global uint * restrict RES, const int bit_max64,
+                                 __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
@@ -2446,7 +2446,7 @@ a is precomputed on host ONCE.
         lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif
 
-    check_barrett32_88(initial_shifter_value, f, tid, bb, bit_max64-1, RES);
+    check_barrett32_88(initial_shifter_value, f, tid, bb, bit_max65, RES);
   }
 }
 
@@ -2459,7 +2459,7 @@ __kernel void cl_barrett32_92_gs(__private uint exponent, const int96_t k_base,
 #else
                                  __private int192_t bb,
 #endif
-                                 __global uint * restrict RES, const int bit_max64,
+                                 __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
 #ifdef CHECKS_MODBASECASE
          , __global uint * restrict modbasecase_debug
@@ -2572,7 +2572,7 @@ a is precomputed on host ONCE.
         lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif
 
-    check_barrett32_92(initial_shifter_value, f, tid, bb, bit_max64-1, RES);
+    check_barrett32_92(initial_shifter_value, f, tid, bb, bit_max65, RES);
   }
 }
 #endif

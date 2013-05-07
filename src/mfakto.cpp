@@ -1828,7 +1828,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   }
 #ifdef DETAILED_INFO
     printf("run_gs_kernel15: b=%x:%x:%x:%x:%x:%x:%x:%x, shift=%d\n",
-      b_in.s[0], b_in.s[1], b_in.s[2], b_in.s[3], b_in.s[4], b_in.s[5], b_in.s[6], b_in.s[7], shiftcount);
+      b_in.s[7], b_in.s[6], b_in.s[5], b_in.s[4], b_in.s[3], b_in.s[2], b_in.s[1], b_in.s[0], shiftcount);
 #endif
 
   // now the params that change everytime
@@ -1990,7 +1990,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   		return 1;
   	}
 
-    cl_uint tmp = mystuff.bit_max_stage - 64;
+    cl_uint tmp = mystuff.bit_max_stage - 65;
 
     status = clSetKernelArg(kernel, 
                     8, 
@@ -1998,7 +1998,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&tmp);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_max64)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_max65)\n";
   		return 1;
   	}
 
