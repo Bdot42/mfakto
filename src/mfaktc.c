@@ -150,230 +150,201 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
     /* sorted list of all kernels per GPU type, fastest first */
     {
 /*  GPU_AUTO,   */  
-      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
-      BARRETT70_MUL15,  //                   240M/s  vec=4
-      BARRETT71_MUL15,  //                   226M/s  vec=4
-      BARRETT77_MUL32,  //                   203M/s  vec=2
-      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
-      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
-      BARRETT92_MUL32,
-      BARRETT88_MUL32,
-      BARRETT87_MUL32,
-      _71BIT_MUL24,     // 258M/s            130M/s
-      BARRETT79_MUL32,  // 255M/s            128M/s
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-
+      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
+      MG62,             // "cl_mg_62"        (158.62 M/s)
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_VLIW4,  */
-      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
-      BARRETT70_MUL15,  //                   240M/s  vec=4
-      BARRETT71_MUL15,  //                   226M/s  vec=4
-      BARRETT77_MUL32,  //                   203M/s  vec=2
-      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
-      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
-      BARRETT92_MUL32,
-      BARRETT88_MUL32,
-      BARRETT87_MUL32,
-      _71BIT_MUL24,     // 258M/s            130M/s
-      BARRETT79_MUL32,  // 255M/s            128M/s
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-
+      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
+      MG62,             // "cl_mg_62"        (158.62 M/s)
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_VLIW5,  */
-      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
-      BARRETT70_MUL15,  //                   240M/s  vec=4
-      BARRETT71_MUL15,  //                   226M/s  vec=4
-      BARRETT77_MUL32,  //                   203M/s  vec=2
-      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
-      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
-      BARRETT92_MUL32,
-      BARRETT88_MUL32,
-      BARRETT87_MUL32,
-      _71BIT_MUL24,     // 258M/s            130M/s
-      BARRETT79_MUL32,  // 255M/s            128M/s
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-
+      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
+      MG62,             // "cl_mg_62"        (158.62 M/s)
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
-/*  GPU_GCN,    */
-      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
-      BARRETT70_MUL15,  //                   240M/s  vec=4
-      BARRETT71_MUL15,  //                   226M/s  vec=4
-      BARRETT77_MUL32,  //                   203M/s  vec=2
-      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
-      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
-      BARRETT92_MUL32,
-      BARRETT88_MUL32,
-      BARRETT87_MUL32,
-      _71BIT_MUL24,     // 258M/s            130M/s
-      BARRETT79_MUL32,  // 255M/s            128M/s
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-      /*// 7850@975MHz, v=2 / v=4
-          if (st_data[ind].bit_min <= 63)                                    kernels[j++] = _63BIT_MUL24;      // 168.0
-    if ((st_data[ind].bit_min >= 61) && (st_data[ind].bit_min < 72))   kernels[j++] = _71BIT_MUL24;      // 178.2 / 176.0
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 76))   kernels[j++] = BARRETT76_MUL32;   // 259.7 / 259.1
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 77))   kernels[j++] = BARRETT77_MUL32;   // 251.1 / 248.0
-    if ((st_data[ind].bit_min >= 64) && (st_data[ind].bit_min < 79))   kernels[j++] = BARRETT79_MUL32;   // 221.9 / 221.3
-    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 87))   kernels[j++] = BARRETT87_MUL32;   // 228.0 / 227.3
-    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL32;   // 219.9 / 217.6
-    if ((st_data[ind].bit_min >= 65) && (st_data[ind].bit_min < 92))   kernels[j++] = BARRETT92_MUL32;   // 198.4 / 197.8
-    if ((st_data[ind].bit_min >= 63) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT70_MUL24;   // 210.5 / 204.9
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 69))   kernels[j++] = BARRETT69_MUL15;   // 360.0 / 354.1
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 69))   kernels[j++] = BARRETT70_MUL15;   // 360.0 / 354.2
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 70))   kernels[j++] = BARRETT71_MUL15;   // 335.1 / 332.0
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 73))   kernels[j++] = BARRETT73_MUL15;   // 294.6 / 291.4
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 82))   kernels[j++] = BARRETT82_MUL15;   // 261.4 / 202.7
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 83))   kernels[j++] = BARRETT83_MUL15;   // 244.8 / 183.1
-    if ((st_data[ind].bit_min >= 60) && (st_data[ind].bit_min < 88))   kernels[j++] = BARRETT88_MUL15;   // 219.5 / 169.6
-    if ((st_data[ind].bit_min >= 10) && (st_data[ind].bit_min < 62))   kernels[j++] = MG62;              // 154.0 /  53.5
-    if ((st_data[ind].bit_min >= 74) && (st_data[ind].bit_min < 89))   kernels[j++] = MG88;              // 163.8 /  57.4
-*/
-
+/*  GPU_GCN  (7850@1050MHz, v=2)  */
+      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
+      MG62,             // "cl_mg_62"        (158.62 M/s)
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_CPU,    */
-      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
-      BARRETT70_MUL15,  //                   240M/s  vec=4
-      BARRETT71_MUL15,  //                   226M/s  vec=4
-      BARRETT77_MUL32,  //                   203M/s  vec=2
-      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
-      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
-      BARRETT92_MUL32,
-      BARRETT88_MUL32,
-      BARRETT87_MUL32,
-      _71BIT_MUL24,     // 258M/s            130M/s
-      BARRETT79_MUL32,  // 255M/s            128M/s
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-
+      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
+      MG62,             // "cl_mg_62"        (158.62 M/s)
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_APU,    */
-      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
-      BARRETT70_MUL15,  //                   240M/s  vec=4
-      BARRETT71_MUL15,  //                   226M/s  vec=4
-      BARRETT77_MUL32,  //                   203M/s  vec=2
-      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
-      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
-      BARRETT92_MUL32,
-      BARRETT88_MUL32,
-      BARRETT87_MUL32,
-      _71BIT_MUL24,     // 258M/s            130M/s
-      BARRETT79_MUL32,  // 255M/s            128M/s
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-
+      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
+      MG62,             // "cl_mg_62"        (158.62 M/s)
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_NVIDIA, */
-      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
-      BARRETT70_MUL15,  //                   240M/s  vec=4
-      BARRETT71_MUL15,  //                   226M/s  vec=4
-      BARRETT77_MUL32,  //                   203M/s  vec=2
-      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
-      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
-      BARRETT92_MUL32,
-      BARRETT88_MUL32,
-      BARRETT87_MUL32,
-      _71BIT_MUL24,     // 258M/s            130M/s
-      BARRETT79_MUL32,  // 255M/s            128M/s
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-
+      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
+      MG62,             // "cl_mg_62"        (158.62 M/s)
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_INTEL,  */
-      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
-      BARRETT70_MUL15,  //                   240M/s  vec=4
-      BARRETT71_MUL15,  //                   226M/s  vec=4
-      BARRETT77_MUL32,  //                   203M/s  vec=2
-      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
-      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
-      BARRETT92_MUL32,
-      BARRETT88_MUL32,
-      BARRETT87_MUL32,
-      _71BIT_MUL24,     // 258M/s            130M/s
-      BARRETT79_MUL32,  // 255M/s            128M/s
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-
+      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
+      MG62,             // "cl_mg_62"        (158.62 M/s)
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_UNKNOWN */
-      BARRETT69_MUL15,  //                   244M/s  vec=4  on HD5770
-      BARRETT70_MUL15,  //                   240M/s  vec=4
-      BARRETT71_MUL15,  //                   226M/s  vec=4
-      BARRETT77_MUL32,  //                   203M/s  vec=2
-      BARRETT73_MUL15,  // 288M/s            196M/s  vec=4
-      BARRETT70_MUL24,  // 321M/s on HD5870, 183M/s  vec=4
-      BARRETT92_MUL32,
-      BARRETT88_MUL32,
-      BARRETT87_MUL32,
-      _71BIT_MUL24,     // 258M/s            130M/s
-      BARRETT79_MUL32,  // 255M/s            128M/s
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-      _63BIT_MUL24,     // 236M/s
-      BARRETT92_MUL32,  // 205M/s            103M/s
-      MG62,
-      MG88,
-
+      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
+      MG62,             // "cl_mg_62"        (158.62 M/s)
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL }
     
   };
@@ -787,7 +758,7 @@ RET_ERROR we might have a serios problem
 
     if (mystuff->gpu_sieving == 0)
     {
-      for (kernel_index = _63BIT_MUL24; kernel_index <= BARRETT70_MUL15 /* < UNKNOWN_KERNEL*/; ++kernel_index)
+      for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }
@@ -798,8 +769,7 @@ RET_ERROR we might have a serios problem
     }
     else
     {
-//      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT82_MUL15_GS; ++kernel_index)
-      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT70_MUL15_GS; ++kernel_index)
+      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT82_MUL15_GS; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }
