@@ -192,7 +192,7 @@ int init_CLstreams(void)
 	  	return 1;
 	  }
   }
-  if( (mystuff.h_RES = (cl_uint *) malloc(32 * sizeof(cl_uint))) == NULL )
+  if( (mystuff.h_RES = (cl_uint *) malloc(36 * sizeof(cl_uint))) == NULL )  // only 32 uints required, but OpenCL libs read&write after that (valgrind error)
   {
     printf("ERROR: malloc(h_RES) failed\n");
     return 1;
@@ -2476,7 +2476,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               k_base.d2 = (k_min_grid[i] >> 30) & 0x7FFF;
               k_base.d3 = (k_min_grid[i] >> 45) & 0x7FFF;
               k_base.d4 =  k_min_grid[i] >> 60;
-              status = run_kernel15(kernel_info[use_kernel].kernel, mystuff->exponent, k_base, i, b_in, mystuff->d_RES, shiftcount, mystuff->bit_max_stage);
+              status = run_kernel15(kernel_info[use_kernel].kernel, mystuff->exponent, k_base, i, b_in, mystuff->d_RES, shiftcount, mystuff->bit_max_stage-65);
             }
             else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == MG62))
             {
@@ -2484,7 +2484,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               k.d0 = (cl_uint) k_min_grid[i];
               k.d1 = k_min_grid[i] >> 32;
               k.d2 = 0;
-              status = run_barrett_kernel32(kernel_info[use_kernel].kernel, mystuff->exponent, k, i, b_192, mystuff->d_RES, shiftcount, mystuff->bit_min-63);
+              status = run_barrett_kernel32(kernel_info[use_kernel].kernel, mystuff->exponent, k, i, b_192, mystuff->d_RES, shiftcount, mystuff->bit_max_stage-65);
             }
             else
             {
