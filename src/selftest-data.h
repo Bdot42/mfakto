@@ -30,6 +30,9 @@ typedef struct _test_set
 
 static test_set st_data[] =
 {
+  // 0.13pre4 -st2 failure on Cayman:
+  { 597345241, 63, 9440112356},   // factor: 11278012380723795593
+
 // generated out of the previous header file by 
 // sed -e s'/^exp\[[ 0-9]*\]=/  { /' -e s'/; bit_min\[[ 0-9]*\]=/, /'  -e s'/; k\[[ 0-9]*\]=/, /' -e s'/;/ },  /' st_data  >st_data.h
 //

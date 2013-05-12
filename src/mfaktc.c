@@ -215,23 +215,23 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
-/*  GPU_GCN  (7850@1050MHz, v=2)  */
-      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s)
-      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s)
-      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s)
-      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s)
-      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s)
-      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s)
-      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s)
-      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s)
-      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s)
-      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s)
-      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s)
-      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
-      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
-      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
-      MG62,             // "cl_mg_62"        (158.62 M/s)
+/*  GPU_GCN  (7850@1050MHz, v=2) / (7770@1100MHz)*/
+      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s) / (259.96 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s) / (259.69 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s) / (241.50 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s) / (212.96 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s) / (188.74 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s) / (186.72 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s) / (180.93 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s) / (176.79 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s) / (164.12 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s) / (159.38 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s) / (158.46 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s) / (158.22 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s) / (149.63 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s) / (142.61 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s) / (132.38 M/s)
+      MG62,             // "cl_mg_62"        (158.62 M/s) / (104.55 M/s)
       UNKNOWN_KERNEL,   // 
       UNKNOWN_KERNEL,   // 
       UNKNOWN_KERNEL,
@@ -259,23 +259,23 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
-/*  GPU_APU,    */
-      BARRETT69_MUL15,  // "cl_barrett15_69" (253.77 M/s)
-      BARRETT70_MUL15,  // "cl_barrett15_70" (253.48 M/s)
-      BARRETT71_MUL15,  // "cl_barrett15_71" (248.20 M/s)
-      BARRETT77_MUL32,  // "cl_barrett32_77" (212.16 M/s)
-      BARRETT73_MUL15,  // "cl_barrett15_73" (201.66 M/s)
-      BARRETT76_MUL32,  // "cl_barrett32_76" (194.94 M/s)
-      BARRETT82_MUL15,  // "cl_barrett15_82" (186.75 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (183.98 M/s)
-      BARRETT88_MUL32,  // "cl_barrett32_88" (181.15 M/s)
-      BARRETT83_MUL15,  // "cl_barrett15_83" (176.76 M/s)
-      BARRETT87_MUL32,  // "cl_barrett32_87" (173.36 M/s)
-      BARRETT79_MUL32,  // "cl_barrett32_79" (163.77 M/s)
-      BARRETT88_MUL15,  // "cl_barrett15_88" (151.86 M/s)
-      BARRETT92_MUL32,  // "cl_barrett32_92" (142.79 M/s)
-      _63BIT_MUL24,     // "mfakto_cl_63"    (135.53 M/s)
-      MG62,             // "cl_mg_62"        ( M/s)
+/*  GPU_APU,  (BeaverCreek=???, v=4)  */
+      BARRETT70_MUL15,  // "cl_barrett15_70" (79.66 M/s)
+      BARRETT69_MUL15,  // "cl_barrett15_69" (78.40 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (77.96 M/s)
+      MG62,             // "cl_mg_62"        (70.89 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (65.38 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (63.05 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (60.14 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (58.78 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (56.79 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (56.63 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (55.65 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (54.18 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (51.20 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (47.64 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (44.43 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (42.09 M/s)
       UNKNOWN_KERNEL,   // 
       UNKNOWN_KERNEL,   // 
       UNKNOWN_KERNEL,
@@ -714,7 +714,8 @@ RET_ERROR we might have a serios problem
   int f_class, selftests_to_run;
   int retval=1, ind;
   enum GPUKernels kernels[UNKNOWN_KERNEL], kernel_index;
-  unsigned int index[] = {    30,  25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+  // this index is 1 less than what -st/-st2 report
+  unsigned int index[] = {   0, 30,  25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
                              70,   72,   73,  82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
                            1547, 1552, 1556, 1557    // some factors below 2^95 (test 95 bit kernel)
@@ -1031,6 +1032,9 @@ int main(int argc, char **argv)
 #endif
 #ifdef DEBUG_STREAM_SCHEDULE_CHECK
     printf("  DEBUG_STREAM_SCHEDULE_CHECK\n                            enabled (DEBUG option)\n");
+#endif
+#ifdef DEBUG_FACTOR_FIRST
+    printf("  DEBUG_FACTOR_FIRST        enabled (DEBUG option)\n");
 #endif
 #ifdef RAW_GPU_BENCH
     printf("  RAW_GPU_BENCH             enabled (DEBUG option)\n");

@@ -2200,7 +2200,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const int
   __private uint tmp, bit_max_bot, bit_max_mult;
 
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: bb=%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x, bit_max65=%u\n",
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: bb=%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x, bit_max65=%d\n",
         bb.db, bb.da, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, bit_max65);
 #endif
 
@@ -2398,6 +2398,11 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const int
   __private float_v ff;
   __private uint tmp, bit_max_bot, bit_max_mult;
 
+#if (TRACE_KERNEL > 1)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: bb=%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x, bit_max65=%d\n",
+        bb.db, bb.da, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, bit_max65);
+#endif
+
 /*
 ff = f as float, needed in mod_192_96() and div_192_96().
 Precalculated here since it is the same for all steps in the following loop */
@@ -2592,6 +2597,11 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const int
   __private int90_v tmp90;
   __private float_v ff;
   __private uint tmp, bit_max_bot, bit_max_mult;
+
+#if (TRACE_KERNEL > 1)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: bb=%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x, bit_max65=%d\n",
+        bb.db, bb.da, bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, bit_max65);
+#endif
 
 /*
 ff = f as float, needed in mod_192_96() and div_192_96().
@@ -2915,9 +2925,9 @@ __kernel void cl_barrett15_69_gs(const uint exponent, const int75_t k_base,
 
   exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
 
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
-        shiftcount, initial_shifter_value, total_bit_count);
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69_gs: exp=%u, shift=%d, shifted exp=%#x, total_bit_count=%u, shared_mem_size=%u\n",
+        exponent, shiftcount, initial_shifter_value, total_bit_count, shared_mem_allocated);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -3042,9 +3052,9 @@ __kernel void cl_barrett15_70_gs(const uint exponent, const int75_t k_base,
 
   exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
 
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
-        shiftcount, initial_shifter_value, total_bit_count);
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70_gs: exp=%u, shift=%d, shifted exp=%#x, total_bit_count=%u, shared_mem_size=%u\n",
+        exponent, shiftcount, initial_shifter_value, total_bit_count, shared_mem_allocated);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -3169,9 +3179,9 @@ __kernel void cl_barrett15_71_gs(const uint exponent, const int75_t k_base,
 
   exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
 
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_71_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
-        shiftcount, initial_shifter_value, total_bit_count);
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_71_gs: exp=%u, shift=%d, shifted exp=%#x, total_bit_count=%u, shared_mem_size=%u\n",
+        exponent, shiftcount, initial_shifter_value, total_bit_count, shared_mem_allocated);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -3296,9 +3306,9 @@ __kernel void cl_barrett15_73_gs(const uint exponent, const int75_t k_base,
 
   exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
 
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
-        shiftcount, initial_shifter_value, total_bit_count);
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73_gs: exp=%u, shift=%d, shifted exp=%#x, total_bit_count=%u, shared_mem_size=%u\n",
+        exponent, shiftcount, initial_shifter_value, total_bit_count, shared_mem_allocated);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -3433,9 +3443,9 @@ __kernel void cl_barrett15_82_gs(const uint exponent, const int75_t k_base,
 
   exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
 
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82_gs: shift=%d, shifted exp=%#x, total_bit_count=%u, shared_mem_size=%u\n",
-        shiftcount, initial_shifter_value, total_bit_count, shared_mem_allocated);
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82_gs: exp=%u, shift=%d, shifted exp=%#x, total_bit_count=%u, shared_mem_size=%u\n",
+        exponent, shiftcount, initial_shifter_value, total_bit_count, shared_mem_allocated);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -3564,9 +3574,9 @@ __kernel void cl_barrett15_83_gs(const uint exponent, const int75_t k_base,
 
   exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
 
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
-        shiftcount, initial_shifter_value, total_bit_count);
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83_gs: exp=%u, shift=%d, shifted exp=%#x, total_bit_count=%u, shared_mem_size=%u\n",
+        exponent, shiftcount, initial_shifter_value, total_bit_count, shared_mem_allocated);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -3695,9 +3705,9 @@ __kernel void cl_barrett15_88_gs(const uint exponent, const int75_t k_base,
 
   exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
 
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88_gs: shift=%d, shifted exp=%#x, total_bit_count=%u\n",
-        shiftcount, initial_shifter_value, total_bit_count);
+#if (TRACE_KERNEL > 0)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88_gs: exp=%u, shift=%d, shifted exp=%#x, total_bit_count=%u, shared_mem_size=%u\n",
+        exponent, shiftcount, initial_shifter_value, total_bit_count, shared_mem_allocated);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -3785,7 +3795,7 @@ __kernel void cl_barrett15_88_gs(const uint exponent, const int75_t k_base,
     f.d5 = mad24(k.d4, exp75.d1, f.d4 >> 15);  // PERF: see above
     f.d5 = mad24(k.d3, exp75.d2, f.d5);
     f.d4 &= 0x7FFF;
-#if (TRACE_KERNEL > 2)
+#if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x\n",
         i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif

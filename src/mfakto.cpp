@@ -307,7 +307,7 @@ int init_CL(int num_streams, cl_int devnumber)
   cl_platform_id* platformlist = NULL;
   cl_device_type devtype = CL_DEVICE_TYPE_GPU;
 
-  printf("Select device - "); fflush(NULL);
+  if (mystuff.verbosity > 0) {printf("Select device - "); fflush(NULL);}
   status = clGetPlatformIDs(0, NULL, &numplatforms);
   if(status != CL_SUCCESS)
   {
@@ -319,7 +319,7 @@ int init_CL(int num_streams, cl_int devnumber)
   {
     devtype = CL_DEVICE_TYPE_CPU;
     devnumber = 0;
-    printf("(CPU) - "); fflush(NULL);
+    if (mystuff.verbosity > 0) {printf("(CPU) - "); fflush(NULL);}
   }
 
   if (numplatforms > 0)
@@ -472,7 +472,8 @@ int init_CL(int num_streams, cl_int devnumber)
       dev_from  = --devnumber;  // index from 0
     }
   }
-  printf("Get device info - "); fflush(stdout);
+
+  if (mystuff.verbosity > 0) {printf("Get device info - "); fflush(stdout);}
    
   for (i=dev_from; i<dev_to; i++)
   {
@@ -664,18 +665,17 @@ int init_CL(int num_streams, cl_int devnumber)
   if (mystuff.CompileOptions[0])  // if mfakto.ini defined compile options, override the default with them
     strcpy(program_options, mystuff.CompileOptions);
 
-#ifdef DETAILED_INFO
-  printf("Compiling kernels (build options: \"%s\").", program_options);
-#else
-  printf("Compiling kernels .");
-#endif
-  fflush(stdout);
+  if (mystuff.verbosity > 1)
+    printf("Compiling kernels (build options: \"%s\").", program_options);
+  else if (mystuff.verbosity > 0)
+    printf("Compiling kernels.\n");
+
   // program_options can be overridden by setting en environment variable AMD_OCL_BUILD_OPTIONS
 
   status = clBuildProgram(program, 1, &devices[devnumber], program_options, NULL, NULL);
-  if(status != CL_SUCCESS)
+  if((status != CL_SUCCESS) || (mystuff.verbosity > 2))
   {
-    if(status == CL_BUILD_PROGRAM_FAILURE)
+    if((status == CL_BUILD_PROGRAM_FAILURE) || (mystuff.verbosity > 2))
     {
       cl_int logstatus;
       char *buildLog = NULL;
@@ -709,7 +709,7 @@ int init_CL(int num_streams, cl_int devnumber)
       free(buildLog);
     }
 		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): clBuildProgram\n";
-		return 1; 
+		if (status != CL_SUCCESS) return 1; 
   }
 
   free(source);
@@ -718,7 +718,10 @@ int init_CL(int num_streams, cl_int devnumber)
   {
     for (i=_TEST_MOD_; i<UNKNOWN_KERNEL; i++)
     {
-      putchar('.'); fflush(stdout);
+      if (mystuff.verbosity > 1)
+      {
+        putchar('.'); fflush(stdout);
+      }
       kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
       if(status != CL_SUCCESS)
       {
@@ -731,7 +734,10 @@ int init_CL(int num_streams, cl_int devnumber)
   {
     for (i=CL_CALC_BIT_TO_CLEAR; i<=BARRETT82_MUL15_GS; i++)
     {
-      putchar('.'); fflush(stdout);
+      if (mystuff.verbosity > 1)
+      {
+        putchar('.'); fflush(stdout);
+      }
       kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
       if(status != CL_SUCCESS)
       {
@@ -741,7 +747,8 @@ int init_CL(int num_streams, cl_int devnumber)
     }
   }
 
-  printf("\n");
+  if (mystuff.verbosity > 1)
+    printf("\n");
   return 0;
 }
 
@@ -1178,7 +1185,7 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
 		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)\n";
 		return 1;
 	}
-  clFlush(QUEUE);
+
 /////////////////////////////////////////////////
 #ifdef CL_PERFORMANCE_INFO
   clFinish(QUEUE);
@@ -2419,7 +2426,11 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
           k_base.d2 = 0;
           status = run_gs_kernel32(kernel_info[use_kernel].kernel, numblocks, shared_mem_required, k_base, b_192, shiftcount);
         }
-
+        else
+        {
+          fprintf(stderr, "Programming error: kernel %d unknown or not prepared for GPU-sieving\n", use_kernel);
+          return RET_ERROR;
+        }
         // Count the number of blocks processed
         count += numblocks;
 
@@ -2705,10 +2716,10 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     return RET_ERROR;
   }
 
-#ifdef DETAILED_INFO
-  printArray("RES", mystuff->h_RES, 32, 0);
-#endif
-
+  if (mystuff->verbosity > 2)
+  {
+    printArray("RES", mystuff->h_RES, 32, 0);
+  }
 #ifdef CHECKS_MODBASECASE
   status = clEnqueueReadBuffer(QUEUE,
                 mystuff->d_modbasecase_debug,
@@ -2771,11 +2782,13 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     if ((factor.d2 == prev_factor.d2 && factor.d1 == prev_factor.d1 && factor.d0 == prev_factor.d0) ||
         (factor.d2 == 0 && factor.d1 == 0 && factor.d0 == 1))
     {
-//#ifdef DETAILED_INFO
-      printf("Skipping duplicate factor %x:%x:%x\n", factor.d2, factor.d1, factor.d0);
-//#endif
+      if (mystuff->verbosity > 1)
+      {
+        printf("Skipping duplicate factor i=%d: %x:%x:%x\n", i, factor.d2, factor.d1, factor.d0);
+      }
       if (factorsfound > i) memmove(&mystuff->h_RES[i*3 + 1], &mystuff->h_RES[i*3 + 4], 3*sizeof(int)*(factorsfound-i));
       mystuff->h_RES[0] = --factorsfound;
+      --i;
       continue;
     }
 
