@@ -1998,11 +1998,6 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d9 &= 0x7FFF;
 #endif
 
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.7: nn=..:%x:%x:%x:%x:%x:%x:%x:%x:..:..:..\n",
-        nn.da.s0, nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
-#endif
-
   // shift-right 2 bits
   nn.d2 = (nn.d3 << 13) & 0x7FFF;
   nn.d3 = mad24(nn.d4 & 3, 8192u, nn.d3 >> 2);
@@ -2016,8 +2011,8 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.da = nn.da >> 2;
 #endif
 
-#if (TRACE_KERNEL > 4)
-  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.8: nn=..:%x:%x:%x:%x:%x:%x:%x:%x:%x:..:..\n",
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.8: nn=..:%x:%x!%x:%x:%x:%x:%x:%x:%x:..:..\n",
         nn.da.s0, nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
 #endif
   //  q = q - nn; q.d2 and q.d3 are still 0
@@ -2212,7 +2207,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
   //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
   //ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  ff = as_float(0x3f7ffffd) / ff;
+  ff = as_float(0x3f7ffffc) / ff;     // on Cayman and GCN 0x3f7ffffd is still not sufficient
 
   // we need u=2^(2*bit_max)/f. As bit_max is between 61 and 82, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
 
@@ -2409,9 +2404,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
   ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // f.d1 needed?
 
-  //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  //ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  ff = as_float(0x3f7ffffd) / ff;   // we rounded ff towards plus infinity, and round all other results towards zero. 
+  ff = as_float(0x3f7ffffc) / ff;     // on Cayman and GCN 0x3f7ffffd is still not sufficient
 
   // we need u=2^(2*bit_max)/f. As bit_max is between 60 and 90, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
 
@@ -2609,9 +2602,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
   ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // at factor size 60 bits, this gives 30 significant bits
 
-  //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  //ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  ff = as_float(0x3f7ffffd) / ff;   // we rounded ff towards plus infinity, and round all other results towards zero.
+  ff = as_float(0x3f7ffffc) / ff;     // on Cayman and GCN 0x3f7ffffd is still not sufficient
 
   // we need u=2^(2*bit_max)/f. As bit_max is between 60 and 90, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
 
