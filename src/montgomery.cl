@@ -181,7 +181,7 @@ bit_max64 is bit_max - 64!
   //k.d0 = k_base.d0 + tmp;
   //k.d1 = k_base.d1 + mul_hi(t, 4620u) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
   k.d0 = mad24(t, 4620u, k_base.d0);
-  k.d1 = mad_hi(t, 4620u, k_base.d1) + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+  k.d1 = mad_hi(t, 4620u, k_base.d1) - AS_UINT_V(k_base.d0 > k.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
 
   f = upsample(k.d1, k.d0) * ((ulong)exp + exp) + 1;
 
@@ -338,11 +338,11 @@ int90_v sub_90(const int90_v a, const int90_v b)
   int90_v tmp;
 
   tmp.d0 = (a.d0 - b.d0) & 0x7FFF;
-  tmp.d1 = (a.d1 - b.d1 - AS_UINT_V((b.d0 > a.d0) ? 1 : 0));
-  tmp.d2 = (a.d2 - b.d2 - AS_UINT_V((tmp.d1 > a.d1) ? 1 : 0));
-  tmp.d3 = (a.d3 - b.d3 - AS_UINT_V((tmp.d2 > a.d2) ? 1 : 0));
-  tmp.d4 = (a.d4 - b.d4 - AS_UINT_V((tmp.d3 > a.d3) ? 1 : 0));
-  tmp.d5 = (a.d5 - b.d5 - AS_UINT_V((tmp.d4 > a.d4) ? 1 : 0));
+  tmp.d1 = (a.d1 - b.d1 + AS_UINT_V(b.d0 > a.d0));
+  tmp.d2 = (a.d2 - b.d2 + AS_UINT_V(tmp.d1 > a.d1));
+  tmp.d3 = (a.d3 - b.d3 + AS_UINT_V(tmp.d2 > a.d2));
+  tmp.d4 = (a.d4 - b.d4 + AS_UINT_V(tmp.d3 > a.d3));
+  tmp.d5 = (a.d5 - b.d5 + AS_UINT_V(tmp.d4 > a.d4));
   tmp.d1&= 0x7FFF;
   tmp.d2&= 0x7FFF;
   tmp.d3&= 0x7FFF;

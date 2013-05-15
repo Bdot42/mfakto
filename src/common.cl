@@ -386,10 +386,10 @@ void calculate_FC32(const uint exponent, const uint tid, const __global uint * r
 #endif
 //MAD only available for float
   k.d0 = mad24(t, 4620u, k_base.d0);
-  k.d1 = mul_hi(t, 4620u) + k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+  k.d1 = mul_hi(t, 4620u) + k_base.d1 - AS_UINT_V(k_base.d0 > k.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
+    if (tid==TRACE_TID) printf((const __constant char *)"calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 
@@ -399,12 +399,12 @@ void calculate_FC32(const uint exponent, const uint tid, const __global uint * r
   f->d2  = exp96.d1 ? k.d1 : 0;
 
   f->d1  = mul_hi(k.d0, exp96.d0) + tmp;
-  f->d2 += AS_UINT_V((tmp > f->d1)? 1 : 0);
+  f->d2 -= AS_UINT_V(tmp > f->d1);
 
   tmp   = k.d1 * exp96.d0;
   f->d1 += tmp;
 
-  f->d2 += mul_hi(k.d1, exp96.d0) + AS_UINT_V((tmp > f->d1)? 1 : 0); 	// f = 2 * k * exp + 1
+  f->d2 += mul_hi(k.d1, exp96.d0) - AS_UINT_V(tmp > f->d1); 	// f = 2 * k * exp + 1
 }
 
 /*
@@ -464,7 +464,7 @@ void calculate_FC32_mad(const uint exponent, const uint tid, const __global uint
 #endif
 //MAD only available for float
   k.d0 = mad24(t, 4620u, k_base.d0);
-  k.d1 = mul_hi(t, 4620u) + k_base.d1 + AS_UINT_V((k_base.d0 > k.d0)? 1 : 0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+  k.d1 = mul_hi(t, 4620u) + k_base.d1 - AS_UINT_V(k_base.d0 > k.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
@@ -477,12 +477,12 @@ void calculate_FC32_mad(const uint exponent, const uint tid, const __global uint
   f->d2  = exp96.d1 ? k.d1 : 0;
 
   f->d1  = mad_hi(k.d0, exp96.d0, tmp);
-  f->d2 += AS_UINT_V((tmp > f->d1)? 1 : 0);
+  f->d2 -= AS_UINT_V(tmp > f->d1);
 
   tmp   = k.d1 * exp96.d0;
   f->d1 += tmp;
 
-  f->d2 += mad_hi(k.d1, exp96.d0, AS_UINT_V((tmp > f->d1)? 1 : 0)); 	// f = 2 * k * exp + 1
+  f->d2  = mad_hi(k.d1, exp96.d0, f->d2) - AS_UINT_V(tmp > f->d1); 	// f = 2 * k * exp + 1
 }
 
 
@@ -543,22 +543,22 @@ are "out of range".
   nn.d1  = mul_hi(n.d0, qi);
   tmp    = n.d1* qi;
   nn.d1 += tmp;
-  nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
-  nn.d2 += mul_hi(n.d1, qi) + n.d2* qi;
+  nn.d2  = AS_UINT_V(tmp > nn.d1);
+  nn.d2  = mul_hi(n.d1, qi) + n.d2* qi - nn.d2;
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char*)"mod_simple_96: nn=%x:%x:%x\n",
         nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
-  carry= AS_UINT_V((nn.d0 > q.d0) ? 1 : 0);
+  carry= AS_UINT_V(nn.d0 > q.d0);
   res->d0 = q.d0 - nn.d0;
 
-  tmp  = q.d1 - nn.d1 - carry;
-  carry= AS_UINT_V(((tmp > q.d1) || (carry && AS_UINT_V(tmp == q.d1))) ? 1 : 0);
+  tmp  = q.d1 - nn.d1 + carry;
+  carry= AS_UINT_V((tmp > q.d1) || (carry && AS_UINT_V(tmp == q.d1)));
   res->d1 = tmp;
 
-  res->d2 = q.d2 - nn.d2 - carry;
+  res->d2 = q.d2 - nn.d2 + carry;
 }
 
 
@@ -597,8 +597,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     nn.d1  = mul_hi(n.d0, qi);
     tmp    = n.d1* qi;
     nn.d1 += tmp;
-    nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
-    nn.d2 += mul_hi(n.d1, qi) + n.d2* qi;
+    nn.d2  = AS_UINT_V(tmp > nn.d1);
+    nn.d2  = mul_hi(n.d1, qi) + n.d2* qi - nn.d2;
 
     tmp  = q.d1 - nn.d1;
 //    tmp |= q.d2 - nn.d2 - AS_UINT_V(tmp > q.d1 ? 1 : 0);
@@ -693,8 +693,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     nn.d1  = mul_hi(n.d0, qi);
     tmp    = n.d1* qi;
     nn.d1 += tmp;
-    nn.d2  = AS_UINT_V((tmp > nn.d1)? 1 : 0);
-    nn.d2 += mul_hi(n.d1, qi) + n.d2* qi;
+    nn.d2  = AS_UINT_V(tmp > nn.d1);
+    nn.d2  = mul_hi(n.d1, qi) + n.d2* qi - nn.d2;
 
     tmp  = q.d1 - nn.d1;
 //    tmp |= q.d2 - nn.d2 - AS_UINT_V(tmp > q.d1 ? 1 : 0);
@@ -825,10 +825,10 @@ are "out of range".
 
 
   res->d0 = q.d0 - nn.d0;
-  res->d1 = q.d1 - nn.d1 - AS_UINT_V((res->d0 > 0x7FFF)?1:0);
-  res->d2 = q.d2 - nn.d2 - AS_UINT_V((res->d1 > 0x7FFF)?1:0);
-  res->d3 = q.d3 - nn.d3 - AS_UINT_V((res->d2 > 0x7FFF)?1:0);
-  res->d4 = q.d4 - nn.d4 - AS_UINT_V((res->d3 > 0x7FFF)?1:0);
+  res->d1 = q.d1 - nn.d1 + AS_UINT_V(res->d0 > 0x7FFF);
+  res->d2 = q.d2 - nn.d2 + AS_UINT_V(res->d1 > 0x7FFF);
+  res->d3 = q.d3 - nn.d3 + AS_UINT_V(res->d2 > 0x7FFF);
+  res->d4 = q.d4 - nn.d4 + AS_UINT_V(res->d3 > 0x7FFF);
   res->d0 &= 0x7FFF;
   res->d1 &= 0x7FFF;
   res->d2 &= 0x7FFF;
@@ -866,7 +866,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
   qi |= 1;
  
-  nn.d0  = mad24(n.d0, qi, 1);
+  nn.d0  = mad24(n.d0, qi, 1u);
   nn.d1  = nn.d0 >> 15;
   nn.d0 &= 0x7FFF;
 
@@ -909,9 +909,9 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
       index =ATOMIC_INC(RES[0]);
       if(index < 10)                              /* limit to 10 factors per class */
       {
-        RES[index*3 + 1]=n.d4.comp;
-        RES[index*3 + 2]=mad24(n.d3.comp,0x8000u, n.d2.comp);
-        RES[index*3 + 3]=mad24(n.d1.comp,0x8000u, n.d0.comp);
+        RES[index*3 + 1]=n.d4;
+        RES[index*3 + 2]=mad24(n.d3,0x8000u, n.d2);
+        RES[index*3 + 3]=mad24(n.d1,0x8000u, n.d0);
       }
     }
 #elif (VECTOR_SIZE == 2)
@@ -981,7 +981,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
   qi += ((~qi) ^ q.d0) & 1;
  
-  nn.d0  = mad24(n.d0, qi, 1);
+  nn.d0  = mad24(n.d0, qi, 1u);
   nn.d1  = nn.d0 >> 15;
   nn.d0 &= 0x7FFF;
 
@@ -1025,9 +1025,9 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
       index =ATOMIC_INC(RES[0]);
       if(index < 10)                              /* limit to 10 factors per class */
       {
-        RES[index*3 + 1]=n.d4.comp;
-        RES[index*3 + 2]=mad24(n.d3.comp,0x8000u, n.d2.comp);
-        RES[index*3 + 3]=mad24(n.d1.comp,0x8000u, n.d0.comp);
+        RES[index*3 + 1]=n.d4;
+        RES[index*3 + 2]=mad24(n.d3,0x8000u, n.d2);
+        RES[index*3 + 3]=mad24(n.d1,0x8000u, n.d0);
       }
     }
 #elif (VECTOR_SIZE == 2)
@@ -1243,11 +1243,11 @@ are "out of range".
 
 
   res->d0 = q.d0 - nn.d0;
-  res->d1 = q.d1 - nn.d1 - AS_UINT_V((res->d0 > 0x7FFF)?1:0);
-  res->d2 = q.d2 - nn.d2 - AS_UINT_V((res->d1 > 0x7FFF)?1:0);
-  res->d3 = q.d3 - nn.d3 - AS_UINT_V((res->d2 > 0x7FFF)?1:0);
-  res->d4 = q.d4 - nn.d4 - AS_UINT_V((res->d3 > 0x7FFF)?1:0);
-  res->d5 = q.d5 - nn.d5 - AS_UINT_V((res->d4 > 0x7FFF)?1:0);
+  res->d1 = q.d1 - nn.d1 + AS_UINT_V(res->d0 > 0x7FFF);
+  res->d2 = q.d2 - nn.d2 + AS_UINT_V(res->d1 > 0x7FFF);
+  res->d3 = q.d3 - nn.d3 + AS_UINT_V(res->d2 > 0x7FFF);
+  res->d4 = q.d4 - nn.d4 + AS_UINT_V(res->d3 > 0x7FFF);
+  res->d5 = q.d5 - nn.d5 + AS_UINT_V(res->d4 > 0x7FFF);
   res->d0 &= 0x7FFF;
   res->d1 &= 0x7FFF;
   res->d2 &= 0x7FFF;
@@ -1284,7 +1284,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
   qi |= 1;
  
-  nn.d0  = mad24(n.d0, qi, 1);
+  nn.d0  = mad24(n.d0, qi, 1u);
   nn.d1  = nn.d0 >> 15;
   nn.d0 &= 0x7FFF;
 
@@ -1331,9 +1331,9 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
       index =ATOMIC_INC(RES[0]);
       if(index < 10)                              /* limit to 10 factors per class */
       {
-        RES[index*3 + 1]=mad24(n.d5.comp,0x8000u, n.d4.comp);
-        RES[index*3 + 2]=mad24(n.d3.comp,0x8000u, n.d2.comp);
-        RES[index*3 + 3]=mad24(n.d1.comp,0x8000u, n.d0.comp);
+        RES[index*3 + 1]=mad24(n.d5,0x8000u, n.d4);
+        RES[index*3 + 2]=mad24(n.d3,0x8000u, n.d2);
+        RES[index*3 + 3]=mad24(n.d1,0x8000u, n.d0);
       }
     }
 #elif (VECTOR_SIZE == 2)
@@ -1402,7 +1402,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
   qi += ((~qi) ^ q.d0) & 1;
  
-  nn.d0  = mad24(n.d0, qi, 1);
+  nn.d0  = mad24(n.d0, qi, 1u);
   nn.d1  = nn.d0 >> 15;
   nn.d0 &= 0x7FFF;
 
@@ -1449,9 +1449,9 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
       index =ATOMIC_INC(RES[0]);
       if(index < 10)                              /* limit to 10 factors per class */
       {
-        RES[index*3 + 1]=mad24(n.d5.comp,0x8000u, n.d4.comp);
-        RES[index*3 + 2]=mad24(n.d3.comp,0x8000u, n.d2.comp);
-        RES[index*3 + 3]=mad24(n.d1.comp,0x8000u, n.d0.comp);
+        RES[index*3 + 1]=mad24(n.d5,0x8000u, n.d4);
+        RES[index*3 + 2]=mad24(n.d3,0x8000u, n.d2);
+        RES[index*3 + 3]=mad24(n.d1,0x8000u, n.d0);
       }
     }
 #elif (VECTOR_SIZE == 2)

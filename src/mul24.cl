@@ -54,8 +54,8 @@ int72_v sub_if_gte_72(const int72_v a, const int72_v b)
   /* do the subtraction and use tmp.d2 to decide if the result is valid (if a was > b) */
 
   tmp.d0 = (a.d0 - b.d0) & 0xFFFFFF;
-  tmp.d1 = (a.d1 - b.d1 - AS_UINT_V((b.d0 > a.d0) ? 1 : 0));
-  tmp.d2 = (a.d2 - b.d2 - AS_UINT_V((tmp.d1 > a.d1) ? 1 : 0));
+  tmp.d1 = (a.d1 - b.d1 + AS_UINT_V(b.d0 > a.d0));
+  tmp.d2 = (a.d2 - b.d2 + AS_UINT_V(tmp.d1 > a.d1));
   tmp.d1&= 0xFFFFFF;
 
   /* tmp valid if tmp.d2 <= a.d2 (separately for each part of the vector) */
@@ -295,9 +295,9 @@ void mod_144_72
   q.d4 = __subc_cc(q.d4, nn.d4) & 0xFFFFFF;
   q.d5 = __subc   (q.d5, nn.d5); */
   q.d2 = q.d2 - nn.d2;
-  q.d3 = q.d3 - nn.d3 - AS_UINT_V((q.d2 > 0xFFFFFF)?1:0);
-  q.d4 = q.d4 - nn.d4 - AS_UINT_V((q.d3 > 0xFFFFFF)?1:0);
-  q.d5 = q.d5 - nn.d5 - AS_UINT_V((q.d4 > 0xFFFFFF)?1:0);
+  q.d3 = q.d3 - nn.d3 + AS_UINT_V(q.d2 > 0xFFFFFF);
+  q.d4 = q.d4 - nn.d4 + AS_UINT_V(q.d3 > 0xFFFFFF);
+  q.d5 = q.d5 - nn.d5 + AS_UINT_V(q.d4 > 0xFFFFFF);
   q.d2 &= 0xFFFFFF;
   q.d3 &= 0xFFFFFF;
   q.d4 &= 0xFFFFFF;
@@ -394,11 +394,11 @@ void mod_144_72
   q.d5 = __subc   (q.d5, nn.d5);
 #endif */
   q.d1 = q.d1 - nn.d1;
-  q.d2 = q.d2 - nn.d2 - AS_UINT_V((q.d1 > 0xFFFFFF)?1:0);
-  q.d3 = q.d3 - nn.d3 - AS_UINT_V((q.d2 > 0xFFFFFF)?1:0);
-  q.d4 = q.d4 - nn.d4 - AS_UINT_V((q.d3 > 0xFFFFFF)?1:0);
+  q.d2 = q.d2 - nn.d2 + AS_UINT_V(q.d1 > 0xFFFFFF);
+  q.d3 = q.d3 - nn.d3 + AS_UINT_V(q.d2 > 0xFFFFFF);
+  q.d4 = q.d4 - nn.d4 + AS_UINT_V(q.d3 > 0xFFFFFF);
 #ifdef CHECKS_MODBASECASE  
-  q.d5 = q.d5 - nn.d5 - ((q.d4 > 0xFFFFFF)?1:0);
+  q.d5 = q.d5 - nn.d5 + AS_UINT_V(q.d4 > 0xFFFFFF);
 #endif
   q.d1 &= 0xFFFFFF;
   q.d2 &= 0xFFFFFF;
@@ -510,11 +510,11 @@ void mod_144_72
   q.d4 = __subc   (q.d4, nn.d4);
 #endif */
   q.d0 = q.d0 - nn.d0;
-  q.d1 = q.d1 - nn.d1 - AS_UINT_V((q.d0 > 0xFFFFFF)?1:0);
-  q.d2 = q.d2 - nn.d2 - AS_UINT_V((q.d1 > 0xFFFFFF)?1:0);
-  q.d3 = q.d3 - nn.d3 - AS_UINT_V((q.d2 > 0xFFFFFF)?1:0);
+  q.d1 = q.d1 - nn.d1 + AS_UINT_V(q.d0 > 0xFFFFFF);
+  q.d2 = q.d2 - nn.d2 + AS_UINT_V(q.d1 > 0xFFFFFF);
+  q.d3 = q.d3 - nn.d3 + AS_UINT_V(q.d2 > 0xFFFFFF);
 #ifdef CHECKS_MODBASECASE
-  q.d4 = q.d4 - nn.d4 - ((q.d3 > 0xFFFFFF)?1:0);
+  q.d4 = q.d4 - nn.d4 + AS_UINT_V(q.d3 > 0xFFFFFF);
 #endif
   q.d0 &= 0xFFFFFF;
   q.d1 &= 0xFFFFFF;
@@ -611,10 +611,10 @@ void mod_144_72
 #endif */
 
   q.d0 = q.d0 - nn.d0;
-  q.d1 = q.d1 - nn.d1 - AS_UINT_V((q.d0 > 0xFFFFFF)?1:0);
-  q.d2 = q.d2 - nn.d2 - AS_UINT_V((q.d1 > 0xFFFFFF)?1:0);
+  q.d1 = q.d1 - nn.d1 + AS_UINT_V(q.d0 > 0xFFFFFF);
+  q.d2 = q.d2 - nn.d2 + AS_UINT_V(q.d1 > 0xFFFFFF);
 #ifdef CHECKS_MODBASECASE  
-  q.d3 = q.d3 - nn.d3 - ((q.d2 > 0xFFFFFF)?1:0);
+  q.d3 = q.d3 - nn.d3 + AS_UINT_V(q.d2 > 0xFFFFFF);
 #endif
 
   res->d0 = q.d0 & 0xFFFFFF;
