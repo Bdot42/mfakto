@@ -86,7 +86,7 @@ void inc_if_ge_72(int72_v * const res, const int72_v a, const int72_v b)
   ge = AS_UINT_V(a.d2 == b.d2);
   ge = AS_UINT_V(ge ? ((a.d1 == b.d1) ? (a.d0 >= b.d0) : (a.d1 > b.d1)) : (a.d2 > b.d2));
 
-  res->d0 += AS_UINT_V(ge ? 1 : 0);
+  res->d0 -= ge;
   res->d1 += res->d0 >> 24;
   res->d2 += res->d1 >> 24;
   res->d0 &= 0xFFFFFF;
@@ -286,9 +286,9 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 
 /*  q = q - nn */
   q.d2 = q.d2 - nn.d2;
-  q.d3 = q.d3 - nn.d3 - AS_UINT_V((q.d2 > 0xFFFFFF)?1:0);
-  q.d4 = q.d4 - nn.d4 - AS_UINT_V((q.d3 > 0xFFFFFF)?1:0);
-  q.d5 = q.d5 - nn.d5 - AS_UINT_V((q.d4 > 0xFFFFFF)?1:0);
+  q.d3 = q.d3 - nn.d3 + AS_UINT_V(q.d2 > 0xFFFFFF);
+  q.d4 = q.d4 - nn.d4 + AS_UINT_V(q.d3 > 0xFFFFFF);
+  q.d5 = q.d5 - nn.d5 + AS_UINT_V(q.d4 > 0xFFFFFF);
   q.d2 &= 0xFFFFFF;
   q.d3 &= 0xFFFFFF;
   q.d4 &= 0xFFFFFF;
@@ -383,11 +383,11 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
   q.d5 = __subc   (q.d5, nn.d5);
 #endif */
   q.d1 = q.d1 - nn.d1;
-  q.d2 = q.d2 - nn.d2 - AS_UINT_V((q.d1 > 0xFFFFFF)?1:0);
-  q.d3 = q.d3 - nn.d3 - AS_UINT_V((q.d2 > 0xFFFFFF)?1:0);
-  q.d4 = q.d4 - nn.d4 - AS_UINT_V((q.d3 > 0xFFFFFF)?1:0);
+  q.d2 = q.d2 - nn.d2 + AS_UINT_V(q.d1 > 0xFFFFFF);
+  q.d3 = q.d3 - nn.d3 + AS_UINT_V(q.d2 > 0xFFFFFF);
+  q.d4 = q.d4 - nn.d4 + AS_UINT_V(q.d3 > 0xFFFFFF);
 #ifdef CHECKS_MODBASECASE  
-  q.d5 = q.d5 - nn.d5 - ((q.d4 > 0xFFFFFF)?1:0);
+  q.d5 = q.d5 - nn.d5 + AS_UINT_V(q.d4 > 0xFFFFFF);
 #endif
   q.d1 &= 0xFFFFFF;
   q.d2 &= 0xFFFFFF;
@@ -496,11 +496,11 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
   q.d4 = __subc   (q.d4, nn.d4);
 #endif */
   q.d0 = q.d0 - nn.d0;
-  q.d1 = q.d1 - nn.d1 - AS_UINT_V((q.d0 > 0xFFFFFF)?1:0);
-  q.d2 = q.d2 - nn.d2 - AS_UINT_V((q.d1 > 0xFFFFFF)?1:0);
-  q.d3 = q.d3 - nn.d3 - AS_UINT_V((q.d2 > 0xFFFFFF)?1:0);
+  q.d1 = q.d1 - nn.d1 + AS_UINT_V(q.d0 > 0xFFFFFF);
+  q.d2 = q.d2 - nn.d2 + AS_UINT_V(q.d1 > 0xFFFFFF);
+  q.d3 = q.d3 - nn.d3 + AS_UINT_V(q.d2 > 0xFFFFFF);
 #ifdef CHECKS_MODBASECASE
-  q.d4 = q.d4 - nn.d4 - ((q.d3 > 0xFFFFFF)?1:0);
+  q.d4 = q.d4 - nn.d4 + AS_UINT_V(q.d3 > 0xFFFFFF);
 #endif
   q.d0 &= 0xFFFFFF;
   q.d1 &= 0xFFFFFF;
@@ -608,8 +608,8 @@ are "out of range".
 #endif
 
   res->d0 = (q.d0 - nn.d0) & 0xFFFFFF;
-  res->d1 = (q.d1 - nn.d1 - AS_UINT_V((nn.d0 > q.d0) ? 1 : 0));
-  res->d2 = (q.d2 - nn.d2 - AS_UINT_V((res->d1 > q.d1) ? 1 : 0));
+  res->d1 = (q.d1 - nn.d1 + AS_UINT_V(nn.d0 > q.d0));
+  res->d2 = (q.d2 - nn.d2 + AS_UINT_V(res->d1 > q.d1));
   res->d1 &= 0xFFFFFF;
 
 #if (TRACE_KERNEL > 1)
@@ -770,8 +770,8 @@ Precalculated here since it is the same for all steps in the following loop */
   // bb.d0-bb.d1 are zero due to preprocessing on the host
   // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
   tmp72.d0 = ( -tmp72.d0) & 0xFFFFFF;
-  tmp72.d1 = ( -tmp72.d1 - AS_UINT_V((tmp72.d0 > 0) ? 1 : 0)) & 0xFFFFFF;
-  tmp72.d2 = ( bb.d2-tmp72.d2 - AS_UINT_V(((tmp72.d0 > 0)|(tmp72.d1 > 0)) ? 1 : 0)) & 0xFFFFFF; // if either d0 or d1 are non-zero we'll have to borrow
+  tmp72.d1 = ( -tmp72.d1 + AS_UINT_V(tmp72.d0 > 0)) & 0xFFFFFF;
+  tmp72.d2 = ( bb.d2-tmp72.d2 + AS_UINT_V((tmp72.d0 > 0)|(tmp72.d1 > 0))) & 0xFFFFFF; // if either d0 or d1 are non-zero we'll have to borrow
 
 	 // we do not need the upper digits of b and tmp72 because they are 0 after this subtraction!
 
@@ -830,8 +830,8 @@ Precalculated here since it is the same for all steps in the following loop */
         a.d2.s0, a.d1.s0, a.d0.s0, tmp72.d2.s0, tmp72.d1.s0, tmp72.d0.s0);
 #endif
     tmp72.d0 = (b.d0 - tmp72.d0) & 0xFFFFFF;
-    tmp72.d1 = (b.d1 - tmp72.d1 - AS_UINT_V((tmp72.d0 > b.d0) ? 1 : 0 ));
-    tmp72.d2 = (b.d2 - tmp72.d2 - AS_UINT_V((tmp72.d1 > b.d1) ? 1 : 0 ));
+    tmp72.d1 = (b.d1 - tmp72.d1 + AS_UINT_V(tmp72.d0 > b.d0));
+    tmp72.d2 = (b.d2 - tmp72.d2 + AS_UINT_V(tmp72.d1 > b.d1));
     tmp72.d1 &= 0xFFFFFF;
     tmp72.d2 &= 0xFFFFFF;
     

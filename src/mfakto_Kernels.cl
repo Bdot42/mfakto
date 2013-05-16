@@ -67,7 +67,8 @@ Version 0.13
 #define MODBASECASE_QI_ERROR(A, B, C, D)
 #define MODBASECASE_NONZERO_ERROR(A, B, C, D)
 #define MODBASECASE_NN_BIG_ERROR(A, B, C, D)
-
+#define MODBASECASE_PAR_DEF
+#define MODBASECASE_PAR
 #endif
 
 #include "datatypes.h"
@@ -245,7 +246,6 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
                   );
   // enforce evaluation ... otherwise some calculations are optimized away ;-)
   res[31] = r.d5.s0 + r.d4.s0 + r.d3.s0 + r.d2.s0 + r.d1.s0 + r.d0.s0;
-#endif
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"test: %x:%x:120x0 / b=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x\n",
@@ -272,6 +272,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   printf((__constant char *) "a=%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x:0:0:0:0\n",
        a75.d4.s0, a75.d3.s0, a75.d2.s0, a75.d1.s0, a75.d0.s0, b75.d4.s0, b75.d3.s0, b75.d2.s0, b75.d1.s0, b75.d0.s0,
        r75.d9.s0, r75.d8.s0, r75.d7.s0, r75.d6.s0, r75.d5.s0, r75.d4.s0);
+#endif
 
   f=tid+1; // let the reported results start with 1
   if (1 == 1)

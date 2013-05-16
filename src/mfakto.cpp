@@ -2020,7 +2020,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   	}
 
 #ifdef CHECKS_MODBASECASE
-      status = clSetKernelArg(l_kernel, 
+      status = clSetKernelArg(kernel, 
                     10, 
                     sizeof(cl_mem), 
                     (void *)&mystuff.d_modbasecase_debug);

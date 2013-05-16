@@ -378,9 +378,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 #if (TRACE_KERNEL > 1)
                   , const uint tid
 #endif
-#ifdef CHECKS_MODBASECASE
-                  , __global uint * restrict modbasecase_debug
-#endif
+                  MODBASECASE_PAR_DEF
 )/* res = q / n (integer division) */
 {
   __private float_v qf;
@@ -698,7 +696,8 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
  * bit_max65 is bit_max - 65
  ****/
 
-void check_barrett15_69(uint shifter, const int75_v f, const uint tid, const int150_t bb, const int bit_max65, __global uint * restrict RES)
+void check_barrett15_69(uint shifter, const int75_v f, const uint tid, const int150_t bb, const int bit_max65, __global uint * restrict RES
+     MODBASECASE_PAR_DEF)
 {
   __private int75_v a, u;
   __private int150_v b, tmp150;
@@ -726,9 +725,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
+                  MODBASECASE_PAR
 );						// u = floor(tmp150 / f)
 
 #if (TRACE_KERNEL > 2)
@@ -840,7 +837,8 @@ Precalculated here since it is the same for all steps in the following loop */
   mod_simple_even_75_and_check_big_factor75(a, f, ff, RES);
 }
 
-void check_barrett15_70(uint shifter, const int75_v f, const uint tid, const int150_t bb, const int bit_max65, __global uint * restrict RES)
+void check_barrett15_70(uint shifter, const int75_v f, const uint tid, const int150_t bb, const int bit_max65, __global uint * restrict RES
+     MODBASECASE_PAR_DEF)
 {
   __private int75_v a, u;
   __private int150_v b, tmp150;
@@ -868,9 +866,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
+                  MODBASECASE_PAR
 );						// u = floor(tmp150 / f)
 
 #if (TRACE_KERNEL > 2)
@@ -983,7 +979,8 @@ Precalculated here since it is the same for all steps in the following loop */
 }
 
 
-void check_barrett15_71(uint shifter, const int75_v f, const uint tid, const int150_t bb, const int bit_max65, __global uint * restrict RES)
+void check_barrett15_71(uint shifter, const int75_v f, const uint tid, const int150_t bb, const int bit_max65, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF)
 {
   __private int75_v a, u;
   __private int150_v b, tmp150;
@@ -1011,9 +1008,7 @@ ff = 1/f as float, needed in div_192_96().
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
+                  MODBASECASE_PAR
 );						// u = floor(tmp150 / f)
 
 #if (TRACE_KERNEL > 2)
@@ -1131,7 +1126,8 @@ ff = 1/f as float, needed in div_192_96().
 }
 
 
-void check_barrett15_73(uint shifter, const int75_v f, const uint tid, const int150_t bb, const int bit_max65, __global uint * restrict RES)
+void check_barrett15_73(uint shifter, const int75_v f, const uint tid, const int150_t bb, const int bit_max65, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF)
 {
   __private int75_v a, u;
   __private int150_v b, tmp150;
@@ -1159,9 +1155,7 @@ ff = 1/f as float, needed in div_192_96().
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
+                  MODBASECASE_PAR
 );						// u = floor(tmp150 / f)
 
 #if (TRACE_KERNEL > 2)
@@ -1246,9 +1240,7 @@ ff = 1/f as float, needed in div_192_96().
 
     f1= as_float(0x3f7ffffd) / f1;   // we rounded f1 towards plus infinity, and round all other results towards zero. 
     div_150_75(&tmp75, b, a, f1, tid
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
+               MODBASECASE_PAR
               );
     if (tid==TRACE_TID) printf((__constant char *)"vrfy: b = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x / a=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x\n",
         b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
@@ -1315,10 +1307,7 @@ ff = 1/f as float, needed in div_192_96().
 
 __kernel void cl_barrett15_69(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
                            const uint8 b_in, __global uint * restrict RES, const int bit_max65
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                           MODBASECASE_PAR_DEF         )
 {
   __private int75_v f;
   __private uint tid;
@@ -1335,16 +1324,14 @@ __kernel void cl_barrett15_69(__private uint exponent, const int75_t k_base, con
         f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
-  check_barrett15_69(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES);
+  check_barrett15_69(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES
+                     MODBASECASE_PAR);
 }
 
 
 __kernel void cl_barrett15_70(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
                            const uint8 b_in, __global uint * restrict RES, const int bit_max65
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                           MODBASECASE_PAR_DEF         )
 {
   __private int75_v f;
   __private uint tid;
@@ -1361,16 +1348,14 @@ __kernel void cl_barrett15_70(__private uint exponent, const int75_t k_base, con
         f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
-  check_barrett15_70(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES);
+  check_barrett15_70(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES
+                     MODBASECASE_PAR);
 }
 
 
 __kernel void cl_barrett15_71(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
                            const uint8 b_in, __global uint * restrict RES, const int bit_max65
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                           MODBASECASE_PAR_DEF         )
 {
   __private int75_v f;
   __private uint tid;
@@ -1389,16 +1374,14 @@ __kernel void cl_barrett15_71(__private uint exponent, const int75_t k_base, con
         tid, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
-  check_barrett15_71(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES);
+  check_barrett15_71(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES
+                     MODBASECASE_PAR);
 }
 
 
 __kernel void cl_barrett15_73(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
                            const uint8 b_in, __global uint * restrict RES, const int bit_max65
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                           MODBASECASE_PAR_DEF         )
 {
   __private int75_v f;
   __private uint tid;
@@ -1415,7 +1398,8 @@ __kernel void cl_barrett15_73(__private uint exponent, const int75_t k_base, con
         f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
-  check_barrett15_73(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES);
+  check_barrett15_73(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES
+                     MODBASECASE_PAR);
 }
 
 
@@ -1797,9 +1781,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
 #if (TRACE_KERNEL > 1)
                   , const uint tid
 #endif
-#ifdef CHECKS_MODBASECASE
-                  , __global uint * restrict modbasecase_debug
-#endif
+                  MODBASECASE_PAR_DEF
 )/* res = q / n (integer division) 
     during function entry, qhi contains the upper 30 bits of an 180-bit-value. The remaining bits are zero implicitely.
     this is not a vector, as the first value is the same for all FCs*/
@@ -2186,7 +2168,8 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   res->d4 &= 0x7FFF;
 }
 
-void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const int180_t bb, const int bit_max65, __global uint * restrict RES)
+void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const int180_t bb, const int bit_max65, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF)
 {
   __private int90_v a, u;
   __private int180_v b, tmp180;
@@ -2222,10 +2205,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
-);						// u = floor(tmp180 / f)
+                  MODBASECASE_PAR);						// u = floor(tmp180 / f)
 
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
@@ -2385,7 +2365,8 @@ Precalculated here since it is the same for all steps in the following loop */
   mod_simple_even_90_and_check_big_factor90(a, f, ff, RES);
 }
 
-void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const int180_t bb, const int bit_max65, __global uint * restrict RES)
+void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const int180_t bb, const int bit_max65, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF)
 {
   __private int90_v a, u;
   __private int180_v b, tmp180;
@@ -2419,10 +2400,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
-);						// u = floor(tmp180 / f)
+                  MODBASECASE_PAR);						// u = floor(tmp180 / f)
 
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
@@ -2583,7 +2561,8 @@ Precalculated here since it is the same for all steps in the following loop */
 }
 
 
-void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const int180_t bb, const int bit_max65, __global uint * restrict RES)
+void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const int180_t bb, const int bit_max65, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF)
 {
   __private int90_v a, u;
   __private int180_v b, tmp180;
@@ -2617,10 +2596,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
-#ifdef CHECKS_MODBASECASE
-                  ,modbasecase_debug
-#endif
-);						// u = floor(tmp180 / f)
+                  MODBASECASE_PAR);						// u = floor(tmp180 / f)
 
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
@@ -2709,13 +2685,11 @@ Precalculated here since it is the same for all steps in the following loop */
                );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
 #else
     int limit = 6;
-    if(bit_max_90 == 2) limit = 8;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-    if(bit_max_90 == 3) limit = 7;						// bit_max == 66, ...
     mod_simple_90(&a, tmp90, f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
-                   , bit_max_90, limit, modbasecase_debug);
+                   , bit_max65, limit, modbasecase_debug);
 #endif
   
 #if (TRACE_KERNEL > 2)
@@ -2804,11 +2778,8 @@ Precalculated here since it is the same for all steps in the following loop */
  ****/
 
 __kernel void cl_barrett15_82(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
-                           const uint8 b_in, __global uint * restrict RES, const int bit_max65
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                              const uint8 b_in, __global uint * restrict RES, const int bit_max65
+                              MODBASECASE_PAR_DEF         )
 {
   __private int90_v f;
   __private uint tid;
@@ -2824,15 +2795,13 @@ __kernel void cl_barrett15_82(__private uint exponent, const int75_t k_base, con
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: tid=%d, f=%x:%x:%x:%x:%x:%x, shift=%d\n",
         tid, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
-  check_barrett15_82(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES);
+  check_barrett15_82(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES
+                     MODBASECASE_PAR);
 }
 
 __kernel void cl_barrett15_83(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
-                           const uint8 b_in, __global uint * restrict RES, const int bit_max65
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                              const uint8 b_in, __global uint * restrict RES, const int bit_max65
+                              MODBASECASE_PAR_DEF         )
 {
   __private int90_v f;
   __private uint tid;
@@ -2848,15 +2817,13 @@ __kernel void cl_barrett15_83(__private uint exponent, const int75_t k_base, con
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: tid=%d, f=%x:%x:%x:%x:%x:%x, shift=%d\n",
         tid, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
-  check_barrett15_83(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES);
+  check_barrett15_83(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES
+                     MODBASECASE_PAR);
 }
 
 __kernel void cl_barrett15_88(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
-                           const uint8 b_in, __global uint * restrict RES, const int bit_max65
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                              const uint8 b_in, __global uint * restrict RES, const int bit_max65
+                              MODBASECASE_PAR_DEF         )
 {
   __private int90_v f;
   __private uint tid;
@@ -2872,7 +2839,8 @@ __kernel void cl_barrett15_88(__private uint exponent, const int75_t k_base, con
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: tid=%d, f=%x:%x:%x:%x:%x:%x, shift=%d\n",
         tid, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
-  check_barrett15_88(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES);
+  check_barrett15_88(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES
+                     MODBASECASE_PAR);
 }
 
 
@@ -2891,10 +2859,7 @@ __kernel void cl_barrett15_69_gs(const uint exponent, const int75_t k_base,
                                  const int shiftcount, const uint8 b_in,
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                                 MODBASECASE_PAR_DEF         )
 {
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
@@ -3008,7 +2973,8 @@ __kernel void cl_barrett15_69_gs(const uint exponent, const int75_t k_base,
         i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 
-    check_barrett15_69(initial_shifter_value, f, tid, bb, bit_max65, RES);
+    check_barrett15_69(initial_shifter_value, f, tid, bb, bit_max65, RES
+                       MODBASECASE_PAR);
   }
 }
 
@@ -3018,10 +2984,7 @@ __kernel void cl_barrett15_70_gs(const uint exponent, const int75_t k_base,
                                  const int shiftcount, const uint8 b_in,
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                                 MODBASECASE_PAR_DEF         )
 {
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
@@ -3135,7 +3098,8 @@ __kernel void cl_barrett15_70_gs(const uint exponent, const int75_t k_base,
         i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 
-    check_barrett15_70(initial_shifter_value, f, tid, bb, bit_max65, RES);
+    check_barrett15_70(initial_shifter_value, f, tid, bb, bit_max65, RES
+                       MODBASECASE_PAR);
   }
 }
 
@@ -3145,10 +3109,7 @@ __kernel void cl_barrett15_71_gs(const uint exponent, const int75_t k_base,
                                  const int shiftcount, const uint8 b_in,
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                                 MODBASECASE_PAR_DEF         )
 {
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
@@ -3262,7 +3223,8 @@ __kernel void cl_barrett15_71_gs(const uint exponent, const int75_t k_base,
         i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 
-    check_barrett15_71(initial_shifter_value, f, tid, bb, bit_max65, RES);
+    check_barrett15_71(initial_shifter_value, f, tid, bb, bit_max65, RES
+                       MODBASECASE_PAR);
   }
 }
 
@@ -3272,10 +3234,7 @@ __kernel void cl_barrett15_73_gs(const uint exponent, const int75_t k_base,
                                  const int shiftcount, const uint8 b_in,
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                                 MODBASECASE_PAR_DEF         )
 {
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
@@ -3389,7 +3348,8 @@ __kernel void cl_barrett15_73_gs(const uint exponent, const int75_t k_base,
         i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 
-    check_barrett15_73(initial_shifter_value, f, tid, bb, bit_max65, RES);
+    check_barrett15_73(initial_shifter_value, f, tid, bb, bit_max65, RES
+                       MODBASECASE_PAR);
   }
 }
 
@@ -3408,10 +3368,7 @@ __kernel void cl_barrett15_82_gs(const uint exponent, const int75_t k_base,
                                  const int shiftcount, const uint8 b_in,
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                                 MODBASECASE_PAR_DEF         )
 {
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
@@ -3529,7 +3486,8 @@ __kernel void cl_barrett15_82_gs(const uint exponent, const int75_t k_base,
         i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 
-    check_barrett15_82(initial_shifter_value, f, tid, bb, bit_max65, RES);
+    check_barrett15_82(initial_shifter_value, f, tid, bb, bit_max65, RES
+                       MODBASECASE_PAR);
   }
 }
 
@@ -3539,10 +3497,7 @@ __kernel void cl_barrett15_83_gs(const uint exponent, const int75_t k_base,
                                  const int shiftcount, const uint8 b_in,
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                                 MODBASECASE_PAR_DEF         )
 {
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
@@ -3660,7 +3615,8 @@ __kernel void cl_barrett15_83_gs(const uint exponent, const int75_t k_base,
         i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 
-    check_barrett15_83(initial_shifter_value, f, tid, bb, bit_max65, RES);
+    check_barrett15_83(initial_shifter_value, f, tid, bb, bit_max65, RES
+                       MODBASECASE_PAR);
   }
 }
 
@@ -3670,10 +3626,7 @@ __kernel void cl_barrett15_88_gs(const uint exponent, const int75_t k_base,
                                  const int shiftcount, const uint8 b_in,
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-#ifdef CHECKS_MODBASECASE
-         , __global uint * restrict modbasecase_debug
-#endif
-         )
+                                 MODBASECASE_PAR_DEF         )
 {
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
@@ -3791,7 +3744,8 @@ __kernel void cl_barrett15_88_gs(const uint exponent, const int75_t k_base,
         i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
 #endif
 
-    check_barrett15_88(initial_shifter_value, f, tid, bb, bit_max65, RES);
+    check_barrett15_88(initial_shifter_value, f, tid, bb, bit_max65, RES
+                       MODBASECASE_PAR);
   }
 }
 #endif
