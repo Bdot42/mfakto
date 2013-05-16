@@ -292,7 +292,7 @@ void print_status_line(mystuff_t *mystuff)
       }
       else if(mystuff->stats.progressformat[i+1] == 'w')
       {
-        index += sprintf(buffer + index, "%6llu", mystuff->stats.cpu_wait_time); /* mfakto only */
+        index += sprintf(buffer + index, "%6llu", mystuff->stats.cpu_wait_time / mystuff->stats.grid_count); /* mfakto only */
       }
       else if(mystuff->stats.progressformat[i+1] == 'W')
       {
