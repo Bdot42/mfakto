@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
-#define SIEVE_SIZE_LIMIT 36
+#define SIEVE_SIZE_LIMIT 32
 
 
 /* EXTENDED_SELFTEST will add about 30k additional tests to the -st2 test */
@@ -80,7 +80,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
    pure times needed to copy the data over, and to test the FC's of the chunk
    (pure run time per kernel invokation) - best measure to compare changes in
    the kernels, or drivers. */
-//#define CL_PERFORMANCE_INFO
+#define CL_PERFORMANCE_INFO
 
 
 /* Tell the OpenCL compiler to create debuggable code for the Kernels */
@@ -101,9 +101,9 @@ than an equal SIEVE_SIZE_LIMIT #define.
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.13pre5" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.13" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.13pre5-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.13-Win" /* DO NOT CHANGE! */
 #endif
 
 

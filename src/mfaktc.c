@@ -198,18 +198,18 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT70_MUL15,  // "cl_barrett15_70" (253.48 M/s)
       BARRETT71_MUL15,  // "cl_barrett15_71" (248.20 M/s)
       MG62,             // "cl_mg_62"        (230.09 M/s)
-      BARRETT77_MUL32,  // "cl_barrett32_77" (212.16 M/s)
-      BARRETT73_MUL15,  // "cl_barrett15_73" (201.66 M/s)
-      BARRETT76_MUL32,  // "cl_barrett32_76" (194.94 M/s)  v=2: (210.19 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (220.02 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (208.53 M/s)  v=2: (212.63 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (205.75 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (194.25 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (190.83 M/s)  v=2: (196.85 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (187.10 M/s)
       BARRETT82_MUL15,  // "cl_barrett15_82" (186.75 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (183.98 M/s)
-      BARRETT88_MUL32,  // "cl_barrett32_88" (181.15 M/s)
       BARRETT83_MUL15,  // "cl_barrett15_83" (176.76 M/s)
-      BARRETT87_MUL32,  // "cl_barrett32_87" (173.36 M/s)  v=2: (178.74 M/s)
-      BARRETT79_MUL32,  // "cl_barrett32_79" (163.77 M/s)  v=2: (180.31 M/s)
-      BARRETT88_MUL15,  // "cl_barrett15_88" (151.86 M/s)
-      BARRETT92_MUL32,  // "cl_barrett32_92" (142.79 M/s)  v=2: (156.25 M/s)
-      _63BIT_MUL24,     // "mfakto_cl_63"    (135.53 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (165.80 M/s)  v=2: (179.51 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (155.48 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (155.17 M/s)  v=2: (169.63 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (141.31 M/s)
       UNKNOWN_KERNEL,   // 
       UNKNOWN_KERNEL,   // 
       UNKNOWN_KERNEL,
@@ -715,10 +715,10 @@ RET_ERROR we might have a serios problem
   int retval=1, ind;
   enum GPUKernels kernels[UNKNOWN_KERNEL], kernel_index;
   // this index is 1 less than what -st/-st2 report
-  unsigned int index[] = {   0, 30,  25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
-                             70,   72,   73,  82,  88,   // some factors below 2^75 (test 75 bit kernel)
+  unsigned int index[] = {   646, 647, 648, 30,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+                             70,   72,   73,   82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
-                           1547, 1552, 1556, 1557    // some factors below 2^95 (test 95 bit kernel)
+                           1547, 1552, 1557    // some factors below 2^95 (test 95 bit kernel)
                          };                          // mfakto special case (25-bit factor)
   // save the SievePrimes ini value as the selftest may lower it to fit small test-exponents
   unsigned int sieve_primes_save = mystuff->sieve_primes;
