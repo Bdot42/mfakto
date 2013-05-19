@@ -138,4 +138,7 @@ TODO
 - cleanup: separate GPU- and CPU-sieve based kernels, compile and load only one set of them
 - allow for kernel reload (e.g. different vector size, or -DSMALL_EXP)
 - Performance: vectorize GPU-sieve / reading from sieve
+- auto-optimizer: parameterize possible uses of mad_hi, amd_bitalign and others,
+  let a test mode find out about the best config
+- Try and build an assembler kernel for GCN (find possible optimizations like carry, mul24_hi, scalar unit etc)
 

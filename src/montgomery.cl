@@ -12,7 +12,7 @@ mfaktc (mfakto) is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-                                
+
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
@@ -196,7 +196,7 @@ bit_max64 is bit_max - 64!
    and then As = mulmod_REDC(A, Rs)  -or-
    directly calculating As = A*R mod P.
    R = 2^64 for this kernel.
-   
+
    In the later case, we can start with A=1 (no preshifting), which means As = R mod P = R-P mod P (R-P fits in ulong)
    */
 
@@ -239,7 +239,6 @@ bit_max64 is bit_max - 64!
 //     printf ("loopend:exp=%#x, As=%llu (%#llx..<32>)\n", exp, As, As>>32UL);
    }
 
-   
    a = mod_REDC64 (As, f, f_inv);
 //   printf ("result = %llu\n", A);
 
@@ -250,7 +249,7 @@ bit_max64 is bit_max - 64!
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_mg62: tid=%ld found factor: q=%#llx, k=%x:%x:%x\n", tid, f.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -304,7 +303,7 @@ bit_max64 is bit_max - 64!
 
 void square_45_90(int90_v * const res, const int90_v a)
 /* res = (low 3 components of a)^2 = d0^2 + 2d0d1 + d1^2 + 2d0d2 + 2d1d2 + d2^2
-              
+
    */
 {
   // assume we have enough spare bits and can do all the carries at the very end:
@@ -530,7 +529,7 @@ In our case, the word size is just 2^15 instead of 2^64.
   ret.d3 = a.d3 & 0x7FFF;
   ret.d4 = a.d4 & 0x7FFF;
   ret.d5 = a.d5;
-  
+
   return sub_if_gte_90(ret, m);
 }
 
@@ -628,7 +627,7 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
   a.d2 &= 0x7FFF;
   a.d3 &= 0x7FFF;
   a.d4 &= 0x7FFF;
-  
+
   return sub_if_gte_90(a, m);
 }
 
@@ -718,7 +717,7 @@ bit_max64 is bit_max - 64!
   k.d2 &= 0x7FFF;
   k.d4  = (k.d3 >> 15) + k_base.d4;  // PERF: k.d4 = 0, normally. Can we limit k to 2^60?
   k.d3 &= 0x7FFF;
-        
+
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
         tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
@@ -762,7 +761,7 @@ bit_max64 is bit_max - 64!
    and then As = mulmod_REDC(A, Rs)  -or-
    directly calculating As = A*R mod f.
    R = 2^90 for this kernel.
-   
+
    In the later case, we can start with A=1 (no preshifting), which means As = R mod f = R-f mod f (which is just a 90-bit mod).
    If we furthermore limit f > 2^75, then we can use mod_simple for this calculation - with a little more effort mod_simple could handle f>2^68
    */
@@ -838,7 +837,6 @@ exp <<= clz(exp); // shift exp to the very left of the 32 bits
      exp<<=1;
    }
 
-   
    a = mod_REDC90 (As, f, f_inv);
 #if (TRACE_KERNEL > 1)
    if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-end: exp=0x%x, As=%x:%x:%x:%x:%x:%x, a=%x:%x:%x:%x:%x:%x\n",
@@ -897,5 +895,4 @@ exp <<= clz(exp); // shift exp to the very left of the 32 bits
   EVAL_RES_90(se)
   EVAL_RES_90(sf)
 #endif
- 
 }

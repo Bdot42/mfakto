@@ -12,7 +12,7 @@ mfaktc (mfakto) is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-                                
+
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -514,14 +514,14 @@ int init_CL(int num_streams, cl_int devnumber)
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(deviceinfo.gl_mem), &deviceinfo.gl_mem, NULL);
-    if(status != CL_SUCCESS) 
-	  { 
+    if(status != CL_SUCCESS)
+	  {
 		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_GLOBAL_MEM_SIZE)\n";
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(deviceinfo.max_clock), &deviceinfo.max_clock, NULL);
-    if(status != CL_SUCCESS) 
-	  { 
+    if(status != CL_SUCCESS)
+	  {
 		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY)\n";
 	  	return 1;
 	  }
@@ -532,8 +532,8 @@ int init_CL(int num_streams, cl_int devnumber)
 	  	return 1;
 	  }
     status = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(deviceinfo.wg_size), &deviceinfo.wg_size, NULL);
-    if(status != CL_SUCCESS) 
-	  { 
+    if(status != CL_SUCCESS)
+	  {
 		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE)\n";
 	  	return 1;
 	  }
@@ -555,7 +555,7 @@ int init_CL(int num_streams, cl_int devnumber)
 		  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_DEVICE_LOCAL_MEM_SIZE)\n";
 	  	return 1;
 	  }
-    
+
 #ifdef DETAILED_INFO
     std::cout << "Device " << i+1  << "/" << num_devices << ": " << deviceinfo.d_name << " (" << deviceinfo.v_name << "),\ndevice version: "
       << deviceinfo.d_ver << ", driver version: " << deviceinfo.dr_version << "\nExtensions: " << deviceinfo.exts
@@ -709,7 +709,7 @@ int init_CL(int num_streams, cl_int devnumber)
       free(buildLog);
     }
 		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): clBuildProgram\n";
-		if (status != CL_SUCCESS) return 1; 
+		if (status != CL_SUCCESS) return 1;
   }
 
   free(source);
@@ -820,66 +820,65 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
 	}
   clFinish(QUEUE);
 #ifdef CL_PERFORMANCE_INFO
-              cl_ulong startTime=0;
-              cl_ulong endTime=1000;
-              /* Get kernel profiling info */
-              status = clGetEventProfilingInfo(copy_event,
+  cl_ulong startTime=0;
+  cl_ulong endTime=1000;
+  /* Get kernel profiling info */
+  status = clGetEventProfilingInfo(copy_event,
                                 CL_PROFILING_COMMAND_START,
                                 sizeof(cl_ulong),
                                 &startTime,
                                 0);
-              if(status != CL_SUCCESS)
- 	            { 
-		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
-                return RET_ERROR;
-              }
-              status = clGetEventProfilingInfo(copy_event,
+  if(status != CL_SUCCESS)
+  {
+    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
+    return RET_ERROR;
+  }
+  status = clGetEventProfilingInfo(copy_event,
                                 CL_PROFILING_COMMAND_END,
                                 sizeof(cl_ulong),
                                 &endTime,
                                 0);
-              if(status != CL_SUCCESS) 
- 	            { 
-		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
-                return RET_ERROR;
-              }
-              printf("primes array copied in %2.2f ms (%4.2f MB/s), ", (endTime - startTime)/1e6,
+  if(status != CL_SUCCESS)
+  {
+    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
+    return RET_ERROR;
+  }
+  printf("primes array copied in %2.2f ms (%4.2f MB/s), ", (endTime - startTime)/1e6,
                        pinfo_size * 1e3 / (endTime - startTime) );
-              status = clGetEventProfilingInfo(run_event,
+  status = clGetEventProfilingInfo(run_event,
                                 CL_PROFILING_COMMAND_START,
                                 sizeof(cl_ulong),
                                 &startTime,
                                 0);
-              if(status != CL_SUCCESS)
- 	            { 
-		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
-                return RET_ERROR;
-              }
-              status = clGetEventProfilingInfo(run_event,
+  if(status != CL_SUCCESS)
+  {
+    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
+    return RET_ERROR;
+  }
+  status = clGetEventProfilingInfo(run_event,
                                 CL_PROFILING_COMMAND_END,
                                 sizeof(cl_ulong),
                                 &endTime,
                                 0);
-              if(status != CL_SUCCESS)
- 	            { 
-		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
-                return RET_ERROR;
-              }
-              printf("proc'd in %2.2f ms (%3.2f M/s)\n", (endTime - startTime)/1e6, double(globalThreads) *1e3/ (endTime - startTime));
+  if(status != CL_SUCCESS)
+  {
+    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
+    return RET_ERROR;
+  }
+  printf("proc'd in %2.2f ms (%3.2f M/s)\n", (endTime - startTime)/1e6, double(globalThreads) *1e3/ (endTime - startTime));
 #endif
-              status = clReleaseEvent(copy_event);
-              if(status != CL_SUCCESS) 
-              { 
-		         	  std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release copy event object. (clReleaseEvent)\n";
-		         	  return RET_ERROR;
-    	       	}
-              status = clReleaseEvent(run_event);
-             	if(status != CL_SUCCESS) 
-           	  { 
-		          	std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release run event object. (clReleaseEvent)\n";
-		         	  return RET_ERROR;
-            	}
-
+  status = clReleaseEvent(copy_event);
+  if(status != CL_SUCCESS)
+  {
+    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release copy event object. (clReleaseEvent)\n";
+    return RET_ERROR;
+  }
+  status = clReleaseEvent(run_event);
+  if(status != CL_SUCCESS)
+  {
+    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Release run event object. (clReleaseEvent)\n";
+    return RET_ERROR;
+  }
   return status;
 }
 
@@ -938,43 +937,43 @@ cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_ev
                  0,
                  NULL,
                  run_event);
-  if(status != CL_SUCCESS) 
-	{ 
+  if(status != CL_SUCCESS)
+	{
 		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)" << "\n";
 		return 1;
 	}
 #ifdef CL_PERFORMANCE_INFO
   clFinish(QUEUE);
-              cl_ulong startTime=0;
-              cl_ulong endTime=1000;
-              /* Get kernel profiling info */
-              status = clGetEventProfilingInfo(*run_event,
+  cl_ulong startTime=0;
+  cl_ulong endTime=1000;
+  /* Get kernel profiling info */
+  status = clGetEventProfilingInfo(*run_event,
                                 CL_PROFILING_COMMAND_START,
                                 sizeof(cl_ulong),
                                 &startTime,
                                 0);
-              if(status != CL_SUCCESS)
- 	            { 
-		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
-                return RET_ERROR;
-              }
-              status = clGetEventProfilingInfo(*run_event,
+  if(status != CL_SUCCESS)
+  { 
+    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(startTime)\n";
+    return RET_ERROR;
+  }
+  status = clGetEventProfilingInfo(*run_event,
                                 CL_PROFILING_COMMAND_END,
                                 sizeof(cl_ulong),
                                 &endTime,
                                 0);
-              if(status != CL_SUCCESS)
- 	            { 
-		            std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
-                return RET_ERROR;
-              }
-              printf("CalcModularInverses in %2.2f us (%3.2f M/s)\n", (endTime - startTime)/1e3, double(globalThreads) *1e3/ (endTime - startTime));
-              clReleaseEvent(mystuff.copy_events[0]); // dont use run_events - if it was passed in, it will still be needed. Ignore errors here, as we may have used a different event
+  if(status != CL_SUCCESS)
+  { 
+    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): in clGetEventProfilingInfo.(endTime)\n";
+    return RET_ERROR;
+  }
+  printf("CalcModularInverses in %2.2f us (%3.2f M/s)\n", (endTime - startTime)/1e3, double(globalThreads) *1e3/ (endTime - startTime));
+  clReleaseEvent(mystuff.copy_events[0]); // dont use run_events - if it was passed in, it will still be needed. Ignore errors here, as we may have used a different event
 #endif
 
 #ifdef DETAILED_INFO
-    // get mystuff.d_calc_bit_to_clear_info and print it
-	cl_uint rowinfo_size = MAX_PRIMES_PER_THREAD*4 * sizeof (cl_uint) + mystuff.gpu_sieve_primes * 8;
+  // get mystuff.d_calc_bit_to_clear_info and print it
+  cl_uint rowinfo_size = MAX_PRIMES_PER_THREAD*4 * sizeof (cl_uint) + mystuff.gpu_sieve_primes * 8;
 
   status = clEnqueueReadBuffer(QUEUE,     // only for tracing/verification - not needed later.
                 mystuff.d_calc_bit_to_clear_info,
@@ -1427,41 +1426,41 @@ __kernel void barrett15_73(__private uint exp, const int75_t k_base, const __glo
   // first set the specific params that don't change per block: b_preinit, shiftcount, RES
   if (new_class)
   {
-    status = clSetKernelArg(l_kernel, 
-                    3, 
-                    sizeof(cl_int), 
+    status = clSetKernelArg(l_kernel,
+                    3,
+                    sizeof(cl_int),
                     (void *)&shiftcount);
-    if(status != CL_SUCCESS) 
-  	{ 
+    if(status != CL_SUCCESS)
+  	{
   		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (shiftcount)\n";
   		return 1;
   	}
 
-    status = clSetKernelArg(l_kernel, 
-                    4, 
+    status = clSetKernelArg(l_kernel,
+                    4,
                     sizeof(cl_uint8),
                     (void *)&b_in);
-    if(status != CL_SUCCESS) 
-  	{ 
+    if(status != CL_SUCCESS)
+  	{
   		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (b_in)\n";
   		return 1;
   	}
       /* the bit_max for the barrett kernels (the others ignore it) */
-      status = clSetKernelArg(l_kernel, 
-                      6, 
-                      sizeof(cl_int), 
+      status = clSetKernelArg(l_kernel,
+                      6,
+                      sizeof(cl_int),
                       (void *)&bin_max);
-      if(status != CL_SUCCESS) 
-      { 
+      if(status != CL_SUCCESS)
+      {
         std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_max)\n";
       }
 #ifdef CHECKS_MODBASECASE
-      status = clSetKernelArg(l_kernel, 
-                    7, 
-                    sizeof(cl_mem), 
+      status = clSetKernelArg(l_kernel,
+                    7,
+                    sizeof(cl_mem),
                     (void *)&mystuff.d_modbasecase_debug);
-      if(status != CL_SUCCESS) 
-  	  { 
+      if(status != CL_SUCCESS)
+  	  {
 	  	  std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_modbasecase_debug)\n";
   		  return 1;
   	  }
@@ -1473,12 +1472,12 @@ __kernel void barrett15_73(__private uint exp, const int75_t k_base, const __glo
 
   }
   // now the params that change everytime
-  status = clSetKernelArg(l_kernel, 
-                    1, 
-                    sizeof(int75), 
+  status = clSetKernelArg(l_kernel,
+                    1,
+                    sizeof(int75),
                     (void *)&k_base);
-  if(status != CL_SUCCESS) 
-	{ 
+  if(status != CL_SUCCESS)
+	{
 		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (k_base)\n";
 		return 1;
 	}
@@ -1525,12 +1524,12 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
   // first set the specific params that don't change per block: b_preinit, shiftcount, RES
   if (new_class)
   {
-    status = clSetKernelArg(l_kernel, 
-                    3, 
-                    sizeof(cl_int), 
+    status = clSetKernelArg(l_kernel,
+                    3,
+                    sizeof(cl_int),
                     (void *)&shiftcount);
-    if(status != CL_SUCCESS) 
-  	{ 
+    if(status != CL_SUCCESS)
+  	{
   		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (shiftcount)\n";
   		return 1;
   	}
@@ -1538,18 +1537,18 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
     cl_uint8 b_in={{b_preinit.d0, b_preinit.d1, b_preinit.d2, b_preinit.d3, b_preinit.d4, b_preinit.d5, 0, 0}};
 #endif
 
-    status = clSetKernelArg(l_kernel, 
-                    4, 
+    status = clSetKernelArg(l_kernel,
+                    4,
 #ifdef WA_FOR_CATALYST11_10_BUG
                     sizeof(cl_uint8),
                     (void *)&b_in
 #else
-                    sizeof(int144), 
+                    sizeof(int144),
                     (void *)&b_preinit
 #endif
         );
-    if(status != CL_SUCCESS) 
-  	{ 
+    if(status != CL_SUCCESS)
+  	{
   		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (b_preinit)\n";
   		return 1;
   	}
@@ -1557,12 +1556,12 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
     if ((kernel_info[BARRETT70_MUL24].kernel == l_kernel))
     {
       /* the bit_max-64 for the barrett kernels (the others ignore it) */
-      status = clSetKernelArg(l_kernel, 
-                      6, 
-                      sizeof(cl_int), 
+      status = clSetKernelArg(l_kernel,
+                      6,
+                      sizeof(cl_int),
                       (void *)&bin_min63);
-      if(status != CL_SUCCESS) 
-      { 
+      if(status != CL_SUCCESS)
+      {
         std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_min)\n";
       }
       argnum=7;
@@ -1570,12 +1569,12 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
 #ifdef CHECKS_MODBASECASE
     if ((kernel_info[_71BIT_MUL24].kernel == l_kernel) || (kernel_info[_63BIT_MUL24].kernel == l_kernel) || (kernel_info[BARRETT70_MUL24].kernel == l_kernel))
     {
-      status = clSetKernelArg(l_kernel, 
-                    argnum, 
-                    sizeof(cl_mem), 
+      status = clSetKernelArg(l_kernel,
+                    argnum,
+                    sizeof(cl_mem),
                     (void *)&mystuff.d_modbasecase_debug);
-      if(status != CL_SUCCESS) 
-  	  { 
+      if(status != CL_SUCCESS)
+  	  {
 	  	  std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (d_modbasecase_debug)\n";
   		  return 1;
   	  }
@@ -1587,12 +1586,12 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
 
   }
   // now the params that change everytime
-  status = clSetKernelArg(l_kernel, 
-                    1, 
-                    sizeof(int72), 
+  status = clSetKernelArg(l_kernel,
+                    1,
+                    sizeof(int72),
                     (void *)&k_base);
-  if(status != CL_SUCCESS) 
-	{ 
+  if(status != CL_SUCCESS)
+	{
 		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (k_base)\n";
 		return 1;
 	}
@@ -1614,23 +1613,23 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
   // first set the specific params that don't change per block: b_pre_shift, bin_min63
   if (new_class)
   {
-    status = clSetKernelArg(l_kernel, 
-                    3, 
-                    sizeof(cl_ulong4), 
+    status = clSetKernelArg(l_kernel,
+                    3,
+                    sizeof(cl_ulong4),
                     (void *)&b_preinit);
-    if(status != CL_SUCCESS) 
-  	{ 
+    if(status != CL_SUCCESS)
+  	{
   		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (b_preinit)\n";
   		return 1;
   	}
 
     /* the bit_max-64 for the barrett kernels (the others ignore it) */
-    status = clSetKernelArg(l_kernel, 
-                    4, 
-                    sizeof(cl_int), 
+    status = clSetKernelArg(l_kernel,
+                    4,
+                    sizeof(cl_int),
                     (void *)&bin_min63);
-    if(status != CL_SUCCESS) 
-  	{ 
+    if(status != CL_SUCCESS)
+  	{
 	  	std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_min)\n";
   		
   	}
@@ -1640,12 +1639,12 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
 #endif
   }
   // now the params that change everytime
-  status = clSetKernelArg(l_kernel, 
-                    1, 
-                    sizeof(cl_ulong), 
+  status = clSetKernelArg(l_kernel,
+                    1,
+                    sizeof(cl_ulong),
                     (void *)&k_base);
-  if(status != CL_SUCCESS) 
-	{ 
+  if(status != CL_SUCCESS)
+	{
 		std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (k_base)\n";
 		return 1;
 	}

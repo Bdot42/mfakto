@@ -1,7 +1,7 @@
 /*
 This file is part of mfaktc.
-Copyright (C) 2009, 2010, 2011, 2012  Oliver Weihe (o.weihe@t-online.de)
-                                      Bertram Franz (bertramf@gmx.net)
+Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
+                           Bertram Franz (bertramf@gmx.net)
 
 mfaktc is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@ mfaktc is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-                                
+
 You should have received a copy of the GNU General Public License
 along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -79,7 +79,7 @@ void print_dez72(int96 a, char *buf)
   tmp.d2 =                 a.d2 >> 16;
   tmp.d1 = (a.d2 << 16) + (a.d1 >>  8);
   tmp.d0 = (a.d1 << 24) +  a.d0;
-  
+
   print_dez192(tmp, buf);
 }
 
@@ -94,7 +94,7 @@ void print_dez144(int144 a, char *buf)
   tmp.d2 = (a.d3 <<  8) + (a.d2 >> 16);
   tmp.d1 = (a.d2 << 16) + (a.d1 >>  8);
   tmp.d0 = (a.d1 << 24) +  a.d0;
-  
+
   print_dez192(tmp, buf);
 }
 
@@ -119,7 +119,7 @@ void print_dez192(int192 a, char *buf)
   char digit[58];
   int digits=0,carry,i=0;
   long long int tmp;
-  
+
   while((a.d0!=0 || a.d1!=0 || a.d2!=0 || a.d3!=0 || a.d4!=0 || a.d5!=0) && digits<58)
   {
                                                    carry = a.d5%10; a.d5 /= 10;
@@ -152,7 +152,7 @@ writes "a" into "buf" in decimal
   char digit[29];
   int  digits=0,carry,i=0;
   long long int tmp;
-  
+
   while((a.d0!=0 || a.d1!=0 || a.d2!=0) && digits<29)
   {
                                                    carry=a.d2%10; a.d2/=10;
@@ -194,10 +194,9 @@ void print_status_line(mystuff_t *mystuff)
   struct tm *tm_now = NULL;
   int time_read = 0;
   double val;
-                        
 
   if(mystuff->mode == MODE_SELFTEST_SHORT) return; /* no output during short selftest */
-  
+
 #ifdef MORE_CLASSES
   max_class_number = 960;
 #else
@@ -211,7 +210,7 @@ void print_status_line(mystuff_t *mystuff)
     mystuff->stats.output_counter = 20;
   }
   if(mystuff->printmode == 0)mystuff->stats.output_counter--;
-  
+
   while(mystuff->stats.progressformat[i] && i < 250)
   {
     if(mystuff->stats.progressformat[i] != '%')
@@ -279,7 +278,7 @@ void print_status_line(mystuff_t *mystuff)
           val = (double)mystuff->stats.grid_count * mystuff->gpu_sieve_processing_size / ((double)mystuff->stats.class_time * 1000.0);
         else						// CPU sieving
           val = (double)mystuff->threads_per_grid * (double)mystuff->stats.grid_count / ((double)mystuff->stats.class_time * 1000.0);
-        
+
         if(val <= 999.99f) index += sprintf(buffer + index, "%6.2f", val);
         else               index += sprintf(buffer + index, "%6.1f", val);
       }
@@ -381,15 +380,14 @@ void print_result_line(mystuff_t *mystuff, int factorsfound)
 {
   char UID[110]; /* 50 (V5UserID) + 50 (ComputerID) + 8 + spare */
   char string[200];
-  
+
   FILE *resultfile=NULL;
-   
-  
+
   if(mystuff->V5UserID[0] && mystuff->ComputerID[0])
     sprintf(UID, "UID: %s/%s, ", mystuff->V5UserID, mystuff->ComputerID);
   else
     UID[0]=0;
-    
+
   if(mystuff->mode == MODE_NORMAL)
   {
     resultfile = fopen_and_lock(mystuff->resultfile, "a");
@@ -442,7 +440,6 @@ void print_factor(mystuff_t *mystuff, int factor_number, char *factor)
     sprintf(UID, "UID: %s/%s, ", mystuff->V5UserID, mystuff->ComputerID);
   else
     UID[0]=0;
-    
 
   if(mystuff->mode == MODE_NORMAL)
   {
@@ -459,12 +456,12 @@ void print_factor(mystuff_t *mystuff, int factor_number, char *factor)
     }
     if(mystuff->mode == MODE_NORMAL)
     {
-#ifndef MORE_CLASSES      
+#ifndef MORE_CLASSES
       fprintf(resultfile, "%sM%u has a factor: %s [TF:%d:%d%s:%s %s_%u]\n",
         UID, mystuff->exponent, factor, mystuff->bit_min, mystuff->bit_max_stage,
         ((mystuff->stopafterfactor == 2) && (mystuff->stats.class_counter <  96)) ? "*" : "" ,
         MFAKTO_VERSION, mystuff->stats.kernelname, mystuff->vectorsize);
-#else      
+#else
       fprintf(resultfile, "%sM%u has a factor: %s [TF:%d:%d%s:%s %s_%u]\n",
         UID, mystuff->exponent, factor, mystuff->bit_min, mystuff->bit_max_stage,
         ((mystuff->stopafterfactor == 2) && (mystuff->stats.class_counter < 960)) ? "*" : "" ,
@@ -482,10 +479,10 @@ void print_factor(mystuff_t *mystuff, int factor_number, char *factor)
 }
 
 
-double primenet_ghzdays(unsigned int exp, int bit_min, int bit_max)
+double primenet_ghzdays(unsigned int exponent, int bit_min, int bit_max)
 /* estimate the GHZ-days for the current job
 GHz-days = <magic constant> * pow(2, $bitlevel - 48) * 1680 / $exponent
-      
+
 magic constant is 0.016968 for TF to 65-bit and above
 magic constant is 0.017832 for 63-and 64-bit
 magic constant is 0.011160 for 62-bit and below
@@ -495,7 +492,7 @@ example using M50,000,000 from 2^69-2^70:
  = 2.3912767291392 GHz-days*/
 {
   // just use the 65-bit constant, that's close enough
-  return 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exp * ((1 << (bit_max-bit_min)) -1);
+  return 0.016968 * (double)(1ULL << (bit_min - 47)) * 1680 / exponent * ((1 << (bit_max-bit_min)) -1);
 }
 
 const char* ClErrorString( const cl_int errcode )

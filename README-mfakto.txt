@@ -70,6 +70,8 @@ Install AMD APP version >= 2.5 (not required for Catalyst 11.10 or above)
 Catalyst driver 11.9 uses up to one CPU core less than its predecessors:
 11.9 strongly recommended.
 
+The high CPU usage bug is back in Catalyst 13.4 and 13.5 - stay below.
+
 Open a command shell and run 'mfakto -h'. It will tell you what parameters
 it accepts. Maybe you want to tweak the parameters in mfakto.ini. A short
 description of those parameters is included in mfakto.ini, too.
@@ -177,6 +179,9 @@ Advanced usage (extend the upper limit):
   mfakto warns about the issue during startup.
   The reason is the lower number of registers available to the kernels.
   Set VectorSize=2 in mfakto.ini and restart mfakto. It should be fast now.
+- Even with GPU sieving enabled, mfakto uses up to a CPU core. This is a bug
+  in the Catalyst 13.4 and 13.5 drivers, hopefully fixed soon. Downgrade
+  drivers to 13.3, if possible.
 - The user interface is not hardened against malformed input. There are some
   checks but when you really try you should be able to screw it up.
 - The GUI of your OS might be very laggy while running mfakto. In severe
@@ -189,8 +194,6 @@ Advanced usage (extend the upper limit):
 - SievePrimesAdjust works now, but is not always optimal. Test it out and
   see what the best SievePrimes is, set it and fix it by setting
   SievePrimesAdjust to 0.
-- There's been reports of mfakto-crashes when other GPU-bound tools or GPU-Z
-  were running.
 - GPU is not found, fallback to CPU
   This happens on Linux when there is no X-server running, or the X-server
   is not accessible. It happens on Windows when not connected to the primay
@@ -257,13 +260,12 @@ A Currently, the 73-bit-barrett kernel is the fastest one, working for factors
 # 7 .plan #
 ###########
 
-- GPU-sieve
 - keep features/changes in sync with mfaktc
 - performance improvements whenever I find them ;)
 - documentation and comments in code
 - full 95-bit implementation
 - Makefile.win  --  any volunteers?
-- perftest modes for sieving, data copy and kernel speed.
+- perftest modes for kernel speed.
 - retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
 - Implement&test AllowSleep
 

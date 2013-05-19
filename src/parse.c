@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2011  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
 This file has been written by Luigi Morelli (L.Morelli@mclink.it) *1
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -12,7 +12,7 @@ mfaktc (mfakto) is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-                                
+
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -307,9 +307,9 @@ enum ASSIGNMENT_ERRORS get_next_assignment(char *filename, unsigned int *exponen
     *exponent = assignment.exponent;
     *bit_min = assignment.bit_min;
     *bit_max = assignment.bit_max;
-    
+
     if (key!=NULL)strcpy(*key,assignment.assignment_key);
-    
+
     return OK;
   }
   else

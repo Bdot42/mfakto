@@ -1,3 +1,28 @@
+version 0.13 (2013-05-19)
+- most important: GPU sieving (thanks to George Woltman)
+  o set SieveOnGPU=1 to enable
+  o use GPUSievePrimes, GPUSieveSize, GPUSieveProcessSize to tweak it
+    (see mfakto.ini for details)
+  o on lower-end GPUs GPU sieving works as well, but may result in ~20% less
+    throughput than CPU sieving: try it out.
+  o almost no CPU utilization, but Catalyst 13.4 and 13.5 have a bug so mfakto
+    will consume up to one CPU core. Stay below 13.4 for now.
+- performance improvements for all kernels between 2 and 20% (also visible when CPU sieving)
+  o use of more intrinsics like amd_bitalign and mad_hi
+  o direct use of comparison results
+  o skipping a few calculations due to better judgement of required precision
+  o new kernels (thanks for the ideas and CUDA examples to George Woltman and Oliver Weihe)
+  o big set of kernels based on 15-bit-math (speedup for Cayman and GCN)
+- closer alignment with mfaktc
+  o -v switch (also avaliable as a Verbosity config variable)
+  o output adjustments
+  o internal file and function structure
+- better diagnostics through improved tracing and error number decoding
+- prepare for running on Intel HD4000 or NVIDIA devices (not fully functional yet)
+- --perftest mode to test CPU sieving performance (to be extended for kernel performance tests)
+- allow setting CPU affinity for the CPU sieve thread (SieveCPUMask config variable)
+- 30k extra test cases now available in the -st2 selftest
+
 version 0.12 (2012-07-29)
 - IMPORTANT: bugfix for missing factors for certain exponent ranges.
   Thanks to dabaichi and Axelsson for bug report and help on

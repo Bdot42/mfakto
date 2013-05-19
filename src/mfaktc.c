@@ -12,7 +12,7 @@ mfaktc (mfakto) is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-                                
+
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -707,7 +707,7 @@ RET_ERROR we might have a serios problem
 */
 {
 #include "selftest-data.h"
-  
+
   int i, j, tf_res, st_success=0, st_nofactor=0, st_wrongfactor=0, st_unknown=0;
 
   unsigned int num_selftests=0, total_selftests=sizeof(st_data) / sizeof(st_data[0]);
@@ -718,7 +718,7 @@ RET_ERROR we might have a serios problem
   unsigned int index[] = {   646, 647, 648, 30,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
                              70,   72,   73,   82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
-                           1547, 1552, 1557    // some factors below 2^95 (test 95 bit kernel)
+                           1547    // some factors below 2^95 (test 95 bit kernel)
                          };                          // mfakto special case (25-bit factor)
   // save the SievePrimes ini value as the selftest may lower it to fit small test-exponents
   unsigned int sieve_primes_save = mystuff->sieve_primes;
@@ -754,8 +754,7 @@ RET_ERROR we might have a serios problem
     mystuff->bit_max_stage      = mystuff->bit_max_assignment;
 
 /* create a list which kernels can handle this testcase */
-    j = 0;                                                                                           
-
+    j = 0;
 
     if (mystuff->gpu_sieving == 0)
     {
@@ -827,7 +826,7 @@ int main(int argc, char **argv)
   int i = 1, tmp = 0;
   char *ptr;
   int use_worktodo = 1;
-  
+
   mystuff.mode = MODE_NORMAL;
   mystuff.quit = 0;
   mystuff.verbosity = -1;
@@ -862,13 +861,7 @@ int main(int argc, char **argv)
         return ERR_PARAM;
       }
       i++;
-      
-      if(tmp > 2)
-      {
-        printf("WARNING: maximum verbosity level is 2\n");
-        tmp = 2;
-      }
-      
+
       if(tmp < 0)
       {
         printf("WARNING: minumum verbosity level is 0\n");
@@ -957,7 +950,7 @@ int main(int argc, char **argv)
         tmp = (int)strtol(argv[i+1],&ptr,10);
       else
         tmp = 0;
-      perftest(tmp, devicenumber);  
+      perftest(tmp, devicenumber);
       return ERR_OK;
     }
     else if(!strcmp((char*)"--timertest", argv[i]))
@@ -980,7 +973,6 @@ int main(int argc, char **argv)
     {
       read_config(&mystuff);
       init_CL(mystuff.num_streams, devicenumber);
-//      gpu_sieve_main(argc-i, &argv[i]);  
       return ERR_OK;
     }
     else
