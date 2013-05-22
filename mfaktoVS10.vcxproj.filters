@@ -115,7 +115,6 @@
     <None Include="src\gpusieve.cl">
       <Filter>kernel files</Filter>
     </None>
-    <None Include="README-mfakto.txt" />
     <None Include="Changelog-mfakto.txt" />
     <None Include="src\montgomery.cl">
       <Filter>kernel files</Filter>
@@ -123,6 +122,7 @@
     <None Include="src\common.cl">
       <Filter>kernel files</Filter>
     </None>
+    <None Include="README.txt" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="kernel files">

@@ -22,6 +22,7 @@ along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include <time.h>
 #include <CL/cl.h>
+#include "string.h"
 #include "params.h"
 #include "my_types.h"
 #include "output.h"
@@ -175,12 +176,16 @@ writes "a" into "buf" in decimal
 void print_timestamp(FILE *outfile)
 {
   time_t now;
-  char *ptr;
+  static time_t previous_time=0;
 
   now = time(NULL);
-  ptr = ctime(&now);
-  ptr[24] = '\0'; // cut off the newline
-  fprintf(outfile, "[%s]\n", ptr);
+  if (previous_time + 5 < now) // have at least 5 seconds between successive time stamps in the results file
+  {
+    char *ptr = ctime(&now);
+    ptr[24] = '\0'; // cut off the newline
+    fprintf(outfile, "[%s]\n", ptr);
+    previous_time = now;
+  }
 }
 
 

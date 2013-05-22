@@ -1058,8 +1058,10 @@ int main(int argc, char **argv)
     {
       mystuff.gpu_type = GPU_GCN;
     }
-    else if (strstr(deviceinfo.d_name, "Cayman")   ||  // 6950, 6970
-             strstr(deviceinfo.d_name, "Antilles"))    // 6990
+    else if (strstr(deviceinfo.d_name, "Cayman")      ||  // 6950, 6970
+             strstr(deviceinfo.d_name, "Devastator")  ||  // 7xx0D (iGPUs of A4/6/8/10)
+             strstr(deviceinfo.d_name, "Scrapper")    ||  // 7xx0G (iGPUs of A4/6/8/10)
+             strstr(deviceinfo.d_name, "Antilles"))       // 6990
     {
       mystuff.gpu_type = GPU_VLIW4;
     }

@@ -54,7 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Changelog-mfakto.txt" />
-    <None Include="README-mfakto.txt" />
+    <None Include="README.txt" />
     <None Include="src/mfakto_Kernels.cl" />
     <None Include="src\barrett.cl" />
     <None Include="src\barrett15.cl" />
