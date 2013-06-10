@@ -1053,6 +1053,11 @@ int main(int argc, char **argv)
         strstr(deviceinfo.d_name, "Pitcairn")   ||    // 7850, 7870, 8870
         strstr(deviceinfo.d_name, "Newzealand") ||    // 7990
         strstr(deviceinfo.d_name, "Oland")      ||    // 8670, 8570
+        strstr(deviceinfo.d_name, "Sun ")       ||    // 85x0M
+        strstr(deviceinfo.d_name, "Mars ")      ||    // 86x0M, 87x0M
+        strstr(deviceinfo.d_name, "Venus ")     ||    // 88x0M
+        strstr(deviceinfo.d_name, "Saturn ")    ||    // 8930M, 8950M
+        strstr(deviceinfo.d_name, "Neptune ")   ||    // 8970M, 8990M
         strstr(deviceinfo.d_name, "Malta")      ||    // 7990
         strstr(deviceinfo.d_name, "Tahiti"))          // 7950, 7970, 8970, 8950
     {
@@ -1084,10 +1089,17 @@ int main(int argc, char **argv)
     {
       mystuff.gpu_type = GPU_VLIW5;
     }
-    else if (strstr(deviceinfo.d_name, "RV7"))         // 4xxx (ATI RV 7xx)
+    else if (strstr(deviceinfo.d_name, "RV7")      ||  // 4xxx (ATI RV 7xx)
+             strstr(deviceinfo.d_name, "Loveland"))    // e.g. 6310 as part of E350: it reports 2 compute units, but only has a total of 80 compute elements
     {
       mystuff.gpu_type = GPU_VLIW5;
       gpu_types[mystuff.gpu_type].CE_per_multiprocessor = 40; // though VLIW5, only 40 instead of 80 compute elements
+      if (mystuff.vectorsize > 3)
+      {
+        printf("WARNING: Your device may perform better with a vector size of 2. "
+               "Please test if changing to VectorSize=2 in %s and restarting mfakto "
+               "is faster.\n\n", mystuff.inifile);
+      }
     }
     else if (strstr(deviceinfo.d_name, "CPU")           ||
              strstr(deviceinfo.v_name, "GenuineIntel")  ||
