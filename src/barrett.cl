@@ -1837,6 +1837,10 @@ a is precomputed on host ONCE.
 #elif (VECTOR_SIZE == 2)
     k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
     k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+#elif (VECTOR_SIZE == 3)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
 #elif (VECTOR_SIZE == 4)
     k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
     k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
@@ -1961,6 +1965,10 @@ a is precomputed on host ONCE.
 #elif (VECTOR_SIZE == 2)
     k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
     k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+#elif (VECTOR_SIZE == 3)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
 #elif (VECTOR_SIZE == 4)
     k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
     k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
@@ -2085,6 +2093,10 @@ a is precomputed on host ONCE.
 #elif (VECTOR_SIZE == 2)
     k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
     k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+#elif (VECTOR_SIZE == 3)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
 #elif (VECTOR_SIZE == 4)
     k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
     k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
@@ -2209,6 +2221,10 @@ a is precomputed on host ONCE.
 #elif (VECTOR_SIZE == 2)
     k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
     k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+#elif (VECTOR_SIZE == 3)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
 #elif (VECTOR_SIZE == 4)
     k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
     k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
@@ -2333,6 +2349,10 @@ a is precomputed on host ONCE.
 #elif (VECTOR_SIZE == 2)
     k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
     k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+#elif (VECTOR_SIZE == 3)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
 #elif (VECTOR_SIZE == 4)
     k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
     k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
@@ -2457,6 +2477,10 @@ a is precomputed on host ONCE.
 #elif (VECTOR_SIZE == 2)
     k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
     k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+#elif (VECTOR_SIZE == 3)
+    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
 #elif (VECTOR_SIZE == 4)
     k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
     k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
