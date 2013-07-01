@@ -1982,7 +1982,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                     (void *)&shiftcount);
     if(status != CL_SUCCESS) 
   	{ 
-  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (gpu_sieve_processing_size)\n";
+  		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (shiftcount)\n";
   		return 1;
   	}
 

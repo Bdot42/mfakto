@@ -364,29 +364,6 @@ int read_config(mystuff_t *mystuff)
 
 /*****************************************************************************/
 
-    if(my_read_int(mystuff->inifile, "GPUSieveSize", &i))
-    {
-      printf("WARNING: Cannot read GPUSieveSize from inifile, using default value (%d)\n",GPU_SIEVE_SIZE_DEFAULT);
-      i = GPU_SIEVE_SIZE_DEFAULT;
-    }
-    else
-    {
-      if(i > GPU_SIEVE_SIZE_MAX)
-      {
-        printf("WARNING: Read GPUSieveSize=%d from inifile, using max value (%d)\n",i,GPU_SIEVE_SIZE_MAX);
-        i = GPU_SIEVE_SIZE_MAX;
-      }
-      else if(i < GPU_SIEVE_SIZE_MIN)
-      {
-        printf("WARNING: Read GPUSieveSize=%d from inifile, using min value (%d)\n",i,GPU_SIEVE_SIZE_MIN);
-        i = GPU_SIEVE_SIZE_MIN;
-      }
-    }
-    if(mystuff->verbosity >= 1)printf("  GPUSieveSize              %dMi bits\n",i);
-    mystuff->gpu_sieve_size = i * 1024 * 1024;
-
-/*****************************************************************************/
-
     if(my_read_int(mystuff->inifile, "GPUSieveProcessSize", &i))
     {
       printf("WARNING: Cannot read GPUSieveProcessSize from inifile, using default value (%d)\n",GPU_SIEVE_PROCESS_SIZE_DEFAULT);
@@ -414,6 +391,37 @@ int read_config(mystuff_t *mystuff)
     if(mystuff->verbosity >= 1)printf("  GPUSieveProcessSize       %dKi bits\n",i);
     mystuff->gpu_sieve_processing_size = i * 1024;
   }
+
+/*****************************************************************************/
+
+    if(my_read_int(mystuff->inifile, "GPUSieveSize", &i))
+    {
+      printf("WARNING: Cannot read GPUSieveSize from inifile, using default value (%d)\n",GPU_SIEVE_SIZE_DEFAULT);
+      i = GPU_SIEVE_SIZE_DEFAULT;
+    }
+    else
+    {
+      if(i > GPU_SIEVE_SIZE_MAX)
+      {
+        printf("WARNING: Read GPUSieveSize=%d from inifile, using max value (%d)\n",i,GPU_SIEVE_SIZE_MAX);
+        i = GPU_SIEVE_SIZE_MAX;
+      }
+      else if(i < GPU_SIEVE_SIZE_MIN)
+      {
+        printf("WARNING: Read GPUSieveSize=%d from inifile, using min value (%d)\n",i,GPU_SIEVE_SIZE_MIN);
+        i = GPU_SIEVE_SIZE_MIN;
+      }
+      if (i * 1024 * 1024 % mystuff->gpu_sieve_processing_size != 0)
+      {
+        // can only happen when GPUSieveProcessSize=24 ==> make i divisible by 3
+        printf("WARNING: GPUSieveSize=%dM must be a multiple of GPUSieveProcessSize=%dk, ", i, mystuff->gpu_sieve_processing_size / 1024);
+        i -= i%3;
+        while (i < GPU_SIEVE_SIZE_MIN) i+=3;  // make sure it's not too low
+        printf("adjusting GPUSieveSize to %dM\n", i);
+      }
+    }
+    if(mystuff->verbosity >= 1)printf("  GPUSieveSize              %dMi bits\n",i);
+    mystuff->gpu_sieve_size = i * 1024 * 1024;
 
 /*****************************************************************************/
 
