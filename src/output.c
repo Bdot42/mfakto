@@ -44,11 +44,12 @@ void print_help(char *string)
   printf("                         device number y in this program\n");
   printf("  -d c                   force using all CPUs\n");
   printf("  -d g                   force using the first GPU\n");
+  printf("  -v <n>                 verbosity level: 0=terse, 1=normal, 2=verbose, 3=debug\n");
   printf("  -tf <exp> <min> <max>  trial factor M<exp> from 2^<min> to 2^<max> and exit\n");
   printf("                         instead of parsing the worktodo file\n");
   printf("  -i|--inifile <file>    load <file> as inifile (default: mfakto.ini)\n");
-  printf("  -st                    run builtin selftest (half the testcases) and exit\n");
-  printf("  -st2                   run builtin selftest (all testcases) and exit\n");
+  printf("  -st                    run builtin selftest (1500 testcases) and exit\n");
+  printf("  -st2                   run builtin selftest (33000 testcases) and exit\n");
   printf("\n");
   printf("options for debugging purposes\n");
   printf("  --timertest            run test of timer functions and exit\n");
@@ -225,33 +226,33 @@ void print_status_line(mystuff_t *mystuff)
     }
     else
     {
-      if(mystuff->stats.progressformat[i+1] == 'C')
+      if(mystuff->stats.progressformat[i+1] == 'C')  // Class ID
       {
         index += sprintf(buffer + index, "%4d", mystuff->stats.class_number);
       }
-      else if(mystuff->stats.progressformat[i+1] == 'c')
+      else if(mystuff->stats.progressformat[i+1] == 'c') // Class counter
       {
         index += sprintf(buffer + index, "%3d", mystuff->stats.class_counter);
       }
-      else if(mystuff->stats.progressformat[i+1] == 'p')
+      else if(mystuff->stats.progressformat[i+1] == 'p') // percent complete
       {
         index += sprintf(buffer + index, "%5.1f", (double)(mystuff->stats.class_counter * 100) / (double)max_class_number);
       }
-      else if(mystuff->stats.progressformat[i+1] == 'g')
+      else if(mystuff->stats.progressformat[i+1] == 'g') // speed (GHz-days/day)
       {
         if(mystuff->mode == MODE_NORMAL)
           index += sprintf(buffer + index, "%7.2f", mystuff->stats.ghzdays * 86400000.0f / ((double)mystuff->stats.class_time * (double)max_class_number));
         else
           index += sprintf(buffer + index, "   n.a.");
       }
-      else if(mystuff->stats.progressformat[i+1] == 't')
+      else if(mystuff->stats.progressformat[i+1] == 't') // time per class
       {
              if(mystuff->stats.class_time < 100000ULL  )index += sprintf(buffer + index, "%6.3f", (double)mystuff->stats.class_time/1000.0);
         else if(mystuff->stats.class_time < 1000000ULL )index += sprintf(buffer + index, "%6.2f", (double)mystuff->stats.class_time/1000.0);
         else if(mystuff->stats.class_time < 10000000ULL)index += sprintf(buffer + index, "%6.1f", (double)mystuff->stats.class_time/1000.0);
         else                                            index += sprintf(buffer + index, "%6.0f", (double)mystuff->stats.class_time/1000.0);
       }
-      else if(mystuff->stats.progressformat[i+1] == 'e')
+      else if(mystuff->stats.progressformat[i+1] == 'e') // eta
       {
         if(mystuff->mode == MODE_NORMAL)
         {
@@ -262,7 +263,7 @@ void print_status_line(mystuff_t *mystuff)
         }
         else                  index += sprintf(buffer + index, "  n.a.");
       }
-      else if(mystuff->stats.progressformat[i+1] == 'n')
+      else if(mystuff->stats.progressformat[i+1] == 'n') // number of candidates (CPU sieve: sieved number, GPU sieve: raw number)
       {
         if (mystuff->gpu_sieving == 1)
         {
@@ -277,7 +278,7 @@ void print_status_line(mystuff_t *mystuff)
             index += sprintf(buffer + index, "%6.2fG", (double)mystuff->threads_per_grid * (double)mystuff->stats.grid_count / 1000000000.0);
         }
       }
-      else if(mystuff->stats.progressformat[i+1] == 'r')
+      else if(mystuff->stats.progressformat[i+1] == 'r') // FC rate
       {
         if (mystuff->gpu_sieving == 1)
           val = (double)mystuff->stats.grid_count * mystuff->gpu_sieve_processing_size / ((double)mystuff->stats.class_time * 1000.0);
@@ -287,23 +288,23 @@ void print_status_line(mystuff_t *mystuff)
         if(val <= 999.99f) index += sprintf(buffer + index, "%6.2f", val);
         else               index += sprintf(buffer + index, "%6.1f", val);
       }
-      else if(mystuff->stats.progressformat[i+1] == 's')
+      else if(mystuff->stats.progressformat[i+1] == 's') // (GPU-)SievePrimes
       {
         if (mystuff->gpu_sieving == 1)
           index += sprintf(buffer + index, "%7d", mystuff->gpu_sieve_primes-1);  // Output number of odd primes sieved
         else						// CPU sieving
           index += sprintf(buffer + index, "%7d", mystuff->sieve_primes);
       }
-      else if(mystuff->stats.progressformat[i+1] == 'w')
+      else if(mystuff->stats.progressformat[i+1] == 'w') // CPU wait time
       {
         index += sprintf(buffer + index, "%6llu", mystuff->stats.cpu_wait_time / mystuff->stats.grid_count); /* mfakto only */
       }
-      else if(mystuff->stats.progressformat[i+1] == 'W')
+      else if(mystuff->stats.progressformat[i+1] == 'W') // CPU wait fraction
       {
         if(mystuff->stats.cpu_wait >= 0.0f)index += sprintf(buffer + index, "%6.2f", mystuff->stats.cpu_wait);
         else                               index += sprintf(buffer + index, "  n.a.");
       }
-      else if(mystuff->stats.progressformat[i+1] == 'd')
+      else if(mystuff->stats.progressformat[i+1] == 'd') // date
       {
         if(!time_read)
         {
@@ -313,7 +314,7 @@ void print_status_line(mystuff_t *mystuff)
         }
         index += (int)strftime(buffer + index, 7, "%b %d", tm_now);
       }
-      else if(mystuff->stats.progressformat[i+1] == 'T')
+      else if(mystuff->stats.progressformat[i+1] == 'T') // time
       {
         if(!time_read)
         {
@@ -323,23 +324,23 @@ void print_status_line(mystuff_t *mystuff)
         }
         index += (int)strftime(buffer + index, 6, "%H:%M", tm_now);
       }
-      else if(mystuff->stats.progressformat[i+1] == 'U')
+      else if(mystuff->stats.progressformat[i+1] == 'U') // user
       {
         index += sprintf(buffer + index, "%s", mystuff->V5UserID);
       }
-      else if(mystuff->stats.progressformat[i+1] == 'H')
+      else if(mystuff->stats.progressformat[i+1] == 'H') // host
       {
         index += sprintf(buffer + index, "%s", mystuff->ComputerID);
       }
-      else if(mystuff->stats.progressformat[i+1] == 'M')
+      else if(mystuff->stats.progressformat[i+1] == 'M') // exponent
       {
         index += sprintf(buffer + index, "%-10u", mystuff->exponent);
       }
-      else if(mystuff->stats.progressformat[i+1] == 'l')
+      else if(mystuff->stats.progressformat[i+1] == 'l') // low bit limit
       {
         index += sprintf(buffer + index, "%2d", mystuff->bit_min);
       }
-      else if(mystuff->stats.progressformat[i+1] == 'u')
+      else if(mystuff->stats.progressformat[i+1] == 'u') // upper bit limit for this stage
       {
         index += sprintf(buffer + index, "%2d", mystuff->bit_max_stage);
       }
