@@ -606,6 +606,13 @@ int init_CL(int num_streams, cl_int devnumber)
  	size_t size;
 	char*  source;
 
+  if (mystuff.use_binfile)
+  {
+    // check if binfile exists
+    // check if it is newer than the ini file, or if we're forced to use it
+    // load and build it. If not successful, use the source.
+  }
+
 	std::fstream f(KERNEL_FILE, (std::fstream::in | std::fstream::binary));
 
 	if(f.is_open())
@@ -818,8 +825,8 @@ cl_int run_seg_sieve(cl_uint numblocks, cl_uint localThreads,
 		std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)" << "\n";
 		return 1;
 	}
-  clFinish(QUEUE);
 #ifdef CL_PERFORMANCE_INFO
+  clFinish(QUEUE);
   cl_ulong startTime=0;
   cl_ulong endTime=1000;
   /* Get kernel profiling info */

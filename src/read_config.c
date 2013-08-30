@@ -696,6 +696,23 @@ int read_config(mystuff_t *mystuff)
   }
 
   /*****************************************************************************/
+
+  if(my_read_int(mystuff->inifile, "UseBinfile", &i) || (i<0) || (i>2))
+  {
+    printf("WARNING: Cannot read UseBinfile from inifile, set to 0 by default\n");
+    mystuff->use_binfile = 0;
+  }
+  else
+  {
+    mystuff->use_binfile = i;
+  }
+
+  if(mystuff->verbosity >= 1)
+  {
+    printf("  UseBinfile                %d\n", mystuff->use_binfile);
+  }
+
+  /*****************************************************************************/
   return 0;
 }
 
@@ -735,3 +752,4 @@ int read_array(char *filename, char *keyname, cl_uint num, cl_uint *arr)
   fclose(in);
   return i;
 }
+
