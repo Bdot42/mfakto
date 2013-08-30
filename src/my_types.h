@@ -273,6 +273,7 @@ typedef struct
   cl_uint  small_exp;
   cl_uint  print_timestamp;
   cl_uint  quit;
+  cl_uint  use_binfile;    /* whether or not to save the compiled kernels, and read them instead of compiling again (only if the binfile is newer than the ini file) */
   cl_ulong cpu_mask;         /* CPU affinity mask for the siever thread */
   cl_int   verbosity;        /* -1 = uninitialized, 0 = reduced number of screen printfs, 1= default, >= 2 = some additional printfs */
   cl_uint  selftestsize;
@@ -309,3 +310,4 @@ typedef struct _kernel_info
 #define RET_QUIT  1000000002
 
 #endif
+
