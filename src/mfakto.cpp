@@ -2374,15 +2374,19 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 
 #ifdef DETAILED_INFO
   // as a first test, copy the sieve bits into the usual sieve array - later, the kernels will do that.
+        static double peak=0.0;
         cl_uint ind=0, pos=0, *dest=mystuff->h_ktab[h_ktab_index];
-        for (i=0; i<mystuff->gpu_sieve_size/32 && ind < mystuff->threads_per_grid; i++)
+        for (i=0; i<mystuff->gpu_sieve_size/32; i++)
         {
           cl_uint ii, word=mystuff->h_bitarray[i];
-          for (ii=0; ii<32 && ind < mystuff->threads_per_grid; ii++)
+          for (ii=0; ii<32; ii++)
           {
             if (word & 1)
             {
-              dest[ind++]=pos;
+              if (ind < mystuff->threads_per_grid)
+                dest[ind++]=pos;
+              else
+                ind++;
               // simple verify ...
 /*              for (cl_uint p=13; p<mystuff->gpu_sieve_primes; p+=2)
               {
@@ -2403,7 +2407,9 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
             word >>= 1;
           }
         }
-        printf("bit-extract: %u/%u words processed, %u(max %u) bits set.\n", i, mystuff->gpu_sieve_size/32, ind, mystuff->threads_per_grid);
+        if (peak < (double) ind * 100.0 / (double) pos) peak=(double) ind * 100.0 / (double) pos;
+        printf("bit-extract: %u/%u words (%u bits) processed, %u bits set (%f%% -- max=%f%% @ %u).\n",
+          i, mystuff->gpu_sieve_size/32, pos, ind, (double) ind * 100.0 / (double) pos, peak, mystuff->gpu_sieve_primes);
 #endif
         // Now let the GPU trial factor the candidates that survived the sieving
 
