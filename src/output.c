@@ -632,6 +632,6 @@ const char* ClErrorString( const cl_int errcode )
     case RET_QUIT:                              // 1000000002
       return "Exit due to Ctrl-C or signal";
     default:
-      return "Unkown errorcode";
+      return "Unknown errorcode (not an OpenCL error)";
   }
 }

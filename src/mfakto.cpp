@@ -311,7 +311,7 @@ int init_CL(int num_streams, cl_int devnumber)
   status = clGetPlatformIDs(0, NULL, &numplatforms);
   if(status != CL_SUCCESS)
   {
-    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformsIDs(num)\n";
+    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformIDs(num)\n";
     return 1;
   }
 
@@ -328,7 +328,7 @@ int init_CL(int num_streams, cl_int devnumber)
     status = clGetPlatformIDs(numplatforms, platformlist, NULL);
     if(status != CL_SUCCESS)
     {
-      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformsIDs\n";
+      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformIDs\n";
       return 1;
     }
 
@@ -583,15 +583,23 @@ int init_CL(int num_streams, cl_int devnumber)
       deviceinfo.maxThreadsPerGrid *= deviceinfo.wi_sizes[i];
   }
 
-//  cl_command_queue_properties props = 0;  // serialize data transfer and kernel execution (i.e. no overlapping transfer while some kernel is still running)
-  cl_command_queue_properties props = CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;  // kernels and copy-jobs are queued with event dependencies, so this should work ...
-                                                                               // but so far the GPU driver does not support that anyway (as of Catalyst 12.9)
+  cl_command_queue_properties props = 0;             // GPU sieve is started without synchronization events
+  if (mystuff.gpu_sieving == 0)                      // but CPU sieve can run out-of-order, if possible
+    props = CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;  // kernels and copy-jobs are queued with event dependencies, so this should work ...
+                                                     // but so far the GPU driver does not support that anyway (as of Catalyst 12.9)
 
   commandQueue = clCreateCommandQueue(context, devices[devnumber], props, &status);
   if(status != CL_SUCCESS)
 	{
-    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueue(dev#" << devnumber+1 << ")\n";
-		return 1;
+    props = 0; // Intel HD does not support out-of-order
+    commandQueue = clCreateCommandQueue(context, devices[devnumber], props, &status);
+    if(status != CL_SUCCESS)
+  	{
+      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueue(dev#" << devnumber+1 << ")\n";
+		  return 1;
+    }
+    else
+      printf("\nINFO: Device does not support out-of-order operations. Fallback to in-order queues.\n");
 	}
 
   props |= CL_QUEUE_PROFILING_ENABLE;
@@ -2849,7 +2857,7 @@ void CL_test(cl_int devnumber)
   status = clGetPlatformIDs(0, NULL, &numplatforms);
   if(status != CL_SUCCESS)
   {
-    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformsIDs(num)\n";
+    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformIDs(num)\n";
   }
 
   if(numplatforms > 0)
@@ -2858,7 +2866,7 @@ void CL_test(cl_int devnumber)
     status = clGetPlatformIDs(numplatforms, platformlist, NULL);
     if(status != CL_SUCCESS)
     {
-      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformsIDs\n";
+      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformIDs\n";
     }
 
     if (devnumber > 10) // platform number specified as part of -d
