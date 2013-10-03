@@ -107,15 +107,6 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL},
 };
 
-/* save-save
-     {   BARRETT73_MUL15_GS,  "cl_barrett15_73_gs",   60,     73,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT69_MUL15_GS,  "cl_barrett15_69_gs",   60,     69,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT70_MUL15_GS,  "cl_barrett15_70_gs",   60,     70,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT71_MUL15_GS,  "cl_barrett15_71_gs",   60,     71,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     88,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     83,         0,      NULL}, // one kernel for all vector sizes
-     {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL}, // one kernel for all vector sizes
-*/
 void printArray(const char * Name, const cl_uint * Data, const cl_uint len, cl_uint hex=0)
 {
   cl_uint i, o, c, val;

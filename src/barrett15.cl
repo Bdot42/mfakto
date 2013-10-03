@@ -2896,45 +2896,45 @@ __kernel void cl_barrett15_69_gs(const uint exponent, const int75_t k_base,
 // Get the (k - k_base) value to test
 
 #if (VECTOR_SIZE == 1)
-    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
 #elif (VECTOR_SIZE == 2)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
 #elif (VECTOR_SIZE == 3)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
 #elif (VECTOR_SIZE == 4)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
 #elif (VECTOR_SIZE == 8)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
 #elif (VECTOR_SIZE == 16)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
-    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
-    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
-    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
-    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
-    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
-    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
-    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
-    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
+    k_delta.s8 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+8]));
+    k_delta.s9 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+9]));
+    k_delta.sa = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+10]));
+    k_delta.sb = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+11]));
+    k_delta.sc = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+12]));
+    k_delta.sd = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+13]));
+    k_delta.se = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+14]));
+    k_delta.sf = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+15]));
 #endif
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
@@ -3025,45 +3025,45 @@ __kernel void cl_barrett15_70_gs(const uint exponent, const int75_t k_base,
 // Get the (k - k_base) value to test
 
 #if (VECTOR_SIZE == 1)
-    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
 #elif (VECTOR_SIZE == 2)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
 #elif (VECTOR_SIZE == 3)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
 #elif (VECTOR_SIZE == 4)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
 #elif (VECTOR_SIZE == 8)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
 #elif (VECTOR_SIZE == 16)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
-    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
-    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
-    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
-    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
-    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
-    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
-    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
-    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
+    k_delta.s8 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+8]));
+    k_delta.s9 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+9]));
+    k_delta.sa = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+10]));
+    k_delta.sb = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+11]));
+    k_delta.sc = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+12]));
+    k_delta.sd = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+13]));
+    k_delta.se = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+14]));
+    k_delta.sf = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+15]));
 #endif
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
@@ -3154,45 +3154,45 @@ __kernel void cl_barrett15_71_gs(const uint exponent, const int75_t k_base,
 // Get the (k - k_base) value to test
 
 #if (VECTOR_SIZE == 1)
-    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
 #elif (VECTOR_SIZE == 2)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
 #elif (VECTOR_SIZE == 3)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
 #elif (VECTOR_SIZE == 4)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
 #elif (VECTOR_SIZE == 8)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
 #elif (VECTOR_SIZE == 16)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
-    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
-    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
-    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
-    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
-    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
-    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
-    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
-    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
+    k_delta.s8 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+8]));
+    k_delta.s9 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+9]));
+    k_delta.sa = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+10]));
+    k_delta.sb = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+11]));
+    k_delta.sc = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+12]));
+    k_delta.sd = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+13]));
+    k_delta.se = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+14]));
+    k_delta.sf = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+15]));
 #endif
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
@@ -3283,45 +3283,45 @@ __kernel void cl_barrett15_73_gs(const uint exponent, const int75_t k_base,
 // Get the (k - k_base) value to test
 
 #if (VECTOR_SIZE == 1)
-    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
 #elif (VECTOR_SIZE == 2)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
 #elif (VECTOR_SIZE == 3)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
 #elif (VECTOR_SIZE == 4)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
 #elif (VECTOR_SIZE == 8)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
 #elif (VECTOR_SIZE == 16)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
-    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
-    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
-    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
-    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
-    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
-    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
-    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
-    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
+    k_delta.s8 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+8]));
+    k_delta.s9 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+9]));
+    k_delta.sa = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+10]));
+    k_delta.sb = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+11]));
+    k_delta.sc = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+12]));
+    k_delta.sd = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+13]));
+    k_delta.se = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+14]));
+    k_delta.sf = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+15]));
 #endif
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
@@ -3422,45 +3422,45 @@ __kernel void cl_barrett15_82_gs(const uint exponent, const int75_t k_base,
 // Get the (k - k_base) value to test
 
 #if (VECTOR_SIZE == 1)
-    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
 #elif (VECTOR_SIZE == 2)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
 #elif (VECTOR_SIZE == 3)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
 #elif (VECTOR_SIZE == 4)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
 #elif (VECTOR_SIZE == 8)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
 #elif (VECTOR_SIZE == 16)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
-    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
-    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
-    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
-    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
-    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
-    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
-    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
-    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
+    k_delta.s8 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+8]));
+    k_delta.s9 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+9]));
+    k_delta.sa = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+10]));
+    k_delta.sb = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+11]));
+    k_delta.sc = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+12]));
+    k_delta.sd = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+13]));
+    k_delta.se = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+14]));
+    k_delta.sf = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+15]));
 #endif
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
@@ -3555,45 +3555,45 @@ __kernel void cl_barrett15_83_gs(const uint exponent, const int75_t k_base,
 // Get the (k - k_base) value to test
 
 #if (VECTOR_SIZE == 1)
-    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
 #elif (VECTOR_SIZE == 2)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
 #elif (VECTOR_SIZE == 3)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
 #elif (VECTOR_SIZE == 4)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
 #elif (VECTOR_SIZE == 8)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
 #elif (VECTOR_SIZE == 16)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
-    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
-    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
-    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
-    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
-    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
-    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
-    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
-    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
+    k_delta.s8 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+8]));
+    k_delta.s9 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+9]));
+    k_delta.sa = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+10]));
+    k_delta.sb = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+11]));
+    k_delta.sc = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+12]));
+    k_delta.sd = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+13]));
+    k_delta.se = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+14]));
+    k_delta.sf = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+15]));
 #endif
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
@@ -3688,45 +3688,45 @@ __kernel void cl_barrett15_88_gs(const uint exponent, const int75_t k_base,
 // Get the (k - k_base) value to test
 
 #if (VECTOR_SIZE == 1)
-    k_delta = mad24(bits_to_process, get_group_id(0), smem[i]);
+    k_delta = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
 #elif (VECTOR_SIZE == 2)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
 #elif (VECTOR_SIZE == 3)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
 #elif (VECTOR_SIZE == 4)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
 #elif (VECTOR_SIZE == 8)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
 #elif (VECTOR_SIZE == 16)
-    k_delta.s0 = mad24(bits_to_process, get_group_id(0), smem[i]);
-    k_delta.s1 = mad24(bits_to_process, get_group_id(0), smem[i+1]);
-    k_delta.s2 = mad24(bits_to_process, get_group_id(0), smem[i+2]);
-    k_delta.s3 = mad24(bits_to_process, get_group_id(0), smem[i+3]);
-    k_delta.s4 = mad24(bits_to_process, get_group_id(0), smem[i+4]);
-    k_delta.s5 = mad24(bits_to_process, get_group_id(0), smem[i+5]);
-    k_delta.s6 = mad24(bits_to_process, get_group_id(0), smem[i+6]);
-    k_delta.s7 = mad24(bits_to_process, get_group_id(0), smem[i+7]);
-    k_delta.s8 = mad24(bits_to_process, get_group_id(0), smem[i+8]);
-    k_delta.s9 = mad24(bits_to_process, get_group_id(0), smem[i+9]);
-    k_delta.sa = mad24(bits_to_process, get_group_id(0), smem[i+10]);
-    k_delta.sb = mad24(bits_to_process, get_group_id(0), smem[i+11]);
-    k_delta.sc = mad24(bits_to_process, get_group_id(0), smem[i+12]);
-    k_delta.sd = mad24(bits_to_process, get_group_id(0), smem[i+13]);
-    k_delta.se = mad24(bits_to_process, get_group_id(0), smem[i+14]);
-    k_delta.sf = mad24(bits_to_process, get_group_id(0), smem[i+15]);
+    k_delta.s0 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i]));
+    k_delta.s1 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+1]));
+    k_delta.s2 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+2]));
+    k_delta.s3 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+3]));
+    k_delta.s4 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+4]));
+    k_delta.s5 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+5]));
+    k_delta.s6 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+6]));
+    k_delta.s7 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+7]));
+    k_delta.s8 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+8]));
+    k_delta.s9 = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+9]));
+    k_delta.sa = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+10]));
+    k_delta.sb = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+11]));
+    k_delta.sc = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+12]));
+    k_delta.sd = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+13]));
+    k_delta.se = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+14]));
+    k_delta.sf = mad24(bits_to_process, (uint)get_group_id(0), (uint)(smem[i+15]));
 #endif
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
