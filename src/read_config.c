@@ -436,8 +436,8 @@ int read_config(mystuff_t *mystuff)
 
   if(my_read_string(mystuff->inifile, "ResultsFile", mystuff->resultfile, 50))
   {
-    printf("WARNING: Cannot read ResultsFile from inifile, using default (results.txt)\n");
     sprintf(mystuff->resultfile, "results.txt");
+    printf("WARNING: Cannot read ResultsFile from inifile, using default (%s)\n", mystuff->resultfile);
   }
   if(mystuff->verbosity >= 1)printf("  ResultsFile               %s\n", mystuff->resultfile);
 

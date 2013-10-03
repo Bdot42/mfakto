@@ -737,15 +737,17 @@ RET_ERROR we might have a serios problem
       if (i < (sizeof(index)/sizeof(index[0])))
       {
         ind = index[i];
-        printf("########## testcase %d/%d (#%d) ##########\r", i+1, (int) (sizeof(index)/sizeof(index[0])), ind);
+        printf("########## testcase %d/%d (M%d[%d-%d]) ##########\r",
+          i+1, (int) (sizeof(index)/sizeof(index[0])), st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
       }
       else
         break; // short test done
     }
     else // treat type <> 1 as full test
     {
-      printf("########## testcase %d/%d ##########\n", i+1, selftests_to_run);
       ind = i;
+      printf("########## testcase %d/%d (M%d[%d-%d]) ##########\n",
+        i+1, selftests_to_run, st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
     }
     f_class = (int)(st_data[ind].k % NUM_CLASSES);
     mystuff->exponent           = st_data[ind].exp;
@@ -792,7 +794,7 @@ RET_ERROR we might have a serios problem
     if (mystuff->quit) break;
   }
 
-  printf("Selftest statistics                          \n");
+  printf("Selftest statistics                                  \n");
   printf("  number of tests           %d\n", num_selftests);
   printf("  successful tests          %d\n", st_success);
   if(st_nofactor > 0)   printf("  no factor found           %d\n", st_nofactor);
@@ -837,7 +839,6 @@ int main(int argc, char **argv)
   mystuff.gpu_sieve_size = GPU_SIEVE_SIZE_DEFAULT * 1024 * 1024;		/* Size (in bits) of the GPU sieve.  Default is 64M bits. */
   mystuff.gpu_sieve_primes = GPU_SIEVE_PRIMES_DEFAULT;				/* Default to sieving primes below about 1.05M */
   mystuff.gpu_sieve_processing_size = GPU_SIEVE_PROCESS_SIZE_DEFAULT * 1024;	/* Default to 16K bits processed by each block in a Barrett kernel. */
-  strcpy(mystuff.resultfile, "results.txt");
   strcpy(mystuff.inifile, "mfakto.ini");
 
   while(i<argc)
