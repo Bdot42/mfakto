@@ -3067,6 +3067,32 @@ void CL_test(cl_int devnumber)
       deviceinfo.maxThreadsPerGrid *= deviceinfo.wi_sizes[i];
   }
 
+  cl_command_queue_properties props = 0;             // GPU sieve is started without synchronization events
+  if (mystuff.gpu_sieving == 0)                      // but CPU sieve can run out-of-order, if possible
+    props = CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;  // kernels and copy-jobs are queued with event dependencies, so this should work ...
+                                                     // but so far the GPU driver does not support that anyway (as of Catalyst 12.9)
+
+  commandQueue = clCreateCommandQueue(context, devices[devnumber], props, &status);
+  if(status != CL_SUCCESS)
+	{
+    props = 0; // Intel HD does not support out-of-order
+    commandQueue = clCreateCommandQueue(context, devices[devnumber], props, &status);
+    if(status != CL_SUCCESS)
+  	{
+      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueue(dev#" << devnumber+1 << ")\n";
+    }
+    else
+      printf("\nINFO: Device does not support out-of-order operations. Fallback to in-order queues.\n");
+	}
+
+  props |= CL_QUEUE_PROFILING_ENABLE;
+
+  commandQueuePrf = clCreateCommandQueue(context, devices[devnumber], props, &status);
+  if(status != CL_SUCCESS)
+	{
+    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueuePrf(dev#" << devnumber+1 << ")\n";
+	}
+
 	size_t size;
 	char*  source;
 
@@ -3100,7 +3126,37 @@ void CL_test(cl_int devnumber)
 	  std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateProgramWithSource\n";
 	}
 
-  status = clBuildProgram(program, 1, &devices[devnumber], "-O3 -I. -DVECTOR_SIZE=4", NULL, NULL);
+    char program_options[150];
+  // so far use the same vector size for all kernels ...
+  sprintf(program_options, "-I. -DVECTOR_SIZE=%d", mystuff.vectorsize);
+#ifdef CL_DEBUG
+  strcat(program_options, " -g");
+#else
+  if (mystuff.gpu_type != GPU_NVIDIA) strcat(program_options, " -O3");
+#endif
+
+#ifdef MORE_CLASSES
+  strcat(program_options, " -DMORE_CLASSES");
+#endif
+
+#ifdef CHECKS_MODBASECASE
+  strcat(program_options, " -DCHECKS_MODBASECASE");
+#endif
+
+  if (mystuff.gpu_sieving == 1)
+    strcat(program_options, " -DCL_GPU_SIEVE");
+
+  if (mystuff.small_exp == 1)
+    strcat(program_options, " -DSMALL_EXP");
+
+  if (mystuff.CompileOptions[0])  // if mfakto.ini defined compile options, override the default with them
+    strcpy(program_options, mystuff.CompileOptions);
+
+    printf("Compiling kernels (build options: \"%s\").", program_options);
+
+  // program_options can be overridden by setting en environment variable AMD_OCL_BUILD_OPTIONS
+
+  status = clBuildProgram(program, 1, &devices[devnumber], program_options, NULL, NULL);
   { 
       cl_int logstatus;
       char *buildLog = NULL;

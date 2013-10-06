@@ -771,7 +771,7 @@ Precalculated here since it is the same for all steps in the following loop */
   // carry= AS_UINT_V((tmp96.d0 > bb.d0) ? 1 : 0);
   tmp72.d0 = ( -tmp72.d0) & 0xFFFFFF;
   tmp72.d1 = ( -tmp72.d1 + AS_UINT_V(tmp72.d0 > 0)) & 0xFFFFFF;
-  tmp72.d2 = ( bb.d2-tmp72.d2 + AS_UINT_V((tmp72.d0 > 0)|(tmp72.d1 > 0))) & 0xFFFFFF; // if either d0 or d1 are non-zero we'll have to borrow
+  tmp72.d2 = ( bb.d2-tmp72.d2 + AS_UINT_V((tmp72.d0 | tmp72.d1) > 0)) & 0xFFFFFF; // if either d0 or d1 are non-zero we'll have to borrow
 
 	 // we do not need the upper digits of b and tmp72 because they are 0 after this subtraction!
 

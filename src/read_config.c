@@ -390,7 +390,6 @@ int read_config(mystuff_t *mystuff)
     }
     if(mystuff->verbosity >= 1)printf("  GPUSieveProcessSize       %dKi bits\n",i);
     mystuff->gpu_sieve_processing_size = i * 1024;
-  }
 
 /*****************************************************************************/
 
@@ -422,6 +421,7 @@ int read_config(mystuff_t *mystuff)
     }
     if(mystuff->verbosity >= 1)printf("  GPUSieveSize              %dMi bits\n",i);
     mystuff->gpu_sieve_size = i * 1024 * 1024;
+  } // end GPU sieve only
 
 /*****************************************************************************/
 

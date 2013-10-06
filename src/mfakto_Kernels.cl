@@ -106,6 +106,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   int90_v a, b, r;
   tid = get_global_id(0);
   float_v ff = 1.0f;
+  uint_v carry0, carry1;
 
 
 //  barrier(CLK_GLOBAL_MEM_FENCE);
@@ -113,13 +114,40 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
     printf((__constant char *)"kernel tracing level %d enabled\n", TRACE_KERNEL);
 #endif
   a.d0=1;
-  a.d1=0;
+  a.d1=hi >> 11;
   a.d2=0;
   a.d3=0x0003;
   a.d4=0x7000;
   a.d5=0x0010;
 
   square_90_180(&resv, a);
+
+  b.d0=1;
+  b.d1=lo >> 11;
+
+  carry0 = (hi < lo);
+  carry1 = AS_UINT_V((a.d1 > b.d1) || (carry0 && AS_UINT_V(a.d1 == b.d1)));
+  printf((__constant char *)"a=%d b=%d carry=%x => carry=%x\n", a.d1, b.d1, carry0, carry1);
+
+  carry0 = (hi > lo);
+  carry1 = AS_UINT_V((a.d1 > b.d1) || (carry0 && AS_UINT_V(a.d1 == b.d1)));
+  printf((__constant char *)"a=%d b=%d carry=%x => carry=%x\n", a.d1, b.d1, carry0, carry1);
+
+  b.d1=hi;
+  a.d1=lo;
+  carry1 = AS_UINT_V((a.d1 > b.d1) || (carry0 && AS_UINT_V(a.d1 == b.d1)));
+  printf((__constant char *)"a=%d b=%d carry=%x => carry=%x\n", a.d1, b.d1, carry0, carry1);
+
+  a.d1=hi;
+  b.d1=lo;
+  carry0 = (hi > q);
+  carry1 = AS_UINT_V((a.d1 > b.d1) || (carry0 && AS_UINT_V(a.d1 == b.d1)));
+  printf((__constant char *)"a=%d b=%d carry=%x => carry=%x\n", a.d1, b.d1, carry0, carry1);
+
+  carry0 = (hi < q);
+  carry1 = AS_UINT_V((a.d1 > b.d1) || (carry0 && AS_UINT_V(a.d1 == b.d1)));
+  printf((__constant char *)"a=%d b=%d carry=%x => carry=%x\n", a.d1, b.d1, carry0, carry1);
+
 
   /*
   b=invmod2pow90(a);

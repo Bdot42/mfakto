@@ -284,6 +284,15 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
   MODBASECASE_QI_ERROR(1<<22, 1, qi, 0);
 
   res->d2 = qi << 11;
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, nf);
+#endif
+#endif
 
 // nn = n * qi
   nn.d0  = n.d0 * qi;
@@ -328,6 +337,15 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
   q.d5 = q.d5 - nn.d3 + carry;
 #else
   q.d4 = q.d4 - nn.d2 + carry;
+#endif
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div: q=%x:%x:%x:%x, nn=%x:%x:%x:%x, res=%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d2.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div: q=%x:%x:%x:%x, nn=%x:%x:%x:%x, res=%x\n",
+        q.d5, q.d4, q.d3, q.d2, nn.d3, nn.d2, nn.d1, nn.d0, res->d2);
+#endif
 #endif
 /********** Step 2, Offset 2^55 (1*32 + 23) **********/
 #ifndef DIV_160_96
@@ -600,6 +618,16 @@ DIV_160_96 here. */
 #else
   q.d4 = q.d4 - nn.d2 + carry;
 #endif
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div: q=%x:%x:%x:%x, nn=%x:%x:%x:%x, res=%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d2.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div: q=%x:%x:%x:%x, nn=%x:%x:%x:%x, res=%x\n",
+        q.d5, q.d4, q.d3, q.d2, nn.d3, nn.d2, nn.d1, nn.d0, res->d2);
+#endif
+#endif
+
 /********** Step 2, Offset 2^55 (1*32 + 23) **********/
 #ifndef DIV_160_96
   qf= CONVERT_FLOAT_V(q.d5);
@@ -817,7 +845,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we allways underestimate the quotient
+  ff= as_float(0x3f7ffffc) / ff;		// just a little bit below 1.0f so we allways underestimate the quotient
 
   tmp192.d4 = 0xFFFFFFFF;						// tmp is nearly 2^(81)
   tmp192.d3 = 0xFFFFFFFF;
@@ -943,7 +971,7 @@ Precalculated here since it is the same for all steps in the following loop */
     ff= CONVERT_FLOAT_RTP_V(f.d2);
     ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
   
-    ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+    ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
   
     tmp192.d4 = 0xFFFFFFFF;						// tmp192 is nearly 2^(81)
     tmp192.d3 = 0xFFFFFFFF;
@@ -1063,7 +1091,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffe) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d4 = 0xFFFFFFFF;						// tmp is nearly 2^(81)
   tmp192.d3 = 0xFFFFFFFF;
@@ -1207,7 +1235,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
 //  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffa) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
@@ -1218,8 +1246,13 @@ Precalculated here since it is the same for all steps in the following loop */
   div_192_96(&u,tmp192,f,ff,modbasecase_debug);				// u = floor(tmp192 / f)
 #endif
 #if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87: u=%x:%x:%x, ff=%G\n",
         u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+#else
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87: u=%x:%x:%x, ff=%G\n",
+        u.d2, u.d1, u.d0, ff);
+#endif
 #endif
 
   a.d0 = (bb.d2 >> bit_max65) + (bb.d3 << bit_max65_32);	// a = floor(b / 2 ^ (bits_in_f - 1))
@@ -1330,7 +1363,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
 //  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
@@ -1450,7 +1483,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffb) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 //  ff= 1.0f / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
