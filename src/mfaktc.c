@@ -760,8 +760,8 @@ RET_ERROR we might have a serios problem
 
     if (mystuff->gpu_sieving == 0)
     {
-//      for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index)
-      for (kernel_index = BARRETT70_MUL24; kernel_index < BARRETT73_MUL15; ++kernel_index)
+//      for (kernel_index = BARRETT70_MUL24; kernel_index < BARRETT73_MUL15; ++kernel_index) // test-only: skip 15-bit kernels
+      for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }
@@ -772,8 +772,8 @@ RET_ERROR we might have a serios problem
     }
     else
     {
-//      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT82_MUL15_GS; ++kernel_index)
-      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT73_MUL15_GS; ++kernel_index)
+//      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT73_MUL15_GS; ++kernel_index) // test-only: skip 15-bit kernels
+      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT82_MUL15_GS; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }
@@ -1128,14 +1128,27 @@ int main(int argc, char **argv)
     }
   }
 
-  mystuff.threads_per_grid = mystuff.threads_per_grid_max;
-  if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
+  if (mystuff.gpu_sieving == 0)
   {
-    mystuff.threads_per_grid = (cl_uint)deviceinfo.maxThreadsPerGrid;
+    mystuff.threads_per_grid = mystuff.threads_per_grid_max;
+    if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
+    {
+      mystuff.threads_per_grid = (cl_uint)deviceinfo.maxThreadsPerGrid;
+    }
+    // threads_per_grid is the number of FC's per kernel invocation. It must be divisible by the vectorsize
+    // as only threads_per_grid / vectorsize threads will actually be started.
+    mystuff.threads_per_grid -= mystuff.threads_per_grid % (mystuff.vectorsize * deviceinfo.maxThreadsPerBlock);
   }
-  // threads_per_grid is the number of FC's per kernel invocation. It must be divisible by the vectorsize
-  // as only threads_per_grid / vectorsize threads will actually be started.
-  mystuff.threads_per_grid -= mystuff.threads_per_grid % (mystuff.vectorsize * deviceinfo.maxThreadsPerBlock);
+  else
+  {
+    // GPU sieving ONLY works with 256 threads per grid
+    mystuff.threads_per_grid = 256;
+    if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
+    {
+      printf("ERROR: device only supports %d threads per drid. Need at least 256 for GPU sieving.\n", deviceinfo.maxThreadsPerGrid);
+      return ERR_MEM;
+    }
+  }
 
   if(mystuff.verbosity >= 1)
   {

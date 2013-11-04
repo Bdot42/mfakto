@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
-#define SIEVE_SIZE_LIMIT 36
+#define SIEVE_SIZE_LIMIT 64
 
 
 /* EXTENDED_SELFTEST will add about 30k additional tests to the -st2 test */
@@ -89,7 +89,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 /* in order to more efficiently trace/debug the kernels, this define makes
    the factor to be found the first candidate during the selftest, so that
    debugging/tracing thread 0 of the first block should yield a factor found result */
-//#define DEBUG_FACTOR_FIRST
+#define DEBUG_FACTOR_FIRST
 
 
 /******************************************************************************
@@ -101,9 +101,9 @@ than an equal SIEVE_SIZE_LIMIT #define.
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.14pre1" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.14pre2" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.14pre1-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.14pre2-Win" /* DO NOT CHANGE! */
 #endif
 
 

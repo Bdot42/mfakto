@@ -183,7 +183,7 @@ int init_CLstreams(void)
 	  	return 1;
 	  }
   }
-  if( (mystuff.h_RES = (cl_uint *) malloc(36 * sizeof(cl_uint))) == NULL )  // only 32 uints required, but OpenCL libs read&write after that (valgrind error)
+  if( (mystuff.h_RES = (cl_uint *) malloc(32 * sizeof(cl_uint))) == NULL )  // only 32 uints required, but OpenCL libs read&write after that (valgrind error)
   {
     printf("ERROR: malloc(h_RES) failed\n");
     return 1;
@@ -1745,17 +1745,15 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
 {
   cl_int   status;
   cl_mem   k_tab = mystuff.d_ktab[stream];
-  size_t   globalThreads[2];
-  size_t   localThreads[2];
+  size_t   globalThreads;
+  size_t   localThreads;
   size_t   total_threads = mystuff.threads_per_grid;
 
   // adjust for vector kernels: each thread processes 1-16 FC's, use accordingly less threads
   total_threads /= mystuff.vectorsize;
 
-  globalThreads[0] = (total_threads > deviceinfo.maxThreadsPerBlock) ? deviceinfo.maxThreadsPerBlock : total_threads;
-  globalThreads[1] = (total_threads-1)/deviceinfo.maxThreadsPerBlock + 1;
-  localThreads[0] = globalThreads[0];  // PERF: test different sizes, also in combination with the __attribute__((reqd_work_group_size(X, Y, Z)))qualifier
-  localThreads[1] = 1;
+  globalThreads = total_threads;
+  localThreads  = (total_threads > deviceinfo.maxThreadsPerBlock) ? deviceinfo.maxThreadsPerBlock : total_threads;  // PERF: test different sizes, also in combination with the __attribute__((reqd_work_group_size(X, Y, Z)))qualifier
 
   // first set the params that don't change per block: exp, RES
   if (new_class)
@@ -1796,10 +1794,10 @@ int run_kernel(cl_kernel l_kernel, cl_uint exp, int stream, cl_mem res)
 
   status = clEnqueueNDRangeKernel(QUEUE,
                  l_kernel,
-                 2,
+                 1,
                  NULL,
-                 globalThreads,
-                 localThreads,
+                 &globalThreads,
+                 &localThreads,
                  1,
                  &mystuff.copy_events[stream], // wait for the k_tab write to finish
                  &mystuff.exec_events[stream]);
@@ -2220,7 +2218,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
                 mystuff->h_RES,
                 0,
                 NULL,
-                &mystuff->copy_events[0]);
+                NULL);
   if(status != CL_SUCCESS) 
 	{  
 		std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_RES(clEnqueueWriteBuffer)\n";
