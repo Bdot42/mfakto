@@ -101,7 +101,6 @@ cl_uint primes_per_thread = 0;		// Number of "rows" in the GPU sieving info arra
 
 #define PINFO_PAD1		1024			// Allows room for lots of initial bit_to_clr values
 
-
 //
 // Sieve initialization done on the CPU
 //
@@ -162,8 +161,9 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 	cl_uint	*rowinfo, *row;
 	cl_uint	i, j, pinfo_size, rowinfo_size;
 	cl_uint	k, loop_count, loop_end;
-  static	int	gpusieve_initialized = 0;
   cl_int  status;
+
+  static	int	gpusieve_initialized = 0;
 
 	// If we've already allocated GPU memory, return
 	if (gpusieve_initialized) return 0;
@@ -628,13 +628,14 @@ void gpusieve (mystuff_t *mystuff, unsigned long long num_k_remaining)
 int gpusieve_free (mystuff_t *mystuff)
 {
   int status;
+
 	status = clReleaseMemObject(mystuff->d_bitarray);
   if(status != CL_SUCCESS)
 	{
 		std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (mystuff->d_bitarray)\n";
 		return 1; 
 	}
-  free(mystuff->h_bitarray);
+  free(mystuff->h_bitarray); mystuff->h_bitarray=NULL;
 
 	status = clReleaseMemObject(mystuff->d_calc_bit_to_clear_info);
   if(status != CL_SUCCESS)
@@ -642,7 +643,7 @@ int gpusieve_free (mystuff_t *mystuff)
 		std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (mystuff->d_calc_bit_to_clear_info)\n";
 		return 1; 
 	}
-  free(mystuff->h_calc_bit_to_clear_info);
+  free(mystuff->h_calc_bit_to_clear_info); mystuff->h_calc_bit_to_clear_info=NULL;
   
 	status = clReleaseMemObject(mystuff->d_sieve_info);
   if(status != CL_SUCCESS)
@@ -650,7 +651,8 @@ int gpusieve_free (mystuff_t *mystuff)
 		std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (mystuff->d_sieve_info)\n";
 		return 1; 
 	}
-  free(mystuff->h_sieve_info);
+  free(mystuff->h_sieve_info); mystuff->h_sieve_info=NULL;
+
   return 0;
 }
 

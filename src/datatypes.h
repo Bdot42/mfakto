@@ -136,11 +136,10 @@ typedef struct _int180_v
 #define CONVERT_ULONG_V convert_ulong
 // AS_UINT is applied only to logical results. For vector operations, these are 0 (false) or -1 (true)
 // For scalar operations, they result in 0 (false) or 1 (true) ==> to unify, negate here
-#define AS_INT_V(x) (-as_int(x))
-#define AS_LONG_V(x) (-as_long(x))
-#define AS_UINT_V(x) (-as_uint(x))
-#define AS_ULONG_V(x) (-as_ulong(x))
-
+#define AS_INT_V(x) as_int((x)?-1:0)
+#define AS_LONG_V(x) as_long((x)?-1:0)
+#define AS_UINT_V(x) as_uint((x)?-1:0)
+#define AS_ULONG_V(x) as_ulong((x)?-1:0)
 #else
 typedef struct _int72_v
 {

@@ -105,7 +105,7 @@ ulong_v mod_REDC64(const ulong_v a, const ulong_v N, const ulong_v Ns)
   return onemod_REDC64(N, Ns*a);
 }
 
-__kernel void __attribute__((work_group_size_hint(256, 8192, 1))) cl_mg62(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void __attribute__((work_group_size_hint(256, 1, 1))) cl_mg62(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else
@@ -632,7 +632,7 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
 }
 
 
-__kernel void __attribute__((work_group_size_hint(256, 8192, 1))) cl_mg88(__private uint exp, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void __attribute__((work_group_size_hint(256, 1, 1))) cl_mg88(__private uint exp, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else

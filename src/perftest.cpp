@@ -34,6 +34,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "filelocking.h"
 #include "signal_handler.h"
 #include "mfakto.h"
+#include "gpusieve.h"
 #ifndef _MSC_VER
 #include <sys/time.h>
 #else
@@ -42,9 +43,10 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #define localtime _localtime64
 #endif
 
-extern "C" mystuff_t mystuff;
-extern "C" OpenCL_deviceinfo_t deviceinfo;
-extern cl_command_queue commandQueue, commandQueuePrf;
+extern "C" mystuff_t            mystuff;
+extern "C" OpenCL_deviceinfo_t  deviceinfo;
+extern cl_command_queue         commandQueue, commandQueuePrf;
+extern cl_context               context;
 
 #define EXP 66362159
 
@@ -553,6 +555,84 @@ int test_copy(cl_uint par)
   return 0;
 }
 
+int test_gpu_sieve(cl_uint par)
+{
+  struct timeval timer;
+  double time1;
+  cl_uint i;
+  cl_ulong k;
+
+  // 50 is a reasonable number that does not usually crash the driver
+  //par = 50;
+
+  printf("\n4. GPU sieve, %d iterations each\n", par);
+  
+  k = 9876543210;
+
+  timer_init(&timer);
+    init_CLstreams();  // runs gpusieve_init(&mystuff, context);
+  time1 = (double)timer_diff(&timer);
+
+  printf("\n gpusieve_init: %f ms (CPU work)\n", time1/1000.0);
+  if (mystuff.quit) exit(1);
+
+  timer_init(&timer);
+  for (i=0; i<par; i++)
+  {
+    gpusieve_init_exponent(&mystuff);
+    clFlush(commandQueue);
+    mystuff.exponent ^= 48;
+  }
+  clFinish(commandQueue);
+  time1 = (double)timer_diff(&timer);
+
+  printf(" gpusieve_init_exponent: %f ms (CalcModularInverses)\n", time1/1000.0/par);
+  if (mystuff.quit) exit(1);
+
+  timer_init(&timer);
+  for (i=0; i<par; i++)
+  {
+    gpusieve_init_class(&mystuff, k); // does a flush on its own
+  }
+  clFinish(commandQueue);
+  time1 = (double)timer_diff(&timer);
+
+  printf(" gpusieve_init_class: %f ms (CalcBitToClear)\n", time1/1000.0/par);
+  if (mystuff.quit) exit(1);
+
+  timer_init(&timer);
+  for (i=0; i<par; i++)
+  {
+    gpusieve(&mystuff, (cl_ulong)mystuff.gpu_sieve_size*256);
+    clFlush(commandQueue);
+  }
+  clFinish(commandQueue);
+  time1 = (double)timer_diff(&timer);
+
+  printf(" gpusieve: %f ms (SegSieve)\n\n ", time1/1000.0/par);
+  if (mystuff.quit) exit(1);
+
+  gpusieve_free(&mystuff);
+
+  return 0;
+}
+
+int init_gpu_test(int devicenumber)
+{
+  cleanup_CL();
+
+  // fill some meaningful test values into mystuff
+  mystuff.exponent = EXP;
+  mystuff.gpu_sieve_primes = 52765;
+  mystuff.gpu_sieve_processing_size = 24 * 1024;
+  mystuff.gpu_sieve_size = 123 * 1024 * 1024;
+  mystuff.bit_min = 71;
+  mystuff.bit_max_stage = mystuff.bit_max_assignment = 72;
+  mystuff.gpu_sieving = 1;
+
+  return init_CL(mystuff.num_streams, devicenumber);
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -582,19 +662,22 @@ int perftest(int par, int devicenumber)
   if (mystuff.quit) exit(1);
 
   // 1. Sieve-Init
-  test_sieve_init(par);
+//  test_sieve_init(par);
   if (mystuff.quit) exit(1);
 
   // 2. Sieve
-  test_sieve(par);
+//  test_sieve(par);
   if (mystuff.quit) exit(1);
 
   // 3. memory copy
-  test_copy((cl_uint)par);
+//  test_copy((cl_uint)par);
   if (mystuff.quit) exit(1);
 
+// from here, assume GPU sieving
+  init_gpu_test(devicenumber);
+
   // 4. kernels
-  printf("\n4. mfakto_cl_63 kernel\n  soon\n");
+  test_gpu_sieve((cl_uint)par);
 
   printf("5. mfakto_cl_71 kernel\n  soon\n");
 

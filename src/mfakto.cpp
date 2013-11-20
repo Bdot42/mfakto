@@ -167,7 +167,7 @@ int init_CLstreams(void)
   for(i=0;i<(mystuff.num_streams);i++)
   {
     mystuff.stream_status[i] = UNUSED;
-    if( (mystuff.h_ktab[i] = (cl_uint *) malloc( mystuff.threads_per_grid * sizeof(cl_uint))) == NULL )
+    if( (mystuff.h_ktab[i] = (cl_uint *) malloc( mystuff.threads_per_grid * sizeof(cl_uint) + 4)) == NULL )
     {
       printf("ERROR: malloc(h_ktab[%d]) failed\n", i);
       return 1;
@@ -183,7 +183,7 @@ int init_CLstreams(void)
 	  	return 1;
 	  }
   }
-  if( (mystuff.h_RES = (cl_uint *) malloc(32 * sizeof(cl_uint))) == NULL )  // only 32 uints required, but OpenCL libs read&write after that (valgrind error)
+  if( (mystuff.h_RES = (cl_uint *) malloc(32 * sizeof(cl_uint) + 4)) == NULL )  // only 32 uints required, but OpenCL libs read&write after that (valgrind error)
   {
     printf("ERROR: malloc(h_RES) failed\n");
     return 1;
@@ -199,7 +199,7 @@ int init_CLstreams(void)
 		return 1;
 	}
 #ifdef CHECKS_MODBASECASE
-  if( (mystuff.h_modbasecase_debug = (cl_uint *) malloc(32 * sizeof(cl_uint))) == NULL )
+  if( (mystuff.h_modbasecase_debug = (cl_uint *) malloc(32 * sizeof(cl_uint) + 4)) == NULL )
   {
     printf("ERROR: malloc(h_modbasecase_debug) failed\n");
     return 1;
