@@ -61,7 +61,7 @@ checkpoint_write() writes the checkpoint file.
   f=fopen(filename_write, "w");
   if(f==NULL)
   {
-    printf("WARNING, could not create checkpoint file \"%s\"\n", filename_write);
+    printf("WARNING: Could not create checkpoint file \"%s\"\n", filename_write);
     return;
   }
   else
@@ -82,11 +82,14 @@ checkpoint_write() writes the checkpoint file.
       remove(filename_save); // dont care if failed, it may not have existed
 //               c4 = timer_diff(&cptimer);
       rename(filename, filename_save); // dito
-      rename(filename_write, filename);
+      if (rename(filename_write, filename))
+      {
+        printf("WARNING: rename %s to %s failed.\n", filename_write, filename);
+      }
     }
     else
     {
-      printf("WARNING, could not write checkpoint file \"%s\", %u chars written.\n", filename_write, i);
+      printf("WARNING: Could not write checkpoint file \"%s\", %u chars written.\n", filename_write, i);
     }
 /*               c5 = timer_diff(&cptimer);
     printf("\nCP in %lld us, %lld us, %lld us, %lld us, %lld us\n", c1, c2, c3, c4, c5); */
@@ -123,6 +126,7 @@ returns 0 otherwise
     return 0;
   }
   i=(int)fread(buffer,sizeof(char),99,f);
+  buffer[i] = 0;
   sprintf(buffer2,"%u %d %d %d ", exp, bit_min, bit_max, NUM_CLASSES);
   ptr=strstr(buffer, buffer2);
   if(ptr==buffer)
@@ -164,12 +168,16 @@ returns 0 otherwise
   fclose(f);
   if (ret==0)
   {
-    sprintf(filename_save, "M%u.ckp.bu", exp);
-    remove(filename);
-    i=rename(filename_save, filename);
-    if (i==0)
+    sprintf(filename_save, "M%u.ckp.bad-%08X", exp, checkpoint_checksum(buffer,(int)strlen(buffer))); // append some "random" number (same number means same content)
+    if (rename(filename, filename_save) == 0)
     {
-      printf("Renamed \"%s\" to \"%s\", trying to load it.\n", filename_save, filename);
+      printf("Renamed bad checkpoint file \"%s\" to \"%s\"\n", filename, filename_save);
+    }
+
+    sprintf(filename_save, "M%u.ckp.bu", exp);
+    if (rename(filename_save, filename) == 0)
+    {
+      printf("Renamed backup file \"%s\" to \"%s\", trying to load it.\n", filename_save, filename);
       return checkpoint_read(exp, bit_min, bit_max, cur_class, num_factors);
     }
   }

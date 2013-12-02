@@ -625,7 +625,7 @@ int init_gpu_test(int devicenumber)
   mystuff.exponent = EXP;
   mystuff.gpu_sieve_primes = 52765;
   mystuff.gpu_sieve_processing_size = 24 * 1024;
-  mystuff.gpu_sieve_size = 123 * 1024 * 1024;
+  mystuff.gpu_sieve_size = 126 * 1024 * 1024;
   mystuff.bit_min = 71;
   mystuff.bit_max_stage = mystuff.bit_max_assignment = 72;
   mystuff.gpu_sieving = 1;

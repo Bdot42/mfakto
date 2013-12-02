@@ -127,26 +127,36 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 
   carry0 = (hi < lo);
   carry1 = AS_UINT_V((a.d1 > b.d1) || (carry0 && AS_UINT_V(a.d1 == b.d1)));
+#if (TRACE_KERNEL > 0)
   printf((__constant char *)"a=%d b=%d carry=%x => carry=%x\n", a.d1, b.d1, carry0, carry1);
+#endif
 
   carry0 = (hi > lo);
   carry1 = AS_UINT_V((a.d1 > b.d1) || (carry0 && AS_UINT_V(a.d1 == b.d1)));
+#if (TRACE_KERNEL > 0)
   printf((__constant char *)"a=%d b=%d carry=%x => carry=%x\n", a.d1, b.d1, carry0, carry1);
+#endif
 
   b.d1=hi;
   a.d1=lo;
   carry1 = AS_UINT_V((a.d1 > b.d1) || (carry0 && AS_UINT_V(a.d1 == b.d1)));
+#if (TRACE_KERNEL > 0)
   printf((__constant char *)"a=%d b=%d carry=%x => carry=%x\n", a.d1, b.d1, carry0, carry1);
+#endif
 
   a.d1=hi;
   b.d1=lo;
   carry0 = (hi > q);
   carry1 = AS_UINT_V((a.d1 > b.d1) || (carry0 && AS_UINT_V(a.d1 == b.d1)));
+#if (TRACE_KERNEL > 0)
   printf((__constant char *)"a=%d b=%d carry=%x => carry=%x\n", a.d1, b.d1, carry0, carry1);
+#endif
 
   carry0 = (hi < q);
   carry1 = AS_UINT_V((a.d1 > b.d1) || (carry0 && AS_UINT_V(a.d1 == b.d1)));
+#if (TRACE_KERNEL > 0)
   printf((__constant char *)"a=%d b=%d carry=%x => carry=%x\n", a.d1, b.d1, carry0, carry1);
+#endif
 
 
   /*
@@ -297,16 +307,20 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   b75.d4=0x3000;
 
   mul_75_150_no_low5_big(&r75, a75, b75);
+#if (TRACE_KERNEL > 0)
   printf((__constant char *) "a=%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x:0:0:0:0\n",
        a75.d4.s0, a75.d3.s0, a75.d2.s0, a75.d1.s0, a75.d0.s0, b75.d4.s0, b75.d3.s0, b75.d2.s0, b75.d1.s0, b75.d0.s0,
        r75.d9.s0, r75.d8.s0, r75.d7.s0, r75.d6.s0, r75.d5.s0, r75.d4.s0);
+#endif
 #endif
 
   f=tid+1; // let the reported results start with 1
   if (1 == 1)
   {
     i=ATOMIC_INC(res[0]);
+#if (TRACE_KERNEL > 0)
     printf((__constant char *)"thread %d: i=%d, res[0]=%d\n", get_global_id(0), i, res[0]);
+#endif
 
     if(i<10)				/* limit to 10 results */
     {

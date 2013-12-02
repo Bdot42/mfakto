@@ -338,7 +338,7 @@ int read_config(mystuff_t *mystuff)
   }
   else // SieveOnGPU
   {
-    mystuff->num_streams = 1; // GPU sieve always uses only one stream
+    mystuff->num_streams = 3; // GPU sieve always uses only one stream
     mystuff->threads_per_grid_max = 2097152; // not used for the GPU sieve - defined here to satisfy some calculations
 
     if(my_read_int(mystuff->inifile, "GPUSievePrimes", &i))
@@ -421,6 +421,24 @@ int read_config(mystuff_t *mystuff)
     }
     if(mystuff->verbosity >= 1)printf("  GPUSieveSize              %dMi bits\n",i);
     mystuff->gpu_sieve_size = i * 1024 * 1024;
+
+    /*****************************************************************************/
+
+    if(my_read_int(mystuff->inifile, "Politeness", &i))
+    {
+      printf("WARNING: Cannot read Politeness from inifile, using default value 0\n");
+      i = 0;
+    }
+    else
+    {
+      if(i < 0)
+      {
+        printf("WARNING: Read Politeness=%d from inifile, using min value (0)\n",i);
+        i = 0;
+      }
+    }
+    if(mystuff->verbosity >= 1)printf("  Politeness                %d\n",i);
+    mystuff->polite = i;
   } // end GPU sieve only
 
 /*****************************************************************************/

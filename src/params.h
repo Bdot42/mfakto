@@ -84,7 +84,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 
 /* Tell the OpenCL compiler to create debuggable code for the Kernels */
-//define CL_DEBUG
+//#define CL_DEBUG
 
 /* in order to more efficiently trace/debug the kernels, this define makes
    the factor to be found the first candidate during the selftest, so that

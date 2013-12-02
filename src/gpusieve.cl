@@ -615,7 +615,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 		  locsieve32[get_local_id(0) * block_size / threadsPerBlock / 32 + j] |= mask;
 
 		  j++;
-		  if (j == block_size / threadsPerBlock / 32) break;
+		  if (j >= block_size / threadsPerBlock / 32) break;
 
 		  i37 = bump_mod_p (i37, -32, 37);
 		  i41 = bump_mod_p (i41, -32, 41);
@@ -669,7 +669,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 		  locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j] |= mask;
 
 		  j++;
-		  if (j == block_size / threadsPerBlock / 64) break;
+		  if (j >= block_size / threadsPerBlock / 64) break;
 
 		  i67 = bump_mod_p (i67, -64, 67);
 		  i71 = bump_mod_p (i71, -64, 71);
@@ -709,7 +709,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 		  locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j] |= mask;
 
 		  j++;
-		  if (j == block_size / threadsPerBlock / 64) break;
+		  if (j >= block_size / threadsPerBlock / 64) break;
 
 		  i101 = bump_mod_p (i101, -64, 101);
 		  i103 = bump_mod_p (i103, -64, 103);
@@ -757,7 +757,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
       locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j * 2 + 1] |= mask2;
 
       j++;
-      if (j == block_size / threadsPerBlock / 128) break;
+      if (j >= block_size / threadsPerBlock / 128) break;
 
       i131 = bump_mod_p (i131, -128, 131);
       i137 = bump_mod_p (i137, -128, 137);
@@ -793,7 +793,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
       locsieve64[get_local_id(0) * block_size / threadsPerBlock / 64 + j * 2 + 1] |= mask2;
 
       j++;
-      if (j == block_size / threadsPerBlock / 128) break;
+      if (j >= block_size / threadsPerBlock / 128) break;
 
       i163 = bump_mod_p (i163, -128, 163);
       i167 = bump_mod_p (i167, -128, 167);
@@ -835,7 +835,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 #endif
 
       j++;
-      if (j == block_size / threadsPerBlock / 128) break;
+      if (j >= block_size / threadsPerBlock / 128) break;
 
       i193 = bump_mod_p (i193, -128, 193);
       i197 = bump_mod_p (i197, -128, 197);
@@ -877,7 +877,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__globa
 #endif
 
       j++;
-      if (j == block_size / threadsPerBlock / 128) break;
+      if (j >= block_size / threadsPerBlock / 128) break;
 
       i229 = bump_mod_p (i229, -128, 229);
       i233 = bump_mod_p (i233, -128, 233);
