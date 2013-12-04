@@ -255,7 +255,7 @@ typedef struct
   cl_uint  gpu_sieve_primes;             /* the actual number of primes using for sieving */
   cl_uint  gpu_sieve_processing_size;	   /* The number of GPU sieve bits each thread in a Barrett kernel will process.  Default is 2K bits. */
 
-  cl_uint  polite;                       /* GPU sieving only: flush the queue after # kernels, 0=off */
+  cl_uint  flush;                        /* GPU sieving only: flush the queue after # kernels, 0=off */
   cl_uint  num_streams;
   
   enum MODES mode;

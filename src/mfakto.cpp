@@ -1928,7 +1928,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   cl_int   status;
   size_t   globalThreads=numblocks*256;
   size_t   localThreads=256;
-  static cl_uint polite_counter=1;
+  static cl_uint flush_counter=1;
 
 #ifdef CL_PERFORMANCE_INFO
   cl_event run_event;
@@ -1941,7 +1941,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   if (new_class)
   {
     new_class = 0;
-    polite_counter=1;
+    flush_counter=1;
     status = clSetKernelArg(kernel, 
                     0, 
                     sizeof(cl_uint), 
@@ -2038,17 +2038,17 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   }
 
   /* breathe */
-  if (polite_counter == mystuff.polite)
+  if (flush_counter == mystuff.flush)
   {
-    putchar('F');
-    polite_counter=1;
+//    putchar('F');
+    flush_counter=1;
     clFinish(QUEUE);
   }
   else
   {
 //    putchar('f');
-//    clFlush(QUEUE);
-    polite_counter++;
+    clFlush(QUEUE);
+    flush_counter++;
   }
 
   // all set? now start the kernel

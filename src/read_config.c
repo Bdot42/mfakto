@@ -424,21 +424,21 @@ int read_config(mystuff_t *mystuff)
 
     /*****************************************************************************/
 
-    if(my_read_int(mystuff->inifile, "Politeness", &i))
+    if(my_read_int(mystuff->inifile, "FlushInterval", &i))
     {
-      printf("WARNING: Cannot read Politeness from inifile, using default value 0\n");
+      printf("WARNING: Cannot read FlushInterval from inifile, using default value 0\n");
       i = 0;
     }
     else
     {
       if(i < 0)
       {
-        printf("WARNING: Read Politeness=%d from inifile, using min value (0)\n",i);
+        printf("WARNING: Read FlushInterval=%d from inifile, using min value (0)\n",i);
         i = 0;
       }
     }
-    if(mystuff->verbosity >= 1)printf("  Politeness                %d\n",i);
-    mystuff->polite = i;
+    if(mystuff->verbosity >= 1)printf("  FlushInterval             %d\n",i);
+    mystuff->flush = i;
   } // end GPU sieve only
 
 /*****************************************************************************/
