@@ -249,11 +249,10 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
 
 #define MAX_NUM_SPS 30
 
-  cl_uint m=13*17*19*23;
   cl_uint ssizes[MAX_NUM_SPS];  //={1,2,3,4,5,6,7,8,10,11,13,16,19,20,21,22,25,30,36,43,50,60,72,86,88,170};
-  int nss=read_array(mystuff.inifile, "TestSieveSizes", MAX_NUM_SPS, ssizes);
+  int nss=read_array(mystuff.inifile, (char *) "TestSieveSizes", MAX_NUM_SPS, ssizes);
   cl_uint sprimes[MAX_NUM_SPS];
-  int nsp=read_array(mystuff.inifile, "TestSievePrimes", MAX_NUM_SPS, sprimes);
+  int nsp=read_array(mystuff.inifile, (char *) "TestSievePrimes", MAX_NUM_SPS, sprimes);
   int ii,j;
 
   if (nss < 1)
@@ -270,11 +269,12 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
   if (nsp>MAX_NUM_SPS) nsp=MAX_NUM_SPS;
   double peak[MAX_NUM_SPS]={0.0}, Mps;
   double last_elem[MAX_NUM_SPS]={0.0};
-  int peak_index[MAX_NUM_SPS]={0};
-  cl_uint tmp;
 
 #ifdef SIEVE_SIZE_LIMIT
   printf("Sieve size is fixed at compile time, cannot test with variable sizes. Just running 3 fixed tests.\n\n");
+#else
+  cl_uint m=13*17*19*23;
+  int peak_index[MAX_NUM_SPS]={0};
 #endif
 
   printf("SievePrimes:");
@@ -286,7 +286,6 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
 
   for (j=0;j<nss; j++)
   {
-    tmp=m*ssizes[j];
     sieve_free();
 #ifdef SIEVE_SIZE_LIMIT
     sieve_init();
@@ -294,6 +293,7 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
     sieve_init_class(EXP, k++, 1000000);
     printf("\n%6d kiB  ", SIEVE_SIZE/8192+1);
 #else
+    cl_uint tmp=m*ssizes[j];
     sieve_init(tmp, 1000000);
     sieve_init_class(EXP, k, 1000000);
     printf("\n%6d kiB  ", tmp/8192+1);
@@ -312,7 +312,9 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
       if (Mps > peak[ii])
       {
         peak[ii]=Mps;
+#ifndef SIEVE_SIZE_LIMIT
         peak_index[ii]=j;
+#endif
       }
       printf(" %7.1f", Mps);
     }
@@ -367,7 +369,7 @@ int test_copy(cl_uint par)
   struct timeval timer;
   double time1, time2;
   cl_uint i, j;
-  cl_ulong k=0;
+//  cl_ulong k=0;
   cl_int status;
   size_t size = mystuff.threads_per_grid * sizeof(int);
 
@@ -377,7 +379,7 @@ int test_copy(cl_uint par)
     sieve_candidates(mystuff.threads_per_grid, mystuff.h_ktab[i], 5000);
   }
 
-  printf("\n3. Memory copy to GPU (blocks of %lld bytes)\n", size);
+  printf("\n3. Memory copy to GPU (blocks of %d bytes)\n", (int) size);
 
   // first, run a while to warm up the GPU (turn up clocks) without any measurement
   for (j=0; j<2; j++)
@@ -432,7 +434,7 @@ int test_copy(cl_uint par)
     time1  += (double)timer_diff(&timer);
   }
   printf("\n  Standard copy, standard queue:\n%8d MB in %6.1f ms (%6.1f MB/s) (real)\n",
-      j*10*size/1024/1024, time1/1000.0, (double)(j*10*size)/time1);
+      (int)(j*10*size/1024/1024), time1/1000.0, (double)(j*10*size)/time1);
 
   time1 = 0.0;
   time2 = 0.0;
@@ -499,11 +501,11 @@ int test_copy(cl_uint par)
     }
   }
   printf("\n  Standard copy, profiled queue:\n%8d MB in %6.1f ms (%6.1f MB/s) (real)\n",
-      j*10*size/1024/1024, time1/1000.0, (double)(j*10*size)/time1);
+      (int)(j*10*size/1024/1024), time1/1000.0, (double)(j*10*size)/time1);
   printf("%8d MB in %6.1f ms (%6.1f MB/s) (profiled data)\n",
-      j*10*size/1024/1024, time2/1e6, (double)(j*10000*size)/time2);
+      (int)(j*10*size/1024/1024), time2/1e6, (double)(j*10000*size)/time2);
   printf("%8d MB in %6.1f ms (%6.1f MB/s) (profiled data, peak)\n",
-      size/1024/1024, (double)best/1e6, (double)(1000*size)/(double)best);
+      (int)(size/1024/1024), (double)best/1e6, (double)(1000*size)/(double)best);
 
   time1 = 0.0;
 
@@ -549,7 +551,7 @@ int test_copy(cl_uint par)
     time1  += (double)timer_diff(&timer);
   }
   printf("\n  Standard copy, two queues:\n%8d MB in %6.1f ms (%6.1f MB/s) (real)\n",
-      j*10*size/1024/1024, time1/1000.0, (double)(j*10*size)/time1);
+      (int)(j*10*size/1024/1024), time1/1000.0, (double)(j*10*size)/time1);
 
 
   return 0;
