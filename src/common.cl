@@ -107,20 +107,7 @@ uint popcount(uint x)
       } \
   }
 
-#define EVAL_RES_a(comp) \
-  if((a.d2.comp|a.d1.comp)==0 && a.d0.comp==1) \
-  { \
-    if ((f.d2.comp|f.d1.comp)!=0 || f.d0.comp != 1) \
-    { \
-      int index = ATOMIC_INC(RES[0]); \
-      if (index < 10) \
-      { \
-        RES[index *3 + 1]=f.d2.comp; \
-        RES[index *3 + 2]=f.d1.comp; \
-        RES[index *3 + 3]=f.d0.comp; \
-      } \
-    } \
-  }
+// #define EVAL_RES_a(comp)  // this was checking for a == 1 and f != 1. The f != 1 is now done on the host
 
 #define EVAL_RES_l(comp) \
   if(a.comp == 1) \
@@ -204,74 +191,11 @@ uint popcount(uint x)
   }
 
 
-void check_factor96(const int96_v f, const int96_v a, __global uint * const RES)
-/* Check whether f is a factor or not. If f != 1 and a == 1 then f is a factor,
-in this case f is written into the RES array. */
-{
-#if (VECTOR_SIZE == 1)
-  if(((a.d2|a.d1) == 0) && (a.d0 == 1))
-  {
-    if(f.d2 != 0 || f.d1 != 0 || f.d0 != 1)	/* 1 isn't really a factor ;) */
-    {
-#if (TRACE_KERNEL > 0)  // trace this for any thread
-      printf((__constant char *)"tid=%ld found factor: q=%x:%x:%x\n", get_local_id(0), f.d2.s0, f.d1.s0, f.d0.s0);
-#endif
-      int index=ATOMIC_INC(RES[0]);
-      if(index < 10)				/* limit to 10 factors per class */
-      {
-        RES[index * 3 + 1] = f.d2;
-        RES[index * 3 + 2] = f.d1;
-        RES[index * 3 + 3] = f.d0;
-      }
-    }
-  }
-#elif (VECTOR_SIZE == 2)
-  EVAL_RES_a(x)
-  EVAL_RES_a(y)
-#elif (VECTOR_SIZE == 3)
-  EVAL_RES_a(x)
-  EVAL_RES_a(y)
-  EVAL_RES_a(z)
-#elif (VECTOR_SIZE == 4)
-  EVAL_RES_a(x)
-  EVAL_RES_a(y)
-  EVAL_RES_a(z)
-  EVAL_RES_a(w)
-#elif (VECTOR_SIZE == 8)
-  EVAL_RES_a(s0)
-  EVAL_RES_a(s1)
-  EVAL_RES_a(s2)
-  EVAL_RES_a(s3)
-  EVAL_RES_a(s4)
-  EVAL_RES_a(s5)
-  EVAL_RES_a(s6)
-  EVAL_RES_a(s7)
-#elif (VECTOR_SIZE == 16)
-  EVAL_RES_a(s0)
-  EVAL_RES_a(s1)
-  EVAL_RES_a(s2)
-  EVAL_RES_a(s3)
-  EVAL_RES_a(s4)
-  EVAL_RES_a(s5)
-  EVAL_RES_a(s6)
-  EVAL_RES_a(s7)
-  EVAL_RES_a(s8)
-  EVAL_RES_a(s9)
-  EVAL_RES_a(sa)
-  EVAL_RES_a(sb)
-  EVAL_RES_a(sc)
-  EVAL_RES_a(sd)
-  EVAL_RES_a(se)
-  EVAL_RES_a(sf)
-#endif
-}
-
-
 void check_big_factor96(const int96_v f, const int96_v a, __global uint * const RES)
 /* Similar to check_factor96() but without checking f != 1. This is a little
-bit faster but only safe for kernel which have a lower limit well above 1. The
-barrett based kernels have a lower limit of 2^64 so this function is used
-there. */
+bit faster. The barrett based kernels have a lower limit of 2^64 so this function is used
+there. The check for f != 1 is now done in the host program, therefore this function is
+now used everywhere. */
 {
 #if (VECTOR_SIZE == 1)
   if( ((a.d2|a.d1)==0 && a.d0==1) )

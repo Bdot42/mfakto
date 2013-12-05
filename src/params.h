@@ -89,7 +89,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 /* in order to more efficiently trace/debug the kernels, this define makes
    the factor to be found the first candidate during the selftest, so that
    debugging/tracing thread 0 of the first block should yield a factor found result */
-#define DEBUG_FACTOR_FIRST
+//#define DEBUG_FACTOR_FIRST
 
 
 /******************************************************************************

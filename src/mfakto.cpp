@@ -2807,7 +2807,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     if ((factor.d2 == prev_factor.d2 && factor.d1 == prev_factor.d1 && factor.d0 == prev_factor.d0) ||
         (factor.d2 == 0 && factor.d1 == 0 && factor.d0 == 1))
     {
-      if (mystuff->verbosity > 1)
+      if (mystuff->verbosity > 2)
       {
         printf("Skipping duplicate factor i=%d: %x:%x:%x\n", i, factor.d2, factor.d1, factor.d0);
       }

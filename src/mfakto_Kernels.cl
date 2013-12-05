@@ -90,8 +90,6 @@ Version 0.13
   #include "montgomery.cl"  // montgomery kernels
 
   #define _63BIT_MUL24_K
-  #undef EVAL_RES
-  #define EVAL_RES(x) EVAL_RES_a(x)
   #include "mul24.cl" // include again, now for small factors < 64 bit
 #endif
 
