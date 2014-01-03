@@ -203,12 +203,8 @@ void print_status_line(mystuff_t *mystuff)
 
   if(mystuff->mode == MODE_SELFTEST_SHORT) return; /* no output during short selftest */
 
-#ifdef MORE_CLASSES
-  max_class_number = 960;
-#else
-  max_class_number = 96;
-#endif
-
+  if (mystuff->more_classes)  max_class_number = 960;
+  else                        max_class_number = 96;
 
   if(mystuff->stats.output_counter == 0)
   {
@@ -386,8 +382,11 @@ void print_result_line(mystuff_t *mystuff, int factorsfound)
 {
   char UID[110]; /* 50 (V5UserID) + 50 (ComputerID) + 8 + spare */
   char string[200];
+  unsigned int max_class_number;
 
   FILE *resultfile=NULL;
+  if (mystuff->more_classes)  max_class_number = 960;
+  else                        max_class_number = 96;
 
   if(mystuff->V5UserID[0] && mystuff->ComputerID[0])
     sprintf(UID, "UID: %s/%s, ", mystuff->V5UserID, mystuff->ComputerID);
@@ -401,11 +400,7 @@ void print_result_line(mystuff_t *mystuff, int factorsfound)
   }
   if(factorsfound)
   {
-#ifndef MORE_CLASSES
-    if((mystuff->mode == MODE_NORMAL) && (mystuff->stats.class_counter < 96))
-#else
-    if((mystuff->mode == MODE_NORMAL) && (mystuff->stats.class_counter < 960))
-#endif
+    if((mystuff->mode == MODE_NORMAL) && (mystuff->stats.class_counter < max_class_number))
     {
       sprintf(string, "found %d factor%s for M%u from 2^%2d to 2^%2d (partially tested) [%s %s_%u]",
          factorsfound, (factorsfound > 1) ? "s" : "", mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage,
@@ -441,6 +436,10 @@ void print_factor(mystuff_t *mystuff, int factor_number, char *factor)
 {
   char UID[110]; /* 50 (V5UserID) + 50 (ComputerID) + 8 + spare */
   FILE *resultfile = NULL;
+  unsigned int max_class_number;
+
+  if (mystuff->more_classes)  max_class_number = 960;
+  else                        max_class_number = 96;
 
   if(mystuff->V5UserID[0] || mystuff->ComputerID[0])
     sprintf(UID, "UID: %s/%s, ", mystuff->V5UserID, mystuff->ComputerID);
@@ -462,17 +461,10 @@ void print_factor(mystuff_t *mystuff, int factor_number, char *factor)
     }
     if(mystuff->mode == MODE_NORMAL)
     {
-#ifndef MORE_CLASSES
       fprintf(resultfile, "%sM%u has a factor: %s [TF:%d:%d%s:%s %s_%u]\n",
         UID, mystuff->exponent, factor, mystuff->bit_min, mystuff->bit_max_stage,
-        ((mystuff->stopafterfactor == 2) && (mystuff->stats.class_counter <  96)) ? "*" : "" ,
+        ((mystuff->stopafterfactor == 2) && (mystuff->stats.class_counter < max_class_number)) ? "*" : "" ,
         MFAKTO_VERSION, mystuff->stats.kernelname, mystuff->vectorsize);
-#else
-      fprintf(resultfile, "%sM%u has a factor: %s [TF:%d:%d%s:%s %s_%u]\n",
-        UID, mystuff->exponent, factor, mystuff->bit_min, mystuff->bit_max_stage,
-        ((mystuff->stopafterfactor == 2) && (mystuff->stats.class_counter < 960)) ? "*" : "" ,
-        MFAKTO_VERSION, mystuff->stats.kernelname, mystuff->vectorsize);
-#endif
     }
   }
   else /* factor_number >= 10 */

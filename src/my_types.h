@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2014  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -238,6 +238,9 @@ typedef struct
   cl_mem   d_sieve_info;
   cl_uint *h_calc_bit_to_clear_info;
   cl_mem   d_calc_bit_to_clear_info;
+
+  cl_uint  more_classes;                    /* 0= 420 classes, 1= 4620 classes */
+  cl_uint  num_classes;                     /* 420 / 4620 classes */
 
   cl_uint  exponent;                        /* the exponent we're currently working on */
   cl_uint  bit_min;                         /* where do we start TFing */

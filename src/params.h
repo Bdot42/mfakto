@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2014  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -101,12 +101,13 @@ than an equal SIEVE_SIZE_LIMIT #define.
 ******************************************************************************/
 
 #ifndef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.14pre2" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.14pre3" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.14pre2-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.14pre3-Win" /* DO NOT CHANGE! */
 #endif
 
 
+// MORE_CLASSES and SIEVE_SIZE are used for CPU-sieving only. GPU-sieving uses a config setting
 /*
 If MORE_CLASSES is defined then the TF process is split into 4620
 (4 * 3*5*7*11) classes. Otherwise it will be split into 420 (4 * 3*5*7)
@@ -177,7 +178,7 @@ The following lines define the min, default and max value.
 #define NUM_STREAMS_DEFAULT 3 /* DO NOT CHANGE! */
 #define NUM_STREAMS_MAX     10 /* DO NOT CHANGE! */
 
-
+// MORE_CLASSES and SIEVE_SIZE are used for CPU-sieving only. GPU-sieving uses a config setting
 /* set NUM_CLASSES and SIEVE_SIZE depending on MORE_CLASSES and SIEVE_SIZE_LIMIT
    MORE_CLASSES is required for mfakto now */
 #ifdef MORE_CLASSES

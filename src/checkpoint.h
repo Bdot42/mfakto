@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2014  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -18,5 +18,5 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
 void checkpoint_write(unsigned int exp, int bit_min, int bit_max, unsigned int cur_class, int num_factors);
-int checkpoint_read(unsigned int exp, int bit_min, int bit_max, unsigned int *cur_class, int *num_factors);
+int checkpoint_read(unsigned int exp, int bit_min, int bit_max, unsigned int *cur_class, int *num_factors, int verbosity);
 void checkpoint_delete(unsigned int exp);

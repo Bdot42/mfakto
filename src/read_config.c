@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2014  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -142,6 +142,10 @@ int read_config(mystuff_t *mystuff)
 
   if (mystuff->gpu_sieving == 0)
   {
+    printf("  MoreClasses               yes (due to CPU-sieving)\n");
+    mystuff->more_classes = 1;
+    mystuff->num_classes  = 4620;
+
     if(my_read_int(mystuff->inifile, "SievePrimesMin", &i))
     {
       printf("WARNING: Cannot read SievePrimesMin from inifile, using default value (%d)\n", 5000);
@@ -340,6 +344,26 @@ int read_config(mystuff_t *mystuff)
   {
     mystuff->num_streams = 3; // GPU sieve always uses only one stream
     mystuff->threads_per_grid_max = 2097152; // not used for the GPU sieve - defined here to satisfy some calculations
+
+    if(my_read_int(mystuff->inifile, "MoreClasses", &i))
+    {
+      printf("WARNING: Cannot read MoreClasses from inifile, set to 1 by default\n");
+      i=1;
+    }
+    else if(i != 0 && i != 1)
+    {
+      printf("WARNING: MoreClasses must be 0 or 1, set to 1 by default\n");
+      i=1;
+    }
+    if(mystuff->verbosity >= 1)
+    {
+      if(i == 0)printf("  MoreClasses               no\n");
+      else      printf("  MoreClasses               yes\n");
+    }
+    mystuff->more_classes = i;
+    mystuff->num_classes  = i?4620:420;
+
+/*****************************************************************************/
 
     if(my_read_int(mystuff->inifile, "GPUSievePrimes", &i))
     {
@@ -606,7 +630,6 @@ int read_config(mystuff_t *mystuff)
   for(i = 0; i < 256; i++)mystuff->stats.progressformat[i] = 0;
   if(my_read_string(mystuff->inifile, "ProgressFormat", mystuff->stats.progressformat, 250))
   {
-//    sprintf(mystuff->stats.progressformat, "%%C/%4d |    %%n | %%ts | %%e | %%rM/s |     %%s |  %%W%%%%", NUM_CLASSES);
     sprintf(mystuff->stats.progressformat, "%%d %%T  %%p %%e | %%M %%l-%%u |   %%g  %%s  %%W%%%%");
     printf("WARNING, no ProgressFormat specified in inifile, using default\n");
   }

@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2014  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -117,26 +117,25 @@ The variables exp, bit_min and bit_max must be a valid assignment! */
   return ret;
 }
 
-int class_needed(unsigned int exp, unsigned long long int k_min, int c)
+int class_needed(unsigned int expo, unsigned long long int k_min, int c)
 {
 /*
 checks whether the class c must be processed or can be ignored at all because
 all factor candidates within the class c are a multiple of 3, 5, 7 or 11 (11
-only if MORE_CLASSES is definied) or are 3 or 5 mod 8
+only if MORE_CLASSES) or are 3 or 5 mod 8
 
 k_min *MUST* be aligned in that way that k_min is in class 0!
 */
-  if( ((2 * (exp %  8) * ((k_min + c) %  8)) %  8 !=  2) && \
-      ((2 * (exp %  8) * ((k_min + c) %  8)) %  8 !=  4) && \
-      ((2 * (exp %  3) * ((k_min + c) %  3)) %  3 !=  2) && \
-      ((2 * (exp %  5) * ((k_min + c) %  5)) %  5 !=  4) && \
-      ((2 * (exp %  7) * ((k_min + c) %  7)) %  7 !=  6))
-#ifdef MORE_CLASSES        
-  if(  (2 * (exp % 11) * ((k_min + c) % 11)) % 11 != 10 )
-#endif
-  {
-    return 1;
-  }
+  if( ((2 * (expo %  8) * ((k_min + c) %  8)) %  8 !=  2) && \
+      ((2 * (expo %  8) * ((k_min + c) %  8)) %  8 !=  4) && \
+      ((2 * (expo %  3) * ((k_min + c) %  3)) %  3 !=  2) && \
+      ((2 * (expo %  5) * ((k_min + c) %  5)) %  5 !=  4) && \
+      ((2 * (expo %  7) * ((k_min + c) %  7)) %  7 !=  6))
+
+    if( (mystuff.more_classes == 0) || (2 * (expo % 11) * ((k_min + c) % 11)) % 11 != 10 )
+    {
+      return 1;
+    }
 
   return 0;
 }
@@ -393,7 +392,7 @@ other return value
 -1 unknown mode
 */
 {
-  unsigned int cur_class, max_class = NUM_CLASSES-1, i, count = 0;
+  unsigned int cur_class, max_class, i, count = 0;
   unsigned long long int k_min, k_max, k_range, tmp;
   unsigned int f_hi, f_med, f_low;
   struct timeval timer;
@@ -406,6 +405,7 @@ other return value
 
   mystuff->stats.output_counter = 0; /* reset output counter, needed for status headline */
   mystuff->stats.ghzdays = primenet_ghzdays(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage);
+  max_class = mystuff->num_classes-1;
 
   if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d (%.2fGHz-days)\n",
     mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, mystuff->stats.ghzdays);
@@ -420,8 +420,8 @@ other return value
   if(mystuff->mode > MODE_NORMAL) // any selftest mode
   {
 /* a shortcut for the selftest, bring k_min and k_max "close" to the known factor */
-    if(NUM_CLASSES == 420)k_range = 10000000000ULL;
-    else                  k_range = 100000000000ULL;
+    if(mystuff->more_classes)k_range = 100000000000ULL;
+    else                     k_range = 10000000000ULL;
     if(mystuff->mode == MODE_SELFTEST_SHORT)k_range /= 5; /* even smaller ranges for the "small" selftest */
     if((k_max - k_min) > (3ULL * k_range))
     {
@@ -437,7 +437,7 @@ other return value
 #endif
   }
 
-  k_min -= k_min % NUM_CLASSES;	/* k_min is now 0 mod NUM_CLASSES */
+  k_min -= k_min % mystuff->num_classes;	/* k_min is now 0 mod NUM_CLASSES */
 
   if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->verbosity >= 2)
   {
@@ -462,7 +462,7 @@ other return value
 
   if(mystuff->mode == MODE_NORMAL)
   {
-    if((mystuff->checkpoints > 0) && (checkpoint_read(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, &cur_class, &factorsfound) == 1))
+    if((mystuff->checkpoints > 0) && (checkpoint_read(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, &cur_class, &factorsfound, mystuff->verbosity) == 1))
     {
       printf("\nFound a valid checkpoint file.\n");
       if(mystuff->verbosity >= 1) printf("  last finished class was: %d\n", cur_class);
@@ -484,7 +484,7 @@ other return value
   }
   else // mystuff->mode != MODE_NORMAL
   {
-    cur_class = class_hint % NUM_CLASSES;
+    cur_class = class_hint % mystuff->num_classes;
     max_class = cur_class;
   }
 
@@ -737,7 +737,7 @@ RET_ERROR we might have a serios problem
       if (i < (sizeof(index)/sizeof(index[0])))
       {
         ind = index[i];
-        printf("########## testcase %d/%d (M%d[%d-%d]) ##########\r",
+        printf("######### testcase %d/%d (M%d[%d-%d]) #########\r",
           i+1, (int) (sizeof(index)/sizeof(index[0])), st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
       }
       else
@@ -746,10 +746,10 @@ RET_ERROR we might have a serios problem
     else // treat type <> 1 as full test
     {
       ind = i;
-      printf("########## testcase %d/%d (M%d[%d-%d]) ##########\n",
+      printf("######### testcase %d/%d (M%d[%d-%d]) #########\n",
         i+1, selftests_to_run, st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
     }
-    f_class = (int)(st_data[ind].k % NUM_CLASSES);
+    f_class = (int)(st_data[ind].k % mystuff->num_classes);
     mystuff->exponent           = st_data[ind].exp;
     mystuff->bit_min            = st_data[ind].bit_min;
     mystuff->bit_max_assignment = st_data[ind].bit_min + 1;
@@ -772,7 +772,7 @@ RET_ERROR we might have a serios problem
     }
     else
     {
-//      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT73_MUL15_GS; ++kernel_index) // test-only: skip 15-bit kernels
+//      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT73_MUL15_GS; ++kernel_index) // test-only: skip small 15-bit kernels
       for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT82_MUL15_GS; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
@@ -796,7 +796,7 @@ RET_ERROR we might have a serios problem
     if (mystuff->quit) break;
   }
 
-  printf("Selftest statistics                                  \n");
+  printf("Selftest statistics                                    \n");
   printf("  number of tests           %d\n", num_selftests);
   printf("  successful tests          %d\n", st_success);
   if(st_nofactor > 0)   printf("  no factor found           %d\n", st_nofactor);
@@ -1010,12 +1010,6 @@ int main(int argc, char **argv)
   }
   if(mystuff.verbosity >= 1)
   {
-#ifdef MORE_CLASSES
-    printf("  MORE_CLASSES              enabled\n");
-#else
-    printf("  MORE_CLASSES              disabled\n");
-#endif
-
 #ifdef USE_DEVICE_PRINTF
     printf("  USE_DEVICE_PRINTF         enabled (DEBUG option)\n");
 #endif
@@ -1241,7 +1235,7 @@ int main(int argc, char **argv)
         }
         if(mystuff.stages == 1)
         {
-          while( ((calculate_k(mystuff.exponent, mystuff.bit_max_stage) - calculate_k(mystuff.exponent, mystuff.bit_min)) > (250000000ULL * NUM_CLASSES)) && ((mystuff.bit_max_stage - mystuff.bit_min) > 1) )mystuff.bit_max_stage--;
+          while( ((calculate_k(mystuff.exponent, mystuff.bit_max_stage) - calculate_k(mystuff.exponent, mystuff.bit_min)) > (250000000ULL * mystuff.num_classes)) && ((mystuff.bit_max_stage - mystuff.bit_min) > 1) )mystuff.bit_max_stage--;
         }
         tmp = 0;
         while(mystuff.bit_max_stage <= mystuff.bit_max_assignment && !mystuff.quit)

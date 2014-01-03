@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc (mfakto).
-Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2014  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
@@ -653,9 +653,7 @@ int init_CL(int num_streams, cl_int devnumber)
   if (mystuff.gpu_type != GPU_NVIDIA) strcat(program_options, " -O3");
 #endif
 
-#ifdef MORE_CLASSES
-  strcat(program_options, " -DMORE_CLASSES");
-#endif
+if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
 
 #ifdef CHECKS_MODBASECASE
   strcat(program_options, " -DCHECKS_MODBASECASE");
@@ -2381,7 +2379,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
         // Calculate the number of k's remaining.  Round this up so that we sieve an array that is
         // a multiple of the bits processed by each TF kernel (my_stuff->gpu_sieve_processing_size).
 
-        k_remaining = ((k_max - k_min + 1) + NUM_CLASSES - 1) / NUM_CLASSES;
+        k_remaining = ((k_max - k_min + 1) + mystuff->num_classes - 1) / mystuff->num_classes;
         if (k_remaining < (cl_ulong) mystuff->gpu_sieve_size) {
           numblocks = (cl_uint) ((k_remaining + mystuff->gpu_sieve_processing_size - 1) / mystuff->gpu_sieve_processing_size);
           k_remaining = numblocks * mystuff->gpu_sieve_processing_size;
@@ -2410,7 +2408,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               // simple verify ...
 /*              for (cl_uint p=13; p<mystuff->gpu_sieve_primes; p+=2)
               {
-                cl_ulong rem=k_min%p + ((cl_ulong)pos*NUM_CLASSES)%p;
+                cl_ulong rem=k_min%p + ((cl_ulong)pos*mystuff->num_classes)%p;
                 rem=(2*mystuff->exponent*rem +1)%p;
                 if (rem == 0)
                 {
@@ -2460,7 +2458,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
         count += numblocks;
 
         // Move to next batch of k's
-        k_min += (cl_ulong) mystuff->gpu_sieve_size * NUM_CLASSES;
+        k_min += (cl_ulong) mystuff->gpu_sieve_size * mystuff->num_classes;
         if (k_min > k_max) break;
 
         //BUG - we should call a different routine to advance the bit-to-clear values by gpusieve_size bits
@@ -3150,9 +3148,7 @@ void CL_test(cl_int devnumber)
   if (mystuff.gpu_type != GPU_NVIDIA) strcat(program_options, " -O3");
 #endif
 
-#ifdef MORE_CLASSES
-  strcat(program_options, " -DMORE_CLASSES");
-#endif
+if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
 
 #ifdef CHECKS_MODBASECASE
   strcat(program_options, " -DCHECKS_MODBASECASE");
