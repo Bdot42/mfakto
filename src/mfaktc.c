@@ -1180,7 +1180,7 @@ int main(int argc, char **argv)
     // no need to do this if we're sieving on the GPU
     if (mystuff.cpu_mask)
     {
-#ifdef _MSC_VER
+#if defined _MSC_VER || __MINGW32__
       SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
 #else
       sched_setaffinity(0, sizeof(mystuff.cpu_mask), mystuff.cpu_mask);
