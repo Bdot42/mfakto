@@ -24,6 +24,11 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #define _GNU_SOURCE
   #include <sched.h>
 #endif
+#ifndef __MINGW32__
+#include <windows.h>
+/* SetThreadAffinityMask and GetCurrentThread needs the header windows.h in MinGW.
+http://msdn.microsoft.com/en-us/library/windows/desktop/ms683182(v=vs.85).aspx> */
+#endif
 #include <string.h>
 #include <errno.h>
 #include <time.h>

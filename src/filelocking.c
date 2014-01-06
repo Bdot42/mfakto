@@ -25,7 +25,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include <time.h>
 
-#ifdef _MSC_VER
+#if defined _MSC_VER || __MINGW32__
   #include <Windows.h>
   #include <io.h>
   #undef open
