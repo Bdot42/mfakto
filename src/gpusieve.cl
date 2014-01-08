@@ -246,7 +246,7 @@ __inline void bitOrSometimesIffy (__local uchar *locsieve, uint bclr)
 	be done for each prime prior to sieving to figure out the first bit to clear.
 */
 
-__kernel void __attribute__((work_group_size_hint(256, 1, 1))) SegSieve (__global uchar *big_bit_array_dev, __global uchar *pinfo_dev, uint maxp)
+__kernel void __attribute__((reqd_work_group_size(256, 1, 1))) SegSieve (__global uchar *big_bit_array_dev, __global uchar *pinfo_dev, uint maxp)
 {
 	__local uchar locsieve[block_size_in_bytes];
 	uint block_start = get_group_id(0) * block_size;
@@ -1314,13 +1314,12 @@ unsigned int modularinverse (uint n, uint orig_d)
 		t = d; d = n - q * d; n = t;	// d = n mod d; n = lastd;
 		t = x; x = lastx - q * x; lastx = t;
 	}
-	if (lastx < 0) return (lastx + orig_d);
-	return (lastx);
+	return (lastx < 0) ? (lastx + orig_d) : lastx;
 }
 
 // Calculate the modular inverses used in computing initial bit-to-clear values
 
-__kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcModularInverses (uint exponent, __global int *calc_info)
+__kernel void __attribute__((reqd_work_group_size(256, 1, 1))) CalcModularInverses (uint exponent, __global int *calc_info)
 {
 	uint	index;		// Index for prime and modinv data in calc_info
 	uint	prime;		// The prime to work on
@@ -1361,7 +1360,7 @@ __kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcModularInvers
 
 // Calculate the initial bit-to-clear values
 
-__kernel void __attribute__((work_group_size_hint(256, 1, 1))) CalcBitToClear (uint exponent, ulong k_base, __global int *calc_info, __global uchar *pinfo_dev)
+__kernel void __attribute__((reqd_work_group_size(256, 1, 1))) CalcBitToClear (uint exponent, ulong k_base, __global int *calc_info, __global uchar *pinfo_dev)
 {
 	uint	index;		// Index for prime and modinv data in calc_info
 	uint	mask;		// Mask that tells us what bits must be preserved in pinfo_dev when setting bit-to-clear
