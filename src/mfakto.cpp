@@ -871,7 +871,7 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1))) CalcBitToClear (u
 */
 cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *run_event, cl_ulong k_min)
 {
-  static int last_exponent = 0;
+  static cl_uint last_exponent = 0;
   cl_int   status;
   size_t   globalThreads = numblocks * localThreads;
 

@@ -584,17 +584,11 @@ void gpusieve_init_exponent (mystuff_t *mystuff)
 
 void gpusieve_init_class (mystuff_t *mystuff, unsigned long long k_min)
 {
-	int96	k_base;
-
 #ifdef RAW_GPU_BENCH
 	// Quick hack (leave bit array set to all ones) to eliminate sieve time from GPU-code benchmarks.
 	// Can also be used to isolate a bug by eliminating the GPU sieving code as a possible cause.
 	return;
 #endif  
-
-	k_base.d0 =  (int) (k_min & 0xFFFFFFFF);
-	k_base.d1 =  (int) (k_min >> 32);
-	k_base.d2 = 0;
 
 	// Calculate the initial bit-to-clear for each prime
 	// CalcBitToClear<<<primes_per_thread+1, threadsPerBlock>>>(mystuff->exponent, k_base, (int *)mystuff->d_calc_bit_to_clear_info, (cl_uchar *)mystuff->d_sieve_info);
