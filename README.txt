@@ -30,7 +30,7 @@ and application use cases in time.
 mfaktc is a program for trial factoring of mersenne numbers. The name mfaktc
 is "Mersenne FAKTorisation with Cuda". Faktorisation is a mixture of the
 English word "factorisation" and the German word "Faktorisierung".
-It uses CPU and GPU resources.
+It can use CPU and GPU resources.
 
 
 
@@ -101,10 +101,10 @@ M3321932839 from 2^50 to 2^61.
 
 - HD7xxx
 - HD5xxx, HD6xxx, including the builtin HD6xxx on AMD APUs
-- HD4xxx, FireStream 92xx (no atomic operations available *)
+- HD4xxx, FireStream 92xx (no atomic operations available *
 - not supported (kernel compilation fails): HD2xxx, HD3xxx, FireStream 91xx
 
-*) without atomics, reporting multiple factors found in the same block/grid
+* without atomics, reporting multiple factors found in the same block/grid
 will not work. Tests showed that only one of the factors will be reported, 
 but theoretically it could happen that even the reported factor is incorrect
 (due to consisting of a mix of bytes of multiple factors). In cases when
@@ -199,7 +199,7 @@ Advanced usage (extend the upper limit):
   is not accessible. It happens on Windows when not connected to the primay
   display (e.g. being connected through terminal services). So please try to
   run mfakto locally on the main X-display. If that fails as well, then the
-  Graphics driver may be too old. Check the clinfo (part of AMD APP SDK)
+  graphics driver may be too old. Check the clinfo (part of AMD APP SDK)
   output for your GPU. If drivers and AMD APP SDK are up to date, then maybe
   your AMD GPU is not the first GPU. Try the -d switch to specify a different
   device number.
@@ -231,7 +231,7 @@ Advanced usage (extend the upper limit):
 # 5 Tuning #
 ############
 
-Read mfakto.ini and think before edit. ;)
+Read mfakto.ini and think before editing. ;)
 
 
 
@@ -245,10 +245,10 @@ A Not tested yet, but using the commandline option "-d <GPU number>" you should
   Please read the next question, too.
 
 Q Can I run multiple instances of mfakto on the same computer?
-A Yes, and in most cases this is necessary to make full use of the GPU(s).
-  A single instance can only run on a single GPU (no difference how the GPU's
-  are configured) and will use just one CPU-core for sieving. Even for mid
-  range cards, running two or three instances will improve throughput.
+A Yes, and in most cases this is necessary to make full use of the GPU(s) only if
+  CPU sieving. If the sieve is running on the GPU(default), one instance should fully utilize
+  a single GPU.
+  
 
 Q Which tasks should I assign to mfakto?
 A Currently, the 73-bit-barrett kernel is the fastest one, working for factors
@@ -268,4 +268,3 @@ A Currently, the 73-bit-barrett kernel is the fastest one, working for factors
 - perftest modes for kernel speed.
 - retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
 - Implement&test AllowSleep
-

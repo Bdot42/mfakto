@@ -24,6 +24,11 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #define _GNU_SOURCE
   #include <sched.h>
 #endif
+#ifndef __MINGW32__
+#include <windows.h>
+/* SetThreadAffinityMask and GetCurrentThread needs the header windows.h in MinGW.
+http://msdn.microsoft.com/en-us/library/windows/desktop/ms683182(v=vs.85).aspx> */
+#endif
 #include <string.h>
 #include <errno.h>
 #include <time.h>
@@ -1139,7 +1144,7 @@ int main(int argc, char **argv)
     mystuff.threads_per_grid = 256;
     if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
     {
-      printf("ERROR: device only supports %d threads per drid. Need at least 256 for GPU sieving.\n", deviceinfo.maxThreadsPerGrid);
+      printf("ERROR: device only supports %d threads per grid. A minimum of 256 is required for GPU sieving.\n", deviceinfo.maxThreadsPerGrid);
       return ERR_MEM;
     }
   }
@@ -1278,7 +1283,7 @@ int main(int argc, char **argv)
   {
     if (0 != selftest(&mystuff, mystuff.mode))
     {
-      printf ("Error exit as selftest failed\n");
+      printf ("ERROR: selftest failed, exiting.\n");
       cleanup_CL();
       sieve_free();
       return ERR_SELFTEST;
