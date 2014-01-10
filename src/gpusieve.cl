@@ -1563,10 +1563,10 @@ uint extract_bits(const uint bits_to_process, const uint tid, const uint lid, __
         bitcount[0], bitcount[1], bitcount[2], bitcount[3], bitcount[4], bitcount[5], bitcount[6], bitcount[7], bitcount[8], bitcount[9],
          bitcount[246], bitcount[247], bitcount[248], bitcount[249], bitcount[250], bitcount[251], bitcount[252], bitcount[253], bitcount[254], bitcount[255]);
 #endif
-//#if (TRACE_SIEVE_KERNEL > 1)
+#if (TRACE_SIEVE_KERNEL > 1)
     if (tid==TRACE_SIEVE_TID) printf((__constant char *)"extract_bits: total bitcount=%u = %u bytes\n",
         bitcount[255], bitcount[255]*sizeof(short));
-//#endif
+#endif
 
 //POSSIBLE OPTIMIZATION - bitcounts and smem could use the same memory space if we'd read bitcount into a register
 // and sync threads before doing any writes to smem.

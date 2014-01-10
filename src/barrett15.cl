@@ -3392,10 +3392,10 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
 
   exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
 
-//#if (TRACE_KERNEL > 0)
+#if (TRACE_KERNEL > 0)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82_gs: exp=%u, shift=%d, shifted exp=%#x, total_bit_count=%u, shared_mem_size=%u\n",
         exponent, shiftcount, initial_shifter_value, total_bit_count, shared_mem_allocated);
-//#endif
+#endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
   {

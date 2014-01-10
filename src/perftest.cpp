@@ -57,6 +57,7 @@ int init_perftest(int devicenumber)
 {
   cl_uint i;
   mystuff.mode = MODE_PERFTEST;
+  mystuff.gpu_sieving = 0;  // inintialize CPU-sieving
 
   // always prepare 10 blocks for the perftest
   mystuff.num_streams = 10;
@@ -87,7 +88,7 @@ int test_sieve_init(int par)
   cl_uint i, j;
   cl_ulong k=0;
 
-  printf("1. Sieve-Init (once per class, 960 times per test, avg. for %d iterations)\n", par);
+  printf("1. CPU-Sieve-Init (once per class, 960 times per test, avg. for %d iterations)\n", par);
   for (j=0; j<test_loops; j++)
   {
     timer_init(&timer);
@@ -248,7 +249,7 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
   double time1;
   cl_ulong k = 0;
   cl_uint i;
-  printf("\n2. Sieve (M/s)\n");
+  printf("\n2. CPU-Sieve (output rate M/s)\n");
 
 #define MAX_NUM_SPS 30
 
@@ -293,12 +294,12 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
 #ifdef SIEVE_SIZE_LIMIT
     sieve_init();
     if (j>=3) break; // quit after 3 equal loops if we can't dynamically set the sieve size anyway
-    sieve_init_class(EXP, k++, 1000000);
+    sieve_init_class(EXP, k+=1000000, 1000000);
     printf("\n%6d kiB  ", SIEVE_SIZE/8192+1);
 #else
     cl_uint tmp=m*ssizes[j];
     sieve_init(tmp, 1000000);
-    sieve_init_class(EXP, k, 1000000);
+    sieve_init_class(EXP, k+=1000000, 1000000);
     printf("\n%6d kiB  ", tmp/8192+1);
 #endif
 
@@ -354,6 +355,14 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
     // use j instead of nss in case the loop was interrupted.
     printf(" %6.2f%%", ((double)mystuff.threads_per_grid)*100.0*j/last_elem[ii]);
   }
+  printf("\nremoval rate");
+  for(ii=0; ii<nsp; ii++)
+  {
+    // last_elem/nss  is the average end of the sieved block, consisting of threads_per_grid entries
+    // use j instead of nss in case the loop was interrupted.
+    printf(" %7.1f", peak[ii]*(last_elem[ii]/(mystuff.threads_per_grid*j) -1));
+  }
+
 
   printf("\n\n");
   return 0;
@@ -376,7 +385,7 @@ int test_copy(cl_uint par)
   cl_int status;
   size_t size = mystuff.threads_per_grid * sizeof(int);
 
-  // fill some data into the arrays (not that it matter what's in there ...)
+  // fill some data into the arrays (not that it matters what's in there ...)
   for (i=0; i<10; i++)
   {
     sieve_candidates(mystuff.threads_per_grid, mystuff.h_ktab[i], 5000);
@@ -635,6 +644,7 @@ int init_gpu_test(int devicenumber)
   mystuff.bit_max_stage = mystuff.bit_max_assignment = 72;
   mystuff.gpu_sieving = 1;
 
+  printf("\nReinitializing with gpu_sieving enabled.\n");
   return init_CL(mystuff.num_streams, devicenumber);
 }
 
@@ -654,7 +664,7 @@ int perftest(int par, int devicenumber)
 
   if (par == 0) par=10;
 
-  printf("Generate list of the first 10^6 primes: ");
+  printf("Generate list of the first 1000000 primes: ");
 
   timer_init(&timer);
 #ifdef SIEVE_SIZE_LIMIT
@@ -666,13 +676,13 @@ int perftest(int par, int devicenumber)
   printf("%.2f ms\n\n", time1/1000.0);
   if (mystuff.quit) exit(1);
 
-  printf("Generate list of the first 10^6 primes for GPU sieving: ");
-  cl_uint *p = (cl_uint *)malloc(sizeof(cl_uint)* mystuff.sieve_primes_max );
+  printf("Generate list of the first 1075000 primes for GPU sieving: ");
+  cl_uint *p = (cl_uint *)malloc(sizeof(cl_uint)* 1075000 );
   timer_init(&timer);
 
-  tiny_soe(mystuff.sieve_primes_max, p);
+  tiny_soe(1075000, p);
   time1 = (double)timer_diff(&timer);
-  printf("%.2f ms\n%u\n", time1/1000.0, p[mystuff.sieve_primes_max-1]);
+  printf("%.2f ms\n\n", time1/1000.0);
   free(p);
 
   if (mystuff.quit) exit(1);
