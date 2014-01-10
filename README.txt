@@ -21,31 +21,30 @@ Content
 
 
 
-####################
-# 0 What is mfakto #
-####################
+#####################
+# 0 What is mfakto? #
+#####################
 
 mfakto is the OpenCL-port of mfaktc. It aims to contain the same features
 and application use cases in time.
 mfaktc is a program for trial factoring of mersenne numbers. The name mfaktc
-is "Mersenne FAKTorisation with Cuda". Faktorisation is a mixture of the
+stands for "Mersenne FAKTorisation with CUDA". Faktorisation is a mixture of the
 English word "factorisation" and the German word "Faktorisierung".
 It can use CPU and GPU resources.
-
 
 
 #################
 # 1 Compilation #
 #################
 
- AMD APP 2.5 or above is required
+ AMD APP SDK 2.5 or above is required
 
 
 ###########################
 # 1.1 Compilation (Linux) #
 ###########################
 
-- Install AMD APP >= 2.5
+- Install AMD APP SDK >= 2.5
 - cd src
 - edit Makefile, set the AMD_APP_DIR location
 - make
@@ -55,7 +54,7 @@ It can use CPU and GPU resources.
 # 1.2 Compilation (Windows) #
 #############################
 
-- Install AMD APP >= 2.5
+- Install AMD APP SDK >= 2.5
 - Use the VS2010 solution to build the 32-bit or 64-bit binary, or
 - use the Linux Makefile as an example how to build your own Windows Makefile
 
@@ -64,17 +63,18 @@ It can use CPU and GPU resources.
 # 2 Running mfakto #
 ####################
 
-Install Catalyst driver, version >= 11.4
-Install AMD APP version >= 2.5 (not required for Catalyst 11.10 or above)
+Requirements:
+AMD Catalyst driver, version >= 11.4
+AMD APP SDK version >= 2.5 (not required for Catalyst 11.10 or above)
 
 Catalyst driver 11.9 uses up to one CPU core less than its predecessors:
 11.9 strongly recommended.
 
 The high CPU usage bug is back in Catalyst 13.4 and 13.5 - stay below.
 
-Open a command shell and run 'mfakto -h'. It will tell you what parameters
-it accepts. Maybe you want to tweak the parameters in mfakto.ini. A short
-description of those parameters is included in mfakto.ini, too.
+Open a command shell and run 'mfakto -h' for parameters it accepts.
+You may also want to check mfakto.ini for changing settings and tweaking.
+A short description of those parameters are included in mfakto.ini as well.
 Typically you want to get work from a worktodo file. You can specify the
 name in mfakto.ini. It was tested with primenet v5 worktodo files but v4
 should work, too.
@@ -102,7 +102,7 @@ M3321932839 from 2^50 to 2^61.
 - HD7xxx
 - HD5xxx, HD6xxx, including the builtin HD6xxx on AMD APUs
 - HD4xxx, FireStream 92xx (no atomic operations available *
-- not supported (kernel compilation fails): HD2xxx, HD3xxx, FireStream 91xx
+- not supported: (kernel compilation fails): HD2xxx, HD3xxx, FireStream 91xx
 
 * without atomics, reporting multiple factors found in the same block/grid
 will not work. Tests showed that only one of the factors will be reported, 
