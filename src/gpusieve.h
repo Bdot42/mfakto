@@ -30,3 +30,4 @@ int gpusieve_free (mystuff_t *mystuff);
 }
 #endif
 
+void tiny_soe (cl_uint limit, cl_uint *primes);

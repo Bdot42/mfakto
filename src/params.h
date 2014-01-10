@@ -123,6 +123,7 @@ from 2^66 to 2^67. The OpenCL version, mfakto, requires MORE_CLASSES be defined.
 
 /*
 THREADS_PER_BLOCK is not needed for OpenCL - it dynamically uses the device's maximum
+All GPU-sieve kernels also have 256 threads per block.
 */
 
 //#define THREADS_PER_BLOCK 256

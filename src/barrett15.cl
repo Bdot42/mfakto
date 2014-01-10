@@ -2839,7 +2839,8 @@ __kernel void cl_barrett15_88(__private uint exponent, const int75_t k_base, con
  ****************************************/
 
 
-__kernel void cl_barrett15_69_gs(const uint exponent, const int75_t k_base,
+__kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
+              cl_barrett15_69_gs(const uint exponent, const int75_t k_base,
                                  const __global uint * restrict bit_array,
                                  const uint bits_to_process, __local ushort *smem,
                                  const int shiftcount, const uint8 b_in,
@@ -2967,7 +2968,8 @@ __kernel void cl_barrett15_69_gs(const uint exponent, const int75_t k_base,
   }
 }
 
-__kernel void cl_barrett15_70_gs(const uint exponent, const int75_t k_base,
+__kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
+              cl_barrett15_70_gs(const uint exponent, const int75_t k_base,
                                  const __global uint * restrict bit_array,
                                  const uint bits_to_process, __local ushort *smem,
                                  const int shiftcount, const uint8 b_in,
@@ -3095,7 +3097,8 @@ __kernel void cl_barrett15_70_gs(const uint exponent, const int75_t k_base,
   }
 }
 
-__kernel void cl_barrett15_71_gs(const uint exponent, const int75_t k_base,
+__kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
+              cl_barrett15_71_gs(const uint exponent, const int75_t k_base,
                                  const __global uint * restrict bit_array,
                                  const uint bits_to_process, __local ushort *smem,
                                  const int shiftcount, const uint8 b_in,
@@ -3223,7 +3226,8 @@ __kernel void cl_barrett15_71_gs(const uint exponent, const int75_t k_base,
   }
 }
 
-__kernel void cl_barrett15_73_gs(const uint exponent, const int75_t k_base,
+__kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
+              cl_barrett15_73_gs(const uint exponent, const int75_t k_base,
                                  const __global uint * restrict bit_array,
                                  const uint bits_to_process, __local ushort *smem,
                                  const int shiftcount, const uint8 b_in,
@@ -3360,7 +3364,8 @@ __kernel void cl_barrett15_73_gs(const uint exponent, const int75_t k_base,
  ****************************************
  ****************************************/
 
-__kernel void cl_barrett15_82_gs(const uint exponent, const int75_t k_base,
+__kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
+              cl_barrett15_82_gs(const uint exponent, const int75_t k_base,
                                  const __global uint * restrict bit_array,
                                  const uint bits_to_process, __local ushort *smem,
                                  const int shiftcount, const uint8 b_in,
@@ -3377,7 +3382,6 @@ __kernel void cl_barrett15_82_gs(const uint exponent, const int75_t k_base,
 
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
   total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
-
 // Here, all warps in our block have placed their candidates in shared memory.
 // Now we can start TFing candidates.
 
@@ -3388,10 +3392,10 @@ __kernel void cl_barrett15_82_gs(const uint exponent, const int75_t k_base,
 
   exp75.d2=exponent>>29;exp75.d1=(exponent>>14)&0x7FFF;exp75.d0=(exponent<<1)&0x7FFF;	// exp75 = 2 * exponent  // PERF: exp.d1=amd_bfe(exp, 15, 14)
 
-#if (TRACE_KERNEL > 0)
+//#if (TRACE_KERNEL > 0)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82_gs: exp=%u, shift=%d, shifted exp=%#x, total_bit_count=%u, shared_mem_size=%u\n",
         exponent, shiftcount, initial_shifter_value, total_bit_count, shared_mem_allocated);
-#endif
+//#endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
   {
@@ -3492,7 +3496,8 @@ __kernel void cl_barrett15_82_gs(const uint exponent, const int75_t k_base,
   }
 }
 
-__kernel void cl_barrett15_83_gs(const uint exponent, const int75_t k_base,
+__kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
+              cl_barrett15_83_gs(const uint exponent, const int75_t k_base,
                                  const __global uint * restrict bit_array,
                                  const uint bits_to_process, __local ushort *smem,
                                  const int shiftcount, const uint8 b_in,
@@ -3624,7 +3629,8 @@ __kernel void cl_barrett15_83_gs(const uint exponent, const int75_t k_base,
   }
 }
 
-__kernel void cl_barrett15_88_gs(const uint exponent, const int75_t k_base,
+__kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
+              cl_barrett15_88_gs(const uint exponent, const int75_t k_base,
                                  const __global uint * restrict bit_array,
                                  const uint bits_to_process, __local ushort *smem,
                                  const int shiftcount, const uint8 b_in,
