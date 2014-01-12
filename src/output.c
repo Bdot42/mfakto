@@ -32,8 +32,9 @@ along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
 
 void print_help(char *string)
 {
-  printf("mfakto (%s) Copyright (C) 2009-2013  Oliver Weihe (o.weihe@t-online.de),\n", MFAKTO_VERSION);
-  printf("                                                 Bertram Franz (bertramf@gmx.net)\n");
+  printf("mfakto (%s) Copyright (C) 2009-2013,\n", MFAKTO_VERSION);
+  printf("  Oliver Weihe (o.weihe@t-online.de)\n");
+  printf("  Bertram Franz (bertramf@gmx.net)\n");
   printf("This program comes with ABSOLUTELY NO WARRANTY; for details see COPYING.\n");
   printf("This is free software, and you are welcome to redistribute it\n");
   printf("under certain conditions; see COPYING for details.\n\n\n");

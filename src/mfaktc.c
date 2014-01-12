@@ -1204,7 +1204,7 @@ int main(int argc, char **argv)
 
 /* before we start real work run a small selftest */  
     mystuff.mode = MODE_SELFTEST_SHORT;
-    if(mystuff.verbosity >= 1) printf("Started a simple selftest...\n");
+    if(mystuff.verbosity >= 1) printf("Started a simple selftest ...\n");
     if (selftest(&mystuff, MODE_SELFTEST_SHORT) != 0) return ERR_SELFTEST; /* selftest failed :( */
     mystuff.mode = MODE_NORMAL;
     /* allow for ^C */
