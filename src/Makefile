@@ -15,12 +15,28 @@
 # You should have received a copy of the GNU General Public License
 # along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 # 
-#  Version 0.13
+#  Version 0.14
 # 
+#
+
+#Check if bit requested, default x86_64
+BITS := x86_64
+BITFLAG := -m64
+ifdef bitness 
+ifeq ($(bitness), 32)
+  BITFLAG := -m32
+  BITS := x86
+endif
+ifeq ($(bitness), 64)
+  BITFLAG := -m64
+  BITS := x86_64
+endif
+endif
+
 # where is the AMD_APP Toolkit installed?
 AMD_APP_DIR = /opt/AMDAPP
 AMD_APP_INCLUDE = -I$(AMD_APP_DIR)/include
-AMD_APP_LIB = -L$(AMD_APP_DIR)/lib/x86_64
+AMD_APP_LIB = -L$(AMD_APP_DIR)/lib/$(BITS)
 
 # optimize or debug
 #OPTIMIZE_FLAG = -O3
@@ -31,7 +47,7 @@ OPTIMIZE_FLAG = -O3 -funroll-loops  -ffast-math -finline-functions -frerun-loop-
 # Compiler settings for .c files (CPU)
 CC = gcc
 CPP = $(CC)
-CFLAGS = -Wall $(OPTIMIZE_FLAG) $(AMD_APP_INCLUDE) -DBUILD_OPENCL
+CFLAGS = $(BITFLAG) -Wall $(OPTIMIZE_FLAG) $(AMD_APP_INCLUDE) -DBUILD_OPENCL
 CPP_FLAGS =
 #CFLAGS_EXTRA_SIEVE = -funroll-all-loops 
 #CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -floop-parallelize-all -fvariable-expansion-in-unroller -fno-align-labels 
@@ -40,7 +56,7 @@ CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region
 
 # Linker
 LD = g++
-LDFLAGS = $(OPTIMIZE_FLAG) $(AMD_APP_LIB) -lOpenCL
+LDFLAGS = $(BITFLAG) $(OPTIMIZE_FLAG) $(AMD_APP_LIB) -lOpenCL
 
 ##############################################################################
 
