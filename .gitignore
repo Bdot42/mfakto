@@ -12,6 +12,7 @@ mfakto
 *.vcxproj.user
 *.ini
 !src/*.ini
+*.exe
 ipch/
 Release/
 Debug/
