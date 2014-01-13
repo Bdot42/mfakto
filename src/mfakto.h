@@ -30,7 +30,7 @@ extern "C"
 #endif
 
 int init_CL(int num_streams, cl_int devicenumber);
-int init_CLstreams(void);
+int init_CLstreams(int gs_reinit_only);
 int cleanup_CL(void);
 void CL_test(cl_int devicenumber);
 int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPUKernels use_kernel);

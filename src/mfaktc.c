@@ -1173,7 +1173,7 @@ int main(int argc, char **argv)
       mystuff.inifile);
   }
 
-  if (init_CLstreams())
+  if (init_CLstreams(0))
   {
     printf("ERROR: init_CLstreams (malloc buffers?) failed\n");
     return ERR_MEM;
