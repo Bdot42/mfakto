@@ -18,8 +18,8 @@
 #  Version 0.14
 # 
 #
-
-#Check if bit requested, default x86_64
+# Example: "make -j x bitness=32 static=yes" Build 32 bit and link statically with x threads 
+# Check if bit requested, default x86_64
 BITS := x86_64
 BITFLAG := -m64
 ifdef bitness 
@@ -32,6 +32,14 @@ ifeq ($(bitness), 64)
   BITS := x86_64
 endif
 endif
+
+# Check if static was requested
+ifdef static
+ifeq ($(static), yes)
+  STATIC := -static
+endif
+endif
+
 
 # where is the AMD_APP Toolkit installed?
 AMD_APP_DIR = /opt/AMDAPP
@@ -56,7 +64,7 @@ CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region
 
 # Linker
 LD = g++
-LDFLAGS = $(BITFLAG) $(OPTIMIZE_FLAG) $(AMD_APP_LIB) -lOpenCL
+LDFLAGS = $(BITFLAG) $(STATIC) $(OPTIMIZE_FLAG) $(AMD_APP_LIB) -lOpenCL
 
 ##############################################################################
 
