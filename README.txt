@@ -101,7 +101,7 @@ M3321932839 from 2^50 to 2^61.
 
 - HD7xxx
 - HD5xxx, HD6xxx, including the builtin HD6xxx on AMD APUs
-- HD4xxx, FireStream 92xx (no atomic operations available *
+- HD4xxx, FireStream 92xx (no atomic operations available) *
 - not supported: (kernel compilation fails): HD2xxx, HD3xxx, FireStream 91xx
 
 * without atomics, reporting multiple factors found in the same block/grid
