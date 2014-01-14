@@ -29,16 +29,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #define PRIx64 "llx"
   
   #define strncasecmp _strnicmp
-#endif
-
-#ifdef __MINGW32__
-  #include <inttypes.h>
-  /*
-   #define PRId64 "I64d"
-   #define PRIu64 "I64u"
-   #define PRIx64 "I64x"
-  */
-#else 
+#else
   #define PRId64 "Ld"
   #define PRIu64 "Lu"
   #define PRIx64 "Lx"
