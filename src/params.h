@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
-#define SIEVE_SIZE_LIMIT 64
+//#define SIEVE_SIZE_LIMIT 64
 
 
 /* EXTENDED_SELFTEST will add about 30k additional tests to the -st2 test */
@@ -183,7 +183,7 @@ The following lines define the min, default and max value.
 
 // MORE_CLASSES and SIEVE_SIZE are used for CPU-sieving only. GPU-sieving uses a config setting
 /* set NUM_CLASSES and SIEVE_SIZE depending on MORE_CLASSES and SIEVE_SIZE_LIMIT
-   MORE_CLASSES is required for mfakto now */
+   MORE_CLASSES is required for mfakto's CPU sieve */
 #ifdef MORE_CLASSES
   #define NUM_CLASSES 4620 /* 2 * 2 * 3 * 5 * 7 * 11 */
 #ifdef SIEVE_SIZE_LIMIT
@@ -211,13 +211,13 @@ The following lines define the min, default and max value.
 
 #define GPU_SIEVE_PRIMES_MIN                54 /* GPU sieving code can work (inefficiently) with very small numbers */
 #define GPU_SIEVE_PRIMES_DEFAULT         82486 /* Default is to sieve primes up to about 1.05M */
-#define GPU_SIEVE_PRIMES_MAX           1075000 /* Primes to 16,729,793.  GPU sieve should be able to handle up to 16M. */
+#define GPU_SIEVE_PRIMES_MAX           1075766 /* Primes to 16,742,237.  GPU sieve should be able to handle up to 16M. */
 
 #define GPU_SIEVE_SIZE_MIN                   4 /* A 4M bit sieve seems like a reasonable minimum */
-#define GPU_SIEVE_SIZE_DEFAULT              64 /* Default is a 16M bit sieve */
+#define GPU_SIEVE_SIZE_DEFAULT              64 /* Default is a 64M bit sieve */
 #define GPU_SIEVE_SIZE_MAX                 128 /* We've only tested up to 128M bits.  The GPU sieve code may be able to go higher. */
 
 #define GPU_SIEVE_PROCESS_SIZE_MIN           8 /* Processing 8K bits in each block is minimum (256 threads * 1 word of 32 bits) */
-#define GPU_SIEVE_PROCESS_SIZE_DEFAULT      16 /* Default is processing 8K bits */
-#define GPU_SIEVE_PROCESS_SIZE_MAX          32 /* Upper limit is 64K, since we store k values as "short". */
+#define GPU_SIEVE_PROCESS_SIZE_DEFAULT      16 /* Default is processing 16K bits */
+#define GPU_SIEVE_PROCESS_SIZE_MAX          32 /* Upper limit is 64K, since we store k values as "short". Shared memory requirements limit usable values */
 

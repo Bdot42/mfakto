@@ -511,6 +511,20 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
     std::cout<<"Error " << status << " (" << ClErrorString(status) << "): clCreateBuffer (d_sieve_info)\n";
     return 1;
   }
+  status = clEnqueueWriteBuffer(QUEUE,
+              mystuff->d_sieve_info,
+              CL_FALSE,          // Dont wait for completion;
+              0,
+              pinfo_size,
+              mystuff->h_sieve_info,
+              0,
+              NULL,
+              NULL);
+  if(status != CL_SUCCESS)
+  {
+    std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying rowinfo(clEnqueueWriteBuffer)\n";
+    return RET_ERROR;
+  }
 
 #ifdef DETAILED_INFO
   printf("gpusieve_init: d_sieve_info (%d bytes) allocated\n", pinfo_size);
@@ -534,18 +548,18 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
   }
   status = clEnqueueWriteBuffer(QUEUE,
               mystuff->d_calc_bit_to_clear_info,
-              CL_TRUE,          // Wait for completion; it's fast to copy 128 bytes ;-)
+              CL_TRUE,          // Wait for completion;
               0,
               rowinfo_size,
               rowinfo,
               0,
               NULL,
               NULL);
-if(status != CL_SUCCESS)
-{
-  std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying rowinfo(clEnqueueWriteBuffer)\n";
-  return RET_ERROR;
-}
+  if(status != CL_SUCCESS)
+  {
+    std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying rowinfo(clEnqueueWriteBuffer)\n";
+    return RET_ERROR;
+  }
 
 #ifdef DETAILED_INFO
   printf("gpusieve_init: d_calc_bit_to_clear_info (%d bytes) allocated\n", rowinfo_size);

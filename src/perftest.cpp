@@ -266,12 +266,12 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
 
   if (nss < 1)
   {
-    fprintf(stderr, "  Could not read TestSieveSizes from %s - not testing Sieve\n", mystuff.inifile);
+    fprintf(stderr, "  Could not read TestSieveSizes from %s - not testing CPU Sieve\n", mystuff.inifile);
     return -1;
   }
   if (nsp < 1)
   {
-    fprintf(stderr, "  Could not read TestSievePrimes from %s - not testing Sieve\n", mystuff.inifile);
+    fprintf(stderr, "  Could not read TestSievePrimes from %s - not testing CPU Sieve\n", mystuff.inifile);
     return -1;
   }
 
@@ -600,14 +600,16 @@ int test_gpu_sieve(cl_uint par)
   timer_init(&timer);
   for (i=0; i<par; i++)
   {
+    mystuff.exponent = 9116773;
+    gpusieve_init_exponent(&mystuff);
+    mystuff.exponent = EXP;
     gpusieve_init_exponent(&mystuff);
     clFlush(commandQueue);
-    mystuff.exponent ^= 48;
   }
   clFinish(commandQueue);
   time1 = (double)timer_diff(&timer);
 
-  printf(" gpusieve_init_exponent: %f ms (CalcModularInverses)\n", time1/1000.0/par);
+  printf(" gpusieve_init_exponent: %f ms (CalcModularInverses)\n", time1/2000.0/par);
   if (mystuff.quit) exit(1);
 
   timer_init(&timer);
@@ -650,9 +652,6 @@ int test_gpu_sieve(cl_uint par)
 
   cl_uint ln2b, shiftcount=10;
     while((1ULL<<shiftcount) < (unsigned long long int)mystuff.exponent)shiftcount++;
-#ifdef DETAILED_INFO
-  printf("bits in exp %u: %u, ", mystuff->exponent, shiftcount);
-#endif
   shiftcount -= 6; // all kernels can handle 5 bits of pre-shift (max 2^63)
   ln2b = mystuff.exponent >> shiftcount;
 
@@ -691,7 +690,7 @@ int test_gpu_sieve(cl_uint par)
   clFinish(commandQueue);
   time1 = (double)timer_diff(&timer);
 
-  printf(" gpusieve: %f ms = %f M/s (raw rate, cl_barrett15_69_gs)\n\n ", time1/1000.0/par, (double)par * mystuff.gpu_sieve_size/time1);
+  printf(" tf: %f ms = %f M/s (raw rate, cl_barrett15_69_gs)\n\n ", time1/1000.0/par, (double)par * mystuff.gpu_sieve_size/time1);
 
   if (mystuff.quit) exit(1);
 
@@ -723,7 +722,7 @@ int test_gpu_sieve(cl_uint par)
   printf("SievePrimes:");
   for(ii=0; ii<nsp; ii++)
   {
-    sprimes[ii] = min(sprimes[ii], 1075000);
+    sprimes[ii] = min(sprimes[ii], GPU_SIEVE_PRIMES_MAX);
     sprimes[ii] = max(sprimes[ii], 54);
     printf(" %7u", sprimes[ii]);
   }
@@ -783,7 +782,7 @@ int test_gpu_sieve(cl_uint par)
         }
       }
       last_elem[ii] += bitcnt; // this many survivors
-      printf (" %u loops, %u sv, total %f sv, sieve %u , sieve total %f", (par*(nsp-ii)), bitcnt, last_elem[ii], mystuff.gpu_sieve_size, gss_sum);
+      printf (" %u loops, %u sv, total %f sv, %% %5.2f , total %% %5.2f", (par*(nsp-ii)), bitcnt, last_elem[ii], (double)bitcnt*100/mystuff.gpu_sieve_size, last_elem[ii]*100/gss_sum);
       Mps =  (double)(mystuff.gpu_sieve_size)*par*(nsp-ii)/time1;
       if (Mps > peak[ii])
       {
@@ -849,6 +848,7 @@ int init_gpu_test(int devicenumber)
   mystuff.bit_max_stage = mystuff.bit_max_assignment = 72;
   mystuff.gpu_sieving = 1;
 
+
   printf("\nReinitializing with gpu_sieving enabled.\n");
   return init_CL(mystuff.num_streams, devicenumber);
 }
@@ -875,17 +875,18 @@ int perftest(int par, int devicenumber)
 #ifdef SIEVE_SIZE_LIMIT
   sieve_init();
 #else
+  if (mystuff.sieve_size == 0) mystuff.sieve_size = ((36<<13) - (36<<13) % (13*17*19*23));
   sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max);
 #endif
   time1 = (double)timer_diff(&timer);
   printf("%.2f ms\n\n", time1/1000.0);
   if (mystuff.quit) exit(1);
 
-  printf("Generate list of the first 1075000 primes for GPU sieving: ");
-  cl_uint *p = (cl_uint *)malloc(sizeof(cl_uint)* 1075000 );
+  printf("Generate list of the first %u primes for GPU sieving: ", GPU_SIEVE_PRIMES_MAX);
+  cl_uint *p = (cl_uint *)malloc(sizeof(cl_uint)* GPU_SIEVE_PRIMES_MAX );
   timer_init(&timer);
 
-  tiny_soe(1075000, p);
+  tiny_soe(GPU_SIEVE_PRIMES_MAX, p);
   time1 = (double)timer_diff(&timer);
   printf("%.2f ms\n\n", time1/1000.0);
   free(p);

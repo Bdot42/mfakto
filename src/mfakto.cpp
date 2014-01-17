@@ -114,17 +114,17 @@ void printArray(const char * Name, const cl_uint * Data, const cl_uint len, cl_u
 
   if (hex)
   {
-    fmt1="<%u x %#x> ";
-    fmt2="%#x ";
-    fmt3="... %#x %#x %#x\n";
-    fmt4="<%d x 0x0 at the end>\n";
+    fmt1=(char *)"<%u x %#x> ";
+    fmt2=(char *)"%#x ";
+    fmt3=(char *)"... %#x %#x %#x\n";
+    fmt4=(char *)"<%d x 0x0 at the end>\n";
   }
   else
   {
-    fmt1="<%u x %u> ";
-    fmt2="%u ";
-    fmt3="... %u %u %u\n";
-    fmt4="<%d x 0 at the end>\n";
+    fmt1=(char *)"<%u x %u> ";
+    fmt2=(char *)"%u ";
+    fmt3=(char *)"... %u %u %u\n";
+    fmt4=(char *)"<%d x 0 at the end>\n";
   }
   o = printf("%s (%d): ", Name, len);
   for(i = 0; i < len-2 && o < 960;) // no more than 1000 chars
