@@ -25,9 +25,9 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #include <sched.h>
 #endif
 #ifdef __MINGW32__
-#include <windows.h>
-/* SetThreadAffinityMask and GetCurrentThread needs the header windows.h in MinGW.
-http://msdn.microsoft.com/en-us/library/windows/desktop/ms683182(v=vs.85).aspx> */
+  #include <windows.h>
+  /* SetThreadAffinityMask and GetCurrentThread needs the header windows.h in MinGW.
+  http://msdn.microsoft.com/en-us/library/windows/desktop/ms683182(v=vs.85).aspx> */
 #endif
 #include <string.h>
 #include <errno.h>
@@ -1043,7 +1043,7 @@ int main(int argc, char **argv)
 
   if(init_CL(mystuff.num_streams, devicenumber)!=CL_SUCCESS)
   {
-    printf("init_CL(%d, %d) failed\n", mystuff.num_streams, devicenumber);
+    printf("ERROR: init_CL(%d, %d) failed\n", mystuff.num_streams, devicenumber);
     return ERR_INIT;
   }
 
@@ -1051,17 +1051,20 @@ int main(int argc, char **argv)
   {
     // try to auto-detect the type of GPU
     if (strstr(deviceinfo.d_name, "Capeverde")  ||    // 7750, 7770, 8760, 8740
-        strstr(deviceinfo.d_name, "Bonaire")    ||    // 7790
+        strstr(deviceinfo.d_name, "Bonaire")    ||    // 7790, R7 260, R7 260X
         strstr(deviceinfo.d_name, "Pitcairn")   ||    // 7850, 7870, 8870
         strstr(deviceinfo.d_name, "Newzealand") ||    // 7990
-        strstr(deviceinfo.d_name, "Oland")      ||    // 8670, 8570
+        strstr(deviceinfo.d_name, "Oland")      ||    // 8670, 8570, R9 240, R9 250
         strstr(deviceinfo.d_name, "Sun ")       ||    // 85x0M
         strstr(deviceinfo.d_name, "Mars ")      ||    // 86x0M, 87x0M
         strstr(deviceinfo.d_name, "Venus ")     ||    // 88x0M
         strstr(deviceinfo.d_name, "Saturn ")    ||    // 8930M, 8950M
         strstr(deviceinfo.d_name, "Neptune ")   ||    // 8970M, 8990M
         strstr(deviceinfo.d_name, "Malta")      ||    // 7990
-        strstr(deviceinfo.d_name, "Tahiti"))          // 7950, 7970, 8970, 8950
+        strstr(deviceinfo.d_name, "Tahiti"))    ||    // 7950, 7970, 8970, 8950, R9 280X
+        strstr(deviceinfo.d_name, "Hawaii"))    ||    // R9 290, R9 290X
+        strstr(deviceinfo.d_name, "Curacao"))   ||    // R9 270, R9 270X
+        strstr(deviceinfo.d_name, "Kalindi"))         // GCN APU, Kabini, R7 ???
     {
       mystuff.gpu_type = GPU_GCN;
     }
@@ -1073,7 +1076,7 @@ int main(int argc, char **argv)
       mystuff.gpu_type = GPU_VLIW4;
     }
     else if (strstr(deviceinfo.d_name, "WinterPark")  ||  // 6370D (E2-3200), 6410D (A4-3300, A4-3400)
-             strstr(deviceinfo.d_name, "BeaverCreek") ||  // 6530D (A6-3500, A6-3600, A6-3650, A63670K), 6550D (A8-3800, A8-3850, A8-3870K)
+             strstr(deviceinfo.d_name, "BeaverCreek") ||  // 6530D (A6-3500, A6-3600, A6-3650, A6-3670K), 6550D (A8-3800, A8-3850, A8-3870K)
              strstr(deviceinfo.d_name, "Zacate")      ||  // 6320 (E-450)
              strstr(deviceinfo.d_name, "Ontario")     ||  // 6290 (C-60)
              strstr(deviceinfo.d_name, "Wrestler"))       // 6250 (C-30, C-50), 6310 (E-240, E-300, E-350)
@@ -1119,10 +1122,10 @@ int main(int argc, char **argv)
     }
     else
     {
-      printf("WARNING: Unknown GPU name, assuming GCN type. Please post the device "
+      printf("WARNING: Unknown GPU name, assuming GCN. Please post the device "
           "name \"%s (%s)\" to http://www.mersenneforum.org/showthread.php?t=15646 "
           "to have it added to mfakto. Set GPUType in %s to select a GPU type yourself "
-          "and avoid this warning.\n", deviceinfo.d_name, deviceinfo.v_name, mystuff.inifile);
+          "to avoid this warning.\n", deviceinfo.d_name, deviceinfo.v_name, mystuff.inifile);
       mystuff.gpu_type = GPU_GCN;
     }
   }
