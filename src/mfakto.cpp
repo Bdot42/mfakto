@@ -1499,7 +1499,6 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
     if(status != CL_SUCCESS)
     {
       std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_min)\n";
-      
     }
 #ifdef DETAILED_INFO
     printf("run_kernel64: b=%llx:%llx:%llx, shift=%u\n",
@@ -1569,7 +1568,6 @@ int run_barrett_kernel32(cl_kernel l_kernel, cl_uint exp, int96 k_base, int stre
     if(status != CL_SUCCESS)
     {
       std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_min)\n";
-      
     }
 #ifdef CHECKS_MODBASECASE
     status = clSetKernelArg(l_kernel,

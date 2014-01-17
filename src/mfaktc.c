@@ -1061,10 +1061,11 @@ int main(int argc, char **argv)
         strstr(deviceinfo.d_name, "Saturn ")    ||    // 8930M, 8950M
         strstr(deviceinfo.d_name, "Neptune ")   ||    // 8970M, 8990M
         strstr(deviceinfo.d_name, "Malta")      ||    // 7990
-        strstr(deviceinfo.d_name, "Tahiti"))    ||    // 7950, 7970, 8970, 8950, R9 280X
-        strstr(deviceinfo.d_name, "Hawaii"))    ||    // R9 290, R9 290X
-        strstr(deviceinfo.d_name, "Curacao"))   ||    // R9 270, R9 270X
-        strstr(deviceinfo.d_name, "Kalindi"))         // GCN APU, Kabini, R7 ???
+        strstr(deviceinfo.d_name, "Tahiti")     ||    // 7950, 7970, 8970, 8950, R9 280X
+        strstr(deviceinfo.d_name, "Hawaii")     ||    // R9 290, R9 290X
+        strstr(deviceinfo.d_name, "Curacao")    ||    // R9 270, R9 270X
+        strstr(deviceinfo.d_name, "Kalindi")          // GCN APU, Kabini, R7 ???
+        )
     {
       mystuff.gpu_type = GPU_GCN;
     }
