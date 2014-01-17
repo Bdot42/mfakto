@@ -2,7 +2,7 @@
 # mfakto README #
 #################
 
-Content
+Contents
 
 0   What is mfakto?
 1   Compilation
@@ -17,7 +17,7 @@ Content
 4.1 Stuff that looks like an issue but actually isn't an issue
 5   Tuning
 6   FAQ
-7   .plan
+7   Plans
 
 
 
@@ -25,19 +25,20 @@ Content
 # 0 What is mfakto? #
 #####################
 
-mfakto is the OpenCL-port of mfaktc. It aims to contain the same features
-and application use cases in time.
-mfaktc is a program for trial factoring of mersenne numbers. The name mfaktc
+mfakto is the OpenCL-port of mfaktc. It aims to have the same features and functions as mfaktc.
+mfaktc is a program that trial factors Mersenne numbers and which
 stands for "Mersenne FAKTorisation with CUDA". Faktorisation is a mixture of the
 English word "factorisation" and the German word "Faktorisierung".
-It can use CPU and GPU resources.
+mfakto is a GPU program, utilizing mostly GPU resources but it can use the CPU for sieving.
 
 
 #################
 # 1 Compilation #
 #################
 
- AMD APP SDK 2.5 or above is required
+  Requires:
+- AMD APP SDK 2.5 or above is required.
+- A C and C++ compiler, MSVC, GCC, etc depending on your system.
 
 
 ###########################
@@ -46,9 +47,9 @@ It can use CPU and GPU resources.
 
 - Install AMD APP SDK >= 2.5
 - cd src
-- edit Makefile, set the AMD_APP_DIR location
+- Set AMD_APP_DIR in Makefile to the SDK's location if not installed in the default location.
 - make
-
+- mfakto should be compiled assuming no errors, in the root folder of mfakto.
 
 #############################
 # 1.2 Compilation (Windows) #
@@ -63,29 +64,28 @@ It can use CPU and GPU resources.
 # 2 Running mfakto #
 ####################
 
-Requirements:
-AMD Catalyst driver, version >= 11.4
-AMD APP SDK version >= 2.5 (not required for Catalyst 11.10 or above)
+  Requirements:
+- AMD Catalyst driver, version >= 11.4
+- AMD APP SDK version >= 2.5 (not required for Catalyst 11.10 or above)
 
+****
 Catalyst driver 11.9 uses up to one CPU core less than its predecessors:
 11.9 strongly recommended.
 
 The high CPU usage bug is back in Catalyst 13.4 and 13.5 - stay below.
+**** Fixed in 0.14-remove(?)
 
-Open a command shell and run 'mfakto -h' for parameters it accepts.
-You may also want to check mfakto.ini for changing settings and tweaking.
-A short description of those parameters are included in mfakto.ini as well.
-Typically you want to get work from a worktodo file. You can specify the
-name in mfakto.ini. It was tested with primenet v5 worktodo files but v4
-should work, too.
+Open a command shell and run 'mfakto -h' in the mfakto folder for parameters it accepts.
+You may also want to check mfakto.ini for changing and tweaking mfakto.
+Typically you will want to get work from a worktodo file which can be specified in mfakto.ini.
 
-Please run the builtin selftest (mfakto -st) each time you've
-- recompiled the code
-- downloaded a new binary from somewhere
-- changed the graphics driver
-- changed your hardware
+Please run the built-in selftest (mfakto -st) each time you've:
+- Recompiled the code
+- Downloaded a new binary from somewhere
+- Changed the graphics driver
+- Changed your hardware
 
-Example worktodo.txt
+worktodo.txt example: 
 -- cut here --
 Factor=bla,66362159,64,68
 Factor=bla,3321932839,50,61
@@ -99,6 +99,8 @@ M3321932839 from 2^50 to 2^61.
 # 2.1 Supported GPUs #
 ######################
 
+  AMD
+- R9 xxx, R7 xxx, R4 xxx
 - HD7xxx
 - HD5xxx, HD6xxx, including the builtin HD6xxx on AMD APUs
 - HD4xxx, FireStream 92xx (no atomic operations available) *
@@ -116,21 +118,21 @@ prime95 or mfakto -d c).
 # 2.2 Running mfakto (Linux) #
 ##############################
 
-- AMD APP 2.5 or higher and Catalyst driver 11.4 or higher are required
+- AMD APP SDK 2.5 or higher and Catalyst 11.4 or higher is required
 - run mfakto
-- precompiled version is only available for 64-bit (built on SuSE 11.4)
+- precompiled version is currently only available for 64-bit (built on SuSE 11.4)
 
 ################################
 # 2.3 Running mfakto (Windows) #
 ################################
 
-- Catalyst driver 11.4 or higher are required
+- AMD Catalyst 11.4 or higher is required
 - if driver < 11.10, install AMD APP SDK 2.5 and make sure
-  $AMD_APP_DIR/lib/x86_64 is in the path
+  $AMD_APP_DIR/lib/x86_64 is in the path.
 - Microsoft Visual C++ 2010 Redistributable Package for your platform and
   language, e.g.
   http://www.microsoft.com/downloads/details.aspx?familyid=BD512D9E-43C8-4655-81BF-9350143D5867&displaylang=de
-- 32-bit and 64-bit precompiled versions available; 64-bit siever is way more
+- 32-bit and 64-bit binaries available; 64-bit siever is much more
   efficient
 
 ####################################################################
@@ -150,7 +152,7 @@ Getting work:
     Step 6) copy&paste the "Factor=..." lines directly into the worktodo.txt
             in your mfakto directory
 
-Start mfakto and stress your GPU ;)
+Start mfakto and stress your GPU! ;)
 
 Advanced usage (extend the upper limit):
     Since mfakto works best on long running jobs you may want to extend the
@@ -175,16 +177,13 @@ Advanced usage (extend the upper limit):
 # 4 Known issues #
 ##################
 
-- On HD77xx, 78xx and 79xx, mfakto may run awfully slow at 99% GPU load.
+- On HD77xx, 78xx, 79xx and R series, mfakto may run very slow at 99% GPU load.
   mfakto warns about the issue during startup.
-  The reason is the lower number of registers available to the kernels.
-  Set VectorSize=2 in mfakto.ini and restart mfakto. It should be fast now.
-- Even with GPU sieving enabled, mfakto uses up to a CPU core. This is a bug
-  in the Catalyst 13.4 and 13.5 drivers, hopefully fixed soon. Downgrade
-  drivers to 13.3, if possible.
+  The reason is because of the lower number of registers available to the kernels.
+  Set VectorSize=2 in mfakto.ini and restart mfakto. It should be better now.
 - The user interface is not hardened against malformed input. There are some
-  checks but when you really try you should be able to screw it up.
-- The GUI of your OS might be very laggy while running mfakto. In severe
+  checks but if you really try you should be able to screw it up.
+- The GUI of your OS may be very laggy while running mfakto. In severe
   cases, if a single kernel invocation takes too long, Windows may decide
   the driver is faulty and reboot.
   Try lowering GridSize in mfakto.ini. Smaller grids should have better
@@ -200,7 +199,7 @@ Advanced usage (extend the upper limit):
   display (e.g. being connected through terminal services). So please try to
   run mfakto locally on the main X-display. If that fails as well, then the
   graphics driver may be too old. Check the clinfo (part of AMD APP SDK)
-  output for your GPU. If drivers and AMD APP SDK are up to date, then maybe
+  output for your GPU. If the drivers and AMD APP SDK are up to date, then maybe
   your AMD GPU is not the first GPU. Try the -d switch to specify a different
   device number.
 
@@ -221,7 +220,7 @@ Advanced usage (extend the upper limit):
   controlled by GridSize in mfakto.ini. The default value is 3 which means
   that mfakto runs up to 1048576 factor candidates at once (per class). So
   the last block of each class is filled up with factor candidates above the
-  upper limit. While this is a huge overhead for small ranges it's save to
+  upper limit. While this is a huge overhead for small ranges it's safe to
   ignore it on bigger ranges. If a class contains 100 blocks the overhead is
   on average 0.5%. When a class needs 1000 blocks the overhead is 0.05%...
 
@@ -245,8 +244,8 @@ A Not tested yet, but using the commandline option "-d <GPU number>" you should
   Please read the next question, too.
 
 Q Can I run multiple instances of mfakto on the same computer?
-A Yes, and in most cases this is necessary to make full use of the GPU(s) only if
-  CPU sieving. If the sieve is running on the GPU(default), one instance should fully utilize
+A Yes, and in most cases this is necessary to make full use of the GPU(s) if sieving with CPU.
+  If the sieve is running on the GPU(default), one instance should fully utilize
   a single GPU.
   
 
@@ -257,14 +256,14 @@ A Currently, the 73-bit-barrett kernel is the fastest one, working for factors
 
 
 ###########
-# 7 .plan #
+# 7 Plans #
 ###########
 
 - keep features/changes in sync with mfaktc
 - performance improvements whenever I find them ;)
 - documentation and comments in code
 - full 95-bit implementation
-- Makefile.win  --  any volunteers?
+- Makefile.win  --  any volunteers? ** I am assuming for MSVC and NMake?
 - perftest modes for kernel speed.
 - retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
 - Implement&test AllowSleep
