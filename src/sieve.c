@@ -153,10 +153,10 @@ void sieve_init(unsigned int ssize, unsigned int max_global)
 
 void sieve_free()
 {
-  free(sieve);
-  free(sieve_base);
-  free(primes);
-  free(k_init);
+  if (sieve)      free(sieve);      sieve=NULL;
+  if (sieve_base) free(sieve_base); sieve_base=NULL;
+  if (primes)     free(primes);     primes=NULL;
+  if (k_init)     free(k_init);     k_init=NULL;
 }
 
 int sieve_euclid_modified(int j, int n, int r)

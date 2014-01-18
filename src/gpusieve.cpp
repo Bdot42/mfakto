@@ -504,7 +504,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
   mystuff->d_sieve_info = clCreateBuffer(context,
                         CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
                         pinfo_size,
-                        pinfo,
+                        mystuff->h_sieve_info,
                         &status);
   if(status != CL_SUCCESS)
   {
@@ -641,9 +641,10 @@ void gpusieve (mystuff_t *mystuff, unsigned long long num_k_remaining)
 int gpusieve_free (mystuff_t *mystuff)
 {
   int status;
+  if (gpusieve_initialized == 0) return 0;
   gpusieve_initialized = 0;
 
-  status = clReleaseMemObject(mystuff->d_bitarray);
+  status = clReleaseMemObject(mystuff->d_bitarray); mystuff->d_bitarray=NULL;
   if(status != CL_SUCCESS)
   {
     std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (mystuff->d_bitarray)\n";
@@ -651,7 +652,7 @@ int gpusieve_free (mystuff_t *mystuff)
   }
   free(mystuff->h_bitarray); mystuff->h_bitarray=NULL;
 
-  status = clReleaseMemObject(mystuff->d_calc_bit_to_clear_info);
+  status = clReleaseMemObject(mystuff->d_calc_bit_to_clear_info); mystuff->d_calc_bit_to_clear_info=NULL;
   if(status != CL_SUCCESS)
   {
     std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (mystuff->d_calc_bit_to_clear_info)\n";
@@ -659,7 +660,7 @@ int gpusieve_free (mystuff_t *mystuff)
   }
   free(mystuff->h_calc_bit_to_clear_info); mystuff->h_calc_bit_to_clear_info=NULL;
 
-  status = clReleaseMemObject(mystuff->d_sieve_info);
+  status = clReleaseMemObject(mystuff->d_sieve_info); mystuff->d_sieve_info=NULL;
   if(status != CL_SUCCESS)
   {
     std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (mystuff->d_sieve_info)\n";

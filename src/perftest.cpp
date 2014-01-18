@@ -63,9 +63,14 @@ int init_perftest(int devicenumber)
   cl_uint i;
   mystuff.mode = MODE_PERFTEST;
   mystuff.gpu_sieving = 0;  // inintialize CPU-sieving
-
-  // always prepare 10 blocks for the perftest
+  mystuff.sieve_primes_min = 254;
+  mystuff.sieve_primes = 5000;
+  mystuff.sieve_primes_max = 1000000;
+  mystuff.more_classes = 1;
+  mystuff.num_classes  = 4620;
+  mystuff.sieve_size = (36<<13) - (36<<13) % (13*17*19*23);
   mystuff.num_streams = 10;
+
   init_CL(mystuff.num_streams, devicenumber);
 
 //  i = (cl_uint)deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
@@ -77,7 +82,6 @@ int init_perftest(int devicenumber)
 
   register_signal_handler(&mystuff);
 
-  mystuff.sieve_primes_max = 1000000;
   return 0;
 }
 
@@ -715,7 +719,7 @@ int test_gpu_sieve(cl_uint par)
   if (nsp>MAX_NUM_SPS) nsp=MAX_NUM_SPS;
   double peak[MAX_NUM_SPS]={0.0}, Mps;
   double last_elem[MAX_NUM_SPS]={0.0};
-  mystuff.gpu_sieve_processing_size = 8 * 1024;
+  mystuff.gpu_sieve_processing_size = 8 * 1024; // min of 8k to ensure the sieve sizes are always a multiple ==> will later be a loop
   int peak_index[MAX_NUM_SPS]={0};
   double gss_sum=0.0;
 
@@ -782,7 +786,7 @@ int test_gpu_sieve(cl_uint par)
         }
       }
       last_elem[ii] += bitcnt; // this many survivors
-      printf (" %u loops, %u sv, total %f sv, %% %5.2f , total %% %5.2f", (par*(nsp-ii)), bitcnt, last_elem[ii], (double)bitcnt*100/mystuff.gpu_sieve_size, last_elem[ii]*100/gss_sum);
+      printf (" %3u loops, %9u=%5.2f%% sv, sum %9.0f=%5.2f%%", (par*(nsp-ii)), bitcnt, (double)bitcnt*100/mystuff.gpu_sieve_size, last_elem[ii], last_elem[ii]*100/gss_sum);
       Mps =  (double)(mystuff.gpu_sieve_size)*par*(nsp-ii)/time1;
       if (Mps > peak[ii])
       {
@@ -830,8 +834,6 @@ int test_gpu_sieve(cl_uint par)
 
   printf("\n\n");
 
-  gpusieve_free(&mystuff);
-
   return 0;
 }
 
@@ -875,7 +877,6 @@ int perftest(int par, int devicenumber)
 #ifdef SIEVE_SIZE_LIMIT
   sieve_init();
 #else
-  if (mystuff.sieve_size == 0) mystuff.sieve_size = ((36<<13) - (36<<13) % (13*17*19*23));
   sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max);
 #endif
   time1 = (double)timer_diff(&timer);
@@ -916,6 +917,9 @@ int perftest(int par, int devicenumber)
   printf("6. barrett_79 kernel\n  soon\n");
 
   printf("7. barrett_92 kernel\n  soon\n");
+
+  cleanup_CL();
+  sieve_free();
 
   return 0;
 }

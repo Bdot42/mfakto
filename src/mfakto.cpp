@@ -153,7 +153,7 @@ void printArray(const char * Name, const cl_uint * Data, const cl_uint len, cl_u
 }
 
 /* allocate memory buffer arrays, test a small kernel */
-int init_CLstreams(int gs_reinit)
+int init_CLstreams(int gs_reinit_only)
 {
   cl_uint i;
   cl_int status;
@@ -164,7 +164,7 @@ int init_CLstreams(int gs_reinit)
     return 1;
   }
 
-  if (!gs_reinit)
+  if (!gs_reinit_only)
   {
     for(i=0;i<(mystuff.num_streams);i++)
     {
@@ -646,6 +646,7 @@ int init_CL(int num_streams, cl_int devnumber)
     std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateProgramWithSource\n";
     return 1;
   }
+  free(source);
 
   char program_options[150];
   // so far use the same vector size for all kernels ...
@@ -656,7 +657,7 @@ int init_CL(int num_streams, cl_int devnumber)
   if (mystuff.gpu_type != GPU_NVIDIA) strcat(program_options, " -O3");
 #endif
 
-if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
+  if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
 
 #ifdef CHECKS_MODBASECASE
   strcat(program_options, " -DCHECKS_MODBASECASE");
@@ -718,7 +719,6 @@ if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
     if (status != CL_SUCCESS) return 1;
   }
 
-  free(source);
   /* get kernels by name */
   if (mystuff.gpu_sieving == 0)
   {
@@ -750,10 +750,94 @@ if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
   return 0;
 }
 
+
+int cleanup_CL(void)
+{
+  cl_int status;
+  cl_uint i;
+
+  for (i=0; i<NUM_KERNELS; i++)
+  {
+    if (kernel_info[i].kernel)
+    {
+      status = clReleaseKernel(kernel_info[i].kernel); kernel_info[i].kernel = NULL;
+      if(status != CL_SUCCESS)
+      {
+        fprintf(stderr, "Error %d: clReleaseKernel(%d)\n", status, i);
+        return 1;
+      }
+    }
+  }
+
+  status = clReleaseProgram(program); program=NULL;
+  if(status != CL_SUCCESS)
+  {
+    std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseProgram\n";
+    return 1;
+  }
+  for (i=0; i<mystuff.num_streams; i++)
+  {
+    status = clReleaseMemObject(mystuff.d_ktab[i]); mystuff.d_ktab[i]=NULL;
+    if(status != CL_SUCCESS)
+    {
+      std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (d_ktab" << i << ")\n";
+      return 1;
+    }
+    free(mystuff.h_ktab[i]); mystuff.h_ktab[i]=NULL;
+  }
+  status = clReleaseMemObject(mystuff.d_RES); mystuff.d_RES=NULL;
+  if(status != CL_SUCCESS)
+  {
+    std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (d_RES)\n";
+    return 1;
+  }
+  free(mystuff.h_RES); mystuff.h_RES=NULL;
+#ifdef CHECKS_MODBASECASE
+  status = clReleaseMemObject(mystuff.d_modbasecase_debug); mystuff.d_modbasecase_debug=NULL;
+  if(status != CL_SUCCESS)
+  {
+    std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (d_modbasecase_debug)\n";
+    return 1;
+  }
+  free(mystuff.h_modbasecase_debug); mystuff.h_modbasecase_debug=NULL;
+#endif
+  if (mystuff.gpu_sieving == 1)
+  {
+    gpusieve_free (&mystuff);
+  }
+
+  status = clReleaseCommandQueue(commandQueue);
+  if(status != CL_SUCCESS)
+  {
+    std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseCommandQueue\n";
+    return 1;
+  }
+  if (commandQueuePrf) status = clReleaseCommandQueue(commandQueuePrf);
+  if(status != CL_SUCCESS)
+  {
+    std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseCommandQueuePrf\n";
+    return 1;
+    status = clReleaseContext(context);
+  }
+  if(status != CL_SUCCESS)
+  {
+    std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseContext\n";
+    return 1;
+  }
+  if(devices != NULL)
+  {
+      free(devices);
+      devices = NULL;
+  }
+  clReleaseContext(context);
+  context = NULL;
+
+  return 0;
+}
+
 #ifdef __cplusplus
 }
 #endif
-
 
 /* error callback function - not used right now */
 void  CL_CALLBACK CL_error_cb(const char *errinfo,
@@ -1967,90 +2051,6 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   return 0;
 }
 
-
-int cleanup_CL(void)
-{
-  cl_int status;
-  cl_uint i;
-
-  for (i=0; i<NUM_KERNELS; i++)
-  {
-    if (kernel_info[i].kernel)
-    {
-      status = clReleaseKernel(kernel_info[i].kernel);
-      if(status != CL_SUCCESS)
-      {
-        fprintf(stderr, "Error %d: clReleaseKernel(%d)\n", status, i);
-        return 1;
-      }
-    }
-  }
-
-  status = clReleaseProgram(program);
-  if(status != CL_SUCCESS)
-  {
-    std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseProgram\n";
-    return 1;
-  }
-  for (i=0; i<mystuff.num_streams; i++)
-  {
-    status = clReleaseMemObject(mystuff.d_ktab[i]);
-    if(status != CL_SUCCESS)
-    {
-      std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (d_ktab" << i << ")\n";
-      return 1;
-    }
-    free(mystuff.h_ktab[i]);
-  }
-  status = clReleaseMemObject(mystuff.d_RES);
-  if(status != CL_SUCCESS)
-  {
-    std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (d_RES)\n";
-    return 1;
-  }
-  free(mystuff.h_RES);
-#ifdef CHECKS_MODBASECASE
-  status = clReleaseMemObject(mystuff.d_modbasecase_debug);
-  if(status != CL_SUCCESS)
-  {
-    std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseMemObject (d_modbasecase_debug)\n";
-    return 1;
-  }
-  free(mystuff.h_modbasecase_debug);
-#endif
-  if (mystuff.gpu_sieving == 1)
-  {
-    gpusieve_free (&mystuff);
-  }
-
-  status = clReleaseCommandQueue(commandQueue);
-  if(status != CL_SUCCESS)
-  {
-    std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseCommandQueue\n";
-    return 1;
-  }
-  if (commandQueuePrf) status = clReleaseCommandQueue(commandQueuePrf);
-  if(status != CL_SUCCESS)
-  {
-    std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseCommandQueuePrf\n";
-    return 1;
-    status = clReleaseContext(context);
-  }
-  if(status != CL_SUCCESS)
-  {
-    std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseContext\n";
-    return 1;
-  }
-  if(devices != NULL)
-  {
-      free(devices);
-      devices = NULL;
-  }
-  clReleaseContext(context);
-  context = NULL;
-
-  return 0;
-}
 
 int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPUKernels use_kernel)
 {
