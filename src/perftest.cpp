@@ -689,7 +689,6 @@ int test_gpu_sieve(cl_uint par)
     k_base.d3 = (k >> 45) & 0x7FFF;
     k_base.d4 =  k >> 60;
     run_gs_kernel15(kernel_info[BARRETT69_MUL15_GS].kernel, mystuff.gpu_sieve_size / mystuff.gpu_sieve_processing_size, shared_mem_required, k_base, b_in, shiftcount);
-    clFlush(commandQueue);
   }
   clFinish(commandQueue);
   time1 = (double)timer_diff(&timer);
@@ -786,7 +785,7 @@ int test_gpu_sieve(cl_uint par)
         }
       }
       last_elem[ii] += bitcnt; // this many survivors
-      printf (" %3u loops, %9u=%5.2f%% sv, sum %9.0f=%5.2f%%", (par*(nsp-ii)), bitcnt, (double)bitcnt*100/mystuff.gpu_sieve_size, last_elem[ii], last_elem[ii]*100/gss_sum);
+//      printf (" %3u loops, %9u=%5.2f%% sv, sum %9.0f=%5.2f%%", (par*(nsp-ii)), bitcnt, (double)bitcnt*100/mystuff.gpu_sieve_size, last_elem[ii], last_elem[ii]*100/gss_sum);
       Mps =  (double)(mystuff.gpu_sieve_size)*par*(nsp-ii)/time1;
       if (Mps > peak[ii])
       {
@@ -823,12 +822,21 @@ int test_gpu_sieve(cl_uint par)
     // mystuff.gpu_sieve_size sieved, last_elem survived, accumulated over j rounds
     printf(" %6.2f%%", last_elem[ii]*100.0/gss_sum);
   }
-  printf("\nremoval rate");
+  printf("\nremoval rate\n  average:  ");
   for(ii=0; ii<nsp; ii++)
   {
     // peak is incoming sieve spead, last_elem is the acc. number of survivors.
     // peak/g_s_s*(g_s_s - last_elem) is the elimination rate
     printf(" %7.1f", peak[ii]/gss_sum * (gss_sum - last_elem[ii]));
+  }
+  printf("\n  incremental:   n/a");
+  for(ii=1; ii<nsp; ii++)
+  {
+    // peak is incoming sieve spead, last_elem is the acc. number of survivors.
+    // peak/g_s_s*(g_s_s - last_elem) is the elimination rate
+    // l_e[ii-1] - l_e[ii] additional candidates have been removed by by the primes between sprimes[ii-1] and sprimes[ii]
+    // (g_s_s/peak[ii] - g_s_s/peak[ii-1]) is the time it took to sieve those additional primes
+    printf(" %7.1f", (last_elem[ii-1] - last_elem[ii]) / (gss_sum/peak[ii] - gss_sum/peak[ii-1]) );
   }
 
 
