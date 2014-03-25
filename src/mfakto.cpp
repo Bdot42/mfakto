@@ -604,7 +604,7 @@ int init_CL(int num_streams, cl_int devnumber)
     return 1;
   }
 
-   size_t size;
+  size_t size;
   char*  source;
 
   if (mystuff.use_binfile)

@@ -20,8 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src/checkpoint.c" />
-    <ClCompile Include="src/mfakto.cpp" />
-    <ClCompile Include="src/mfaktc.c" />
     <ClCompile Include="src/parse.c" />
     <ClCompile Include="src/read_config.c" />
     <ClCompile Include="src/sieve.c" />
@@ -29,6 +27,8 @@
     <ClCompile Include="src/timer.c" />
     <ClCompile Include="src/filelocking.c" />
     <ClCompile Include="src\gpusieve.cpp" />
+    <ClCompile Include="src\mfaktc.c" />
+    <ClCompile Include="src\mfakto.cpp" />
     <ClCompile Include="src\output.c" />
     <ClCompile Include="src\perftest.cpp" />
   </ItemGroup>

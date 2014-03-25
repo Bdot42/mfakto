@@ -342,7 +342,7 @@ int read_config(mystuff_t *mystuff)
   }
   else // SieveOnGPU
   {
-    mystuff->num_streams = 3; // GPU sieve always uses only one stream
+    mystuff->num_streams = 3; // GPU sieve always uses only one stream, but perftest may use more
     mystuff->threads_per_grid_max = 2097152; // not used for the GPU sieve - defined here to satisfy some calculations
 
     if(my_read_int(mystuff->inifile, "MoreClasses", &i))

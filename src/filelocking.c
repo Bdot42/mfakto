@@ -28,6 +28,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #if defined _MSC_VER || __MINGW32__
   #include <Windows.h>
   #include <io.h>
+  #include <direct.h>
   #undef open
   #undef close
   #define open _open
@@ -58,12 +59,18 @@ typedef struct _lockinfo
 
 static unsigned int num_locked_files = 0;
 static lockinfo     locked_files[MAX_LOCKED_FILES];
+static char* current_dir = NULL;
+static int   current_drive = 0;
 
 /* See if the given file exists */
 
 int file_exists (char	*filename)
 {
-	int fd = open(filename, O_RDONLY);
+	int fd;
+  if (current_dir == NULL) {current_dir = _getcwd(NULL,0); current_drive = _getdrive();}
+  if (_chdrive(current_drive) || _chdir(current_dir)) fprintf(stderr, "\nWarning: Current Directory \"%s\" is not available.\n", current_dir);
+  fd = open(filename, O_RDONLY);
+//  printf ("file_exists(%s)\n", filename);
 	if (fd < 0) return 0;
 	close(fd);
 	return 1;
@@ -89,6 +96,9 @@ FILE *fopen_and_lock(const char *path, const char *mode)
 
   sprintf(locked_files[num_locked_files].lock_filename, "%.250s.lck", path);
 
+  if (current_dir == NULL) {current_dir = _getcwd(NULL,0); current_drive = _getdrive();}
+  if (_chdrive(current_drive) || _chdir(current_dir)) fprintf(stderr, "\nWarning: Current Directory \"%s\" is not available.\n", current_dir);
+//  printf("fopen_and_lock(%s)\n", path);
   for(i=0;;)
   {
     if ((lockfd = open(locked_files[num_locked_files].lock_filename, O_EXCL | O_CREAT, MODE)) < 0)
@@ -137,6 +147,9 @@ int unlock_and_fclose(FILE *f)
 
   if (f == NULL) return -1;
 
+  if (current_dir == NULL) {current_dir = _getcwd(NULL,0); current_drive = _getdrive();}
+  if (_chdrive(current_drive) || _chdir(current_dir)) fprintf(stderr, "\nWarning: Current Directory \"%s\" is not available.\n", current_dir);
+
   for (i=0; i<num_locked_files; i++)
   {
     if (locked_files[i].open_file == f)
@@ -145,6 +158,7 @@ int unlock_and_fclose(FILE *f)
       f = NULL;
       if (close(locked_files[i].lockfd) != 0) perror("Failed to close lockfile");
       if (remove(locked_files[i].lock_filename)!= 0) perror("Failed to delete lockfile");
+//      printf("unlock_and_fclose(%s)\n", locked_files[i].lock_filename);
       for (j=i+1; j<num_locked_files; j++)
       {
         locked_files[j-1].lockfd = locked_files[j].lockfd;

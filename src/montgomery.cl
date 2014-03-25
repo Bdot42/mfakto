@@ -41,14 +41,15 @@ ulong_v invmod2pow64 (const ulong_v n)
   uint_v ir;
   // (3*n) XOR 2 is the correct inverse modulo 32 (5 bits),
   // then run 4 (for 64 bit) Newton iterations.
+  // r += r - r * r * n   ==>  r = r * (2 - r * n)  improves overall perf by 0.2%
   ir = mul24(in, 3u) ^ 2;
 
-  ir += ir - mul24(mul24(ir, ir), in);
-  ir += ir - mul24(mul24(ir, ir), in);
+  ir = mul24(ir, 2 - mul24(ir, in));
+  ir = mul24(ir, 2 - mul24(ir, in));
   // ir should now be the inverse mod 2^20 - yet a mul24 for any of
   // the following multiplications delivers a wrong result
-  r   = CONVERT_ULONG_V(ir+ir - ir * ir * in);
-  r  += r - r * r * n;
+  r = CONVERT_ULONG_V(ir * (2 - ir * in));
+  r = r * (2 - r * n);
   return r;
 }
 
@@ -59,14 +60,15 @@ ulong_v neginvmod2pow64 (const ulong_v n)
   uint_v ir;
   // (3*n) XOR 2 is the correct inverse modulo 32 (5 bits),
   // then run 4 (for 64 bit) Newton iterations.
+  // r += r - r * r * n   ==>  r = r * (2 - r * n)  improves overall perf by 0.2%
   ir = mul24(in, 3u) ^ 2;
 
-  ir += ir - mul24(mul24(ir, ir), in);
-  ir += ir - mul24(mul24(ir, ir), in);
+  ir = mul24(ir, 2 - mul24(ir, in));
+  ir = mul24(ir, 2 - mul24(ir, in));
   // ir should now be the inverse mod 2^20 - yet a mul24 for any of
   // the following multiplications delivers a wrong result
-  r   = CONVERT_ULONG_V(ir+ir - ir * ir * in);
-  r  = r * r * n - (r+r);
+  r = CONVERT_ULONG_V(ir * (2 - ir * in));
+  r = r * (r * n - 2);
   return r;
 }
 
@@ -321,8 +323,8 @@ void square_45_90(int90_v * const res, const int90_v a)
   res->d2 = mad24(a.d2, a.d0 << 1, res->d2);
   res->d1 &= 0x7FFF;
 
-  res->d3 = mad24(a.d2, a.d1 << 1, res->d2 >> 15);
-  res->d3 = mad24(a.d3, a.d0 << 1, res->d3);
+  res->d3 = mad24(a.d3, a.d0 << 1, res->d2 >> 15);
+  res->d3 = mad24(a.d2, a.d1 << 1, res->d3);
   res->d2 &= 0x7FFF;
 
   res->d4 = mad24(a.d2, a.d2, res->d3 >> 15);
@@ -386,8 +388,8 @@ uint_v invmod2pow15 (const uint_v n)
   // r = (n+n+n) ^ 2UL;
   r = mul24(n, 3u) ^ 2;
 
-  r += r - mul24(mul24(r, r), n);
-  r += r - mul24(mul24(r, r), n);
+  r = mul24(r, 2 - mul24(r, n));
+  r = mul24(r, 2 - mul24(r, n));
 
   return r & 0x7FFF;
 }
@@ -401,8 +403,8 @@ uint_v neginvmod2pow15 (const uint_v n)
   // r = (n+n+n) ^ 2UL;
   r = mul24(n, 3u) ^ 2;
 
-  r += r - mul24(mul24(r, r), n);
-  r = mul24(mul24(r, r), n) - r - r;  // negate the output
+  r = mul24(r, 2 - mul24(r, n));
+  r = mul24(r, mul24(r, n) - 2);  // negate the output
 
   return r & 0x7FFF;
 }

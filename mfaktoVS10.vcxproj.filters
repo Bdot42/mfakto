@@ -10,9 +10,6 @@
     <ClCompile Include="src/filelocking.c">
       <Filter>source files</Filter>
     </ClCompile>
-    <ClCompile Include="src/mfaktc.c">
-      <Filter>source files</Filter>
-    </ClCompile>
     <ClCompile Include="src/parse.c">
       <Filter>source files</Filter>
     </ClCompile>
@@ -34,7 +31,10 @@
     <ClCompile Include="src\output.c">
       <Filter>source files</Filter>
     </ClCompile>
-    <ClCompile Include="src/mfakto.cpp">
+    <ClCompile Include="src\mfakto.cpp">
+      <Filter>source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mfaktc.c">
       <Filter>source files</Filter>
     </ClCompile>
   </ItemGroup>

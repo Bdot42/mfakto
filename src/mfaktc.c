@@ -766,6 +766,8 @@ RET_ERROR we might have a serios problem
     if (mystuff->gpu_sieving == 0)
     {
 //      for (kernel_index = BARRETT70_MUL24; kernel_index < BARRETT73_MUL15; ++kernel_index) // test-only: skip 15-bit kernels
+//      for (kernel_index = BARRETT79_MUL32; kernel_index <= BARRETT87_MUL32; ++kernel_index) // test-only: skip 15-bit kernels
+//      for (kernel_index = MG62; kernel_index < MG88; ++kernel_index) // Specific montgomery test
       for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;

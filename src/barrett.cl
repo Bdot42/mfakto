@@ -1130,6 +1130,10 @@ Precalculated here since it is the same for all steps in the following loop */
 
     shifter+=shifter;
   }
+#if (TRACE_KERNEL > 0)
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
+        f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+#endif
   mod_simple_even_96_and_check_big_factor96(a, f, ff, RES);
 }
 
@@ -1253,6 +1257,10 @@ Precalculated here since it is the same for all steps in the following loop */
   
       shifter+=shifter;
     }
+#if (TRACE_KERNEL > 0)
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
+        f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+#endif
   
     mod_simple_96_and_check_big_factor96(a, f, ff, RES);
 }
@@ -1396,6 +1404,10 @@ Precalculated here since it is the same for all steps in the following loop */
 
     shifter+=shifter;
   }
+#if (TRACE_KERNEL > 0)
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
+        f.d2.s0, f.d1.s0, f.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0 );
+#endif
   mod_simple_even_96_and_check_big_factor96(tmp96, f, ff, RES);
 }
 
@@ -1524,6 +1536,10 @@ Precalculated here since it is the same for all steps in the following loop */
     }
     shifter+=shifter;
   }
+#if (TRACE_KERNEL > 0)
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
+        f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+#endif
   mod_simple_even_96_and_check_big_factor96(a, f, ff, RES);
 }
 
@@ -1639,7 +1655,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
 
     shifter+=shifter;
-#if (TRACE_KERNEL > 1)
+#if (TRACE_KERNEL > 0)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
         shifter, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif

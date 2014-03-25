@@ -124,6 +124,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
   cl_uint  k, loop_count, loop_end;
   cl_int  status;
 
+  // If we've already allocated GPU memory, return
   if (gpusieve_initialized) return 0;
   gpusieve_initialized = 1;
 
@@ -137,7 +138,6 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
   // cl_uint primesHandledWithSpecialCode = 92;  // Count of primes handled with inline code (not using primes array)
               // Primes 13 through 509 are handled specially
 
-    // If we've already allocated GPU memory, return
   if (mystuff->more_classes == 0)
   {
     primesNotSieved = 4;      // Primes 2, 3, 5, 7 are not sieved
