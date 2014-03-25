@@ -722,7 +722,7 @@ int test_gpu_sieve(cl_uint par)
   int peak_index[MAX_NUM_SPS]={0};
   double gss_sum=0.0;
 
-  printf("SievePrimes:");
+  printf("GPU sieve raw rate (input rate M/s)\nSievePrimes:");
   for(ii=0; ii<nsp; ii++)
   {
     sprimes[ii] = min(sprimes[ii], GPU_SIEVE_PRIMES_MAX);
