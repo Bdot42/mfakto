@@ -19,7 +19,8 @@
 # 
 #
 # Example: "make -j x bitness=32 static=yes" Build 32 bit and link statically with x threads 
-# Check if bit requested, default x86_64
+#
+# Check if bitness requested, set x86_64(64bit) as default
 BITS := x86_64
 BITFLAG := -m64
 ifdef bitness 
@@ -33,7 +34,7 @@ ifeq ($(bitness), 64)
 endif
 endif
 
-# Check if static was requested
+# Check if building statically was requested
 ifdef static
 ifeq ($(static), yes)
   STATIC := -static

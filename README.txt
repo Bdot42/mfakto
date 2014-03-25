@@ -68,13 +68,6 @@ mfakto is a GPU program, utilizing mostly GPU resources but it can use the CPU f
 - AMD Catalyst driver, version >= 11.4
 - AMD APP SDK version >= 2.5 (not required for Catalyst 11.10 or above)
 
-****
-Catalyst driver 11.9 uses up to one CPU core less than its predecessors:
-11.9 strongly recommended.
-
-The high CPU usage bug is back in Catalyst 13.4 and 13.5 - stay below.
-**** Fixed in 0.14-remove(?)
-
 Open a command shell and run 'mfakto -h' in the mfakto folder for parameters it accepts.
 You may also want to check mfakto.ini for changing and tweaking mfakto.
 Typically you will want to get work from a worktodo file which can be specified in mfakto.ini.
