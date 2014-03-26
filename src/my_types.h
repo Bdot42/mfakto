@@ -276,19 +276,19 @@ typedef struct
   cl_uint  small_exp;
   cl_uint  print_timestamp;
   cl_uint  quit;
-  cl_uint  use_binfile;    /* whether or not to save the compiled kernels, and read them instead of compiling again (only if the binfile is newer than the ini file) */
   cl_ulong cpu_mask;         /* CPU affinity mask for the siever thread */
   cl_int   verbosity;        /* -1 = uninitialized, 0 = reduced number of screen printfs, 1= default, >= 2 = some additional printfs */
   cl_uint  selftestsize;
 
   stats_t  stats;            /* stats for the status line */
 
-  char workfile[51];		/* allow filenames up to 50 chars... */
-  char inifile[51];	  	/* allow filenames up to 50 chars... */
+  char workfile[51];         /* allow filenames up to 50 chars... */
+  char inifile[51];	         /* allow filenames up to 50 chars... */
   char resultfile[51];
-  char V5UserID[51];                   /* primenet V5UserID and ComputerID */
-  char ComputerID[51];                 /* currently only used for screen/result output */
-  char CompileOptions[151];             /* additional compile options */
+  char V5UserID[51];         /* primenet V5UserID and ComputerID */
+  char ComputerID[51];       /* currently only used for screen/result output */
+  char CompileOptions[151];  /* additional compile options */
+  char binfile[51];          /* compiled kernels file to use, empty if not desired */
 
 }mystuff_t;			/* FIXME: proper name needed */
 

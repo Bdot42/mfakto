@@ -51,7 +51,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 cl_uint             new_class=1;
 cl_device_id        *devices;
-cl_program          program;
+cl_program          program = NULL;
 
 cl_context          context=NULL;
 cl_command_queue    commandQueue, commandQueuePrf=NULL;
@@ -592,7 +592,9 @@ int init_CL(int num_streams, cl_int devnumber)
       return 1;
     }
     else
+    {
       printf("\nINFO: Device does not support out-of-order operations. Fallback to in-order queues.\n");
+    }
   }
 
   props |= CL_QUEUE_PROFILING_ENABLE;
@@ -605,48 +607,100 @@ int init_CL(int num_streams, cl_int devnumber)
   }
 
   size_t size;
-  char*  source;
+  char*  source = NULL;
+  int binary_loaded = 0;
 
-  if (mystuff.use_binfile)
+  if (mystuff.binfile[0])
   {
     // check if binfile exists
-    // check if it is newer than the ini file, or if we're forced to use it
-    // load and build it. If not successful, use the source.
+    if (file_exists(mystuff.binfile))
+    {
+      if (mystuff.verbosity > 0) printf("Loading binary kernel file %s\n", mystuff.binfile);
+      std::fstream f(mystuff.binfile, (std::fstream::in | std::fstream::binary));
+
+      if(f.is_open())
+      {
+        f.seekg(0, std::fstream::end);
+        size = (size_t)f.tellg();
+        f.seekg(0, std::fstream::beg);
+
+        source = (char *) malloc(size+1);
+        if(!source)
+        {
+          f.close();
+          std::cerr << "\noom\n";
+          return 1;
+        }
+
+        f.read(source, size);
+        f.close();
+        source[size] = '\0';
+      }
+      else
+      {
+        fprintf(stderr, "\nBinary kernel file \"%s\" not found, it needs to be in the same directory as the executable.\n", mystuff.binfile);
+        return 1;
+      }
+
+      // load and build it. If not successful, use the source.
+      cl_int errcode;
+
+      program = clCreateProgramWithBinary(context, 1, &devices[devnumber], &size, (const unsigned char **)&source, &status, &errcode);
+      if (status != CL_SUCCESS || errcode != 0)
+      {
+        // not successful: try the source
+        free(source); source = NULL;
+        fprintf(stderr, "Cannot use binary kernel: binary status=%d (%s), error code=%d (%s)\n",
+          status, ClErrorString(status), errcode, ClErrorString(errcode));
+        status = clReleaseProgram(program); program = NULL;
+        if(status != CL_SUCCESS)
+        {
+          std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseProgram\n";
+        }
+      }
+      else
+      {
+        binary_loaded = 1;
+      }
+    }
   }
 
-  std::fstream f(KERNEL_FILE, (std::fstream::in | std::fstream::binary));
-
-  if(f.is_open())
+  if (!program) // load binary failed or is not enabled
   {
-    f.seekg(0, std::fstream::end);
-    size = (size_t)f.tellg();
-    f.seekg(0, std::fstream::beg);
+    std::fstream f(KERNEL_FILE, (std::fstream::in | std::fstream::binary));
 
-    source = (char *) malloc(size+1);
-    if(!source)
+    if(f.is_open())
     {
+      f.seekg(0, std::fstream::end);
+      size = (size_t)f.tellg();
+      f.seekg(0, std::fstream::beg);
+
+      source = (char *) malloc(size+1);
+      if(!source)
+      {
+        f.close();
+        std::cerr << "\noom\n";
+        return 1;
+      }
+
+      f.read(source, size);
       f.close();
-      std::cerr << "\noom\n";
+      source[size] = '\0';
+    }
+    else
+    {
+      std::cerr << "\nKernel file \""KERNEL_FILE"\" not found, it needs to be in the same directory as the executable.\n";
       return 1;
     }
 
-    f.read(source, size);
-    f.close();
-    source[size] = '\0';
+    program = clCreateProgramWithSource(context, 1, (const char **)&source, &size, &status);
+    if(status != CL_SUCCESS)
+    {
+      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateProgramWithSource\n";
+      return 1;
+    }
+    free(source);
   }
-  else
-  {
-    std::cerr << "\nKernel file \""KERNEL_FILE"\" not found, it needs to be in the same directory as the executable.\n";
-    return 1;
-  }
-
-  program = clCreateProgramWithSource(context, 1, (const char **)&source, &size, &status);
-  if(status != CL_SUCCESS)
-  {
-    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateProgramWithSource\n";
-    return 1;
-  }
-  free(source);
 
   char program_options[150];
   // so far use the same vector size for all kernels ...
@@ -654,7 +708,10 @@ int init_CL(int num_streams, cl_int devnumber)
 #ifdef CL_DEBUG
   strcat(program_options, " -g");
 #else
-  if (mystuff.gpu_type != GPU_NVIDIA) strcat(program_options, " -O3");
+  if (mystuff.gpu_type != GPU_NVIDIA)
+    strcat(program_options, " -O3");
+  else
+    strcat(program_options, " -O");
 #endif
 
   if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
@@ -713,10 +770,149 @@ int init_CL(int num_streams, cl_int devnumber)
       std::cout << " \n\tBUILD OUTPUT\n";
       std::cout << buildLog << std::endl;
       std::cout << " \tEND OF BUILD OUTPUT\n";
+      if (strstr(buildLog, " not for the target") && binary_loaded)
+      {
+        printf("Removing binary kernel file %s as it seems to be for a different platform.\nPlease restart mfakto.", mystuff.binfile);
+        remove (mystuff.binfile);
+      }
       free(buildLog);
     }
     std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): clBuildProgram\n";
     if (status != CL_SUCCESS) return 1;
+  }
+
+  if (!binary_loaded && mystuff.binfile[0])
+  {
+    // write the binary file if we did not load from there
+    size_t numDevices;
+    status = clGetProgramInfo(
+                 program,
+                 CL_PROGRAM_NUM_DEVICES,
+                 sizeof(numDevices),
+                 &numDevices,
+                 NULL );
+    if(status != CL_SUCCESS)
+    {
+       std::cerr << "clGetProgramInfo(CL_PROGRAM_NUM_DEVICES) failed.";
+    }
+
+    cl_device_id *devices = (cl_device_id *)malloc( sizeof(cl_device_id) *
+                            numDevices );
+    if(!devices) std::cerr << "Failed to allocate host memory.(devices)";
+    /* grab the handles to all of the devices in the program. */
+    status = clGetProgramInfo(
+                 program,
+                 CL_PROGRAM_DEVICES,
+                 sizeof(cl_device_id) * numDevices,
+                 devices,
+                 NULL );
+    if(status != CL_SUCCESS)
+    {
+       std::cerr << "clGetProgramInfo(CL_PROGRAM_DEVICES) failed.";
+    }
+    /* figure out the sizes of each of the binaries. */
+    size_t *binarySizes = (size_t*)malloc( sizeof(size_t) * numDevices );
+    if (!binarySizes) std::cerr << "Failed to allocate host memory.(binarySizes)";
+    status = clGetProgramInfo(
+                 program,
+                 CL_PROGRAM_BINARY_SIZES,
+                 sizeof(size_t) * numDevices,
+                 binarySizes,
+                 NULL);
+    if(status != CL_SUCCESS)
+    {
+       std::cerr << "clGetProgramInfo(CL_PROGRAM_BINARY_SIZES) failed.";
+    }
+    size_t i = 0;
+    // we copy only the first binary, but numDevices is usually 1 anyway
+    char **binaries = (char **)malloc( sizeof(char *) * numDevices );
+    if (!binaries) std::cerr << "Failed to allocate host memory.(binaries)";
+    for(i = 0; i < numDevices; i++)
+    {
+        if(binarySizes[i] != 0)
+        {
+            binaries[i] = (char *)malloc( sizeof(char) * binarySizes[i]);
+            if(!binaries[i]) std::cerr << "Failed to allocate host memory.(binaries[i])";
+        }
+        else
+        {
+            binaries[i] = NULL;
+        }
+    }
+    status = clGetProgramInfo(
+                 program,
+                 CL_PROGRAM_BINARIES,
+                 sizeof(char *) * numDevices,
+                 binaries,
+                 NULL);
+    if(status != CL_SUCCESS)
+    {
+       std::cerr << "clGetProgramInfo(CL_PROGRAM_BINARIES) failed.";
+    }
+    /* dump out each binary into its own separate file. */
+    if (1 < numDevices)
+    {
+      std::cout << "Warning: Dumping only the first of " << numDevices <<
+        " binary formats - if loading the binary file " << mystuff.binfile <<  "fails, delete it and specify the -d <n> option for mfakto.\n";
+    }
+    if(binarySizes[0] != 0)
+    {
+        char deviceName[1024];
+        status = clGetDeviceInfo(
+                     devices[0],
+                     CL_DEVICE_NAME,
+                     sizeof(deviceName),
+                     deviceName,
+                     NULL);
+        if(status != CL_SUCCESS)
+        {
+          std::cerr << "clGetProgramInfo(CL_DEVICE_NAME) failed.";
+        }
+
+        std::fstream f(mystuff.binfile, (std::fstream::out | std::fstream::binary | std::fstream::trunc));
+        if(f.is_open())
+        {
+          f.write(binaries[0], binarySizes[0]);
+          f.close();
+          if (mystuff.verbosity > 1) printf("Wrote binary kernel for \"%s\" to \"%s\".\n", deviceName, mystuff.binfile);
+        }
+        else
+        {
+          std::cerr << "Failed to open binary file " << mystuff.binfile << "to save kernel.\n";
+        }
+    }
+    else
+    {
+        printf(
+            "binary kernel(%s) : %s\n",
+            mystuff.binfile,
+            "Skipping as there is no binary data to write.");
+        remove(mystuff.binfile);
+    }
+    // Release all resouces and memory
+    for(i = 0; i < numDevices; i++)
+    {
+        if(binaries[i] != NULL)
+        {
+            free(binaries[i]);
+            binaries[i] = NULL;
+        }
+    }
+    if(binaries != NULL)
+    {
+        free(binaries);
+        binaries = NULL;
+    }
+    if(binarySizes != NULL)
+    {
+        free(binarySizes);
+        binarySizes = NULL;
+    }
+    if(devices != NULL)
+    {
+        free(devices);
+        devices = NULL;
+    }
   }
 
   /* get kernels by name */

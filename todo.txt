@@ -114,6 +114,8 @@ TODO
 +NO+ - 4 threads - 4 classes at once - also in host code to maximize GPU-utilization in a single program + not needed due to GPU sieving +
 +NO+ - Llano: zero-copy-path (BeaverCreek) + not needed due to GPU sieving +
 +DONE+ - _getcwd / _chdir to avoid problems on temporary loss of the device
++NO+ - CPU-sieving: multiple queues + not needed due to GPU sieving +
++DONE+ - save and reload binary kernels
 - AllowSleep
 - add James' PM1-F-vs-TF-NF list to selftest
 - perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
@@ -131,7 +133,6 @@ TODO
 - __kernel __attribute__((vec_type_hint(uintn)))
 - test different local workgroup sizes, also in combination with the __attribute__((reqd_work_group_size(X, Y, Z))) qualifier
 - test speed without event sync (just in-order-queue)
-- CPU-sieving: multiple queues
 - cleanup: separate GPU- and CPU-sieve based kernels, compile and load only one set of them
 - allow for kernel reload (e.g. different vector size, or -DSMALL_EXP)
 - Performance: vectorize GPU-sieve / reading from sieve
