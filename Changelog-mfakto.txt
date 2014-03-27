@@ -1,3 +1,16 @@
+version 0.14 (?)
+- --perftest enhancements including GPU sieve evaluation (for optimizing GPUSievePrimes etc.)
+- successfully resync when the working directory was temporarily lost (ejected USB device or interrupted network drive)
+- save and reload compiled OpenCL kernels => reduce startup time (UseBinfile config variable)
+- MoreClasses config variable to allow for a "less classes" version for very short assignments (GPU sieve only)
+- BugFix: enforce GPUSieveSize being a multiple of GPUSieveProcessSize
+- FlushInterval config variable to fine tune the number of kernels in the GPU queue => address high CPU load issue of newer AMD drivers
+- MinGW build (thanks to kracker)
+- slight performance improvement for the montgomery kernels
+- improved English wording in program output, ini file etc. (thanks to kracker)
+- recognition of new GPUs (8xxx, R9, new APUs) (thanks to kracker)
+- added a warning when using VectorSize=1 (AMD driver issue (?), http://devgurus.amd.com/thread/167571)
+
 version 0.13 (2013-05-19)
 - most important: GPU sieving (thanks to George Woltman)
   o set SieveOnGPU=1 to enable

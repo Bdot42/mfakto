@@ -1133,6 +1133,13 @@ int main(int argc, char **argv)
     }
   }
 
+  if (mystuff.vectorsize == 1)
+  {
+    printf("WARNING: VectorSize=1 is known to fail on AMD H/W and drivers. "
+           "If the selftest fails, please increase VectorSize to 2 at least. "
+           "See http://devgurus.amd.com/thread/167571 for latest news about this issue.");
+  }
+
   if (mystuff.gpu_sieving == 0)
   {
     mystuff.threads_per_grid = mystuff.threads_per_grid_max;
