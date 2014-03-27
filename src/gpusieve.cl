@@ -284,7 +284,7 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1))) SegSieve (__globa
 	//
 
 	{
-	  uint mask, mask2, mask3, mask4, i11=(-1), i13, i17, i19, i23, i29, i31, i37, i41, i43, i47, i53, i59, i61;
+	  uint mask, mask2, mask3, mask4, i11=0xfffffff, i13, i17, i19, i23, i29, i31, i37, i41, i43, i47, i53, i59, i61;
 
 	  if (primesNotSieved == 4) {	// Primes 2, 3, 5, 7 are not sieved
 		  i11 = mod_const_p (bit_to_clr[4] - thread_start, 11);	// compute bit to clear for prime 11

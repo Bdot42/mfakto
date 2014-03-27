@@ -63,6 +63,7 @@ int init_perftest(int devicenumber)
   cl_uint i;
   mystuff.mode = MODE_PERFTEST;
   mystuff.gpu_sieving = 0;  // inintialize CPU-sieving
+  mystuff.binfile[0] = '\0'; // disable binary caching
   mystuff.sieve_primes_min = 254;
   mystuff.sieve_primes = 5000;
   mystuff.sieve_primes_max = 1000000;

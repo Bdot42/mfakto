@@ -606,6 +606,37 @@ int init_CL(int num_streams, cl_int devnumber)
     return 1;
   }
 
+  char program_options[150];
+  // so far use the same vector size for all kernels ...
+  if (mystuff.CompileOptions[0])  // if mfakto.ini defined compile options, override the default with them
+  {
+    strcpy(program_options, mystuff.CompileOptions);
+  }
+  else
+  {
+    sprintf(program_options, "-I. -DVECTOR_SIZE=%d", mystuff.vectorsize);
+  #ifdef CL_DEBUG
+    strcat(program_options, " -g");
+  #else
+    if (mystuff.gpu_type != GPU_NVIDIA)
+      strcat(program_options, " -O3");
+    else
+      strcat(program_options, " -O");
+  #endif
+
+    if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
+
+  #ifdef CHECKS_MODBASECASE
+    strcat(program_options, " -DCHECKS_MODBASECASE");
+  #endif
+
+    if (mystuff.gpu_sieving == 1)
+      strcat(program_options, " -DCL_GPU_SIEVE");
+
+    if (mystuff.small_exp == 1)
+      strcat(program_options, " -DSMALL_EXP");
+  }
+
   size_t size;
   char*  source = NULL;
   int binary_loaded = 0;
@@ -635,32 +666,49 @@ int init_CL(int num_streams, cl_int devnumber)
         f.read(source, size);
         f.close();
         source[size] = '\0';
-      }
-      else
-      {
-        fprintf(stderr, "\nBinary kernel file \"%s\" not found, it needs to be in the same directory as the executable.\n", mystuff.binfile);
-        return 1;
-      }
-
-      // load and build it. If not successful, use the source.
-      cl_int errcode;
-
-      program = clCreateProgramWithBinary(context, 1, &devices[devnumber], &size, (const unsigned char **)&source, &status, &errcode);
-      if (status != CL_SUCCESS || errcode != 0)
-      {
-        // not successful: try the source
-        free(source); source = NULL;
-        fprintf(stderr, "Cannot use binary kernel: binary status=%d (%s), error code=%d (%s)\n",
-          status, ClErrorString(status), errcode, ClErrorString(errcode));
-        status = clReleaseProgram(program); program = NULL;
-        if(status != CL_SUCCESS)
+        char source_options[150];
+        int count = sscanf(source, "Compile options: %149[^\r\n]\n", source_options);
+        if (strcmp(source_options, program_options) != 0)
         {
-          std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseProgram\n";
+          printf("\nCannot use binary kernel: its build options (%s) are different than the current build options (%s). Rebuilding kernels.\n", source_options, program_options);
+          free(source);
+          source = NULL;
+        }
+        else
+        {
+          // locate the binary and load it
+          size_t len=strlen(source_options) + 18; // fix text part
+          memmove(source, source+len, size-len);
+          size -= len;
         }
       }
       else
       {
-        binary_loaded = 1;
+        fprintf(stderr, "\nBinary kernel file \"%s\" not readable, check permissions.\n", mystuff.binfile);
+      }
+
+      if (source)
+      {
+        // load and build it. If not successful, use the .cl sources.
+        cl_int errcode;
+
+        program = clCreateProgramWithBinary(context, 1, &devices[devnumber], &size, (const unsigned char **)&source, &status, &errcode);
+        if (status != CL_SUCCESS || errcode != 0)
+        {
+          // not successful: try the source
+          free(source); source = NULL;
+          fprintf(stderr, "Cannot use binary kernel: binary status=%d (%s), error code=%d (%s)\n",
+            status, ClErrorString(status), errcode, ClErrorString(errcode));
+          status = clReleaseProgram(program); program = NULL;
+          if(status != CL_SUCCESS)
+          {
+            std::cerr<<"Error" << status << " (" << ClErrorString(status) << "): clReleaseProgram\n";
+          }
+        }
+        else
+        {
+          binary_loaded = 1;
+        }
       }
     }
   }
@@ -701,33 +749,6 @@ int init_CL(int num_streams, cl_int devnumber)
     }
     free(source);
   }
-
-  char program_options[150];
-  // so far use the same vector size for all kernels ...
-  sprintf(program_options, "-I. -DVECTOR_SIZE=%d", mystuff.vectorsize);
-#ifdef CL_DEBUG
-  strcat(program_options, " -g");
-#else
-  if (mystuff.gpu_type != GPU_NVIDIA)
-    strcat(program_options, " -O3");
-  else
-    strcat(program_options, " -O");
-#endif
-
-  if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
-
-#ifdef CHECKS_MODBASECASE
-  strcat(program_options, " -DCHECKS_MODBASECASE");
-#endif
-
-  if (mystuff.gpu_sieving == 1)
-    strcat(program_options, " -DCL_GPU_SIEVE");
-
-  if (mystuff.small_exp == 1)
-    strcat(program_options, " -DSMALL_EXP");
-
-  if (mystuff.CompileOptions[0])  // if mfakto.ini defined compile options, override the default with them
-    strcpy(program_options, mystuff.CompileOptions);
 
   if (mystuff.verbosity > 1)
     printf("Compiling kernels (build options: \"%s\").", program_options);
@@ -872,6 +893,9 @@ int init_CL(int num_streams, cl_int devnumber)
         std::fstream f(mystuff.binfile, (std::fstream::out | std::fstream::binary | std::fstream::trunc));
         if(f.is_open())
         {
+          char header[180];
+          sprintf(header, "Compile options: %s\n", program_options);
+          f.write(header, strlen(header));
           f.write(binaries[0], binarySizes[0]);
           f.close();
           if (mystuff.verbosity > 1) printf("Wrote binary kernel for \"%s\" to \"%s\".\n", deviceName, mystuff.binfile);
@@ -1204,7 +1228,6 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
     std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)\n";
     return 1;
   }
-  clFlush(QUEUE);
 
 #ifdef CL_PERFORMANCE_INFO
   clFinish(QUEUE);
@@ -2070,10 +2093,9 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   size_t   globalThreads=numblocks*256;
   size_t   localThreads=256;
   static cl_uint flush_counter=1;
-
-#ifdef CL_PERFORMANCE_INFO
-  cl_event run_event;
-#endif
+  static cl_uint event_step = max(1, mystuff.flush / 2); // When to set the event for waiting
+  static cl_event run_event = NULL;
+  cl_event  *p_event = NULL;
 
 //  shared_mem_required = (shared_mem_required + 127) & 0xFFFFFF80; // 128-byte-multiple
 #ifdef DETAILED_INFO
@@ -2083,6 +2105,12 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   {
     new_class = 0;
     flush_counter=1;
+    // cleanup from previous classes
+    if (run_event != NULL)
+    {
+      clReleaseEvent (run_event);
+      run_event = NULL;
+    }
     status = clSetKernelArg(kernel,
                     0,
                     sizeof(cl_uint),
@@ -2178,19 +2206,20 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
 #endif
   }
 
-  /* breathe */
-  if (flush_counter == mystuff.flush)
+#ifndef CL_PERFORMANCE_INFO
+  // in PI mode, each kernel invocation gets an event and is immediately finished
+  if (mystuff.flush > 0 && flush_counter == event_step && run_event == NULL)
   {
-//    putchar('F');
-    flush_counter=1;
-    clFinish(QUEUE);
+//    putchar('S');
+//  in this loop, set an event that we can wait on in a later loop, but only if the event is not used yet
+    p_event = &run_event;
   }
   else
   {
-//    putchar('f');
-    clFlush(QUEUE);
-    flush_counter++;
+//    putchar('N');
+    p_event = NULL;
   }
+#endif
 
   // all set? now start the kernel
   status = clEnqueueNDRangeKernel(QUEUE,
@@ -2204,7 +2233,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
 #ifdef CL_PERFORMANCE_INFO
                  &run_event
 #else
-                 NULL
+                 p_event
 #endif
                  ); // no need to wait for anything - they will be processed serially, and we read the results synchronously.
 
@@ -2213,7 +2242,33 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
     std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)\n";
     return 1;
   }
-#ifdef CL_PERFORMANCE_INFO
+
+#ifndef CL_PERFORMANCE_INFO
+  if (flush_counter == event_step) clFlush(QUEUE);
+  if (flush_counter == mystuff.flush)
+  {
+    flush_counter = 0;
+    if (run_event != NULL)
+    {
+//      putchar('W');
+      clFlush(QUEUE);
+      status = clWaitForEvents(1, &run_event);
+      if(status != CL_SUCCESS)
+      {
+        std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): clWaitForEvents\n";
+        return 1;
+      }
+      status = clReleaseEvent (run_event);
+      if(status != CL_SUCCESS)
+      {
+        std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): clReleaseEvent\n";
+        return 1;
+      }
+      run_event = NULL;
+    }
+  }
+  ++flush_counter;
+#else
   clFinish(QUEUE);
   cl_ulong startTime=0;  // device time in nanosecs
   cl_ulong endTime=1000;

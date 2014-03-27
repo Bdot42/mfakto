@@ -111,6 +111,8 @@ void tiny_soe (cl_uint limit, cl_uint *primes)
 }
 
 // GPU sieve initialization that only needs to be done one time.
+// Running on CPU and copying buffers to the GPU
+
 #ifdef __cplusplus
 extern "C" {
 #endif
