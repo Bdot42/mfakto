@@ -1,6 +1,6 @@
 /*
 This file is part of mfaktc.
-Copyright (C) 2009 - 2013  Oliver Weihe (o.weihe@t-online.de)
+Copyright (C) 2009 - 2014  Oliver Weihe (o.weihe@t-online.de)
                            Bertram Franz (bertramf@gmx.net)
 
 mfaktc is free software: you can redistribute it and/or modify
@@ -32,7 +32,7 @@ along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
 
 void print_help(char *string)
 {
-  printf("mfakto (%s) Copyright (C) 2009-2013,\n", MFAKTO_VERSION);
+  printf("mfakto (%s) Copyright (C) 2009-2014,\n", MFAKTO_VERSION);
   printf("  Oliver Weihe (o.weihe@t-online.de)\n");
   printf("  Bertram Franz (bertramf@gmx.net)\n");
   printf("This program comes with ABSOLUTELY NO WARRANTY; for details see COPYING.\n");
