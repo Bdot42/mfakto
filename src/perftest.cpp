@@ -1,6 +1,6 @@
 /*
 This file is part of mfakto.
-Copyright (C) 2012 - 2013  Bertram Franz (bertramf@gmx.net)
+Copyright (C) 2012 - 2014  Bertram Franz (bertramf@gmx.net)
 
 mfaktc (mfakto) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
