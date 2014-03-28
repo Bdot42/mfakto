@@ -742,7 +742,7 @@ RET_ERROR we might have a serios problem
       if (i < (sizeof(index)/sizeof(index[0])))
       {
         ind = index[i];
-        printf("######### testcase %d/%d (M%d[%d-%d]) #########\r",
+        printf("######### testcase %d/%d (M%u[%d-%d]) #########\r",
           i+1, (int) (sizeof(index)/sizeof(index[0])), st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
       }
       else
@@ -751,7 +751,7 @@ RET_ERROR we might have a serios problem
     else // treat type <> 1 as full test
     {
       ind = i;
-      printf("######### testcase %d/%d (M%d[%d-%d]) #########\n",
+      printf("######### testcase %d/%d (M%u[%d-%d]) #########\n",
         i+1, selftests_to_run, st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
     }
     f_class = (int)(st_data[ind].k % mystuff->num_classes);
