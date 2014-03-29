@@ -618,10 +618,8 @@ int init_CL(int num_streams, cl_int devnumber)
   #ifdef CL_DEBUG
     strcat(program_options, " -g");
   #else
-    if (mystuff.gpu_type != GPU_NVIDIA)
+    if (mystuff.gpu_type != GPU_NVIDIA) // NV does not know optimisation flags
       strcat(program_options, " -O3");
-    else
-      strcat(program_options, " -O");
   #endif
 
     if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
@@ -667,7 +665,7 @@ int init_CL(int num_streams, cl_int devnumber)
         f.close();
         source[size] = '\0';
         char source_options[150];
-        int count = sscanf(source, "Compile options: %149[^\r\n]\n", source_options);
+        sscanf(source, "Compile options: %149[^\r\n]\n", source_options);
         if (strcmp(source_options, program_options) != 0)
         {
           printf("\nCannot use binary kernel: its build options (%s) are different than the current build options (%s). Rebuilding kernels.\n", source_options, program_options);
