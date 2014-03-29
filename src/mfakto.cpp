@@ -85,7 +85,7 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL},
      {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL},
      {   MG62,                "cl_mg62",              58,     62,         1,      NULL},
-     {   MG88,                "cl_mg88",              58,     10,         1,      NULL},
+     {   MG88,                "cl_mg88",              58,     10,         1,      NULL}, // bit_max=10: this kernel does not work yet
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         0,      NULL}, // end of automatic loading
      {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         0,      NULL}, // slow shift-cmp-sub kernel: removed
      {   BARRETT92_64_OpenCL, "cl_barrett32_92",      64,     92,         0,      NULL}, // mapped to 32-bit barrett so far

@@ -285,22 +285,22 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
-/*  GPU_NVIDIA, */
-      MG62,             // "cl_mg_62"        (9.60 M/s)
-      BARRETT77_MUL32,  // "cl_barrett32_77" (5.54 M/s)
-      BARRETT76_MUL32,  // "cl_barrett32_76" (5.16 M/s)
-      BARRETT88_MUL32,  // "cl_barrett32_88" (4.35 M/s)
-      BARRETT79_MUL32,  // "cl_barrett32_79" (4.22 M/s)
-      BARRETT87_MUL32,  // "cl_barrett32_87" (4.16 M/s)
-      BARRETT69_MUL15,  // "cl_barrett15_69" (3.60 M/s)
-      BARRETT70_MUL15,  // "cl_barrett15_70" (3.60 M/s)
-      BARRETT92_MUL32,  // "cl_barrett32_92" (3.56 M/s)
-      BARRETT71_MUL15,  // "cl_barrett15_71" (3.43 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (3.40 M/s)
-      BARRETT73_MUL15,  // "cl_barrett15_73" (3.07 M/s)
+/*  GPU_NVIDIA, (Quadro FX 880M / Quadro 2000M)*/
+      MG62,             // "cl_mg_62"        (13.61 / 92.40 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (10.42 / 75.84 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (10.52 / 75.11 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (8.98 / 62.98 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (9.19 / 62.51 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (8.00 / 55.28 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (9.08 / 58.96 M/s)
+      BARRETT69_MUL15,  // "cl_barrett15_69" (7.90 / 54.36 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (7.90 / 54.31 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (7.54 / 51.57 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (6.53 / 44.92 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (6.81 / 47.47 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (6.49 / 38.87 M/s)
       BARRETT82_MUL15,  // "cl_barrett15_82" (2.72 M/s)
       BARRETT83_MUL15,  // "cl_barrett15_83" (2.65 M/s)
-      _63BIT_MUL24,     // "mfakto_cl_63"    (2.59 M/s)
       BARRETT88_MUL15,  // "cl_barrett15_88" (2.43 M/s)
       UNKNOWN_KERNEL,   // 
       UNKNOWN_KERNEL,   // 
@@ -765,8 +765,8 @@ RET_ERROR we might have a serios problem
 
     if (mystuff->gpu_sieving == 0)
     {
-//      for (kernel_index = BARRETT70_MUL24; kernel_index < BARRETT73_MUL15; ++kernel_index) // test-only: skip 15-bit kernels
-//      for (kernel_index = BARRETT79_MUL32; kernel_index <= BARRETT87_MUL32; ++kernel_index) // test-only: skip 15-bit kernels
+//      for (kernel_index = _71BIT_MUL24; kernel_index < BARRETT88_MUL15; ++kernel_index) // test-only: skip 6x15-bit kernels
+//      for (kernel_index = BARRETT79_MUL32; kernel_index <= BARRETT87_MUL32; ++kernel_index) // test-only: only use 32-bit kernels
 //      for (kernel_index = MG62; kernel_index < MG88; ++kernel_index) // Specific montgomery test
       for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index)
       {
@@ -1117,7 +1117,7 @@ int main(int argc, char **argv)
     }
     else if (strstr(deviceinfo.v_name, "NVIDIA"))
     {
-      mystuff.gpu_type = GPU_NVIDIA;  // not (yet) working
+      mystuff.gpu_type = GPU_NVIDIA;  // working only with VectorSize=1 and GPU sieving
     }
     else if (strstr(deviceinfo.d_name, "Intel(R) HD Graphics"))
     {
@@ -1133,7 +1133,7 @@ int main(int argc, char **argv)
     }
   }
 
-  if (mystuff.vectorsize == 1)
+  if (mystuff.vectorsize == 1 && mystuff.gpu_type < GPU_NVIDIA)
   {
     printf("WARNING: VectorSize=1 is known to fail on AMD H/W and drivers. "
            "If the selftest fails, please increase VectorSize to 2 at least. "

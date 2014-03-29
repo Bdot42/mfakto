@@ -10,6 +10,8 @@ version 0.14 (?)
 - improved English wording in program output, ini file etc. (thanks to kracker)
 - recognition of new GPUs (8xxx, R9, new APUs) (thanks to kracker)
 - added a warning when using VectorSize=1 (AMD driver issue (?), http://devgurus.amd.com/thread/167571)
+- fix for a small memory leak (~0.5kB per assignment)
+- compatible with windows 8.1
 
 version 0.13 (2013-05-19)
 - most important: GPU sieving (thanks to George Woltman)
