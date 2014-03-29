@@ -29,7 +29,7 @@ mfakto is the OpenCL-port of mfaktc. It aims to have the same features and funct
 mfaktc is a program that trial factors Mersenne numbers and which
 stands for "Mersenne FAKTorisation with CUDA". Faktorisation is a mixture of the
 English word "factorisation" and the German word "Faktorisierung".
-mfakto is a GPU program, utilizing mostly GPU resources but it can use the CPU for sieving.
+mfakto is a GPU program, utilizing mostly GPU resources, but it can use the CPU for sieving.
 
 
 #################
@@ -92,7 +92,7 @@ M3321932839 from 2^50 to 2^61.
 # 2.1 Supported GPUs #
 ######################
 
-  AMD
+  AMD:
 - R9 xxx, R7 xxx, R4 xxx
 - HD7xxx
 - HD5xxx, HD6xxx, including the builtin HD6xxx on AMD APUs
@@ -121,12 +121,11 @@ prime95 or mfakto -d c).
 
 - AMD Catalyst 11.4 or higher is required
 - if driver < 11.10, install AMD APP SDK 2.5 and make sure
-  $AMD_APP_DIR/lib/x86_64 is in the path.
+  %AMD_APP_DIR%/lib/x86_64 is in the path.
 - Microsoft Visual C++ 2010 Redistributable Package for your platform and
   language, e.g.
   http://www.microsoft.com/downloads/details.aspx?familyid=BD512D9E-43C8-4655-81BF-9350143D5867&displaylang=de
-- 32-bit and 64-bit binaries available; 64-bit siever is much more
-  efficient
+- 64-bit and 32-bit binaries are available.
 
 ####################################################################
 # 3 How to get work and report results from/to the primenet server #
@@ -190,9 +189,9 @@ Advanced usage (extend the upper limit):
   This happens on Linux when there is no X-server running, or the X-server
   is not accessible. It happens on Windows when not connected to the primay
   display (e.g. being connected through terminal services). So please try to
-  run mfakto locally on the main X-display. If that fails as well, then the
-  graphics driver may be too old. Check the clinfo (part of AMD APP SDK)
-  output for your GPU. If the drivers and AMD APP SDK are up to date, then maybe
+  run mfakto locally on the main X-display. If that fails as well or is not the case,
+  then the graphics driver may be too old. Also, check the output of clinfo (part of AMD APP SDK)
+  for your GPU. If the drivers and AMD APP SDK are up to date, then maybe
   your AMD GPU is not the first GPU. Try the -d switch to specify a different
   device number.
 
@@ -232,7 +231,7 @@ Read mfakto.ini and think before editing. ;)
 #########
 
 Q Does mfakto support multiple GPUs?
-A Not tested yet, but using the commandline option "-d <GPU number>" you should
+A No, but using the commandline option "-d <GPU number>" you should
   be able to specify which GPU to use for each specific mfakto instance.
   Please read the next question, too.
 
