@@ -108,7 +108,7 @@ int test_sieve_init(int par)
       sieve_init_class(EXP, k++, test_sizes[j]);
     }
     time1 = (double)timer_diff(&timer);
-    printf("\tInit_class(sieveprimes=%7d):    %6.2f ms\n", test_sizes[j], time1/par/1000);
+    printf("\tInit_class(sieveprimes=%7d): %8.2f ms\n", test_sizes[j], time1/par/1000);
   }
   return 0;
 }

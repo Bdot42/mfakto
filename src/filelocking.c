@@ -33,6 +33,10 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #undef close
   #define open _open
   #define close _close
+  #define getcwd _getcwd
+  #define chdir _chdir
+  #define getdrive _getdrive
+  #define _chdrive chdrive
   #define MODE _S_IREAD | _S_IWRITE
   #define O_RDONLY _O_RDONLY 
 #else
@@ -46,6 +50,8 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
     ts.tv_nsec = (ms % 1000) * 1000000;
     nanosleep(&ts, NULL);
   }
+  #define getdrive() 0
+  #define chdrive(x) 0
 #endif
 
 #define MAX_LOCKED_FILES 5
@@ -67,8 +73,8 @@ static int   current_drive = 0;
 int file_exists (char	*filename)
 {
 	int fd;
-  if (current_dir == NULL) {current_dir = _getcwd(NULL,0); current_drive = _getdrive();}
-  if (_chdrive(current_drive) || _chdir(current_dir)) fprintf(stderr, "\nWarning: Current Directory \"%s\" is not available.\n", current_dir);
+  if (current_dir == NULL) {current_dir = getcwd(NULL,0); current_drive = getdrive();}
+  if (chdrive(current_drive) || chdir(current_dir)) fprintf(stderr, "\nWarning: Current Directory \"%s\" is not available.\n", current_dir);
   fd = open(filename, O_RDONLY);
 //  printf ("file_exists(%s)\n", filename);
 	if (fd < 0) return 0;
@@ -96,8 +102,8 @@ FILE *fopen_and_lock(const char *path, const char *mode)
 
   sprintf(locked_files[num_locked_files].lock_filename, "%.250s.lck", path);
 
-  if (current_dir == NULL) {current_dir = _getcwd(NULL,0); current_drive = _getdrive();}
-  if (_chdrive(current_drive) || _chdir(current_dir)) fprintf(stderr, "\nWarning: Current Directory \"%s\" is not available.\n", current_dir);
+  if (current_dir == NULL) {current_dir = getcwd(NULL,0); current_drive = getdrive();}
+  if (chdrive(current_drive) || chdir(current_dir)) fprintf(stderr, "\nWarning: Current Directory \"%s\" is not available.\n", current_dir);
 //  printf("fopen_and_lock(%s)\n", path);
   for(i=0;;)
   {
@@ -147,8 +153,8 @@ int unlock_and_fclose(FILE *f)
 
   if (f == NULL) return -1;
 
-  if (current_dir == NULL) {current_dir = _getcwd(NULL,0); current_drive = _getdrive();}
-  if (_chdrive(current_drive) || _chdir(current_dir)) fprintf(stderr, "\nWarning: Current Directory \"%s\" is not available.\n", current_dir);
+  if (current_dir == NULL) {current_dir = getcwd(NULL,0); current_drive = getdrive();}
+  if (chdrive(current_drive) || chdir(current_dir)) fprintf(stderr, "\nWarning: Current Directory \"%s\" is not available.\n", current_dir);
 
   for (i=0; i<num_locked_files; i++)
   {

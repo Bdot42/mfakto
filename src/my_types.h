@@ -161,8 +161,8 @@ enum GPU_types
   GPU_VLIW4,
   GPU_VLIW5,
   GPU_GCN,
-  GPU_CPU,
   GPU_APU,
+  GPU_CPU,
   GPU_NVIDIA,
   GPU_INTEL,
   GPU_UNKNOWN   // must be the last one

@@ -61,8 +61,8 @@ struct GPU_type gpu_types[]={
   {GPU_VLIW4,   64,  "VLIW4"},
   {GPU_VLIW5,   80,  "VLIW5"},
   {GPU_GCN,     64,  "GCN"},
-  {GPU_CPU,      1,  "CPU"},
   {GPU_APU,     80,  "APU"},
+  {GPU_CPU,      1,  "CPU"},
   {GPU_NVIDIA,   8,  "NVIDIA"},
   {GPU_INTEL,    1,  "INTEL"},
   {GPU_UNKNOWN,  0,  "UNKNOWN"}
@@ -461,7 +461,7 @@ other return value
     }
   }
 
-  sprintf(mystuff->stats.kernelname, kernel_info[use_kernel].kernelname);
+  sprintf(mystuff->stats.kernelname, "%s_%d", kernel_info[use_kernel].kernelname, mystuff->vectorsize);
 
   if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->verbosity >= 1)printf("Using GPU kernel \"%s\"\n", mystuff->stats.kernelname);
 
@@ -1133,9 +1133,9 @@ int main(int argc, char **argv)
     }
   }
 
-  if (mystuff.vectorsize == 1 && mystuff.gpu_type < GPU_NVIDIA)
+  if (mystuff.vectorsize == 1 && mystuff.gpu_type < GPU_CPU)
   {
-    printf("WARNING: VectorSize=1 is known to fail on AMD H/W and drivers. "
+    printf("WARNING: VectorSize=1 is known to fail on AMD GPUs and drivers. "
            "If the selftest fails, please increase VectorSize to 2 at least. "
            "See http://devgurus.amd.com/thread/167571 for latest news about this issue.");
   }

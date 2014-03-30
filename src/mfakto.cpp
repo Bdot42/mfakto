@@ -185,7 +185,7 @@ int init_CLstreams(int gs_reinit_only)
         return 1;
       }
     }
-    if( (mystuff.h_RES = (cl_uint *) malloc(32 * sizeof(cl_uint) + 4)) == NULL )  // only 32 uints required, but OpenCL libs read&write after that (valgrind error)
+    if( (mystuff.h_RES = (cl_uint *) malloc(32 * sizeof(cl_uint) + 48)) == NULL )  // only 32 uints required, but OpenCL libs read&write after that (valgrind error)
     {
       printf("ERROR: malloc(h_RES) failed\n");
       return 1;
@@ -694,9 +694,9 @@ int init_CL(int num_streams, cl_int devnumber)
         if (status != CL_SUCCESS || errcode != 0)
         {
           // not successful: try the source
-          free(source); source = NULL;
           fprintf(stderr, "Cannot use binary kernel: binary status=%d (%s), error code=%d (%s)\n",
             status, ClErrorString(status), errcode, ClErrorString(errcode));
+          free(source); source = NULL;
           status = clReleaseProgram(program); program = NULL;
           if(status != CL_SUCCESS)
           {
@@ -745,8 +745,8 @@ int init_CL(int num_streams, cl_int devnumber)
       std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateProgramWithSource\n";
       return 1;
     }
-    free(source);
   }
+  if (source) free(source);
 
   if (mystuff.verbosity > 1)
     printf("Compiling kernels (build options: \"%s\").", program_options);
@@ -2090,10 +2090,12 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   cl_int   status;
   size_t   globalThreads=numblocks*256;
   size_t   localThreads=256;
+  static cl_event run_event = NULL;
+#ifndef CL_PERFORMANCE_INFO
   static cl_uint flush_counter=1;
   static cl_uint event_step = max(1, mystuff.flush / 2); // When to set the event for waiting
-  static cl_event run_event = NULL;
   cl_event  *p_event = NULL;
+#endif
 
 //  shared_mem_required = (shared_mem_required + 127) & 0xFFFFFF80; // 128-byte-multiple
 #ifdef DETAILED_INFO
@@ -2102,7 +2104,9 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   if (new_class)
   {
     new_class = 0;
+#ifndef CL_PERFORMANCE_INFO
     flush_counter=1;
+#endif
     // cleanup from previous classes
     if (run_event != NULL)
     {
@@ -2295,6 +2299,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
                        << globalThreads * 1e3 / (endTime - startTime) << " M/s), " <<
                        mystuff.gpu_sieve_size * 1e3 / (endTime - startTime) << " M FCs/s TF'd (incl. sieving)\n";
   clReleaseEvent(run_event);
+  run_event = NULL;
 #endif
 
   return 0;

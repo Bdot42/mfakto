@@ -403,22 +403,22 @@ void print_result_line(mystuff_t *mystuff, int factorsfound)
   {
     if((mystuff->mode == MODE_NORMAL) && (mystuff->stats.class_counter < max_class_number))
     {
-      sprintf(string, "found %d factor%s for M%u from 2^%2d to 2^%2d (partially tested) [%s %s_%u]",
+      sprintf(string, "found %d factor%s for M%u from 2^%2d to 2^%2d (partially tested) [%s %s]",
          factorsfound, (factorsfound > 1) ? "s" : "", mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage,
-         MFAKTO_VERSION, mystuff->stats.kernelname, mystuff->vectorsize);
+         MFAKTO_VERSION, mystuff->stats.kernelname);
     }
     else
     {
-      sprintf(string, "found %d factor%s for M%u from 2^%2d to 2^%2d [%s %s_%u]",
+      sprintf(string, "found %d factor%s for M%u from 2^%2d to 2^%2d [%s %s]",
         factorsfound, (factorsfound > 1) ? "s" : "", mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage,
-        MFAKTO_VERSION, mystuff->stats.kernelname, mystuff->vectorsize);
+        MFAKTO_VERSION, mystuff->stats.kernelname);
     }
   }
   else
   {
-    sprintf(string, "no factor for M%u from 2^%d to 2^%d [%s %s_%u]",
+    sprintf(string, "no factor for M%u from 2^%d to 2^%d [%s %s]",
       mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage,
-      MFAKTO_VERSION, mystuff->stats.kernelname, mystuff->vectorsize);
+      MFAKTO_VERSION, mystuff->stats.kernelname);
   }
 
   if(mystuff->mode != MODE_SELFTEST_SHORT)
@@ -462,10 +462,10 @@ void print_factor(mystuff_t *mystuff, int factor_number, char *factor)
     }
     if(mystuff->mode == MODE_NORMAL)
     {
-      fprintf(resultfile, "%sM%u has a factor: %s [TF:%d:%d%s:%s %s_%u]\n",
+      fprintf(resultfile, "%sM%u has a factor: %s [TF:%d:%d%s:%s %s]\n",
         UID, mystuff->exponent, factor, mystuff->bit_min, mystuff->bit_max_stage,
         ((mystuff->stopafterfactor == 2) && (mystuff->stats.class_counter < max_class_number)) ? "*" : "" ,
-        MFAKTO_VERSION, mystuff->stats.kernelname, mystuff->vectorsize);
+        MFAKTO_VERSION, mystuff->stats.kernelname);
     }
   }
   else /* factor_number >= 10 */
