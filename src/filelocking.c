@@ -36,7 +36,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #define getcwd _getcwd
   #define chdir _chdir
   #define getdrive _getdrive
-  #define _chdrive chdrive
+  #define chdrive _chdrive
   #define MODE _S_IREAD | _S_IWRITE
   #define O_RDONLY _O_RDONLY 
 #else
