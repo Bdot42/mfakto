@@ -50,11 +50,12 @@ AMD_APP_LIB = -L$(AMD_APP_DIR)/lib/$(BITS)
 # optimize or debug
 #OPTIMIZE_FLAG = -O3
 #OPTIMIZE_FLAG = -O3 -funroll-loops  -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las 
-#OPTIMIZE_FLAG = -O3 -funroll-loops  -ffast-math -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las -flto
-OPTIMIZE_FLAG = -g
+OPTIMIZE_FLAG = -O3 -funroll-loops  -ffast-math -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las -flto
+#OPTIMIZE_FLAG = -g
 
 # Compiler settings for .c files (CPU)
-CC = gcc
+CC = gcc-4.9
+#CC = gcc
 CPP = $(CC)
 CFLAGS = $(BITFLAG) -Wall $(OPTIMIZE_FLAG) $(AMD_APP_INCLUDE) -DBUILD_OPENCL
 CPP_FLAGS =
@@ -64,7 +65,8 @@ CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region
 
 
 # Linker
-LD = g++
+LD = g++-4.9 
+#LD = g++
 LDFLAGS = $(BITFLAG) $(STATIC) $(OPTIMIZE_FLAG) $(AMD_APP_LIB) -lOpenCL
 
 ##############################################################################
