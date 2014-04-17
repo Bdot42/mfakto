@@ -57,7 +57,7 @@ mfakto is a GPU program, utilizing mostly GPU resources, but it can use the CPU 
 
 - Install AMD APP SDK >= 2.5
 - Use the VS2010 solution to build the 32-bit or 64-bit binary, or
-- use the Linux Makefile as an example how to build your own Windows Makefile
+- use the Makefile to build using MinGW and gcc
 
 
 ####################
@@ -217,7 +217,6 @@ Advanced usage (extend the upper limit):
   on average 0.5%. When a class needs 1000 blocks the overhead is 0.05%...
 
 
-
 ############
 # 5 Tuning #
 ############
@@ -240,11 +239,17 @@ A Yes, and in most cases this is necessary to make full use of the GPU(s) if sie
   If the sieve is running on the GPU(default), one instance should fully utilize
   a single GPU.
   
-
 Q Which tasks should I assign to mfakto?
 A Currently, the 73-bit-barrett kernel is the fastest one, working for factors
   from 60 bits to 73 bits. Selecting tasks for this kernel will give best
   results. The 79-bit-barrett kernel is quite fast too.
+
+Q I modified something in the kernel files but my changes are not picked up by
+  mfakto. Why not?
+A Since mfakto version 0.14, mfakto tries to load precompiled kernel files.
+  The ini-file parameter UseBinfile (default: mfakto_Kernels.elf) defines the
+  file name of the precompiled kernels. Delete the file and restart mfakto, it
+  will then compile the kernels from the source files.
 
 
 ###########
@@ -255,7 +260,6 @@ A Currently, the 73-bit-barrett kernel is the fastest one, working for factors
 - performance improvements whenever I find them ;)
 - documentation and comments in code
 - full 95-bit implementation
-- Makefile.win  --  any volunteers? ** I am assuming for MSVC and NMake?
 - perftest modes for kernel speed.
-- retrieve L1/L2-cache-size and optimize sieve accordingly at runtime
 - Implement&test AllowSleep
+- build a GCN-assembler-kernel

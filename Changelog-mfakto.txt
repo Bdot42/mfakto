@@ -1,4 +1,4 @@
-version 0.14 (?)
+version 0.14 (2014-04-17)
 - --perftest enhancements including GPU sieve evaluation (for optimizing GPUSievePrimes etc.)
 - successfully resync when the working directory was temporarily lost (ejected USB device or interrupted network drive)
 - save and reload compiled OpenCL kernels => reduce startup time (UseBinfile config variable)

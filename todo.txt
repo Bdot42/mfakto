@@ -140,4 +140,4 @@ TODO
 - auto-optimizer: parameterize possible uses of mad_hi, amd_bitalign and others,
   let a test mode find out about the best config
 - Try and build an assembler kernel for GCN (find possible optimizations like carry, mul24_hi, scalar unit etc)
-
+- migrate to newer VS version
