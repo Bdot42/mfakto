@@ -1052,7 +1052,7 @@ int main(int argc, char **argv)
   if (mystuff.gpu_type == GPU_AUTO)
   {
     // try to auto-detect the type of GPU
-    if (strstr(deviceinfo.d_name, "Capeverde")  ||    // 7750, 7770, 8760, 8740
+    if (strstr(deviceinfo.d_name, "Capeverde")  ||    // 7730, 7750, 7770, 8760, 8740, R7 250X
         strstr(deviceinfo.d_name, "Bonaire")    ||    // 7790, R7 260, R7 260X
         strstr(deviceinfo.d_name, "Pitcairn")   ||    // 7850, 7870, 8870
         strstr(deviceinfo.d_name, "Newzealand") ||    // 7990
@@ -1063,9 +1063,10 @@ int main(int argc, char **argv)
         strstr(deviceinfo.d_name, "Saturn ")    ||    // 8930M, 8950M
         strstr(deviceinfo.d_name, "Neptune ")   ||    // 8970M, 8990M
         strstr(deviceinfo.d_name, "Malta")      ||    // 7990
+        strstr(deviceinfo.d_name, "Vesuvius")   ||    // 295X2
         strstr(deviceinfo.d_name, "Tahiti")     ||    // 7950, 7970, 8970, 8950, R9 280X
         strstr(deviceinfo.d_name, "Hawaii")     ||    // R9 290, R9 290X
-        strstr(deviceinfo.d_name, "Curacao")    ||    // R9 270, R9 270X
+        strstr(deviceinfo.d_name, "Curacao")    ||    // R9 265, R9 270, R9 270X
         strstr(deviceinfo.d_name, "Kalindi")          // GCN APU, Kabini, R7 ???
         )
     {
@@ -1086,7 +1087,7 @@ int main(int argc, char **argv)
     {
       mystuff.gpu_type = GPU_APU;
     }
-    else if (strstr(deviceinfo.d_name, "Caicos")   ||  // 6450, 7450, 7470
+    else if (strstr(deviceinfo.d_name, "Caicos")   ||  // (6450, 8450, R5 230) 7450, 7470, 
              strstr(deviceinfo.d_name, "Cedar")    ||  // 7350, 5450
              strstr(deviceinfo.d_name, "Redwood")  ||  // 5550, 5570, 5670
              strstr(deviceinfo.d_name, "Turks")    ||  // 6570, 6670, 7570, 7670
@@ -1105,8 +1106,7 @@ int main(int argc, char **argv)
       if (mystuff.vectorsize > 3)
       {
         printf("WARNING: Your device may perform better with a vector size of 2. "
-               "Please test if changing to VectorSize=2 in %s and restarting mfakto "
-               "is faster.\n\n", mystuff.inifile);
+               "Please test by changing VectorSize to 2 in %s and restarting mfakto.\n\n", mystuff.inifile);
       }
     }
     else if (strstr(deviceinfo.d_name, "CPU")           ||
