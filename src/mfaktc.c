@@ -1057,11 +1057,11 @@ int main(int argc, char **argv)
         strstr(deviceinfo.d_name, "Pitcairn")   ||    // 7850, 7870, 8870
         strstr(deviceinfo.d_name, "Newzealand") ||    // 7990
         strstr(deviceinfo.d_name, "Oland")      ||    // 8670, 8570, R9 240, R9 250
-        strstr(deviceinfo.d_name, "Sun ")       ||    // 85x0M
-        strstr(deviceinfo.d_name, "Mars ")      ||    // 86x0M, 87x0M
-        strstr(deviceinfo.d_name, "Venus ")     ||    // 88x0M
-        strstr(deviceinfo.d_name, "Saturn ")    ||    // 8930M, 8950M
-        strstr(deviceinfo.d_name, "Neptune ")   ||    // 8970M, 8990M
+        strstr(deviceinfo.d_name, "Sun")       ||    // 85x0M
+        strstr(deviceinfo.d_name, "Mars")      ||    // 86x0M, 87x0M
+        strstr(deviceinfo.d_name, "Venus")     ||    // 88x0M
+        strstr(deviceinfo.d_name, "Saturn")    ||    // 8930M, 8950M
+        strstr(deviceinfo.d_name, "Neptune")   ||    // 8970M, 8990M
         strstr(deviceinfo.d_name, "Malta")      ||    // 7990
         strstr(deviceinfo.d_name, "Vesuvius")   ||    // 295X2
         strstr(deviceinfo.d_name, "Tahiti")     ||    // 7950, 7970, 8970, 8950, R9 280X
