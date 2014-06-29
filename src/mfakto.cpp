@@ -341,7 +341,7 @@ int init_CL(int num_streams, cl_int devnumber)
           std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformInfo(VENDOR)\n";
           return 1;
         }
-        std::cout << "OpenCL Platform " << i+1 << "/" << numplatforms << ": " << buf;
+        std::cout << "OpenCL Platform " << (i+1) << "/" << numplatforms << ": " << buf;
 
         status = clGetPlatformInfo(platform, CL_PLATFORM_VERSION,
                         sizeof(buf), buf, NULL);
@@ -374,7 +374,7 @@ int init_CL(int num_streams, cl_int devnumber)
         platform = platformlist[i];
       }
 #ifdef DETAILED_INFO
-      std::cout << "OpenCL Platform " << i+1 << "/" << numplatforms << ": " << buf;
+      std::cout << "OpenCL Platform " << (i+1) << "/" << numplatforms << ": " << buf;
 
       status = clGetPlatformInfo(platformlist[i], CL_PLATFORM_VERSION,
                         sizeof(buf), buf, NULL);
@@ -551,7 +551,7 @@ int init_CL(int num_streams, cl_int devnumber)
     }
 
     if (mystuff.verbosity > 1)
-      std::cout << "Device " << i+1  << "/" << num_devices << ": " << deviceinfo.d_name << " (" << deviceinfo.v_name << "),\ndevice version: "
+      std::cout << "Device " << (i+1)  << "/" << num_devices << ": " << deviceinfo.d_name << " (" << deviceinfo.v_name << "),\ndevice version: "
         << deviceinfo.d_ver << ", driver version: " << deviceinfo.dr_version << "\nExtensions: " << deviceinfo.exts
         << "\nGlobal memory:" << deviceinfo.gl_mem << ", Global memory cache: " << deviceinfo.gl_cache
         << ", local memory: " << deviceinfo.l_mem << ", workgroup size: " << deviceinfo.wg_size << ", Work dimensions: " << deviceinfo.w_dim
@@ -588,7 +588,7 @@ int init_CL(int num_streams, cl_int devnumber)
     commandQueue = clCreateCommandQueue(context, devices[devnumber], props, &status);
     if(status != CL_SUCCESS)
     {
-      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueue(dev#" << devnumber+1 << ")\n";
+      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueue(dev#" << (devnumber+1) << ")\n";
       return 1;
     }
     else
@@ -602,7 +602,7 @@ int init_CL(int num_streams, cl_int devnumber)
   commandQueuePrf = clCreateCommandQueue(context, devices[devnumber], props, &status);
   if(status != CL_SUCCESS)
   {
-    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueuePrf(dev#" << devnumber+1 << ")\n";
+    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueuePrf(dev#" << (devnumber+1) << ")\n";
     return 1;
   }
 
@@ -770,31 +770,38 @@ int init_CL(int num_streams, cl_int devnumber)
         std::cerr << "Error " << logstatus << " (" << ClErrorString(logstatus) << "): clGetProgramBuildInfo failed.";
         return 1;
       }
-      buildLog = (char*)calloc(buildLogSize,1);
-      if(buildLog == NULL)
+      if (buildLogSize >0)
       {
-        std::cerr << "\noom\n";
-        return 1;
-      }
-      fflush(NULL);
-      logstatus = clGetProgramBuildInfo (program, devices[devnumber], CL_PROGRAM_BUILD_LOG,
-                buildLogSize, buildLog, NULL);
-      if(logstatus != CL_SUCCESS)
-      {
-        std::cerr << "Error " << logstatus << " (" << ClErrorString(logstatus) << "): clGetProgramBuildInfo failed.";
-        free(buildLog);
-        return 1;
-      }
+        buildLog = (char*)calloc(buildLogSize,1);
+        if(buildLog == NULL)
+        {
+          std::cerr << "\noom\n";
+          return 1;
+        }
+        fflush(NULL);
+        logstatus = clGetProgramBuildInfo (program, devices[devnumber], CL_PROGRAM_BUILD_LOG,
+                  buildLogSize, buildLog, NULL);
+        if(logstatus != CL_SUCCESS)
+        {
+          std::cerr << "Error " << logstatus << " (" << ClErrorString(logstatus) << "): clGetProgramBuildInfo failed.";
+          free(buildLog);
+          return 1;
+        }
 
-      std::cout << " \n\tBUILD OUTPUT\n";
-      std::cout << buildLog << std::endl;
-      std::cout << " \tEND OF BUILD OUTPUT\n";
-      if (strstr(buildLog, " not for the target") && binary_loaded)
-      {
-        printf("Removing binary kernel file %s as it seems to be for a different platform.\nPlease restart mfakto.", mystuff.binfile);
-        remove (mystuff.binfile);
+        std::cout << " \n\tBUILD OUTPUT\n";
+        std::cout << buildLog << std::endl;
+        std::cout << " \tEND OF BUILD OUTPUT\n";
+        if (strstr(buildLog, " not for the target") && binary_loaded)
+        {
+          printf("Removing binary kernel file %s as it seems to be for a different platform.\nPlease restart mfakto.", mystuff.binfile);
+          remove (mystuff.binfile);
+        }
+        free(buildLog);
       }
-      free(buildLog);
+      else
+      {
+        printf("No build log available.\n");
+      }
     }
     std::cerr<<"Error " << status << " (" << ClErrorString(status) << "): clBuildProgram\n";
     if (status != CL_SUCCESS) return 1;
@@ -2840,7 +2847,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   {
     if (mystuff->stream_status[i] != UNUSED)
     { // should not happen
-      std::cerr << "Block " << count -i << ", k_min=" << k_min_grid[i] << " in h_ktab[" << i << "] not yet complete!\n";
+      std::cerr << "Block " << (count -i) << ", k_min=" << k_min_grid[i] << " in h_ktab[" << i << "] not yet complete!\n";
     }
   }
 

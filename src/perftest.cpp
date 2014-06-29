@@ -980,7 +980,7 @@ void CL_test(cl_int devnumber)
         {
           std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformInfo(VENDOR)\n";
         }
-        std::cout << "OpenCL Platform " << i+1 << "/" << numplatforms << ": " << buf;
+        std::cout << "OpenCL Platform " << (i+1) << "/" << numplatforms << ": " << buf;
 
         status = clGetPlatformInfo(platform, CL_PLATFORM_VERSION,
                         sizeof(buf), buf, NULL);
@@ -1008,7 +1008,7 @@ void CL_test(cl_int devnumber)
       {
         platform = platformlist[i];
       }
-      std::cout << "OpenCL Platform " << i+1 << "/" << numplatforms << ": " << buf;
+      std::cout << "OpenCL Platform " << (i+1) << "/" << numplatforms << ": " << buf;
 
       status = clGetPlatformInfo(platformlist[i], CL_PLATFORM_VERSION,
                         sizeof(buf), buf, NULL);
@@ -1187,7 +1187,7 @@ void CL_test(cl_int devnumber)
     commandQueue = clCreateCommandQueue(context, devices[devnumber], props, &status);
     if(status != CL_SUCCESS)
     {
-      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueue(dev#" << devnumber+1 << ")\n";
+      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueue(dev#" << (devnumber+1) << ")\n";
     }
     else
       printf("\nINFO: Device does not support out-of-order operations. Fallback to in-order queues.\n");
@@ -1198,7 +1198,7 @@ void CL_test(cl_int devnumber)
   commandQueuePrf = clCreateCommandQueue(context, devices[devnumber], props, &status);
   if(status != CL_SUCCESS)
   {
-    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueuePrf(dev#" << devnumber+1 << ")\n";
+    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueuePrf(dev#" << (devnumber+1) << ")\n";
   }
 
   size_t size;

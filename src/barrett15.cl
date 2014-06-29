@@ -215,16 +215,16 @@ This version allows for a "big" a, meaning, a.d4 can be up to 17 bits.
   res->d4 = mad24(a.d1, b.d3, res->d4);
   res->d4 = mad24(a.d0, b.d4, res->d4);
 
-  res->d5 = mad24(a.d3, b.d2, res->d5) + res->d4 >> 15;
+  res->d5 = mad24(a.d3, b.d2, res->d5) + (res->d4 >> 15);
   res->d5 = mad24(a.d2, b.d3, res->d5);
   res->d5 = mad24(a.d1, b.d4, res->d5);
   // res->d4 &= 0x7FFF;  // not needed, we won't use d4 anyway
 
-  res->d6 = mad24(a.d3, b.d3, res->d6) + res->d5 >> 15;
+  res->d6 = mad24(a.d3, b.d3, res->d6) + (res->d5 >> 15);
   res->d6 = mad24(a.d2, b.d4, res->d6);
   res->d5 &= 0x7FFF;
 
-  res->d7 = mad24(a.d3, b.d4, res->d7) + res->d6 >> 15;
+  res->d7 = mad24(a.d3, b.d4, res->d7) + (res->d6 >> 15);
   res->d6 &= 0x7FFF;
 
   res->d8 += res->d7 >> 15;
