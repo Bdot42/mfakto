@@ -117,7 +117,7 @@ TODO
 +NO+ - CPU-sieving: multiple queues + not needed due to GPU sieving +
 +DONE+ - save and reload binary kernels
 +DONE+ - migrate to newer VS version (to VS12 - +2% CPU sieving speed)
-- AllowSleep
++NO+ - AllowSleep + not needed due to GPU sieving +
 - add James' PM1-F-vs-TF-NF list to selftest
 - perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
 - serialize memory access for vector kernels
@@ -141,3 +141,5 @@ TODO
 - auto-optimizer: parameterize possible uses of mad_hi, amd_bitalign and others,
   let a test mode find out about the best config
 - Try and build an assembler kernel for GCN (find possible optimizations like carry, mul24_hi, scalar unit etc)
+- Split device detection from kernel compilation to make use of device's capabilities
+

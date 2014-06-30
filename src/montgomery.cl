@@ -81,7 +81,7 @@ ulong_v mulmod_REDC64 (const ulong_v a, const ulong_v b, const ulong_v N, const 
   r2 = mul_hi(a,b); // r2:r1 = T
   
   r1 *= Ns;	// (T*Ns) mod 2^64 = m
-  r2 += (ulong_v)((r1!=0)? 1UL : 0UL);
+  r2 += (r1!=0)? (ulong_v)1UL : (ulong_v)0UL;
   r1 = mul_hi(r1, N) + r2;
 
   r2 = r1 - N;
