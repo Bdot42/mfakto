@@ -2036,6 +2036,11 @@ a is precomputed on host ONCE.
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_76_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
+#endif
+
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
   total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
 
@@ -2162,6 +2167,11 @@ a is precomputed on host ONCE.
   __private uint_v   tmp_v;
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+#endif
+
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_77_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
 #endif
 
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
@@ -2292,6 +2302,11 @@ a is precomputed on host ONCE.
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_79_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
+#endif
+
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
   total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
 
@@ -2418,6 +2433,11 @@ a is precomputed on host ONCE.
   __private uint_v   tmp_v;
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+#endif
+
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_87_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
 #endif
 
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
@@ -2548,6 +2568,11 @@ a is precomputed on host ONCE.
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_88_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
+#endif
+
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
   total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
 
@@ -2674,6 +2699,11 @@ a is precomputed on host ONCE.
   __private uint_v   tmp_v;
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
+#endif
+
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_92_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
 #endif
 
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)

@@ -2854,6 +2854,11 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __private uint     tid=get_global_id(0), lid=get_local_id(0);
   __private int75_t exp75;
 
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_69_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
+#endif
+
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
   total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
 
@@ -2982,6 +2987,11 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __private int75_v  k, f;
   __private uint     tid=get_global_id(0), lid=get_local_id(0);
   __private int75_t exp75;
+
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_70_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
+#endif
 
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
   total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
@@ -3112,6 +3122,11 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __private uint     tid=get_global_id(0), lid=get_local_id(0);
   __private int75_t exp75;
 
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_71_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
+#endif
+
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
   total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
 
@@ -3240,6 +3255,11 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __private int75_v  k, f;
   __private uint     tid=get_global_id(0), lid=get_local_id(0);
   __private int75_t exp75;
+
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_73_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
+#endif
 
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
   total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
@@ -3380,6 +3400,11 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __private uint     tid=get_global_id(0), lid=get_local_id(0);
   __private int75_t  exp75;
 
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (tid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_82_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
+#endif
+
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
   total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
 // Here, all warps in our block have placed their candidates in shared memory.
@@ -3511,6 +3536,11 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __private int90_v  f;
   __private uint     tid=get_global_id(0), lid=get_local_id(0);
   __private int75_t  exp75;
+
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_83_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
+#endif
 
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
   total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
@@ -3644,6 +3674,11 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __private int90_v  f;
   __private uint     tid=get_global_id(0), lid=get_local_id(0);
   __private int75_t  exp75;
+
+#if (TRACE_SIEVE_KERNEL > 0)
+    if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_88_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
+        exponent, exponent, k_base.d2, k_base.d1, k_base.d0, bits_to_process, shiftcount, bit_max65, b_in.s7, b_in.s6, b_in.s5, b_in.s4, b_in.s3, b_in.s2, b_in.s1, b_in.s0, bit_array);
+#endif
 
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
   total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
