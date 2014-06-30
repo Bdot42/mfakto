@@ -2958,3 +2958,9 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 
   return factorsfound;
 }
+
+int process_menu(mystuff_t *mystuff)
+{
+  char c = getche();
+
+}
