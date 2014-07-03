@@ -628,3 +628,48 @@ const char* ClErrorString( const cl_int errcode )
       return "Unknown errorcode (not an OpenCL error)";
   }
 }
+
+void printArray(const char * Name, const cl_uint * Data, const cl_uint len, cl_uint hex)
+{
+  cl_uint i, o, c, val;
+  char *fmt1, *fmt2, *fmt3, *fmt4;
+
+  if (hex)
+  {
+    fmt1=(char *)"<%u x %#x> ";
+    fmt2=(char *)"%#x ";
+    fmt3=(char *)"... %#x %#x %#x\n";
+    fmt4=(char *)"<%d x 0x0 at the end>\n";
+  }
+  else
+  {
+    fmt1=(char *)"<%u x %u> ";
+    fmt2=(char *)"%u ";
+    fmt3=(char *)"... %u %u %u\n";
+    fmt4=(char *)"<%d x 0 at the end>\n";
+  }
+  o = printf("%s (%d): ", Name, len);
+  for(i = 0; i < len-2 && o < 960;) // no more than 1000 chars
+  {
+    if (Data[i] == Data[i+1] && Data[i] == Data[i+2])
+    {
+      val = Data[i];
+      c = 0;
+      while(Data[i] == val && i < len)
+      {
+        ++c; ++i;
+      }
+      o += printf(fmt1, c, val);
+      continue;
+    }
+    else
+    {
+      o += printf(fmt2, Data[i]);
+    }
+    ++i;
+  }
+  if (i<len) printf(fmt3, Data[len-3], Data[len-2], Data[len-1]); else printf("\n");
+  i=len-1; c=0;
+  while ((Data[i--] == 0) && i>0) c++;
+  if (c > 0) printf(fmt4, c);
+}

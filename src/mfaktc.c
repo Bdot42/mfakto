@@ -72,7 +72,7 @@ unsigned long long int calculate_k(unsigned int exp, int bits)
 /* calculates biggest possible k in "2 * exp * k + 1 < 2^bits" */
 {
   unsigned long long int k = 0, tmp_low, tmp_hi;
-  
+
   if((bits > 65) && exp < (unsigned int)(1U << (bits - 65))) k = 0; // k would be >= 2^64...
   else if(bits <= 64)
   {
@@ -85,13 +85,13 @@ unsigned long long int calculate_k(unsigned int exp, int bits)
     tmp_hi = 1ULL << (bits - 33);
     tmp_hi--;
     tmp_low = 0xFFFFFFFFULL;
-    
+
     k = tmp_hi / exp;
     tmp_low += (tmp_hi % exp) << 32;
     k <<= 32;
     k += tmp_low / exp;
   }
-  
+
   if(k == 0)k = 1;
   return k;
 }
@@ -107,9 +107,9 @@ The variables exp, bit_min and bit_max must be a valid assignment! */
   // if GPU-sieving: check that we have an appropriate kernel
   if (mystuff->gpu_sieving == 1)
   {
-    if ((kernel >= BARRETT79_MUL32) && (kernel <= BARRETT82_MUL15))
+    if ((kernel >= BARRETT79_MUL32) && (kernel <= BARRETT74_MUL15))
       kernel += BARRETT79_MUL32_GS - BARRETT79_MUL32;  // adjust: if asked for the CPU version, check the GPU one
-    if ((kernel < BARRETT79_MUL32_GS) || (kernel > BARRETT82_MUL15_GS))
+    if ((kernel < BARRETT79_MUL32_GS) || (kernel > BARRETT74_MUL15_GS))
       ret = 0;  // no GPU version available
   }
 
@@ -153,11 +153,12 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
   static kernel_precedence kernel_precedences [] = {
     /* sorted list of all kernels per GPU type, fastest first */
     {
-/*  GPU_AUTO,   */  
+/*  GPU_AUTO,   */
       BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s)
       BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s)
       BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s)
       BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s)
+      BARRETT74_MUL15,  // "cl_barrett15_74"
       BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s)
       BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s)
       BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s)
@@ -170,8 +171,8 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
       MG62,             // "cl_mg_62"        (158.62 M/s)
-      UNKNOWN_KERNEL,   // 
-      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -180,6 +181,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT70_MUL15,  // "cl_barrett15_70" (460.90 M/s)
       BARRETT71_MUL15,  // "cl_barrett15_71" (423.34 M/s)
       BARRETT73_MUL15,  // "cl_barrett15_73" (355.99 M/s)
+      BARRETT74_MUL15,  // "cl_barrett15_74"
       BARRETT82_MUL15,  // "cl_barrett15_82" (325.38 M/s)
       BARRETT83_MUL15,  // "cl_barrett15_83" (299.40 M/s)
       BARRETT88_MUL15,  // "cl_barrett15_88" (268.02 M/s)
@@ -192,8 +194,8 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       _63BIT_MUL24,     // "mfakto_cl_63"    (212.98 M/s)
       BARRETT70_MUL24,  // "cl_barrett24_70" (202.59 M/s)
       BARRETT92_MUL32,  // "cl_barrett32_92" (190.36 M/s)
-      UNKNOWN_KERNEL,   // 
-      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -207,6 +209,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT73_MUL15,  // "cl_barrett15_73" (205.75 M/s)
       BARRETT88_MUL32,  // "cl_barrett32_88" (194.25 M/s)
       BARRETT87_MUL32,  // "cl_barrett32_87" (190.83 M/s)  v=2: (196.85 M/s)
+      BARRETT74_MUL15,  // "cl_barrett15_74" (187.20 M/s)
       BARRETT70_MUL24,  // "cl_barrett24_70" (187.10 M/s)
       BARRETT82_MUL15,  // "cl_barrett15_82" (186.75 M/s)
       BARRETT83_MUL15,  // "cl_barrett15_83" (176.76 M/s)
@@ -214,30 +217,31 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT88_MUL15,  // "cl_barrett15_88" (155.48 M/s)
       BARRETT92_MUL32,  // "cl_barrett32_92" (155.17 M/s)  v=2: (169.63 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (141.31 M/s)
-      UNKNOWN_KERNEL,   // 
-      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
-/*  GPU_GCN  (7850@1050MHz, v=2) / (7770@1100MHz)*/
-      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s) / (259.96 M/s)
-      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s) / (259.69 M/s)
-      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s) / (241.50 M/s)
-      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s) / (212.96 M/s)
-      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s) / (188.74 M/s)
-      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s) / (186.72 M/s)
-      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s) / (180.93 M/s)
-      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s) / (176.79 M/s)
-      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s) / (164.12 M/s)
-      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s) / (159.38 M/s)
-      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s) / (158.46 M/s)
-      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s) / (158.22 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s) / (149.63 M/s)
-      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s) / (142.61 M/s)
-      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s) / (132.38 M/s)
-      MG62,             // "cl_mg_62"        (158.62 M/s) / (104.55 M/s)
-      UNKNOWN_KERNEL,   // 
-      UNKNOWN_KERNEL,   // 
+/*  GPU_GCN  (7850@1050MHz, v=2) / (7770@1100MHz) / 7870XT@1180MHz (Tahiti)        2,5745454545454545454545454545455  */
+      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s) / (259.96 M/s) / 653.21  2,5127327281120172334205262348054
+      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s) / (259.69 M/s) / 653.18  2,5152296969463591204898147791598
+      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s) / (241.50 M/s) / 606.71  2,5122567287784679089026915113872
+      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s) / (212.96 M/s) / 536.63  2,5198628850488354620586025544703
+      BARRETT74_MUL15,  // "cl_barrett15_74"
+      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s) / (188.74 M/s) / 475.97  2,5218289710713150365582282505033
+      BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s) / (186.72 M/s) / 460.40  2,4657240788346186803770351328192
+      BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s) / (180.93 M/s) / 446.44  2,467473608577903056430663792627
+      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s) / (176.79 M/s) / 445.01  2,5171672605916624243452683975338
+      BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s) / (164.12 M/s) / 403.05  2,4558250060931026078479161589081
+      BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s) / (159.38 M/s) / 391.52  2,456519011168277073660434182457
+      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s) / (158.46 M/s) / 399.98  2,5241701375741512053515082670706
+      BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s) / (158.22 M/s) / 389.25  2,4601820250284414106939704209329
+      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s) / (149.63 M/s) / 378.13  2,5271001804450979081734946200628
+      BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s) / (142.61 M/s) / 349.29  2,449267232311899586284271790197
+      _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s) / (132.38 M/s) / 344.40  2,6016014503701465478168907689983
+      MG62,             // "cl_mg_62"        (158.62 M/s) / (104.55 M/s) / 367.04  3,5106647537063605930176948828312
+      UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -254,12 +258,13 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT71_MUL15,  // "cl_barrett15_71" (3.43 M/s)
       BARRETT70_MUL24,  // "cl_barrett24_70" (3.40 M/s)
       BARRETT73_MUL15,  // "cl_barrett15_73" (3.07 M/s)
+      BARRETT74_MUL15,  // "cl_barrett15_74"
       BARRETT82_MUL15,  // "cl_barrett15_82" (2.72 M/s)
       BARRETT83_MUL15,  // "cl_barrett15_83" (2.65 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (2.59 M/s)
       BARRETT88_MUL15,  // "cl_barrett15_88" (2.43 M/s)
-      UNKNOWN_KERNEL,   // 
-      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -271,6 +276,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT77_MUL32,  // "cl_barrett32_77" (65.38 M/s)
       BARRETT73_MUL15,  // "cl_barrett15_73" (63.05 M/s)
       BARRETT76_MUL32,  // "cl_barrett32_76" (60.14 M/s)
+      BARRETT74_MUL15,  // "cl_barrett15_74"
       BARRETT82_MUL15,  // "cl_barrett15_82" (58.78 M/s)
       BARRETT70_MUL24,  // "cl_barrett24_70" (56.79 M/s)
       BARRETT88_MUL32,  // "cl_barrett32_88" (56.63 M/s)
@@ -280,8 +286,8 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT88_MUL15,  // "cl_barrett15_88" (47.64 M/s)
       BARRETT92_MUL32,  // "cl_barrett32_92" (44.43 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (42.09 M/s)
-      UNKNOWN_KERNEL,   // 
-      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -299,11 +305,12 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT70_MUL24,  // "cl_barrett24_70" (6.53 / 44.92 M/s)
       BARRETT73_MUL15,  // "cl_barrett15_73" (6.81 / 47.47 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (6.49 / 38.87 M/s)
+      BARRETT74_MUL15,  // "cl_barrett15_74"
       BARRETT82_MUL15,  // "cl_barrett15_82" (2.72 M/s)
       BARRETT83_MUL15,  // "cl_barrett15_83" (2.65 M/s)
       BARRETT88_MUL15,  // "cl_barrett15_88" (2.43 M/s)
-      UNKNOWN_KERNEL,   // 
-      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -320,12 +327,13 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT71_MUL15,  // "cl_barrett15_71" (3.43 M/s)
       BARRETT70_MUL24,  // "cl_barrett24_70" (3.40 M/s)
       BARRETT73_MUL15,  // "cl_barrett15_73" (3.07 M/s)
+      BARRETT74_MUL15,  // "cl_barrett15_74"
       BARRETT82_MUL15,  // "cl_barrett15_82" (2.72 M/s)
       BARRETT83_MUL15,  // "cl_barrett15_83" (2.65 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (2.59 M/s)
       BARRETT88_MUL15,  // "cl_barrett15_88" (2.43 M/s)
-      UNKNOWN_KERNEL,   // 
-      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -334,6 +342,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s)
       BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s)
       BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s)
+      BARRETT74_MUL15,  // "cl_barrett15_74"
       BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s)
       BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s)
       BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s)
@@ -346,11 +355,11 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
       MG62,             // "cl_mg_62"        (158.62 M/s)
-      UNKNOWN_KERNEL,   // 
-      UNKNOWN_KERNEL,   // 
+      UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL }
-    
+
   };
 
   kernel_precedence *k = &kernel_precedences[mystuff->gpu_type]; // select the row for the GPU we're running on / we're configured for
@@ -385,7 +394,7 @@ number of factors found
 RET_ERROR any CL function returned an error
 RET_QUIT if early exit was requested by SIGINT
 
- 
+
 
 return value (mystuff->mode > MODE_NORMAL), i.e. selftest:
 0 for a successful selftest (known factor was found)
@@ -393,7 +402,7 @@ return value (mystuff->mode > MODE_NORMAL), i.e. selftest:
 2 wrong factor returned
 RET_ERROR any CL function returned an error
 
-other return value 
+other return value
 -1 unknown mode
 */
 {
@@ -405,7 +414,7 @@ other return value
   int factorsfound = 0, numfactors = 0, restart = 0, do_checkpoint = mystuff->checkpoints;
 
   int retval = 0, add_file_exists = 0;
-    
+
   cl_ulong time_run, time_est;
 
   mystuff->stats.output_counter = 0; /* reset output counter, needed for status headline */
@@ -418,10 +427,10 @@ other return value
   time(&time_last_checkpoint);
 
   mystuff->stats.class_counter = 0;
-  
+
   k_min=calculate_k(mystuff->exponent,mystuff->bit_min);
   k_max=calculate_k(mystuff->exponent,mystuff->bit_max_stage);
-  
+
   if(mystuff->mode > MODE_NORMAL) // any selftest mode
   {
 /* a shortcut for the selftest, bring k_min and k_max "close" to the known factor */
@@ -520,7 +529,7 @@ other return value
         if (mystuff->gpu_sieving == 1)
         {
           gpusieve_init_class(mystuff, k_min+cur_class);
-          if ((use_kernel >= BARRETT79_MUL32_GS) && (use_kernel <= BARRETT82_MUL15_GS))
+          if ((use_kernel >= BARRETT79_MUL32_GS) && (use_kernel <= BARRETT74_MUL15_GS))
           {
             numfactors = tf_class_opencl (k_min+cur_class, k_max, mystuff, use_kernel);
           }
@@ -605,11 +614,11 @@ other return value
 calculate the value of the known factor in f_{hi|med|low} and compare with the
 results from the selftest.
 k_max and k_min are used as 64bit temporary integers here...
-*/    
+*/
       f_hi    = (k_hint >> 63);
       f_med   = (k_hint >> 31) & 0xFFFFFFFFULL;
       f_low   = (k_hint <<  1) & 0xFFFFFFFFULL; /* f_{hi|med|low} = 2 * k_hint */
-      
+
       k_max   = (unsigned long long int)mystuff->exponent * f_low;
       f_low   = (k_max & 0xFFFFFFFFULL) + 1;
       k_min   = (k_max >> 32);
@@ -621,7 +630,7 @@ k_max and k_min are used as 64bit temporary integers here...
       k_min  += (k_max >> 32);
 
       f_hi  = (unsigned int ) (k_min + (mystuff->exponent * f_hi)); /* f_{hi|med|low} = 2 * k_hint * exp +1 */
-      
+
       if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24)) /* these kernels use 24bit per int */
       {
         f_hi  <<= 16;
@@ -630,10 +639,10 @@ k_max and k_min are used as 64bit temporary integers here...
         f_med <<= 8;
         f_med  += f_low >> 24;
         f_med  &= 0x00FFFFFF;
-        
+
         f_low  &= 0x00FFFFFF;
       }
-      else if (((use_kernel >= BARRETT73_MUL15_GS) && (use_kernel <= BARRETT82_MUL15_GS)) ||((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15)) || (use_kernel == MG88))
+      else if (((use_kernel >= BARRETT73_MUL15_GS) && (use_kernel <= BARRETT74_MUL15_GS)) ||((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT74_MUL15)) || (use_kernel == MG88))
       {
         // 30 bits per reported result int
         f_hi  <<= 4;
@@ -642,7 +651,7 @@ k_max and k_min are used as 64bit temporary integers here...
         f_med <<= 2;
         f_med  += f_low >> 30;
         f_med  &= 0x3FFFFFFF;
-        
+
         f_low  &= 0x3FFFFFFF;
       }
       k_min=0; /* using k_min for counting the number of matches here */
@@ -673,7 +682,7 @@ k_max and k_min are used as 64bit temporary integers here...
   {
     time_run = timer_diff(&timer)/1000;
     time_est = time_run;
-    
+
     if(restart == 0)printf("tf(): total time spent: ");
     else            printf("tf(): time spent since restart:   ");
 
@@ -768,6 +777,7 @@ RET_ERROR we might have a serios problem
 //      for (kernel_index = _71BIT_MUL24; kernel_index < BARRETT88_MUL15; ++kernel_index) // test-only: skip 6x15-bit kernels
 //      for (kernel_index = BARRETT79_MUL32; kernel_index <= BARRETT87_MUL32; ++kernel_index) // test-only: only use 32-bit kernels
 //      for (kernel_index = MG62; kernel_index < MG88; ++kernel_index) // Specific montgomery test
+//      for (kernel_index = BARRETT74_MUL15; kernel_index <= BARRETT74_MUL15; ++kernel_index) // test only the 74-bit kernel
       for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
@@ -780,7 +790,8 @@ RET_ERROR we might have a serios problem
     else
     {
 //      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT73_MUL15_GS; ++kernel_index) // test-only: skip small 15-bit kernels
-      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT82_MUL15_GS; ++kernel_index)
+//      for (kernel_index = BARRETT74_MUL15_GS; kernel_index <= BARRETT74_MUL15_GS; ++kernel_index) // test only the 74-bit kernel
+      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT74_MUL15_GS; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }
@@ -982,7 +993,7 @@ int main(int argc, char **argv)
     else if(!strcmp((char*)"--gpusievetest", argv[i]))
     {
       read_config(&mystuff);
-      init_CL(mystuff.num_streams, devicenumber);
+      init_CL(mystuff.num_streams, &devicenumber);
       return ERR_OK;
     }
     else
@@ -996,7 +1007,7 @@ int main(int argc, char **argv)
   printf("%s (%dbit build)\n\n", MFAKTO_VERSION, (int)(sizeof(void*)*8));
 
   read_config(&mystuff);
-  
+
 /* print current configuration */
   if(mystuff.verbosity >= 1)
   {
@@ -1041,104 +1052,16 @@ int main(int argc, char **argv)
 #ifdef CL_PERFORMANCE_INFO
     printf("  CL_PERFORMANCE_INFO       enabled (DEBUG option)\n");
 #endif
+    printf("\n");
   }
 
-  if(init_CL(mystuff.num_streams, devicenumber)!=CL_SUCCESS)
+  if(init_CL(mystuff.num_streams, &devicenumber)!=CL_SUCCESS)
   {
     printf("ERROR: init_CL(%d, %d) failed\n", mystuff.num_streams, devicenumber);
     return ERR_INIT;
   }
 
-  if (mystuff.gpu_type == GPU_AUTO)
-  {
-    // try to auto-detect the type of GPU
-    if (strstr(deviceinfo.d_name, "Capeverde")  ||    // 7730, 7750, 7770, 8760, 8740, R7 250X
-        strstr(deviceinfo.d_name, "Bonaire")    ||    // 7790, R7 260, R7 260X
-        strstr(deviceinfo.d_name, "Pitcairn")   ||    // 7850, 7870, 8870
-        strstr(deviceinfo.d_name, "Newzealand") ||    // 7990
-        strstr(deviceinfo.d_name, "Oland")      ||    // 8670, 8570, R9 240, R9 250
-        strstr(deviceinfo.d_name, "Sun")       ||    // 85x0M
-        strstr(deviceinfo.d_name, "Mars")      ||    // 86x0M, 87x0M
-        strstr(deviceinfo.d_name, "Venus")     ||    // 88x0M
-        strstr(deviceinfo.d_name, "Saturn")    ||    // 8930M, 8950M
-        strstr(deviceinfo.d_name, "Neptune")   ||    // 8970M, 8990M
-        strstr(deviceinfo.d_name, "Malta")      ||    // 7990
-        strstr(deviceinfo.d_name, "Vesuvius")   ||    // 295X2
-        strstr(deviceinfo.d_name, "Tahiti")     ||    // 7950, 7970, 8970, 8950, R9 280X
-        strstr(deviceinfo.d_name, "Hawaii")     ||    // R9 290, R9 290X
-        strstr(deviceinfo.d_name, "Curacao")    ||    // R9 265, R9 270, R9 270X
-        strstr(deviceinfo.d_name, "Kalindi")          // GCN APU, Kabini, R7 ???
-        )
-    {
-      mystuff.gpu_type = GPU_GCN;
-    }
-    else if (strstr(deviceinfo.d_name, "Cayman")      ||  // 6950, 6970
-             strstr(deviceinfo.d_name, "Devastator")  ||  // 7xx0D (iGPUs of A4/6/8/10)
-             strstr(deviceinfo.d_name, "Scrapper")    ||  // 7xx0G (iGPUs of A4/6/8/10)
-             strstr(deviceinfo.d_name, "Antilles"))       // 6990
-    {
-      mystuff.gpu_type = GPU_VLIW4;
-    }
-    else if (strstr(deviceinfo.d_name, "WinterPark")  ||  // 6370D (E2-3200), 6410D (A4-3300, A4-3400)
-             strstr(deviceinfo.d_name, "BeaverCreek") ||  // 6530D (A6-3500, A6-3600, A6-3650, A6-3670K), 6550D (A8-3800, A8-3850, A8-3870K)
-             strstr(deviceinfo.d_name, "Zacate")      ||  // 6320 (E-450)
-             strstr(deviceinfo.d_name, "Ontario")     ||  // 6290 (C-60)
-             strstr(deviceinfo.d_name, "Wrestler"))       // 6250 (C-30, C-50), 6310 (E-240, E-300, E-350)
-    {
-      mystuff.gpu_type = GPU_APU;
-    }
-    else if (strstr(deviceinfo.d_name, "Caicos")   ||  // (6450, 8450, R5 230) 7450, 7470, 
-             strstr(deviceinfo.d_name, "Cedar")    ||  // 7350, 5450
-             strstr(deviceinfo.d_name, "Redwood")  ||  // 5550, 5570, 5670
-             strstr(deviceinfo.d_name, "Turks")    ||  // 6570, 6670, 7570, 7670
-             strstr(deviceinfo.d_name, "Juniper")  ||  // 6750, 6770, 5750, 5770
-             strstr(deviceinfo.d_name, "Cypress")  ||  // 5830, 5850, 5870
-             strstr(deviceinfo.d_name, "Hemlock")  ||  // 5970
-             strstr(deviceinfo.d_name, "Barts"))       // 6790, 6850, 6870
-    {
-      mystuff.gpu_type = GPU_VLIW5;
-    }
-    else if (strstr(deviceinfo.d_name, "RV7")      ||  // 4xxx (ATI RV 7xx)
-             strstr(deviceinfo.d_name, "Loveland"))    // e.g. 6310 as part of E350: it reports 2 compute units, but only has a total of 80 compute elements
-    {
-      mystuff.gpu_type = GPU_VLIW5;
-      gpu_types[mystuff.gpu_type].CE_per_multiprocessor = 40; // though VLIW5, only 40 instead of 80 compute elements
-      if (mystuff.vectorsize > 3)
-      {
-        printf("WARNING: Your device may perform better with a vector size of 2. "
-               "Please test by changing VectorSize to 2 in %s and restarting mfakto.\n\n", mystuff.inifile);
-      }
-    }
-    else if (strstr(deviceinfo.d_name, "CPU")           ||
-             strstr(deviceinfo.v_name, "GenuineIntel")  ||
-             strstr(deviceinfo.v_name, "AuthenticAMD"))
-    {
-      mystuff.gpu_type = GPU_CPU;
-    }
-    else if (strstr(deviceinfo.v_name, "NVIDIA"))
-    {
-      mystuff.gpu_type = GPU_NVIDIA;  // working only with VectorSize=1 and GPU sieving
-    }
-    else if (strstr(deviceinfo.d_name, "Intel(R) HD Graphics"))
-    {
-      mystuff.gpu_type = GPU_INTEL;  // not (yet) working
-    }
-    else
-    {
-      printf("WARNING: Unknown GPU name, assuming GCN. Please post the device "
-          "name \"%s (%s)\" to http://www.mersenneforum.org/showthread.php?t=15646 "
-          "to have it added to mfakto. Set GPUType in %s to select a GPU type yourself "
-          "to avoid this warning.\n", deviceinfo.d_name, deviceinfo.v_name, mystuff.inifile);
-      mystuff.gpu_type = GPU_GCN;
-    }
-  }
-
-  if (mystuff.vectorsize == 1 && mystuff.gpu_type < GPU_CPU)
-  {
-    printf("WARNING: VectorSize=1 is known to fail on AMD GPUs and drivers. "
-           "If the selftest fails, please increase VectorSize to 2 at least. "
-           "See http://devgurus.amd.com/thread/167571 for latest news about this issue.");
-  }
+  set_gpu_type();
 
   if (mystuff.gpu_sieving == 0)
   {
@@ -1178,12 +1101,10 @@ int main(int argc, char **argv)
     printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
   }
 
-  if ((mystuff.gpu_type == GPU_GCN) && (mystuff.vectorsize > 3))
+  if (load_kernels(&devicenumber)!=CL_SUCCESS)
   {
-    printf("\nWARNING: Your GPU was detected as GCN (Graphics Core Next). "
-      "These chips perform very slow with vector sizes of 4 or higher. "
-      "Please change to VectorSize=2 in %s and restart mfakto for optimal performance.\n\n",
-      mystuff.inifile);
+    printf("ERROR: load_kernels(%d) failed\n", devicenumber);
+    return ERR_INIT;
   }
 
   if (init_CLstreams(0))
@@ -1215,17 +1136,17 @@ int main(int argc, char **argv)
   if(mystuff.mode == MODE_NORMAL)
   {
 
-/* before we start real work run a small selftest */  
+/* before we start real work run a small selftest */
     mystuff.mode = MODE_SELFTEST_SHORT;
     if(mystuff.verbosity >= 1) printf("Started a simple selftest ...\n");
     if (selftest(&mystuff, MODE_SELFTEST_SHORT) != 0) return ERR_SELFTEST; /* selftest failed :( */
     mystuff.mode = MODE_NORMAL;
     /* allow for ^C */
     register_signal_handler(&mystuff);
- 
+
     do
     {
-      if (use_worktodo) parse_ret = get_next_assignment(mystuff.workfile, &((mystuff.exponent)), &((mystuff.bit_min)), 
+      if (use_worktodo) parse_ret = get_next_assignment(mystuff.workfile, &((mystuff.exponent)), &((mystuff.bit_min)),
                                                             &((mystuff.bit_max_assignment)), NULL, mystuff.verbosity);
       else
       {

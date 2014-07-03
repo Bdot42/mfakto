@@ -34,6 +34,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "filelocking.h"
 #include "signal_handler.h"
 #include "mfakto.h"
+#include "output.h"
 #include "gpusieve.h"
 #ifndef _MSC_VER
 #include <sys/time.h>
@@ -72,7 +73,9 @@ int init_perftest(int devicenumber)
   mystuff.sieve_size = (36<<13) - (36<<13) % (13*17*19*23);
   mystuff.num_streams = 10;
 
-  init_CL(mystuff.num_streams, devicenumber);
+  init_CL(mystuff.num_streams, &devicenumber);
+  set_gpu_type();
+  load_kernels(&devicenumber);
 
 //  i = (cl_uint)deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
   i = 2048;
@@ -723,7 +726,7 @@ int test_gpu_sieve(cl_uint par)
   int peak_index[MAX_NUM_SPS]={0};
   double gss_sum=0.0;
 
-  printf("GPU sieve raw rate (input rate M/s)\nSievePrimes:");
+  printf("GPU sieve raw rate (input rate M/s)\nSievePrimes: ");
   for(ii=0; ii<nsp; ii++)
   {
     sprimes[ii] = min(sprimes[ii], GPU_SIEVE_PRIMES_MAX);
@@ -861,7 +864,9 @@ int init_gpu_test(int devicenumber)
 
 
   printf("\nReinitializing with gpu_sieving enabled.\n");
-  return init_CL(mystuff.num_streams, devicenumber);
+  init_CL(mystuff.num_streams, &devicenumber);
+  set_gpu_type();
+  return load_kernels(&devicenumber);
 }
 
 #ifdef __cplusplus

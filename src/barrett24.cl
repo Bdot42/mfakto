@@ -133,9 +133,9 @@ res.d0 and res.d1 the result of mul_72_144_no_low() is 0 to 2 lower than
 of mul_72_144().
  */
 {
- 
+
   __private uint_v tmp;
-  
+
   res->d2  = mul_hi(a.d1, b.d0) + mul_hi(a.d0, b.d1);
 
   tmp      = mul24(a.d2, b.d0);
@@ -184,7 +184,7 @@ res.d0, res.d1 and res.d2 the result of mul_72_144_no_low() is 0 to 4 lower
 than of mul_72_144().
  */
 {
-  
+
   /* not needed for now, return ..._no_low_2 */
 
   mul_72_144_no_low2(res, a, b);
@@ -353,7 +353,7 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 #if (TRACE_KERNEL > 2) || defined(CHECKS_MODBASECASE)
   nn.d5=0;
 #endif
- 
+
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_144_72#2.2: nn=%x:%x:%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
@@ -376,7 +376,7 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
   q.d1 = __sub_cc (q.d1, nn.d1) & 0xFFFFFF;
   q.d2 = __subc_cc(q.d2, nn.d2) & 0xFFFFFF;
   q.d3 = __subc_cc(q.d3, nn.d3) & 0xFFFFFF;
-#ifndef CHECKS_MODBASECASE  
+#ifndef CHECKS_MODBASECASE
   q.d4 = __subc   (q.d4, nn.d4) & 0xFFFFFF;
 #else
   q.d4 = __subc_cc(q.d4, nn.d4) & 0xFFFFFF;
@@ -386,7 +386,7 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
   q.d2 = q.d2 - nn.d2 + AS_UINT_V(q.d1 > 0xFFFFFF);
   q.d3 = q.d3 - nn.d3 + AS_UINT_V(q.d2 > 0xFFFFFF);
   q.d4 = q.d4 - nn.d4 + AS_UINT_V(q.d3 > 0xFFFFFF);
-#ifdef CHECKS_MODBASECASE  
+#ifdef CHECKS_MODBASECASE
   q.d5 = q.d5 - nn.d5 + AS_UINT_V(q.d4 > 0xFFFFFF);
 #endif
   q.d1 &= 0xFFFFFF;
@@ -444,7 +444,7 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 //  nn.d2 = (mul_hi(n.d1, qi) << 8) | (tmp >> 24);
   nn.d2 = mad24(mul_hi(n.d1, qi), 256u, tmp >> 24);
   nn.d1 += tmp & 0xFFFFFF;
- 
+
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_144_72#3.2: nn=(%x:%x:)%x:%x:%x:%x\n",
         nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
@@ -472,9 +472,9 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
 #ifdef CHECKS_MODBASECASE
   nn.d4 =                             nn.d3>>13;
   nn.d3 = mad24(nn.d3 & 0x1FFF, 2048u, nn.d2>>13);
-#else  
+#else
   nn.d3 = mad24(nn.d3,          2048u, nn.d2>>13);	// we don't need to clear top bits here, this is done during q = q - nn
-#endif  
+#endif
   nn.d2 = mad24(nn.d2 & 0x1FFF, 2048u, nn.d1>>13);
   nn.d1 = mad24(nn.d1 & 0x1FFF, 2048u, nn.d0>>13);
   nn.d0 = ((nn.d0 & 0x1FFF)<<11);
@@ -514,14 +514,14 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
   qf= CONVERT_FLOAT_V(q.d3);
   qf= qf * 16777216.0f + CONVERT_FLOAT_V(q.d2);
 //  qf= qf * 16777216.0f + CONVERT_FLOAT_V(q.d1);
-  qf= qf * 16777216.0f;  
+  qf= qf * 16777216.0f;
 
   qi= CONVERT_UINT_V(qf*nf);
 
   MODBASECASE_QI_ERROR(1<<22, 4, qi, 5);
 
   res->d0 += qi;
-  
+
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_144_72#4: qf=%#G, nf=%#G, *=%#G, qi=%d\n", qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
 #endif
@@ -530,7 +530,7 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
   if (tid==TRACE_TID) printf((__constant char *)"div_144_72#4: q=(%x:%x:)%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
         q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
-      
+
   // skip the last part - it will change the result by one at most - we can live with a result that is off by one
   // but handle the missing carries
   res->d1 += res->d0 >> 24;
@@ -561,7 +561,7 @@ assumes q < 6n (6n includes "optional mul 2")
   qf = CONVERT_FLOAT_V(q.d2);
   qf = mad(qf, 16777216.0f, CONVERT_FLOAT_V(q.d1));
 //  qf = qf * 16777216.0f + CONVERT_FLOAT_V(q.d1);
-  
+
   qi = CONVERT_UINT_V(qf*nf);
 
 #ifdef CHECKS_MODBASECASE
@@ -600,8 +600,8 @@ are "out of range".
   nn.d2 = mad24(n.d2, qi, nn.d1 >> 24);
   nn.d0 &= 0xFFFFFF;
   nn.d1 &= 0xFFFFFF;
-  
-  
+
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"mod_simple_72: nn=%x:%x:%x\n",
         nn.d2.s0, nn.d1.s0, nn.d0.s0);
@@ -722,7 +722,7 @@ Precalculated here since it is the same for all steps in the following loop */
   // f.d0 not needed as d1 and d2 provide more than 23 bits precision
 
   ff= as_float(0x3f7ffffd) / ff;	// we rounded ff towards plus infinity, and round all other results towards zero.
-        
+
   // OpenCL shifts 32-bit values by 31 at most. bit_max64 can be 0 .. 8
   tmp144.d5 = 256 << (bit_max64 <<1);     	// tmp144 = 2^(2*bit_max), may use the 2^144 bit
   tmp144.d4 = 0; tmp144.d3 = 0; tmp144.d2 = 0; tmp144.d1 = 0; tmp144.d0 = 0;
@@ -795,7 +795,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
                    , bit_max64, limit, modbasecase_debug);
 #endif
-  
+
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett24_70: tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
         tmp72.d2.s0, tmp72.d1.s0, tmp72.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
@@ -834,7 +834,7 @@ Precalculated here since it is the same for all steps in the following loop */
     tmp72.d2 = (b.d2 - tmp72.d2 + AS_UINT_V(tmp72.d1 > b.d1));
     tmp72.d1 &= 0xFFFFFF;
     tmp72.d2 &= 0xFFFFFF;
-    
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
         b.d2.s0, b.d1.s0, b.d0.s0, tmp72.d2.s0, tmp72.d1.s0, tmp72.d0.s0);
@@ -889,7 +889,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)  // trace this for any thread
     printf((__constant char *)"cl_barrett24_70: tid=%ld found factor: q=%x:%x:%x, k=%x:%x:%x\n", tid, f.d2.s0, f.d1.s0, f.d0.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */  
+/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -937,5 +937,5 @@ Precalculated here since it is the same for all steps in the following loop */
   EVAL_RES_b(se)
   EVAL_RES_b(sf)
 #endif
- 
+
 }

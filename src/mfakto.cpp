@@ -36,6 +36,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "mfakto.h"
 #include "output.h"
 #include "gpusieve.h"
+#include "menu.h"
 #ifndef _MSC_VER
 #include <sys/time.h>
 #else
@@ -63,6 +64,7 @@ extern "C"
 
 #include "signal_handler.h"
 extern mystuff_t    mystuff;
+extern struct GPU_type     gpu_types[];
 OpenCL_deviceinfo_t deviceinfo={{0}};
 kernel_info_t       kernel_info[] = {
   /*   kernel (in sequence) | kernel function name | bit_min | bit_max | stages? | loaded kernel pointer */
@@ -84,6 +86,7 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     88,         0,      NULL},
      {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL},
      {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL},
+     {   BARRETT74_MUL15,     "cl_barrett15_74",      60,      0,         0,      NULL}, // disabled
      {   MG62,                "cl_mg62",              58,     62,         1,      NULL},
      {   MG88,                "cl_mg88",              58,     10,         1,      NULL}, // bit_max=10: this kernel does not work yet
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         0,      NULL}, // end of automatic loading
@@ -104,53 +107,9 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT71_MUL15_GS,  "cl_barrett15_71_gs",   60,     70,         0,      NULL},
      {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     88,         0,      NULL},
      {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     83,         0,      NULL},
-     {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL}
+     {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL},
+     {   BARRETT74_MUL15_GS,  "cl_barrett15_74_gs",   60,      0,         0,      NULL}  // disabled
 };
-
-void printArray(const char * Name, const cl_uint * Data, const cl_uint len, cl_uint hex=0)
-{
-  cl_uint i, o, c, val;
-  char *fmt1, *fmt2, *fmt3, *fmt4;
-
-  if (hex)
-  {
-    fmt1=(char *)"<%u x %#x> ";
-    fmt2=(char *)"%#x ";
-    fmt3=(char *)"... %#x %#x %#x\n";
-    fmt4=(char *)"<%d x 0x0 at the end>\n";
-  }
-  else
-  {
-    fmt1=(char *)"<%u x %u> ";
-    fmt2=(char *)"%u ";
-    fmt3=(char *)"... %u %u %u\n";
-    fmt4=(char *)"<%d x 0 at the end>\n";
-  }
-  o = printf("%s (%d): ", Name, len);
-  for(i = 0; i < len-2 && o < 960;) // no more than 1000 chars
-  {
-    if (Data[i] == Data[i+1] && Data[i] == Data[i+2])
-    {
-      val = Data[i];
-      c = 0;
-      while(Data[i] == val && i < len)
-      {
-        ++c; ++i;
-      }
-      o += printf(fmt1, c, val);
-      continue;
-    }
-    else
-    {
-      o += printf(fmt2, Data[i]);
-    }
-    ++i;
-  }
-  if (i<len) printf(fmt3, Data[len-3], Data[len-2], Data[len-1]); else printf("\n");
-  i=len-1; c=0;
-  while ((Data[i--] == 0) && i>0) c++;
-  if (c > 0) printf(fmt4, c);
-}
 
 /* allocate memory buffer arrays, test a small kernel */
 int init_CLstreams(int gs_reinit_only)
@@ -289,10 +248,9 @@ int init_CLstreams(int gs_reinit_only)
 
 /*
  * init_CL: all OpenCL-related one-time inits:
- *   create context, devicelist, command queue,
- *   load kernel file, compile, link CL source, build program and kernels
+ *   create context, devicelist, command queue
  */
-int init_CL(int num_streams, cl_int devnumber)
+int init_CL(int num_streams, cl_int *devnumber)
 {
   cl_int status;
   size_t dev_s;
@@ -309,10 +267,10 @@ int init_CL(int num_streams, cl_int devnumber)
     return 1;
   }
 
-  if (devnumber < 0)
+  if (*devnumber < 0)
   {
     devtype = CL_DEVICE_TYPE_CPU;
-    devnumber = 0;
+    *devnumber = 0;
     if (mystuff.verbosity > 0) {printf("(CPU) - "); fflush(NULL);}
   }
 
@@ -326,9 +284,9 @@ int init_CL(int num_streams, cl_int devnumber)
       return 1;
     }
 
-    if (devnumber > 10) // platform number specified as part of -d
+    if (*devnumber > 10) // platform number specified as part of -d
     {
-      i = devnumber/10 - 1;
+      i = *devnumber/10 - 1;
       if (i < numplatforms)
       {
         platform = platformlist[i];
@@ -451,23 +409,23 @@ int init_CL(int num_streams, cl_int devnumber)
     return 1;
   }
 
-  devnumber = devnumber % 10;  // use only the last digit as device number, counting from 1
+  *devnumber %= 10;  // use only the last digit as device number, counting from 1
   cl_uint dev_from=0, dev_to=num_devices;
-  if (devnumber > 0)
+  if (*devnumber > 0)
   {
-    if ((cl_uint)devnumber > num_devices)
+    if ((cl_uint)*devnumber > num_devices)
     {
-      fprintf(stderr, "Error: Only %d devices found. Cannot use device %d (bad parameter to option -d).\n", num_devices, devnumber);
+      fprintf(stderr, "Error: Only %d devices found. Cannot use device %d (bad parameter to option -d).\n", num_devices, *devnumber);
       return 1;
     }
     else
     {
-      dev_to    = devnumber;    // tweak the loop to run only once for our device
-      dev_from  = --devnumber;  // index from 0
+      dev_to    = *devnumber;    // tweak the loop to run only once for our device
+      dev_from  = --(*devnumber);  // index from 0
     }
   }
 
-  if (mystuff.verbosity > 0) {printf("Get device info - "); fflush(stdout);}
+  if (mystuff.verbosity > 0) {printf("Get device info:\n");}
 
   for (i=dev_from; i<dev_to; i++)
   {
@@ -581,14 +539,14 @@ int init_CL(int num_streams, cl_int devnumber)
     props = CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;  // kernels and copy-jobs are queued with event dependencies, so this should work ...
                                                      // but so far the GPU driver does not support that anyway (as of Catalyst 12.9)
 
-  commandQueue = clCreateCommandQueue(context, devices[devnumber], props, &status);
+  commandQueue = clCreateCommandQueue(context, devices[*devnumber], props, &status);
   if(status != CL_SUCCESS)
   {
     props = 0; // Intel HD does not support out-of-order
-    commandQueue = clCreateCommandQueue(context, devices[devnumber], props, &status);
+    commandQueue = clCreateCommandQueue(context, devices[*devnumber], props, &status);
     if(status != CL_SUCCESS)
     {
-      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueue(dev#" << (devnumber+1) << ")\n";
+      std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueue(dev#" << (*devnumber+1) << ")\n";
       return 1;
     }
     else
@@ -599,14 +557,135 @@ int init_CL(int num_streams, cl_int devnumber)
 
   props |= CL_QUEUE_PROFILING_ENABLE;
 
-  commandQueuePrf = clCreateCommandQueue(context, devices[devnumber], props, &status);
+  commandQueuePrf = clCreateCommandQueue(context, devices[*devnumber], props, &status);
   if(status != CL_SUCCESS)
   {
-    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueuePrf(dev#" << (devnumber+1) << ")\n";
+    std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clCreateCommandQueuePrf(dev#" << (*devnumber+1) << ")\n";
     return 1;
   }
+  return CL_SUCCESS;
+}
 
+/*
+ * set_gpu_type
+ * try to extract the GPU type from the device info
+ */
+void set_gpu_type()
+{
+  if (mystuff.gpu_type == GPU_AUTO)
+  {
+    // try to auto-detect the type of GPU
+    if (strstr(deviceinfo.d_name, "Capeverde")  ||    // 7730, 7750, 7770, 8760, 8740, R7 250X
+        strstr(deviceinfo.d_name, "Bonaire")    ||    // 7790, R7 260, R7 260X
+        strstr(deviceinfo.d_name, "Pitcairn")   ||    // 7850, 7870, 8870
+        strstr(deviceinfo.d_name, "Newzealand") ||    // 7990
+        strstr(deviceinfo.d_name, "Oland")      ||    // 8670, 8570, R9 240, R9 250
+        strstr(deviceinfo.d_name, "Sun")       ||    // 85x0M
+        strstr(deviceinfo.d_name, "Mars")      ||    // 86x0M, 87x0M
+        strstr(deviceinfo.d_name, "Venus")     ||    // 88x0M
+        strstr(deviceinfo.d_name, "Saturn")    ||    // 8930M, 8950M
+        strstr(deviceinfo.d_name, "Neptune")   ||    // 8970M, 8990M
+        strstr(deviceinfo.d_name, "Malta")      ||    // 7990
+        strstr(deviceinfo.d_name, "Vesuvius")   ||    // 295X2
+        strstr(deviceinfo.d_name, "Tahiti")     ||    // 7950, 7970, 8970, 8950, R9 280X
+        strstr(deviceinfo.d_name, "Hawaii")     ||    // R9 290, R9 290X
+        strstr(deviceinfo.d_name, "Curacao")    ||    // R9 265, R9 270, R9 270X
+        strstr(deviceinfo.d_name, "Kalindi")          // GCN APU, Kabini, R7 ???
+        )
+    {
+      mystuff.gpu_type = GPU_GCN;
+    }
+    else if (strstr(deviceinfo.d_name, "Cayman")      ||  // 6950, 6970
+             strstr(deviceinfo.d_name, "Devastator")  ||  // 7xx0D (iGPUs of A4/6/8/10)
+             strstr(deviceinfo.d_name, "Scrapper")    ||  // 7xx0G (iGPUs of A4/6/8/10)
+             strstr(deviceinfo.d_name, "Antilles"))       // 6990
+    {
+      mystuff.gpu_type = GPU_VLIW4;
+    }
+    else if (strstr(deviceinfo.d_name, "WinterPark")  ||  // 6370D (E2-3200), 6410D (A4-3300, A4-3400)
+             strstr(deviceinfo.d_name, "BeaverCreek") ||  // 6530D (A6-3500, A6-3600, A6-3650, A6-3670K), 6550D (A8-3800, A8-3850, A8-3870K)
+             strstr(deviceinfo.d_name, "Zacate")      ||  // 6320 (E-450)
+             strstr(deviceinfo.d_name, "Ontario")     ||  // 6290 (C-60)
+             strstr(deviceinfo.d_name, "Wrestler"))       // 6250 (C-30, C-50), 6310 (E-240, E-300, E-350)
+    {
+      mystuff.gpu_type = GPU_APU;
+    }
+    else if (strstr(deviceinfo.d_name, "Caicos")   ||  // (6450, 8450, R5 230) 7450, 7470,
+             strstr(deviceinfo.d_name, "Cedar")    ||  // 7350, 5450
+             strstr(deviceinfo.d_name, "Redwood")  ||  // 5550, 5570, 5670
+             strstr(deviceinfo.d_name, "Turks")    ||  // 6570, 6670, 7570, 7670
+             strstr(deviceinfo.d_name, "Juniper")  ||  // 6750, 6770, 5750, 5770
+             strstr(deviceinfo.d_name, "Cypress")  ||  // 5830, 5850, 5870
+             strstr(deviceinfo.d_name, "Hemlock")  ||  // 5970
+             strstr(deviceinfo.d_name, "Barts"))       // 6790, 6850, 6870
+    {
+      mystuff.gpu_type = GPU_VLIW5;
+    }
+    else if (strstr(deviceinfo.d_name, "RV7")      ||  // 4xxx (ATI RV 7xx)
+             strstr(deviceinfo.d_name, "Loveland"))    // e.g. 6310 as part of E350: it reports 2 compute units, but only has a total of 80 compute elements
+    {
+      mystuff.gpu_type = GPU_VLIW5;
+      gpu_types[mystuff.gpu_type].CE_per_multiprocessor = 40; // though VLIW5, only 40 instead of 80 compute elements
+      if (mystuff.vectorsize > 3)
+      {
+        printf("WARNING: Your device may perform better with a vector size of 2. "
+               "Please test by changing VectorSize to 2 in %s and restarting mfakto.\n\n", mystuff.inifile);
+      }
+    }
+    else if (strstr(deviceinfo.d_name, "CPU")           ||
+             strstr(deviceinfo.v_name, "GenuineIntel")  ||
+             strstr(deviceinfo.v_name, "AuthenticAMD"))
+    {
+      mystuff.gpu_type = GPU_CPU;
+    }
+    else if (strstr(deviceinfo.v_name, "NVIDIA"))
+    {
+      mystuff.gpu_type = GPU_NVIDIA;  // working only with VectorSize=1 and GPU sieving
+    }
+    else if (strstr(deviceinfo.d_name, "Intel(R) HD Graphics"))
+    {
+      mystuff.gpu_type = GPU_INTEL;  // not (yet) working
+    }
+    else
+    {
+      printf("WARNING: Unknown GPU name, assuming GCN. Please post the device "
+          "name \"%s (%s)\" to http://www.mersenneforum.org/showthread.php?t=15646 "
+          "to have it added to mfakto. Set GPUType in %s to select a GPU type yourself "
+          "to avoid this warning.\n", deviceinfo.d_name, deviceinfo.v_name, mystuff.inifile);
+      mystuff.gpu_type = GPU_GCN;
+    }
+  }
+
+  if (mystuff.vectorsize == 1 && mystuff.gpu_type < GPU_CPU)
+  {
+    printf("WARNING: VectorSize=1 is known to fail on AMD GPUs and drivers. "
+           "If the selftest fails, please increase VectorSize to 2 at least. "
+           "See http://devgurus.amd.com/thread/167571 for latest news about this issue.");
+  }
+
+  if ((mystuff.gpu_type == GPU_GCN) && (mystuff.vectorsize > 3))
+  {
+    printf("\nWARNING: Your GPU was detected as GCN (Graphics Core Next). "
+      "These chips perform very slow with vector sizes of 4 or higher. "
+      "Please change to VectorSize=2 in %s and restart mfakto for optimal performance.\n\n",
+      mystuff.inifile);
+  }
+}
+  
+/*
+ * load_kernels
+ * compile cl files or load the precompiled binary, and load all kernels
+ */
+
+int load_kernels(cl_int *devnumber)
+{
+  cl_int status;
+  size_t i = 0;
+  size_t size;
+  char*  source = NULL;
+  int binary_loaded = 0;
   char program_options[150];
+
   // so far use the same vector size for all kernels ...
   if (mystuff.CompileOptions[0])  // if mfakto.ini defined compile options, override the default with them
   {
@@ -614,11 +693,11 @@ int init_CL(int num_streams, cl_int devnumber)
   }
   else
   {
-    sprintf(program_options, "-I. -DVECTOR_SIZE=%d", mystuff.vectorsize);
+    sprintf(program_options, "-I. -DVECTOR_SIZE=%d -D%s", mystuff.vectorsize, gpu_types[mystuff.gpu_type].gpu_name);
   #ifdef CL_DEBUG
     strcat(program_options, " -g");
   #else
-    if (mystuff.gpu_type != GPU_NVIDIA) // NV does not know optimisation flags
+    if ((mystuff.gpu_type != GPU_NVIDIA) && (mystuff.gpu_type != GPU_INTEL)) // NV & INTEL do not know optimisation flags
       strcat(program_options, " -O3");
   #endif
 
@@ -634,10 +713,6 @@ int init_CL(int num_streams, cl_int devnumber)
     if (mystuff.small_exp == 1)
       strcat(program_options, " -DSMALL_EXP");
   }
-
-  size_t size;
-  char*  source = NULL;
-  int binary_loaded = 0;
 
   if (mystuff.binfile[0])
   {
@@ -690,7 +765,7 @@ int init_CL(int num_streams, cl_int devnumber)
         // load and build it. If not successful, use the .cl sources.
         cl_int errcode;
 
-        program = clCreateProgramWithBinary(context, 1, &devices[devnumber], &size, (const unsigned char **)&source, &status, &errcode);
+        program = clCreateProgramWithBinary(context, 1, &devices[*devnumber], &size, (const unsigned char **)&source, &status, &errcode);
         if (status != CL_SUCCESS || errcode != 0)
         {
           // not successful: try the source
@@ -755,7 +830,7 @@ int init_CL(int num_streams, cl_int devnumber)
 
   // program_options can be overridden by setting en environment variable AMD_OCL_BUILD_OPTIONS
 
-  status = clBuildProgram(program, 1, &devices[devnumber], program_options, NULL, NULL);
+  status = clBuildProgram(program, 1, &devices[*devnumber], program_options, NULL, NULL);
   if((status != CL_SUCCESS) || (mystuff.verbosity > 2))
   {
     if((status == CL_BUILD_PROGRAM_FAILURE) || (mystuff.verbosity > 2))
@@ -763,7 +838,7 @@ int init_CL(int num_streams, cl_int devnumber)
       cl_int logstatus;
       char *buildLog = NULL;
       size_t buildLogSize = 0;
-      logstatus = clGetProgramBuildInfo (program, devices[devnumber], CL_PROGRAM_BUILD_LOG,
+      logstatus = clGetProgramBuildInfo (program, devices[*devnumber], CL_PROGRAM_BUILD_LOG,
                 buildLogSize, buildLog, &buildLogSize);
       if(logstatus != CL_SUCCESS)
       {
@@ -779,7 +854,7 @@ int init_CL(int num_streams, cl_int devnumber)
           return 1;
         }
         fflush(NULL);
-        logstatus = clGetProgramBuildInfo (program, devices[devnumber], CL_PROGRAM_BUILD_LOG,
+        logstatus = clGetProgramBuildInfo (program, devices[*devnumber], CL_PROGRAM_BUILD_LOG,
                   buildLogSize, buildLog, NULL);
         if(logstatus != CL_SUCCESS)
         {
@@ -849,7 +924,6 @@ int init_CL(int num_streams, cl_int devnumber)
     {
        std::cerr << "clGetProgramInfo(CL_PROGRAM_BINARY_SIZES) failed.";
     }
-    size_t i = 0;
     // we copy only the first binary, but numDevices is usually 1 anyway
     char **binaries = (char **)malloc( sizeof(char *) * numDevices );
     if (!binaries) std::cerr << "Failed to allocate host memory.(binaries)";
@@ -879,7 +953,7 @@ int init_CL(int num_streams, cl_int devnumber)
     if (1 < numDevices)
     {
       std::cout << "Warning: Dumping only the first of " << numDevices <<
-        " binary formats - if loading the binary file " << mystuff.binfile <<  "fails, delete it and specify the -d <n> option for mfakto.\n";
+        " binary formats - if loading the binary file " << mystuff.binfile <<  " fails, delete it and specify the -d <n> option for mfakto.\n";
     }
     if(binarySizes[0] != 0)
     {
@@ -959,7 +1033,7 @@ int init_CL(int num_streams, cl_int devnumber)
   }
   else
   {
-    for (i=CL_CALC_BIT_TO_CLEAR; i<=BARRETT82_MUL15_GS; i++)
+    for (i=CL_CALC_BIT_TO_CLEAR; i<=BARRETT74_MUL15_GS; i++)
     {
       kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
       if(status != CL_SUCCESS)
@@ -2559,7 +2633,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 #endif
         // Now let the GPU trial factor the candidates that survived the sieving
 
-        if (use_kernel >= BARRETT73_MUL15_GS && use_kernel <= BARRETT82_MUL15_GS)
+        if (use_kernel >= BARRETT73_MUL15_GS && use_kernel <= BARRETT74_MUL15_GS)
         {
           int75 k_base;
           k_base.d0 =  k_min & 0x7FFF;
@@ -2630,7 +2704,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               k_base.d2 =  k_min_grid[i] >> 48;
               status = run_kernel24(kernel_info[use_kernel].kernel, mystuff->exponent, k_base, i, b_preinit, mystuff->d_RES, shiftcount, mystuff->bit_min-63);
             }
-            else if (((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15)) || (use_kernel == MG88))
+            else if (((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT74_MUL15)) || (use_kernel == MG88))
             {
               int75 k_base;
               k_base.d0 =  k_min_grid[i] & 0x7FFF;
@@ -2905,7 +2979,8 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 
   print_status_line(mystuff);
 
-  if(mystuff->stats.cpu_wait >= 0.0f)
+  /* only adjust sieve_primes if there was no keyboard input handled */
+  if(handle_kb_input(mystuff) == 0 && mystuff->stats.cpu_wait >= 0.0f)
   {
 /* if SievePrimesAdjust is enable lets try to get 2 % < CPU wait < 6% */
     if(mystuff->sieve_primes_adjust == 1 && mystuff->stats.cpu_wait > 6.0f && mystuff->sieve_primes < mystuff->sieve_primes_upper_limit && (mystuff->mode != MODE_SELFTEST_SHORT))
@@ -2947,7 +3022,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     {
       print_dez72(factor, string);
     }
-    else if (((use_kernel >= BARRETT73_MUL15_GS) && (use_kernel <= BARRETT82_MUL15_GS)) ||((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT82_MUL15)) || (use_kernel == MG88))
+    else if (((use_kernel >= BARRETT73_MUL15_GS) && (use_kernel <= BARRETT74_MUL15_GS)) ||((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT74_MUL15)) || (use_kernel == MG88))
     {
       print_dez90(factor, string);
     }
@@ -2964,10 +3039,4 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   }
 
   return factorsfound;
-}
-
-int process_menu(mystuff_t *mystuff)
-{
-  char c = getche();
-
 }

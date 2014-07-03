@@ -129,6 +129,7 @@ enum GPUKernels
   BARRETT88_MUL15,
   BARRETT83_MUL15,
   BARRETT82_MUL15,
+  BARRETT74_MUL15,
   MG62,
   MG88,
   UNKNOWN_KERNEL, /* what comes after this one will not be loaded automatically*/
@@ -150,6 +151,7 @@ enum GPUKernels
   BARRETT88_MUL15_GS,
   BARRETT83_MUL15_GS,
   BARRETT82_MUL15_GS,
+  BARRETT74_MUL15_GS,
   _95BIT_MUL32  /* not yet there */
 };
 

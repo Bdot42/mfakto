@@ -236,10 +236,10 @@ __inline void bitOrSometimesIffy (__local uchar *locsieve, uint bclr)
 // OK as it will just cost us some extra testing of candidates which is cheaper than the cost of using
 // atomic operations.
 
-/* 
+/*
 	Expect as input a set of primes to sieve with, their inverses, and the first bit to clear.
 
-	Each block on the gpu sieves a different segment of the big bit array.  Each thread within each block 
+	Each block on the gpu sieves a different segment of the big bit array.  Each thread within each block
 	simultaneously sieves a small set of primes, marking composites within shared memory.  There is no memory
 	contention between threads because the marking process is write only.  Because each thread
 	block starts at a different part of the big bit array, a small amount of computation must
@@ -597,7 +597,7 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1))) SegSieve (__globa
       mask |= two_pow_n_32[i59];
       mask |= two_pow_n_32[i61];
       */
-      
+
       /*
       // slow on VLIW5
       mask = (i37 > 31) << i37;
@@ -1344,9 +1344,16 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1))) CalcModularInvers
 
 // Calculate and save the modular inverse for one of the sieve primes
 // The modular inverse is one over the distance between the corresponding factors for two successive k values in a class.
+#ifdef INTEL
+  // Intel-OpenCL has a bug that will not use 64-bit quantities here. Force it.
+  #define mul_16_32(a,b) ((((ulong) ((uint)(a) * ((uint)(b) >> 16))) << 16) + (ulong) ((uint)(a) * ((uint)(b) & 0xFFFF)))
+#else
+  #define mul_16_32(a,b) ((ulong)(a) * (ulong)(b))
+#endif
 
 	prime = calc_info[MAX_PRIMES_PER_THREAD*4 + index * 2];
-	facdist = (ulong) (2 * NUM_CLASSES) * (ulong) exponent;
+  facdist = mul_16_32 (2 * NUM_CLASSES, exponent);
+
 	calc_info[MAX_PRIMES_PER_THREAD*4 + index * 2 + 1] = modularinverse ((uint) (facdist % prime), prime);
 #if (TRACE_SIEVE_KERNEL > 2)
     if (get_global_id(0) == TRACE_SIEVE_TID) printf((__constant char *)"CalcModularInverses: index=%d, prime=%d, facdist=%d, inv=%d\n", index, prime, facdist%prime, calc_info[MAX_PRIMES_PER_THREAD*4 + index * 2 + 1]);

@@ -37,6 +37,9 @@
     <ClCompile Include="src\mfaktc.c">
       <Filter>source files</Filter>
     </ClCompile>
+    <ClCompile Include="src/menu.cpp">
+      <Filter>source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/checkpoint.h">
@@ -92,6 +95,9 @@
     </ClInclude>
     <ClInclude Include="src\tf_debug.h">
       <Filter>kernel files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\menu.h">
+      <Filter>header files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

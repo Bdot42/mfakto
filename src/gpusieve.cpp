@@ -37,6 +37,7 @@ See (http://www.mersenneforum.org/showthread.php?t=11900) for Ben's initial work
 #include "my_types.h"
 #include "compatibility.h"
 #include "mfakto.h"
+#include "output.h"
 
 // valgrind tests complain a lot about the blocks being uninitialized
 #define malloc(x) calloc(x,1)
