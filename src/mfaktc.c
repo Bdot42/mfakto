@@ -24,10 +24,8 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #define _GNU_SOURCE
   #include <sched.h>
 #endif
-#ifdef __MINGW32__
+#if defined __MINGW32__ || __CYGWIN__
   #include <windows.h>
-  /* SetThreadAffinityMask and GetCurrentThread needs the header windows.h in MinGW.
-  http://msdn.microsoft.com/en-us/library/windows/desktop/ms683182(v=vs.85).aspx> */
 #endif
 #include <string.h>
 #include <errno.h>
@@ -1119,7 +1117,7 @@ int main(int argc, char **argv)
     // no need to do this if we're sieving on the GPU
     if (mystuff.cpu_mask)
     {
-#if defined _MSC_VER || __MINGW32__
+#if defined _MSC_VER || __MINGW32__ || __CYGWIN__ // might be best just doing as _WIN32
       SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
 #else
       sched_setaffinity(0, sizeof(mystuff.cpu_mask), mystuff.cpu_mask);
