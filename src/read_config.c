@@ -61,7 +61,11 @@ static int my_read_ulong(char *inifile, char *name, unsigned long long int *valu
   {
     if(!strncmp(buf,name,strlen(name)) && buf[strlen(name)]=='=')
     {
-      if(sscanf(&(buf[strlen(name)+1]),"%llu",value)==1)found=1;
+      #ifdef __MINGW32__
+        if(sscanf(&(buf[strlen(name)+1]),"%I64u",value)==1)found=1;
+      #else
+        if(sscanf(&(buf[strlen(name)+1]),"%llu",value)==1)found=1;
+      #endif
     }
   }
   fclose(in);
@@ -315,7 +319,11 @@ int read_config(mystuff_t *mystuff)
       printf("WARNING: Cannot read SieveCPUMask from inifile, set to 0 by default\n");
       ul=0;
     }
-    if(mystuff->verbosity >= 1)printf("  SieveCPUMask              %lld\n", ul);
+    #ifdef __MINGW32__
+      if(mystuff->verbosity >= 1)printf("  SieveCPUMask              %I64u\n", ul);
+    #else
+      if(mystuff->verbosity >= 1)printf("  SieveCPUMask              %lld\n", ul);
+    #endif
   
     mystuff->cpu_mask = ul;
   /*****************************************************************************/
