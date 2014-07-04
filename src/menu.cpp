@@ -68,8 +68,11 @@ static void handle_menu(mystuff_t *mystuff)
       mystuff->quit++;
       break;
     }
-    if (choice == 0) break; // continue
-
+    if (choice == 0)
+    {
+      if (mystuff->verbosity > 0) printf("\nContinuing\n");
+      break; // continue
+    }
     std::cout << "Change setting number " << choice << " to:";
     std::cin >> new_value_string;
     new_value = atoi(new_value_string);
@@ -188,10 +191,12 @@ static void increase_sieve_process_size(mystuff_t *mystuff)
 
 static void use_previous_kernel(mystuff_t *mystuff)
 {
+  printf("prev kernel: not yet implemented\n");
 }
 
 static void use_next_kernel(mystuff_t *mystuff)
 {
+  printf("next kernel: not yet implemented\n");
 }
 
 int handle_kb_input(mystuff_t *mystuff)
@@ -205,16 +210,32 @@ int handle_kb_input(mystuff_t *mystuff)
     case 'm': handle_menu(mystuff);
       break;
     case '-': lower_sieve_primes(mystuff);
+              if (mystuff->verbosity > 0)
+                printf("\nDecrease %sSievePrimes to %u\n", mystuff->gpu_sieving?"GPU":"",
+                   mystuff->gpu_sieving?mystuff->gpu_sieve_primes:mystuff->sieve_primes);
       break;
     case '+': increase_sieve_primes(mystuff);
+              if (mystuff->verbosity > 0)
+                printf("\nIncrease %sSievePrimes to %u\n", mystuff->gpu_sieving?"GPU":"",
+                   mystuff->gpu_sieving?mystuff->gpu_sieve_primes:mystuff->sieve_primes);
       break;
     case 's': lower_sieve_size(mystuff);
+              if (mystuff->verbosity > 0)
+                printf("\nDecrease %sSieveSize to %u\n", mystuff->gpu_sieving?"GPU":"",
+                   mystuff->gpu_sieving?mystuff->gpu_sieve_size:mystuff->sieve_size);
       break;
     case 'S': increase_sieve_size(mystuff);
+              if (mystuff->verbosity > 0)
+                printf("\nIncrease %sSieveSize to %u\n", mystuff->gpu_sieving?"GPU":"",
+                   mystuff->gpu_sieving?mystuff->gpu_sieve_size:mystuff->sieve_size);
       break;
     case 'p': lower_sieve_process_size(mystuff);
+              if ((mystuff->verbosity > 0) && mystuff->gpu_sieving)
+                printf("\nDecrease GPUSieveProcessSize to %u\n", mystuff->gpu_sieve_processing_size);
       break;
     case 'P': increase_sieve_process_size(mystuff);
+              if ((mystuff->verbosity > 0) && mystuff->gpu_sieving)
+                printf("\nIncrease GPUSieveProcessSize to %u\n", mystuff->gpu_sieve_processing_size);
       break;
     case 'a': if (mystuff->verbosity > 0)
                 printf("\nSetting SievePrimesAdjust to 0 (was %u)\n", mystuff->sieve_primes_adjust);
@@ -238,11 +259,11 @@ int handle_kb_input(mystuff_t *mystuff)
     case 'v': if (mystuff->verbosity > 0)
               {
                 mystuff->verbosity--;
-                printf("\nSetting Verbosity to %u\n", mystuff->verbosity);
+                printf("\nDecrease Verbosity to %u\n", mystuff->verbosity);
               }
       break;
     case 'V': mystuff->verbosity++;
-              if (mystuff->verbosity > 0) printf("\nSetting Verbosity to %u\n", mystuff->verbosity);
+              if (mystuff->verbosity > 0) printf("\nIncrease Verbosity to %u\n", mystuff->verbosity);
       break;
     case 'r': if (mystuff->verbosity > 0)
                 printf("\nSetting PrintMode to 0 (was %u)\n", mystuff->printmode);
