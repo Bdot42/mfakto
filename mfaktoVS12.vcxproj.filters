@@ -1,25 +1,25 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="src/checkpoint.c">
+    <ClCompile Include="src\checkpoint.c">
       <Filter>source files</Filter>
     </ClCompile>
-    <ClCompile Include="src/timer.c">
+    <ClCompile Include="src\timer.c">
       <Filter>source files</Filter>
     </ClCompile>
-    <ClCompile Include="src/filelocking.c">
+    <ClCompile Include="src\filelocking.c">
       <Filter>source files</Filter>
     </ClCompile>
-    <ClCompile Include="src/parse.c">
+    <ClCompile Include="src\parse.c">
       <Filter>source files</Filter>
     </ClCompile>
-    <ClCompile Include="src/read_config.c">
+    <ClCompile Include="src\read_config.c">
       <Filter>source files</Filter>
     </ClCompile>
-    <ClCompile Include="src/sieve.c">
+    <ClCompile Include="src\sieve.c">
       <Filter>source files</Filter>
     </ClCompile>
-    <ClCompile Include="src/signal_handler.c">
+    <ClCompile Include="src\signal_handler.c">
       <Filter>source files</Filter>
     </ClCompile>
     <ClCompile Include="src\perftest.cpp">
@@ -37,48 +37,51 @@
     <ClCompile Include="src\mfaktc.c">
       <Filter>source files</Filter>
     </ClCompile>
-    <ClCompile Include="src/menu.cpp">
+    <ClCompile Include="src\menu.cpp">
+      <Filter>source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\kbhit.cpp">
       <Filter>source files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src/checkpoint.h">
+    <ClInclude Include="src\checkpoint.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src/compatibility.h">
+    <ClInclude Include="src\compatibility.h">
       <Filter>header files</Filter>
     </ClInclude>
     <ClInclude Include="src\filelocking.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src/mfakto.h">
+    <ClInclude Include="src\mfakto.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src/my_types.h">
+    <ClInclude Include="src\my_types.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src/params.h">
+    <ClInclude Include="src\params.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src/parse.h">
+    <ClInclude Include="src\parse.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src/read_config.h">
+    <ClInclude Include="src\read_config.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src/selftest-data.h">
+    <ClInclude Include="src\selftest-data.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src/sieve.h">
+    <ClInclude Include="src\sieve.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src/signal_handler.h">
+    <ClInclude Include="src\signal_handler.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src/timer.h">
+    <ClInclude Include="src\timer.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src/timeval.h">
+    <ClInclude Include="src\timeval.h">
       <Filter>header files</Filter>
     </ClInclude>
     <ClInclude Include="src\gpusieve.h">
@@ -99,6 +102,9 @@
     <ClInclude Include="src\menu.h">
       <Filter>header files</Filter>
     </ClInclude>
+    <ClInclude Include="src\kbhit.h">
+      <Filter>header files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="todo.txt" />
@@ -111,7 +117,7 @@
     <None Include="src\barrett15.cl">
       <Filter>kernel files</Filter>
     </None>
-    <None Include="src/mfakto_Kernels.cl">
+    <None Include="src\mfakto_Kernels.cl">
       <Filter>kernel files</Filter>
     </None>
     <None Include="src\mul24.cl">

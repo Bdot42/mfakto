@@ -19,7 +19,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 /* code to handle dynamic changing of settings */
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
+#if defined(_MSC_VER) || defined(__MINGW32__)|| defined(__CYGWIN__)
   #include <conio.h>
 #else
   #include "kbhit.h"
