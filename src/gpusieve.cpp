@@ -107,6 +107,8 @@ void tiny_soe (cl_uint limit, cl_uint *primes)
     }
   }
 
+  if (i>=sieve_size) fprintf(stderr, "Warning: tiny_soe memory overrun!\n");
+
   free (flags);
 }
 
