@@ -75,7 +75,7 @@ CSRC  = sieve.c timer.c parse.c read_config.c mfaktc.c checkpoint.c \
 	signal_handler.c filelocking.c output.c
 CLSRC = barrett15.cl  barrett24.cl  barrett.cl  common.cl  gpusieve.cl  mfakto_Kernels.cl  montgomery.cl  mul24.cl
 
-COBJS  = $(CSRC:.c=.o) mfakto.o gpusieve.o perftest.o
+COBJS  = $(CSRC:.c=.o) mfakto.o gpusieve.o perftest.o menu.o kbhit.o
 
 ##############################################################################
 

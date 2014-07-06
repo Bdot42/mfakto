@@ -29,17 +29,17 @@ extern "C"
 {
 #endif
 
-int init_CL(int num_streams, cl_int devicenumber);
+int init_CL(int num_streams, cl_int *devicenumber);
+int load_kernels(cl_int *devnumber);
+void set_gpu_type();
 int init_CLstreams(int gs_reinit_only);
 int cleanup_CL(void);
 void CL_test(cl_int devicenumber);
 int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPUKernels use_kernel);
-void printArray(const char * Name, const cl_uint * Data, const cl_uint len, cl_uint hex);
 cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_event);
 cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *run_event, cl_ulong k_min);
 cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event, cl_uint maxp);
 int run_gs_kernel(cl_kernel kernel, cl_uint numblocks, cl_uint shared_mem_required, cl_uint shiftcount);
-const char* ClErrorString( const cl_int errcode );
 
 #ifdef __cplusplus
 }

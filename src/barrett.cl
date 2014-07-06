@@ -1154,9 +1154,9 @@ ff = 1/f as float, needed in div_160_96().
 Precalculated here since it is the same for all steps in the following loop */
     ff= CONVERT_FLOAT_RTP_V(f.d2);
     ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
-  
+
     ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-  
+
     tmp192.d4 = 0xFFFFFFFF;						// tmp192 is nearly 2^(81)
     tmp192.d3 = 0xFFFFFFFF;
     tmp192.d2 = 0xFFFFFFFF;
@@ -1166,7 +1166,7 @@ Precalculated here since it is the same for all steps in the following loop */
       if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: f=%x:%x:%x, ff=%G\n",
           f.d2.s0, f.d1.s0, f.d0.s0, ff.s0);
 #endif
-  
+
 #ifndef CHECKS_MODBASECASE
     div_160_96(&u,tmp192,f,ff);						// u = floor(2^(80*2) / f)
 #else
@@ -1176,25 +1176,25 @@ Precalculated here since it is the same for all steps in the following loop */
       if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: u=%x:%x:%x, ff=%G\n",
           u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
 #endif
-  
+
   // bb is still the preprocessed scalar passed in to the kernel - it is widened here to the required vector size automatically
     a.d0 = bb.d2;// & 0xFFFF8000;						// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
     a.d1 = bb.d3;
     a.d2 = bb.d4;
-  
+
     mul_96_192_no_low3(&tmp192, a, u);					// tmp192 = (b / (2^80)) * u
-  
+
 #if (TRACE_KERNEL > 3)
       if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: a=%x:%x:%x * u = %x:%x:%x:...\n",
           a.d2.s0, a.d1.s0, a.d0.s0, tmp192.d5.s0, tmp192.d4.s0, tmp192.d3.s0);
 #endif
-  
+
     a.d0 = tmp192.d3;							// a = ((b / (2^80)) * u) / (2^80)
     a.d1 = tmp192.d4;							// this includes the shiftleft by 32 bits, read above...
     a.d2 = tmp192.d5;
-  
+
     mul_96(&tmp96, a, f);							// tmp96 = (((b / (2^80)) * u) / (2^80)) * f
-  
+
 #if (TRACE_KERNEL > 3)
       if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
           a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
@@ -1204,64 +1204,64 @@ Precalculated here since it is the same for all steps in the following loop */
     a.d0 = -tmp96.d0;                // Compute the remainder, we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
     a.d1 = -tmp96.d1 + AS_UINT_V(tmp96.d0 > 0);
     a.d2 = bb.d2-tmp96.d2 + AS_UINT_V((tmp96.d1 | tmp96.d0) > 0);	 // if any bit of d0 or d1 is set, we'll have a borrow here
-  
+
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: b=%x:%x:%x - tmp = %x:%x:%x (tmp)\n",
           bb.d2, bb.d1, bb.d0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
-  
+
     while(shifter)
     {
       square_96_160(&b, a);						// b = a^2
       if(shifter&0x80000000)shl_192(&b);	// "optional multiply by 2" in Prime 95 documentation
-  
+
 #if (TRACE_KERNEL > 2)
       if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x (b)\n",
           shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
-  
+
       a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
       a.d1 = b.d3;
       a.d2 = b.d4;
-  
+
       mul_96_192_no_low3(&tmp192, a, u);					// tmp192 = (b / (2^80)) * u
-  
+
 #if (TRACE_KERNEL > 3)
       if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x * u = %x:%x:%x:...\n",
           a.d2.s0, a.d1.s0, a.d0.s0, tmp192.d5.s0, tmp192.d4.s0, tmp192.d3.s0);
 #endif
-  
+
       a.d0 = tmp192.d3;							// a = ((b / (2^80)) * u) / (2^80)
       a.d1 = tmp192.d4;							// this includes the shiftleft by 32 bits, read above...
       a.d2 = tmp192.d5;
-  
+
       mul_96(&tmp96, a, f);						// tmp96 = (((b / (2^80)) * u) / (2^80)) * f
-  
+
 #if (TRACE_KERNEL > 3)
       if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x * f = %x:%x:%x (tmp)\n",
           a.d2.s0, a.d1.s0, a.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
-  
+
       carry= AS_UINT_V(tmp96.d0 > b.d0);
       a.d0 = b.d0 - tmp96.d0;
-  
+
       a.d1  = b.d1 - tmp96.d1 + carry;
       carry= AS_UINT_V((a.d1 > b.d1) || (carry && AS_UINT_V(a.d1 == b.d1)));
-  
+
       a.d2 = b.d2 - tmp96.d2 + carry;	 // we do not need the upper digits of b and tmp96 because they are 0 after this subtraction!
-  
+
 #if (TRACE_KERNEL > 3)
       if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x - tmp = %x:%x:%x (a)\n",
           b.d2.s0, b.d1.s0, b.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
-  
+
       shifter+=shifter;
     }
 #if (TRACE_KERNEL > 0)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
-  
+
     mod_simple_96_and_check_big_factor96(a, f, ff, RES);
 }
 
@@ -1839,7 +1839,7 @@ __kernel void cl_barrett32_76(__private uint exponent, const int96_t k_base, con
 
 	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
 	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
-  
+
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
 #if (TRACE_KERNEL > 0)
@@ -1869,7 +1869,7 @@ __kernel void cl_barrett32_77(__private uint exponent, const int96_t k_base, con
 
 	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
 	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
-  
+
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
 #if (TRACE_KERNEL > 0)
@@ -1899,7 +1899,7 @@ __kernel void cl_barrett32_79(__private uint exponent, const int96_t k_base, con
 
 	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
 	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
-  
+
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
 #if (TRACE_KERNEL > 0)
@@ -1989,7 +1989,7 @@ __kernel void cl_barrett32_92(__private uint exponent, const int96_t k_base, con
 
 	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
 	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
-  
+
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
 #if (TRACE_KERNEL > 1)
@@ -2035,6 +2035,10 @@ a is precomputed on host ONCE.
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
+#ifdef INTEL
+  // WA for another bug
+  cl_uint num_c;
+#endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_76_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -2055,6 +2059,10 @@ a is precomputed on host ONCE.
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_76_gs: shift=%d, shifted exp=%#x\n",
         shiftcount, initial_shifter_value);
+#endif
+#ifdef INTEL
+  // WA for another bug
+  num_c = NUM_CLASSES % (total_bit_count + 1000000);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -2110,8 +2118,14 @@ a is precomputed on host ONCE.
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
+#ifdef INTEL
+  // WA for another bug
+    my_k_base.d0 = k_base.d0 + num_c * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
+    my_k_base.d1 = k_base.d1 + mul_hi(num_c, k_delta) - AS_UINT_V(k_base.d0 > my_k_base.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#else
     my_k_base.d0 = k_base.d0 + NUM_CLASSES * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
     my_k_base.d1 = k_base.d1 + mul_hi(NUM_CLASSES, k_delta) - AS_UINT_V(k_base.d0 > my_k_base.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#endif
 
     f.d0   = my_k_base.d0 * exponent;
     tmp_v  = mul_hi(my_k_base.d0, exponent);
@@ -2168,6 +2182,10 @@ a is precomputed on host ONCE.
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
+#ifdef INTEL
+  // WA for another bug
+  cl_uint num_c;
+#endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_77_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -2188,6 +2206,10 @@ a is precomputed on host ONCE.
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: shift=%d, shifted exp=%#x\n",
         shiftcount, initial_shifter_value);
+#endif
+#ifdef INTEL
+  // WA for another bug
+  num_c = NUM_CLASSES % (total_bit_count + 1000000);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -2243,8 +2265,14 @@ a is precomputed on host ONCE.
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
+#ifdef INTEL
+  // WA for another bug
+    my_k_base.d0 = k_base.d0 + num_c * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
+    my_k_base.d1 = k_base.d1 + mul_hi(num_c, k_delta) - AS_UINT_V(k_base.d0 > my_k_base.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#else
     my_k_base.d0 = k_base.d0 + NUM_CLASSES * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
     my_k_base.d1 = k_base.d1 + mul_hi(NUM_CLASSES, k_delta) - AS_UINT_V(k_base.d0 > my_k_base.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#endif
 
     f.d0   = my_k_base.d0 * exponent;
     tmp_v  = mul_hi(my_k_base.d0, exponent);
@@ -2301,6 +2329,10 @@ a is precomputed on host ONCE.
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
+#ifdef INTEL
+  // WA for another bug
+  cl_uint num_c;
+#endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_79_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -2321,6 +2353,10 @@ a is precomputed on host ONCE.
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79_gs: shift=%d, shifted exp=%#x\n",
         shiftcount, initial_shifter_value);
+#endif
+#ifdef INTEL
+  // WA for another bug
+  num_c = NUM_CLASSES % (total_bit_count + 1000000);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -2376,8 +2412,14 @@ a is precomputed on host ONCE.
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
+#ifdef INTEL
+  // WA for another bug
+    my_k_base.d0 = k_base.d0 + num_c * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
+    my_k_base.d1 = k_base.d1 + mul_hi(num_c, k_delta) - AS_UINT_V(k_base.d0 > my_k_base.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#else
     my_k_base.d0 = k_base.d0 + NUM_CLASSES * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
     my_k_base.d1 = k_base.d1 + mul_hi(NUM_CLASSES, k_delta) - AS_UINT_V(k_base.d0 > my_k_base.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#endif
 
     f.d0   = my_k_base.d0 * exponent;
     tmp_v  = mul_hi(my_k_base.d0, exponent);
@@ -2434,6 +2476,10 @@ a is precomputed on host ONCE.
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
+#ifdef INTEL
+  // WA for another bug
+  cl_uint num_c;
+#endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_87_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -2454,6 +2500,10 @@ a is precomputed on host ONCE.
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87_gs: shift=%d, shifted exp=%#x\n",
         shiftcount, initial_shifter_value);
+#endif
+#ifdef INTEL
+  // WA for another bug
+  num_c = NUM_CLASSES % (total_bit_count + 1000000);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -2509,8 +2559,14 @@ a is precomputed on host ONCE.
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
+#ifdef INTEL
+  // WA for another bug
+    my_k_base.d0 = k_base.d0 + num_c * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
+    my_k_base.d1 = k_base.d1 + mul_hi(num_c, k_delta) - AS_UINT_V(k_base.d0 > my_k_base.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#else
     my_k_base.d0 = k_base.d0 + NUM_CLASSES * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
     my_k_base.d1 = k_base.d1 + mul_hi(NUM_CLASSES, k_delta) - AS_UINT_V(k_base.d0 > my_k_base.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#endif
 
     f.d0   = my_k_base.d0 * exponent;
     tmp_v  = mul_hi(my_k_base.d0, exponent);
@@ -2567,6 +2623,10 @@ a is precomputed on host ONCE.
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
+#ifdef INTEL
+  // WA for another bug
+  cl_uint num_c;
+#endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_88_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -2587,6 +2647,10 @@ a is precomputed on host ONCE.
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88_gs: shift=%d, shifted exp=%#x\n",
         shiftcount, initial_shifter_value);
+#endif
+#ifdef INTEL
+  // WA for another bug
+  num_c = NUM_CLASSES % (total_bit_count + 1000000);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -2642,8 +2706,14 @@ a is precomputed on host ONCE.
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
+#ifdef INTEL
+  // WA for another bug
+    my_k_base.d0 = k_base.d0 + num_c * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
+    my_k_base.d1 = k_base.d1 + mul_hi(num_c, k_delta) - AS_UINT_V(k_base.d0 > my_k_base.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#else
     my_k_base.d0 = k_base.d0 + NUM_CLASSES * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
     my_k_base.d1 = k_base.d1 + mul_hi(NUM_CLASSES, k_delta) - AS_UINT_V(k_base.d0 > my_k_base.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#endif
 
     f.d0   = my_k_base.d0 * exponent;
     tmp_v  = mul_hi(my_k_base.d0, exponent);
@@ -2700,6 +2770,10 @@ a is precomputed on host ONCE.
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
+#ifdef INTEL
+  // WA for another bug
+  cl_uint num_c;
+#endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_92_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -2720,6 +2794,10 @@ a is precomputed on host ONCE.
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92_gs: shift=%d, shifted exp=%#x\n",
         shiftcount, initial_shifter_value);
+#endif
+#ifdef INTEL
+  // WA for another bug
+  num_c = NUM_CLASSES % (total_bit_count + 1000000);
 #endif
 
   for (i = lid*VECTOR_SIZE; i < total_bit_count; i += 256*VECTOR_SIZE) // VECTOR_SIZE*THREADS_PER_BLOCK
@@ -2775,8 +2853,14 @@ a is precomputed on host ONCE.
 
 // Compute new f.  This is computed as f = f_base + 2 * (k - k_base) * exp.
 
+#ifdef INTEL
+  // WA for another bug
+    my_k_base.d0 = k_base.d0 + num_c * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
+    my_k_base.d1 = k_base.d1 + mul_hi(num_c, k_delta) - AS_UINT_V(k_base.d0 > my_k_base.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#else
     my_k_base.d0 = k_base.d0 + NUM_CLASSES * k_delta;  // k_delta can exceed 2^24: don't use mul24/mad24 for it
     my_k_base.d1 = k_base.d1 + mul_hi(NUM_CLASSES, k_delta) - AS_UINT_V(k_base.d0 > my_k_base.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#endif
 
     f.d0   = my_k_base.d0 * exponent;
     tmp_v  = mul_hi(my_k_base.d0, exponent);
