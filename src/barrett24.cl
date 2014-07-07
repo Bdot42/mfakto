@@ -701,7 +701,12 @@ bit_max64 is bit_max - 64! (1 .. 8)
   t.sf = k_tab[tid+15];
 #endif
 
+#ifdef INTEL
+  // WA for intel optimizer bug
+  mul_24_48(&(a.d1), &(a.d0), t, (4620 % (exp72.d1 + 1000000))); // NUM_CLASSES
+#else
   mul_24_48(&(a.d1), &(a.d0), t, 4620); // NUM_CLASSES
+#endif
   k.d0 = k_base.d0 + a.d0;
   k.d1 = k_base.d1 + a.d1;
   k.d1 += k.d0 >> 24; k.d0 &= 0xFFFFFF;

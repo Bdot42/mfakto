@@ -644,7 +644,7 @@ void set_gpu_type()
     }
     else if (strstr(deviceinfo.d_name, "Intel(R) HD Graphics"))
     {
-      mystuff.gpu_type = GPU_INTEL;  // not (yet) working
+      mystuff.gpu_type = GPU_INTEL;  // IntelHD
     }
     else
     {
@@ -1393,7 +1393,6 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1))) SegSieve (__globa
 */
 cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event, cl_uint maxp)
 {
-  static cl_uint last_maxp = 0xFFFFFFFF;  // 0 is a bad choice for "uninitialized" as it can happen for small GPUSievePrimes
   cl_int         status;
   size_t         globalThreads = numblocks * localThreads;
 
@@ -1402,9 +1401,8 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
         (int) numblocks, (int) localThreads, (int) globalThreads, mystuff.exponent, maxp);
 #endif
 
-  if (last_maxp != maxp) // only copy primes-per-thread if it changed
+  if (0xFFFFFFFF != maxp) // only copy primes-per-thread if it changed, otherwise this function receives 0xFFFFFFFF as "unchanged"
   {
-    last_maxp = maxp;
     status = clSetKernelArg(kernel_info[CL_SIEVE].kernel,
                     2,
                     sizeof(cl_uint),

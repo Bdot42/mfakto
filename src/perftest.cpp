@@ -305,13 +305,12 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
 
   for (j=0;j<nss; j++)
   {
-    sieve_free();
 #ifdef SIEVE_SIZE_LIMIT
-    sieve_init();
     if (j>=3) break; // quit after 3 equal loops if we can't dynamically set the sieve size anyway
     sieve_init_class(EXP, k+=1000000, 1000000);
     printf("\n%6d kiB  ", SIEVE_SIZE/8192+1);
 #else
+    sieve_free();
     cl_uint tmp=m*ssizes[j];
     sieve_init(tmp, 1000000);
     sieve_init_class(EXP, k+=1000000, 1000000);
@@ -378,7 +377,6 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
     printf(" %7.1f", peak[ii]*(last_elem[ii]/(mystuff.threads_per_grid*j) -1));
   }
 
-
   printf("\n\n");
   return 0;
 }
@@ -428,16 +426,14 @@ int test_copy(cl_uint par)
             std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_ktab(clEnqueueWriteBuffer)\n";
             return RET_ERROR;
         }
-
     }
     status = clFinish(commandQueuePrf);
   }
 
-  time1 = 0.0;
+  timer_init(&timer);
 
   for (j=0; j<par; j++)
   {
-    timer_init(&timer);
     for (i=0; i<10; i++)
     {
         status = clEnqueueWriteBuffer(commandQueue,
@@ -455,11 +451,10 @@ int test_copy(cl_uint par)
             std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_ktab(clEnqueueWriteBuffer)\n";
             return RET_ERROR;
         }
-
     }
     status = clFinish(commandQueue);
-    time1  += (double)timer_diff(&timer);
   }
+  time1 = (double)timer_diff(&timer);
   printf("\n  Standard copy, standard queue:\n%8d MB in %6.1f ms (%6.1f MB/s) (real)\n",
       (int)(j*10*size/1024/1024), time1/1000.0, (double)(j*10*size)/time1);
 
@@ -589,14 +584,12 @@ int test_gpu_sieve(cl_uint par)
   struct timeval timer;
   double time1;
   cl_uint i;
-  cl_ulong k;
+  cl_ulong k = 9876543210;
 
   // 50 is a reasonable number that does not usually crash the driver
   //par = 50;
 
   printf("\n4. GPU sieve, %d iterations each\n", par);
-
-  k = 9876543210;
 
   timer_init(&timer);
     init_CLstreams(0);  // runs gpusieve_init(&mystuff, context);

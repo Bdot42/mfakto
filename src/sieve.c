@@ -26,6 +26,8 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "timer.h"
 #endif
 #include "compatibility.h"
+#include "gpusieve.h"
+
 void printArray(const char * Name, const unsigned int * Data, const unsigned int len, unsigned int hex);
 
 /* yeah, I like global variables :) */
@@ -87,7 +89,7 @@ void sieve_init()
 void sieve_init(unsigned int ssize, unsigned int max_global)
 #endif
 {
-  unsigned int i,j,k;
+  unsigned int i,j;
 #ifdef SIEVE_SIZE_LIMIT
   const unsigned int max_global = SIEVE_PRIMES_MAX;
 #else
@@ -104,7 +106,7 @@ void sieve_init(unsigned int ssize, unsigned int max_global)
   }
   sieve      = malloc(SIEVE_BYTES);
   sieve_base = malloc(SIEVE_BYTES);
-  primes     = malloc(max_global * sizeof(unsigned int));
+  primes     = malloc((1+max_global) * sizeof(unsigned int));
   k_init     = malloc(max_global * sizeof(int));
 
   if ((sieve == NULL) || (sieve_base == NULL) || (primes == NULL) || (k_init == NULL))
@@ -113,27 +115,9 @@ void sieve_init(unsigned int ssize, unsigned int max_global)
     exit(1); // TODO: add and evaluate return value for this function
   }
 
-  primes[0]=3;
-  i=0;j=3;
-  while(i<max_global)
-  {
-    k=0;
-    while(primes[k]*primes[k]<=j)
-    {
-      if(j%primes[k]==0)
-      {
-        j+=2;
-        k=0;
-      }
-      else
-      {
-        k++;
-      }
-    }
-    primes[i]=j;
-    i++;    
-    j+=2;
-  }
+  tiny_soe(max_global, primes); // tiny_soe starts primes at 2, we expect a start at 3 for the CPU sieve
+  memmove(primes, &primes[1], max_global * sizeof(unsigned int));
+
   #ifdef DETAILED_INFO
     printArray("primes", primes, max_global, 0);
   #endif
