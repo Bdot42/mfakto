@@ -20,6 +20,9 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #ifndef mfakto_H_
 #define mfakto_H_
 
+#include "CL/cl.h"
+#include "my_types.h"
+
 #define NUM_KERNELS (sizeof(kernel_info)/sizeof(kernel_info[0]))
 #define KERNEL_FILE "mfakto_Kernels.cl"
 #define MAX_PRIMES_PER_THREAD	4224			// Primes up to 16M can be handled by this many "rows" of 256 primes (GPU sieving)

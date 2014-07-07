@@ -28,8 +28,12 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #define _getch kb.getch
 #endif
 
+#include "mfakto.h"
+#include "params.h"
 #include "compatibility.h"
 #include "my_types.h"
+#include "sieve.h"
+#include "gpusieve.h"
 #include <stdio.h>
 #include <iostream>
 
@@ -107,12 +111,11 @@ static void validate_sieve_settings(mystuff_t *mystuff)
   else
   {
     if (mystuff->sieve_primes < SIEVE_PRIMES_MIN) mystuff->sieve_primes = SIEVE_PRIMES_MIN;
-    if (mystuff->sieve_primes < SIEVE_PRIMES_MAX) mystuff->sieve_primes = SIEVE_PRIMES_MAX;
+    if (mystuff->sieve_primes > SIEVE_PRIMES_MAX) mystuff->sieve_primes = SIEVE_PRIMES_MAX;
 #ifndef SIEVE_SIZE_LIMIT
     if (mystuff->sieve_size < 13*17*19*23) mystuff->sieve_size = 13*17*19*23;
 #endif
   }
-
 }
 
 static void lower_sieve_primes(mystuff_t *mystuff)
@@ -199,9 +202,45 @@ static void use_next_kernel(mystuff_t *mystuff)
   printf("next kernel: not yet implemented\n");
 }
 
+void check_and_do_reinit(mystuff_t *saved_mystuff, mystuff_t *mystuff)
+{
+  if (mystuff->gpu_sieving)
+  {
+    if (mystuff->gpu_sieve_primes > saved_mystuff->gpu_sieve_primes ||
+        mystuff->gpu_sieve_processing_size != saved_mystuff->gpu_sieve_processing_size ||
+        mystuff->gpu_sieve_size != saved_mystuff->gpu_sieve_size)
+    {
+      if (mystuff->verbosity > 0)
+        printf("Reinitializing GPU sieve\n");
+      gpusieve_free(mystuff);
+      init_CLstreams(1);
+      gpusieve_init_exponent(mystuff);
+    }
+  }
+  else
+  {
+    if (mystuff->sieve_primes > saved_mystuff->sieve_primes
+#ifndef SIEVE_SIZE_LIMIT
+      || mystuff->sieve_size != saved_mystuff->sieve_size
+#endif
+      )
+    {
+      if (mystuff->verbosity > 0)
+        printf("Reinitializing CPU sieve\n");
+      sieve_free();
+#ifdef SIEVE_SIZE_LIMIT
+      sieve_init();
+#else
+      sieve_init(mystuff->sieve_size, mystuff->sieve_primes_max);
+#endif
+    }
+  }
+}
+
 int handle_kb_input(mystuff_t *mystuff)
 {
   int last_key = 0;
+  mystuff_t saved_mystuff = *mystuff;
 
   while (_kbhit())
   {
@@ -286,5 +325,7 @@ int handle_kb_input(mystuff_t *mystuff)
       break;
     }
   }
+  check_and_do_reinit(&saved_mystuff, mystuff);
+
   return last_key;
 }

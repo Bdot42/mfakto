@@ -16,6 +16,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifndef GPUSIEVE_H_
+#define GPUSIEVE_H_
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,4 +34,5 @@ void tiny_soe (cl_uint limit, cl_uint *primes);
 
 #ifdef __cplusplus
 }
+#endif
 #endif
