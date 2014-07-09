@@ -30,10 +30,8 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include <errno.h>
 #include <time.h>
-#include <CL/cl.h>
 
-#include "params.h"
-#include "my_types.h"
+#include "mfakto.h"
 #include "compatibility.h"
 #include "sieve.h"
 #include "read_config.h"
@@ -43,12 +41,9 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "signal_handler.h"
 #include "filelocking.h"
 #include "perftest.h"
-#include "mfakto.h"
 #include "gpusieve.h"
 #include "output.h"
 
-
-int gpu_sieve_main (int argc, char** argv);
 
 mystuff_t mystuff;
 
@@ -108,7 +103,7 @@ The variables exp, bit_min and bit_max must be a valid assignment! */
     if ((kernel >= BARRETT79_MUL32) && (kernel <= BARRETT74_MUL15))
       kernel += BARRETT79_MUL32_GS - BARRETT79_MUL32;  // adjust: if asked for the CPU version, check the GPU one
     if ((kernel < BARRETT79_MUL32_GS) || (kernel > BARRETT74_MUL15_GS))
-      ret = 0;  // no GPU version available
+      return 0;  // no GPU version available
   }
 
   k = kernel_info[kernel];
@@ -312,24 +307,24 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
-/*  GPU_INTEL,  */
-      MG62,             // "cl_mg_62"        (9.60 M/s)
-      BARRETT77_MUL32,  // "cl_barrett32_77" (5.54 M/s)
-      BARRETT76_MUL32,  // "cl_barrett32_76" (5.16 M/s)
-      BARRETT88_MUL32,  // "cl_barrett32_88" (4.35 M/s)
-      BARRETT79_MUL32,  // "cl_barrett32_79" (4.22 M/s)
-      BARRETT87_MUL32,  // "cl_barrett32_87" (4.16 M/s)
-      BARRETT69_MUL15,  // "cl_barrett15_69" (3.60 M/s)
-      BARRETT70_MUL15,  // "cl_barrett15_70" (3.60 M/s)
-      BARRETT92_MUL32,  // "cl_barrett32_92" (3.56 M/s)
-      BARRETT71_MUL15,  // "cl_barrett15_71" (3.43 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (3.40 M/s)
-      BARRETT73_MUL15,  // "cl_barrett15_73" (3.07 M/s)
+/*  GPU_INTEL, (HD4600, v=4) */
+      MG62,             // "cl_mg_62"        (?)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (26.04 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (25.41 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (22.13 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (21.47 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (20.91 M/s)
+      BARRETT69_MUL15,  // "cl_barrett15_69" (19.31 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (19.30 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (18.41 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (18.22 M/s)
+      BARRETT70_MUL24,  // "cl_barrett24_70" (17.12 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (16.31 M/s)
       BARRETT74_MUL15,  // "cl_barrett15_74"
-      BARRETT82_MUL15,  // "cl_barrett15_82" (2.72 M/s)
-      BARRETT83_MUL15,  // "cl_barrett15_83" (2.65 M/s)
-      _63BIT_MUL24,     // "mfakto_cl_63"    (2.59 M/s)
-      BARRETT88_MUL15,  // "cl_barrett15_88" (2.43 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (14.03 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (13.00 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (12.05 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (?)
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,

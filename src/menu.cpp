@@ -29,9 +29,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #include "mfakto.h"
-#include "params.h"
 #include "compatibility.h"
-#include "my_types.h"
 #include "sieve.h"
 #include "gpusieve.h"
 #include <stdio.h>

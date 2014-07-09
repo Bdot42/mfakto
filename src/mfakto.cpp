@@ -22,9 +22,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <fstream>
 #include "string.h"
-#include "CL/cl.h"
-#include "params.h"
-#include "my_types.h"
+#include "mfakto.h"
 #include "compatibility.h"
 #include "read_config.h"
 #include "parse.h"
@@ -33,7 +31,6 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "checkpoint.h"
 #include "filelocking.h"
 #include "perftest.h"
-#include "mfakto.h"
 #include "output.h"
 #include "gpusieve.h"
 #include "menu.h"

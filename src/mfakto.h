@@ -20,7 +20,6 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #ifndef mfakto_H_
 #define mfakto_H_
 
-#include "CL/cl.h"
 #include "my_types.h"
 
 #define NUM_KERNELS (sizeof(kernel_info)/sizeof(kernel_info[0]))
