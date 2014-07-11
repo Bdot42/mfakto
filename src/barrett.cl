@@ -2037,7 +2037,7 @@ a is precomputed on host ONCE.
 #endif
 #ifdef INTEL
   // WA for another bug
-  cl_uint num_c;
+  uint num_c;
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
@@ -2184,7 +2184,7 @@ a is precomputed on host ONCE.
 #endif
 #ifdef INTEL
   // WA for another bug
-  cl_uint num_c;
+  uint num_c;
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
@@ -2331,7 +2331,7 @@ a is precomputed on host ONCE.
 #endif
 #ifdef INTEL
   // WA for another bug
-  cl_uint num_c;
+  uint num_c;
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
@@ -2478,7 +2478,7 @@ a is precomputed on host ONCE.
 #endif
 #ifdef INTEL
   // WA for another bug
-  cl_uint num_c;
+  uint num_c;
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
@@ -2625,7 +2625,7 @@ a is precomputed on host ONCE.
 #endif
 #ifdef INTEL
   // WA for another bug
-  cl_uint num_c;
+  uint num_c;
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
@@ -2772,7 +2772,7 @@ a is precomputed on host ONCE.
 #endif
 #ifdef INTEL
   // WA for another bug
-  cl_uint num_c;
+  uint num_c;
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
