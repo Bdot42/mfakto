@@ -879,10 +879,12 @@ int load_kernels(cl_int *devnumber)
     if (status != CL_SUCCESS) return 1;
   }
 
+  size_t numDevices=0;
+  char **binaries=NULL;
+  size_t *binarySizes=NULL;
   while (!binary_loaded && mystuff.binfile[0]) // should be an if, but I want to use break on errors
   {
     // write the binary file if we did not load from there
-    size_t numDevices;
     status = clGetProgramInfo(
                  program,
                  CL_PROGRAM_NUM_DEVICES,
@@ -912,10 +914,10 @@ int load_kernels(cl_int *devnumber)
     if(status != CL_SUCCESS)
     {
       std::cerr << "clGetProgramInfo(CL_PROGRAM_DEVICES) failed.";
-      break
+      break;
     }
     /* figure out the sizes of each of the binaries. */
-    size_t *binarySizes = (size_t*)malloc( sizeof(size_t) * numDevices );
+    binarySizes = (size_t*)malloc( sizeof(size_t) * numDevices );
     if (!binarySizes)
     {
       std::cerr << "Failed to allocate host memory.(binarySizes, " << (sizeof(size_t) * numDevices) << " bytes)\n";
@@ -933,7 +935,7 @@ int load_kernels(cl_int *devnumber)
       break;
     }
     // we copy only the first binary, but numDevices is usually 1 anyway
-    char **binaries = (char **)malloc( sizeof(char *) * numDevices );
+    binaries = (char **)calloc( sizeof(char *), numDevices );
     if (!binaries)
     {
       std::cerr << "Failed to allocate host memory.(binaries, " << (sizeof(char *) * numDevices) << " bytes)\n";
@@ -1007,7 +1009,7 @@ int load_kernels(cl_int *devnumber)
         printf(
             "binary kernel(%s) : %s\n",
             mystuff.binfile,
-            "Skipping as there is no binary data to write.");
+            "Skipping as there is no binary data to write.\n");
         remove(mystuff.binfile);
     }
     break;
