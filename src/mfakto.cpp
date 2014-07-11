@@ -879,7 +879,7 @@ int load_kernels(cl_int *devnumber)
     if (status != CL_SUCCESS) return 1;
   }
 
-  if (!binary_loaded && mystuff.binfile[0])
+  while (!binary_loaded && mystuff.binfile[0]) // should be an if, but I want to use break on errors
   {
     // write the binary file if we did not load from there
     size_t numDevices;
@@ -889,14 +889,19 @@ int load_kernels(cl_int *devnumber)
                  sizeof(numDevices),
                  &numDevices,
                  NULL );
-    if(status != CL_SUCCESS)
+    if(status != CL_SUCCESS || numDevices == 0)
     {
-       std::cerr << "clGetProgramInfo(CL_PROGRAM_NUM_DEVICES) failed.";
+      std::cerr << "clGetProgramInfo(CL_PROGRAM_NUM_DEVICES) failed. Cannot save binary kernel.\n";
+      break;
     }
 
     cl_device_id *devices = (cl_device_id *)malloc( sizeof(cl_device_id) *
                             numDevices );
-    if(!devices) std::cerr << "Failed to allocate host memory.(devices)";
+    if(!devices)
+    {
+      std::cerr << "Failed to allocate host memory.(devices, " << sizeof(cl_device_id) << " bytes)\n";
+      break;
+    }
     /* grab the handles to all of the devices in the program. */
     status = clGetProgramInfo(
                  program,
@@ -906,11 +911,16 @@ int load_kernels(cl_int *devnumber)
                  NULL );
     if(status != CL_SUCCESS)
     {
-       std::cerr << "clGetProgramInfo(CL_PROGRAM_DEVICES) failed.";
+      std::cerr << "clGetProgramInfo(CL_PROGRAM_DEVICES) failed.";
+      break
     }
     /* figure out the sizes of each of the binaries. */
     size_t *binarySizes = (size_t*)malloc( sizeof(size_t) * numDevices );
-    if (!binarySizes) std::cerr << "Failed to allocate host memory.(binarySizes)";
+    if (!binarySizes)
+    {
+      std::cerr << "Failed to allocate host memory.(binarySizes, " << (sizeof(size_t) * numDevices) << " bytes)\n";
+      break;
+    }
     status = clGetProgramInfo(
                  program,
                  CL_PROGRAM_BINARY_SIZES,
@@ -919,22 +929,31 @@ int load_kernels(cl_int *devnumber)
                  NULL);
     if(status != CL_SUCCESS)
     {
-       std::cerr << "clGetProgramInfo(CL_PROGRAM_BINARY_SIZES) failed.";
+      std::cerr << "clGetProgramInfo(CL_PROGRAM_BINARY_SIZES) failed.";
+      break;
     }
     // we copy only the first binary, but numDevices is usually 1 anyway
     char **binaries = (char **)malloc( sizeof(char *) * numDevices );
-    if (!binaries) std::cerr << "Failed to allocate host memory.(binaries)";
+    if (!binaries)
+    {
+      std::cerr << "Failed to allocate host memory.(binaries, " << (sizeof(char *) * numDevices) << " bytes)\n";
+      break;
+    }
     for(i = 0; i < numDevices; i++)
     {
-        if(binarySizes[i] != 0)
+      if(binarySizes[i] != 0)
+      {
+        binaries[i] = (char *)malloc( sizeof(char) * binarySizes[i]);
+        if(!binaries[i])
         {
-            binaries[i] = (char *)malloc( sizeof(char) * binarySizes[i]);
-            if(!binaries[i]) std::cerr << "Failed to allocate host memory.(binaries[i])";
+          std::cerr << "Failed to allocate host memory.(binaries[i], " << (sizeof(char) * binarySizes[i]) << " bytes)\n";
+          break;
         }
-        else
-        {
-            binaries[i] = NULL;
-        }
+      }
+      else
+      {
+        binaries[i] = NULL;
+      }
     }
     status = clGetProgramInfo(
                  program,
@@ -945,6 +964,7 @@ int load_kernels(cl_int *devnumber)
     if(status != CL_SUCCESS)
     {
        std::cerr << "clGetProgramInfo(CL_PROGRAM_BINARIES) failed.";
+       break;
     }
     /* dump out each binary into its own separate file. */
     if (1 < numDevices)
@@ -964,6 +984,7 @@ int load_kernels(cl_int *devnumber)
         if(status != CL_SUCCESS)
         {
           std::cerr << "clGetProgramInfo(CL_DEVICE_NAME) failed.";
+          break;
         }
 
         std::fstream f(mystuff.binfile, (std::fstream::out | std::fstream::binary | std::fstream::trunc));
@@ -989,30 +1010,31 @@ int load_kernels(cl_int *devnumber)
             "Skipping as there is no binary data to write.");
         remove(mystuff.binfile);
     }
-    // Release all resouces and memory
-    for(i = 0; i < numDevices; i++)
+    break;
+  }
+  // Release all resouces and memory
+  for(i = 0; i < numDevices; i++)
+  {
+    if(binaries != NULL && binaries[i] != NULL)
     {
-        if(binaries[i] != NULL)
-        {
-            free(binaries[i]);
-            binaries[i] = NULL;
-        }
+      free(binaries[i]);
+      binaries[i] = NULL;
     }
-    if(binaries != NULL)
-    {
-        free(binaries);
-        binaries = NULL;
-    }
-    if(binarySizes != NULL)
-    {
-        free(binarySizes);
-        binarySizes = NULL;
-    }
-    if(devices != NULL)
-    {
-        free(devices);
-        devices = NULL;
-    }
+  }
+  if(binaries != NULL)
+  {
+    free(binaries);
+    binaries = NULL;
+  }
+  if(binarySizes != NULL)
+  {
+    free(binarySizes);
+    binarySizes = NULL;
+  }
+  if(devices != NULL)
+  {
+    free(devices);
+    devices = NULL;
   }
 
   /* get kernels by name */
