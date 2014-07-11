@@ -310,7 +310,12 @@ void calculate_FC32(const uint exponent, const uint tid, const __global uint * r
 #endif
 //MAD only available for float
   k.d0 = mad24(t, 4620u, k_base.d0);
+#ifdef INTEL
+  // WA for intel optimizer bug. exponent has a min limit of 2^10, so the % will not change the value
+  k.d1 = mul_hi(t, (4620 % (exponent + 1))) + k_base.d1 - AS_UINT_V(k_base.d0 > k.d0);
+#else
   k.d1 = mul_hi(t, 4620u) + k_base.d1 - AS_UINT_V(k_base.d0 > k.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#endif
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((const __constant char *)"calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
@@ -388,10 +393,15 @@ void calculate_FC32_mad(const uint exponent, const uint tid, const __global uint
 #endif
 //MAD only available for float
   k.d0 = mad24(t, 4620u, k_base.d0);
+#ifdef INTEL
+  // WA for intel optimizer bug. exponent has a min limit of 2^10, so the % will not change the value
+  k.d1 = mul_hi(t, (4620 % (exponent + 1))) + k_base.d1 - AS_UINT_V(k_base.d0 > k.d0);
+#else
   k.d1 = mul_hi(t, 4620u) + k_base.d1 - AS_UINT_V(k_base.d0 > k.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
+#endif
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
+    if (tid==TRACE_TID) printf((__constant char *)"calculate_FC32_mad: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 

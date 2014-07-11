@@ -16,6 +16,8 @@ You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "my_types.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

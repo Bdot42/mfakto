@@ -142,4 +142,4 @@ TODO
   let a test mode find out about the best config
 - Try and build an assembler kernel for GCN (find possible optimizations like carry, mul24_hi, scalar unit etc)
 - Split device detection from kernel compilation to make use of device's capabilities
-
+- Complete instuctions on building on Windows(VS and MinGW)
