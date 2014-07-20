@@ -1,9 +1,7 @@
 // simulate _kbhit() on Linux
 // taken from http://linux-sxs.org/programming/kbhit.html
 
-#ifndef _MSC_VER
-#ifndef __MINGW32__
-#ifndef __CYGWIN__
+#ifndef _WIN32
 
 #include "kbhit.h"
 #include <unistd.h> // read()
@@ -59,6 +57,4 @@ char ch;
     return ch;
 }
 
-#endif
-#endif
 #endif
