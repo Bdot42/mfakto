@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #ifndef _MSC_VER
   #include <unistd.h>
-  #define _GNU_SOURCE
   #include <sched.h>
 #endif
 #if defined __MINGW32__ || __CYGWIN__
@@ -1077,7 +1077,7 @@ int main(int argc, char **argv)
     mystuff.threads_per_grid = 256;
     if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
     {
-      printf("ERROR: device only supports %d threads per grid. A minimum of 256 is required for GPU sieving.\n", deviceinfo.maxThreadsPerGrid);
+      printf("ERROR: device only supports %u threads per grid. A minimum of 256 is required for GPU sieving.\n", (unsigned int) deviceinfo.maxThreadsPerGrid);
       return ERR_MEM;
     }
   }
@@ -1119,7 +1119,8 @@ int main(int argc, char **argv)
 #if defined _MSC_VER || __MINGW32__ || __CYGWIN__ // might be best just doing as _WIN32
       SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
 #else
-      sched_setaffinity(0, sizeof(mystuff.cpu_mask), mystuff.cpu_mask);
+
+      sched_setaffinity(0, sizeof(mystuff.cpu_mask), (cpu_set_t *)&(mystuff.cpu_mask));
 #endif
     }
 #ifdef SIEVE_SIZE_LIMIT
@@ -1143,8 +1144,8 @@ int main(int argc, char **argv)
 
     do
     {
-      if (use_worktodo) parse_ret = get_next_assignment(mystuff.workfile, &((mystuff.exponent)), &((mystuff.bit_min)),
-                                                            &((mystuff.bit_max_assignment)), NULL, mystuff.verbosity);
+      if (use_worktodo) parse_ret = get_next_assignment(mystuff.workfile, &(mystuff.exponent), &(mystuff.bit_min),
+                                                            &(mystuff.bit_max_assignment), NULL, mystuff.verbosity);
       else
       {
         mystuff.exponent           = exponent;

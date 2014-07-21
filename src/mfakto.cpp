@@ -1762,7 +1762,10 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
   run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount);
 */
 {
-  cl_int   status, argnum;
+  cl_int   status;
+#ifdef CHECKS_MODBASECASE
+  cl_int   argnum;
+#endif
   /*
   __kernel void mfakto_cl_71(__private uint exp, __private int72_t k_base,
                              __global uint *k_tab, __private int shiftcount,
@@ -1821,7 +1824,9 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
       std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (b_preinit)\n";
       return 1;
     }
+#ifdef CHECKS_MODBASECASE
     argnum=6;
+#endif
     if ((kernel_info[BARRETT70_MUL24].kernel == l_kernel))
     {
       /* the bit_max-64 for the barrett kernels (the others ignore it) */
@@ -1833,7 +1838,9 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
       {
         std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_min)\n";
       }
+#ifdef CHECKS_MODBASECASE
       argnum=7;
+#endif
     }
 #ifdef CHECKS_MODBASECASE
     if ((kernel_info[_71BIT_MUL24].kernel == l_kernel) || (kernel_info[_63BIT_MUL24].kernel == l_kernel) || (kernel_info[BARRETT70_MUL24].kernel == l_kernel))

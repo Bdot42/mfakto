@@ -1353,12 +1353,8 @@ if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
   long long unsigned int lo=25;
   long long unsigned int q=3<<23;
   cl_float qr=0.9998f/(cl_float)q;
-  long long unsigned int res_hi;
-  long long unsigned int res_lo;
 
   cl_event in_evt, mod_evt, res_evt;
-
-  res_hi = res_lo = 0;
 
   status = clSetKernelArg(kernel_info[_TEST_MOD_].kernel,
                     0,

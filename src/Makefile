@@ -54,8 +54,7 @@ OPTIMIZE_FLAG = -O3 -funroll-loops  -ffast-math -finline-functions -frerun-loop-
 #OPTIMIZE_FLAG = -g
 
 # Compiler settings for .c files (CPU)
-CC = gcc-4.9
-#CC = gcc
+CC = gcc
 CPP = $(CC)
 CFLAGS = $(BITFLAG) -Wall $(OPTIMIZE_FLAG) $(AMD_APP_INCLUDE) -DBUILD_OPENCL
 CPP_FLAGS =
@@ -65,8 +64,7 @@ CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region
 
 
 # Linker
-LD = g++-4.9 
-#LD = g++
+LD = g++
 LDFLAGS = $(BITFLAG) $(STATIC) $(OPTIMIZE_FLAG) $(AMD_APP_LIB) -lOpenCL
 
 ##############################################################################
@@ -145,3 +143,5 @@ perftest.o: perftest.cpp $(AMD_APP_DIR)/include/CL/cl.h \
  $(AMD_APP_DIR)/include/CL/cl_platform.h params.h my_types.h compatibility.h \
  read_config.h parse.h sieve.h timer.h checkpoint.h filelocking.h \
  signal_handler.h mfakto.h
+menu.o: menu.h compatibility.h my_types.h
+kbhit.o: kbhit.h
