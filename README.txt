@@ -261,5 +261,4 @@ A Since mfakto version 0.14, mfakto tries to load precompiled kernel files.
 - documentation and comments in code
 - full 95-bit implementation
 - perftest modes for kernel speed.
-- Implement&test AllowSleep
 - build a GCN-assembler-kernel
