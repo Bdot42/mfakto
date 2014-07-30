@@ -115,7 +115,7 @@ void sieve_init(unsigned int ssize, unsigned int max_global)
     exit(1); // TODO: add and evaluate return value for this function
   }
 
-  tiny_soe(max_global, primes); // tiny_soe starts primes at 2, we expect a start at 3 for the CPU sieve
+  tiny_soe(1+max_global, primes); // tiny_soe starts primes at 2, we expect a start at 3 for the CPU sieve
   memmove(primes, &primes[1], max_global * sizeof(unsigned int));
 
   #ifdef DETAILED_INFO

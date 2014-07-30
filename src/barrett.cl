@@ -1025,7 +1025,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffc) / ff;		// just a little bit below 1.0f so we allways underestimate the quotient
+  ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we allways underestimate the quotient
 
   tmp192.d4 = 0xFFFFFFFF;						// tmp is nearly 2^(81)
   tmp192.d3 = 0xFFFFFFFF;
@@ -1426,7 +1426,6 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-//  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
   ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
@@ -1558,7 +1557,6 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-//  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
   ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
@@ -1680,7 +1678,6 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
   ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-//  ff= 1.0f / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;

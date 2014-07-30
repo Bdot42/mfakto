@@ -2397,9 +2397,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
   ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // f.d1 needed?
 
-  //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  //ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
-  ff = as_float(0x3f7ffffc) / ff;     // on Cayman and GCN 0x3f7ffffd is still not sufficient
+  ff = as_float(0x3f7ffffd) / ff;     // on Cayman and GCN 0x3f7ffffd is still not sufficient
 
   // we need u=2^(2*bit_max)/f. As bit_max is between 61 and 82, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
 
@@ -2595,7 +2593,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
   ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // f.d1 needed?
 
-  ff = as_float(0x3f7ffffc) / ff;     // on Cayman and GCN 0x3f7ffffd is still not sufficient
+  ff = as_float(0x3f7ffffd) / ff;     // on Cayman and GCN 0x3f7ffffd is still not sufficient
 
   // we need u=2^(2*bit_max)/f. As bit_max is between 60 and 90, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
 
@@ -2792,7 +2790,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
   ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // at factor size 60 bits, this gives 30 significant bits
 
-  ff = as_float(0x3f7ffffc) / ff;     // on Cayman and GCN 0x3f7ffffd is still not sufficient
+  ff = as_float(0x3f7ffffd) / ff;     // on Cayman and GCN 0x3f7ffffd is still not sufficient
 
   // we need u=2^(2*bit_max)/f. As bit_max is between 60 and 90, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
 

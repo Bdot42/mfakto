@@ -254,7 +254,7 @@ int init_CL(int num_streams, cl_int *devnumber)
   cl_uint numplatforms, i;
   cl_platform_id platform = NULL;
   cl_platform_id* platformlist = NULL;
-  cl_device_type devtype = CL_DEVICE_TYPE_GPU;
+  cl_device_type devtype = CL_DEVICE_TYPE_GPU|CL_DEVICE_TYPE_ACCELERATOR;
 
   if (mystuff.verbosity > 0) {printf("Select device - "); fflush(NULL);}
   status = clGetPlatformIDs(0, NULL, &numplatforms);
@@ -324,9 +324,10 @@ int init_CL(int num_streams, cl_int *devnumber)
         std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformInfo(VENDOR)\n";
         return 1;
       }
+      platform = platformlist[i];  // use any platform, but ...
       if(strcmp(buf, "Advanced Micro Devices, Inc.") == 0)
       {
-        platform = platformlist[i];
+        break;  // ... prefer AMD, otherwise use the last one
       }
 #ifdef DETAILED_INFO
       std::cout << "OpenCL Platform " << (i+1) << "/" << numplatforms << ": " << buf;
@@ -375,7 +376,6 @@ int init_CL(int num_streams, cl_int *devnumber)
   if(status != CL_SUCCESS)
   {
     std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_CONTEXT_NUM_DEVICES) - assuming one device\n";
-    // return 1;
     num_devices = 1;
   }
 
