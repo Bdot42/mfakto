@@ -523,6 +523,19 @@ int init_CL(int num_streams, cl_int *devnumber)
            "         please re-run this test on the CPU, or on a GPU with atomics.\n");
   }
 
+  if (strstr(deviceinfo.exts, "cl_khr_fp64") == NULL)
+  {
+    printf("\nWARNING: Device does not support double precision operations. Disabling\n"
+      "         some kernels requiring support for doubles.\n");
+    // setting bix_max to 0 makes them unsuitable for any task. They still need to compile and be loadable.
+    kernel_info[BARRETT82_MUL15].bit_max = 0;
+    kernel_info[BARRETT82_MUL15_GS].bit_max = 0;
+    kernel_info[BARRETT83_MUL15].bit_max = 0;
+    kernel_info[BARRETT83_MUL15_GS].bit_max = 0;
+    kernel_info[BARRETT88_MUL15].bit_max = 0;
+    kernel_info[BARRETT88_MUL15_GS].bit_max = 0;
+  }
+
   deviceinfo.maxThreadsPerBlock = deviceinfo.wi_sizes[0];
   deviceinfo.maxThreadsPerGrid  = deviceinfo.wi_sizes[0];
   for (i=1; i<deviceinfo.w_dim && i<5; i++)

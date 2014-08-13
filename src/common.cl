@@ -33,7 +33,7 @@ Version 0.15
 #else
 // hack to make printfs ignored when unknown (e.g. on NVIDIA)
 #pragma "Defining printf"
-#define printf
+#define printf(x)
 #endif
 
 #ifdef cl_amd_popcnt
@@ -52,10 +52,12 @@ uint popcount(uint x)
   return x;
 }
 #endif
+#ifdef cl_khr_fp64
+#pragma  OPENCL EXTENSION cl_khr_fp64 : enable
+#else
+#pragma "No double precision available"
+#endif
 #endif // OCL < 1.2
-
-// in case we switch to double ...
-//#pragma  OPENCL EXTENSION cl_khr_fp64 : enable
 
 // HD4xxx does not have atomics, but mfakto will work on these GPUs as well.
 // Without atomics, the factors found may be scrambled when more than one
