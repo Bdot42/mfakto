@@ -101,11 +101,11 @@ than an equal SIEVE_SIZE_LIMIT #define.
 ******************************************************************************/
 
 #ifdef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.15pre1-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.15pre2-Win" /* DO NOT CHANGE! */
 #elif defined __MINGW32__
-  #define MFAKTO_VERSION "mfakto 0.15pre1-MGW" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.15pre2-MGW" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.15pre1" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.15pre2" /* DO NOT CHANGE! */
 #endif
 
 

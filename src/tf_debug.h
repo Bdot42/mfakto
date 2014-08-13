@@ -32,7 +32,7 @@ D = index for modbasecase_debug[];
   #define MODBASECASE_QI_ERROR(A, B, C, D) \
   if(C > (A)) \
   { \
-    printf((__constant char *)"EEEEEK, step %d qi = %u\n", B, C); \
+    printf((__constant char *)"EEEEEK, step %lld qi = %x\n", B, C); \
     modbasecase_debug[D]++; \
   }
 #else

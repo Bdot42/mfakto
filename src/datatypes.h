@@ -132,6 +132,9 @@ typedef struct _int180_v
 #define float_v float
 #define CONVERT_FLOAT_V convert_float
 #define CONVERT_FLOAT_RTP_V convert_float
+#define double_v double
+#define CONVERT_DOUBLE_V convert_double
+#define CONVERT_DOUBLE_RTP_V convert_double
 #define CONVERT_UINT_V convert_uint
 #define CONVERT_ULONG_V convert_ulong
 // AS_UINT is applied only to logical results. For vector operations, these are 0 (false) or -1 (true)
@@ -185,12 +188,15 @@ typedef struct _int180_v
 #define uint_v CONC(uint,VECTOR_SIZE)
 #define ulong_v CONC(ulong,VECTOR_SIZE)
 #define float_v CONC(float,VECTOR_SIZE)
+#define double_v CONC(double,VECTOR_SIZE)
 // _rtp/_rtz are MUCH slower than the default (at least on HD5770)
 //#define CONVERT_FLOAT_V CONC(CONC(convert_float,VECTOR_SIZE), _rtz)
 //#define CONVERT_FLOAT_RTP_V CONC(CONC(convert_float,VECTOR_SIZE), _rtp)
 //#define CONVERT_UINT_V CONC(CONC(convert_uint,VECTOR_SIZE), _rtz)
 #define CONVERT_FLOAT_V CONC(convert_float,VECTOR_SIZE)
 #define CONVERT_FLOAT_RTP_V CONC(convert_float,VECTOR_SIZE)
+#define CONVERT_DOUBLE_V CONC(convert_double,VECTOR_SIZE)
+#define CONVERT_DOUBLE_RTP_V CONC(convert_double,VECTOR_SIZE)
 #define CONVERT_UINT_V CONC(convert_uint,VECTOR_SIZE)
 #define CONVERT_ULONG_V CONC(convert_ulong,VECTOR_SIZE)
 #define AS_INT_V CONC(as_int,VECTOR_SIZE)

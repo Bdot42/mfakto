@@ -318,7 +318,7 @@ void calculate_FC32(const uint exponent, const uint tid, const __global uint * r
 #endif
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((const __constant char *)"calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
+    if (tid==TRACE_TID) printf("calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 
@@ -812,7 +812,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-	  printf((__constant char *)"mod_simple_75_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
+	  printf((__constant char *)"mod_simple_e_75_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
         q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
 #endif
 
@@ -832,9 +832,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     tmp |= q.d4 - nn.d4;
 
 #if (TRACE_KERNEL > 3)
-    if (any( tmp == 0)) printf((__constant char *)"mod_simple_75_a#5: tid=%u, nn=%x:%x:%x:%x:%x\n",
-        mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE,
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+    if (any( tmp == 0)) printf((__constant char *)"mod_simple_e_75_a: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x\n",
+        get_global_id(1), tmp.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 #if (VECTOR_SIZE == 1)
     if(tmp == 0)
@@ -947,9 +946,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     tmp |= q.d4 - nn.d4;
 
 #if (TRACE_KERNEL > 3)
-    if (any( tmp == 0)) printf((__constant char *)"mod_simple_75_a#5: tid=%u, nn=%x:%x:%x:%x:%x\n",
-        mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE,
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+    if (any( tmp == 0)) printf((__constant char *)"mod_simple_75_a: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x\n",
+        get_global_id(1), tmp.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1230,7 +1228,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-	  printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
+	  printf((__constant char *)"mod_simple_e_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.8G, qf=%#G, qi=%x\n",
         q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
 #endif
 
@@ -1253,9 +1251,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     tmp |= q.d5 - nn.d5;
 
 #if (TRACE_KERNEL > 3)
-    if (any( tmp == 0)) printf((__constant char *)"mod_simple_90_a: tid=%u, nn=%x:%x:%x:%x:%x\n",
-        mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE,
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+    if (any( tmp == 0)) printf((__constant char *)"mod_simple_e_90_a: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x:%x\n",
+        get_global_id(1), tmp.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1371,9 +1368,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     tmp |= q.d5 - nn.d5;
 
 #if (TRACE_KERNEL > 3)
-    if (any( tmp == 0)) printf((__constant char *)"mod_simple_90_a: tid=%u, nn=%x:%x:%x:%x:%x\n",
-        mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE,
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+    if (any( tmp == 0)) printf((__constant char *)"mod_simple_90_a: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x:%x\n",
+        get_global_id(1), tmp.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
 #if (VECTOR_SIZE == 1)
