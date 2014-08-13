@@ -1985,7 +1985,8 @@ void shl_180(int180_v * const a)
   a->d0 = (a->d0 << 1u) & 0x7FFF;
 }
 
-
+#ifdef cl_khr_fp64
+// we have support for doubles
 void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const double_v nf
 #if (TRACE_KERNEL > 1)
                   , const uint tid
@@ -2133,6 +2134,399 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
   /*******************************************************/
   // skip the last part - it will change the result by one at most - we can live with a result that is off by one
 }
+#else
+// no support for doubles
+void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const float_v nf
+#if (TRACE_KERNEL > 1)
+                  , const uint tid
+#endif
+                  MODBASECASE_PAR_DEF
+)/* res = q / n (integer division)
+    during function entry, qhi contains the upper 30 bits of an 180-bit-value. The remaining bits are zero implicitely.
+    this is not a vector, as the first value is the same for all FCs*/
+    // try with 4 * 23 bit reductions: should be sufficient for 90 bits (and 86 anyways)
+{
+  __private float_v qf;
+  __private float   qf_1;   // for the first conversion which does not need vectors yet
+
+  __private uint_v qi, qil, qih;
+  __private int180_v nn, q;  // PERF: reduce register usage by always using nn.d0-nn.d6 instead of shifting ?
+
+#if (TRACE_KERNEL > 1)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#0: q=%x:<150x0>, n=%x:%x:%x:%x:%x:%x, nf=%#G\n",
+        qhi, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0);
+#endif
+
+/********** Step 1, Offset 2^67 (4*15 + 7) **********/
+//  qf_1 = convert_float(qhi) * 4294967296.0f; // no vector yet, saving a few conversions!
+//  qf_1 = qf_1 * 32768.0f * 64.0f;
+  qf_1 = convert_float(qhi) * 9007199254740992.0f; // no vector yet, saving a few conversions! 9007199254740992=4294967296*32768*64, which the compiler does not combine automatically
+
+  qi=CONVERT_UINT_V(qf_1*nf);  // vectorize just here
+
+  MODBASECASE_QI_ERROR(1<<24, 1, qi, 0);  // qi here is about 23 bits
+
+  res->d5 = (qi >> 8);
+  res->d4 = (qi << 7) & 0x7FFF;
+  qil = qi & 0x7FFF;
+  qih = (qi >> 15);
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:..:..:..:..\n",
+                                 qf_1, nf.s0, qf_1*nf.s0, qi.s0, qi.s0, res->d5.s0, res->d4.s0);
+#endif
+
+  /*******************************************************/
+
+// nn = n * qi
+  nn.d4  = mul24(n.d0, qil);
+  nn.d5  = mad24(n.d0, qih, nn.d4 >> 15);
+  nn.d4 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.1: nn=..:..:..:..:..:%x:%x:..:..:..\n",
+        nn.d5.s0, nn.d4.s0);
+#endif
+
+  nn.d5  = mad24(n.d1, qil, nn.d5);
+  nn.d6  = mad24(n.d1, qih, nn.d5 >> 15);
+  nn.d5 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.2: nn=..:..:..:..:%x:%x:%x:...\n",
+        nn.d6.s0, nn.d5.s0, nn.d4.s0);
+#endif
+
+  nn.d6  = mad24(n.d2, qil, nn.d6);
+  nn.d7  = mad24(n.d2, qih, nn.d6 >> 15);
+  nn.d6 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.3: nn=..:..:..:%x:%x:%x:%x:...\n",
+        nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0);
+#endif
+
+  nn.d7  = mad24(n.d3, qil, nn.d7);
+  nn.d8  = mad24(n.d3, qih, nn.d7 >> 15);
+  nn.d7 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.4: nn=..:..:%x:%x:%x:%x:%x:...\n",
+        nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0);
+#endif
+  nn.d8  = mad24(n.d4, qil, nn.d8);
+  nn.d9  = mad24(n.d4, qih, nn.d8 >> 15);
+  nn.d8 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.5: nn=..:%x:%x:%x:%x:%x:%x:...\n",
+        nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0);
+#endif
+  nn.d9  = mad24(n.d5, qil, nn.d9);
+  nn.da  = mad24(n.d5, qih, nn.d9 >> 15);
+  nn.d9 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.6: nn=..:%x:%x:%x:%x:%x:%x:%x:...\n",
+        nn.da.s0, nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0);
+#endif
+
+// now shift-left 7 bits  PERF: would that still fit into qi to avoid the long shift?
+#ifdef CHECKS_MODBASECASE
+  nn.db  = nn.da >> 8;  // PERF: not needed as it will be gone anyway after sub
+#endif
+  nn.da  = mad24(nn.da & 0xFF, 128u, nn.d9 >> 8);
+  nn.d9  = mad24(nn.d9 & 0xFF, 128u, nn.d8 >> 8);
+  nn.d8  = mad24(nn.d8 & 0xFF, 128u, nn.d7 >> 8);
+  nn.d7  = mad24(nn.d7 & 0xFF, 128u, nn.d6 >> 8);
+  nn.d6  = mad24(nn.d6 & 0xFF, 128u, nn.d5 >> 8);
+  nn.d5  = mad24(nn.d5 & 0xFF, 128u, nn.d4 >> 8);
+  nn.d4  = (nn.d4 & 0x3FF) << 7;
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.7: nn=%x!%x:%x:%x:%x:%x:%x:%x:..:..:..\n",
+        nn.db.s0, nn.da.s0, nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0);
+#endif
+
+//  q = q - nn, but upon function entry, qhi contains all the bits for db:da. All bits below are zero.
+  q.d4 = (-nn.d4) & 0x7FFF;
+  q.d5 = (-nn.d5 + AS_UINT_V((nn.d4 > 0)));
+  q.d6 = (-nn.d6 + AS_UINT_V((q.d5 > 0)));
+  q.d7 = (-nn.d7 + AS_UINT_V((q.d6 > 0)));
+  q.d8 = (-nn.d8 + AS_UINT_V((q.d7 > 0)));
+  q.d9 = (-nn.d9 + AS_UINT_V((q.d8 > 0)));
+  q.da = (qhi & 0x7FFF) - nn.da + AS_UINT_V((q.d9 > 0));
+#ifdef CHECKS_MODBASECASE
+  q.db = (qhi >> 15)    - nn.db + AS_UINT_V((q.da > 0x7FFF)); // PERF: not needed: should be zero anyway
+  q.db &= 0x7FFF;
+#endif
+  q.d5 &= 0x7FFF;
+  q.d6 &= 0x7FFF;
+  q.d7 &= 0x7FFF;
+  q.d8 &= 0x7FFF;
+  q.d9 &= 0x7FFF;
+  q.da &= 0x7FFF;
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.8: q=%x!%x:%x:%x:%x:%x:%x:%x:..:..\n",
+        q.db.s0, q.da.s0, q.d9.s0, q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0);
+#endif
+  MODBASECASE_NONZERO_ERROR(q.db, 1, 9, 1);
+
+  /********** Step 2, Offset 2^45 (3*15 + 0) **********/
+
+  qf= CONVERT_FLOAT_V(mad24(q.da, 32768u, q.d9));
+  qf= qf * 1073741824.0f + CONVERT_FLOAT_V(mad24(q.d8, 32768u, q.d7));
+  qf*= 4294967296.0f;
+
+  qi=CONVERT_UINT_V(qf*nf);
+
+  MODBASECASE_QI_ERROR(1<<23, 2, qi, 2); // here, we need 2^23 ...
+
+  qih = (qi >> 15);
+  qil = qi & 0x7FFF;
+  res->d4 += (qi >> 17);
+  res->d3  = (qi >>  2) &0x7FFF;
+  res->d2  = (qi << 13) &0x7FFF;
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:%x:..:..\n",
+                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0);
+#endif
+
+  /*******************************************************/
+
+// nn = n * qi
+  nn.d3  = mul24(n.d0, qil);
+  nn.d4  = mad24(n.d0, qih, nn.d3 >> 15);
+  nn.d3 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.1: nn=..:..:..:..:%x:%x:..:..:..\n",
+        nn.d4.s0, nn.d3.s0);
+#endif
+
+  nn.d4  = mad24(n.d1, qil, nn.d4);
+  nn.d5  = mad24(n.d1, qih, nn.d4 >> 15);
+  nn.d4 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.2: nn=..:..:..:%x:%x:%x:..:..:..\n",
+        nn.d5.s0, nn.d4.s0, nn.d3.s0);
+#endif
+
+  nn.d5  = mad24(n.d2, qil, nn.d5);
+  nn.d6  = mad24(n.d2, qih, nn.d5 >> 15);
+  nn.d5 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.3: nn=..:..:%x:%x:%x:%x:..:..:..\n",
+        nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+#endif
+
+  nn.d6  = mad24(n.d3, qil, nn.d6);
+  nn.d7  = mad24(n.d3, qih, nn.d6 >> 15);
+  nn.d6 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.4: nn=..:%x:%x:%x:%x:%x:..:..:..\n",
+        nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+#endif
+
+  nn.d7  = mad24(n.d4, qil, nn.d7);
+  nn.d8  = mad24(n.d4, qih, nn.d7 >> 15);
+  nn.d7 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.5: nn=..:%x:%x:%x:%x:%x:%x:..:..:..\n",
+        nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+#endif
+
+  nn.d8  = mad24(n.d5, qil, nn.d8);
+  nn.d9  = mad24(n.d5, qih, nn.d8 >> 15);
+  nn.d8 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.6: nn=..:..:%x:%x:%x:%x:%x:%x:%x:..:..:..\n",
+        nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+#endif
+#ifdef CHECKS_MODBASECASE
+  nn.da  = nn.d9 >> 15;
+  nn.d9 &= 0x7FFF;
+#endif
+
+  // shift-right 2 bits
+  nn.d2 = (nn.d3 << 13) & 0x7FFF;
+  nn.d3 = mad24(nn.d4 & 3, 8192u, nn.d3 >> 2);
+  nn.d4 = mad24(nn.d5 & 3, 8192u, nn.d4 >> 2);
+  nn.d5 = mad24(nn.d6 & 3, 8192u, nn.d5 >> 2);
+  nn.d6 = mad24(nn.d7 & 3, 8192u, nn.d6 >> 2);
+  nn.d7 = mad24(nn.d8 & 3, 8192u, nn.d7 >> 2);
+  nn.d8 = mad24(nn.d9 & 3, 8192u, nn.d8 >> 2);
+#ifdef CHECKS_MODBASECASE
+  nn.d9 = mad24(nn.da & 3, 8192u, nn.d9 >> 2);
+  nn.da = nn.da >> 2;
+#endif
+
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.8: nn=..:%x:%x!%x:%x:%x:%x:%x:%x:%x:..:..\n",
+        nn.da.s0, nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
+#endif
+  //  q = q - nn; q.d2 and q.d3 are still 0
+  q.d2 = (-nn.d2) & 0x7FFF;
+  q.d3 = (-nn.d3 + AS_UINT_V((nn.d2 > 0)));
+  q.d4 = q.d4 - nn.d4 + AS_UINT_V((q.d3 > 0x7FFF));
+  q.d5 = q.d5 - nn.d5 + AS_UINT_V((q.d4 > 0x7FFF));
+  q.d6 = q.d6 - nn.d6 + AS_UINT_V((q.d5 > 0x7FFF));
+  q.d7 = q.d7 - nn.d7 + AS_UINT_V((q.d6 > 0x7FFF));
+  q.d8 = q.d8 - nn.d8 + AS_UINT_V((q.d7 > 0x7FFF));
+#ifdef CHECKS_MODBASECASE
+  q.d9 = q.d9 - nn.d9 + AS_UINT_V((q.d8 > 0x7FFF)); // PERF: not needed: should be zero anyway
+  q.d9 &= 0x7FFF;
+#endif
+  q.d3 &= 0x7FFF;
+  q.d4 &= 0x7FFF;
+  q.d5 &= 0x7FFF;
+  q.d6 &= 0x7FFF;
+  q.d7 &= 0x7FFF;
+  q.d8 &= 0x7FFF;
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.9: q=..:..:%x:%x:%x:%x:%x:%x:%x:..:..\n",
+        q.d9.s0, q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0);
+#endif
+
+  MODBASECASE_NONZERO_ERROR(q.da, 2, 8, 3);
+  MODBASECASE_NONZERO_ERROR(q.d9, 2, 7, 4);
+
+  /********** Step 3, Offset 2^22 (1*15 + 7) **********/
+
+  qf= CONVERT_FLOAT_V(mad24(q.d8, 32768u, q.d7));
+  qf= qf * 1073741824.0f + CONVERT_FLOAT_V(mad24(q.d6, 32768u, q.d5));
+  qf*= 8388608.0f;
+
+  qi=CONVERT_UINT_V(qf*nf);
+
+  MODBASECASE_QI_ERROR(1<<23, 3, qi, 5);
+
+  qih = (qi >> 15);
+  qil = qi & 0x7FFF;
+  res->d2 += (qi >> 8);
+  res->d1  = (qi << 7) & 0x7FFF;
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:%x:%x:..\n",
+                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0);
+#endif
+
+  /*******************************************************/
+
+// nn = n * qi
+  nn.d1  = mul24(n.d0, qil);
+  nn.d2  = mad24(n.d0, qih, nn.d1 >> 15);
+  nn.d1 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.1: nn=..:..:..:..:%x:%x:..\n",
+        nn.d2.s0, nn.d1.s0);
+#endif
+
+  nn.d2  = mad24(n.d1, qil, nn.d2);
+  nn.d3  = mad24(n.d1, qih, nn.d2 >> 15);
+  nn.d2 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.2: nn=..:..:..:%x:%x:%x:..\n",
+        nn.d3.s0, nn.d2.s0, nn.d1.s0);
+#endif
+
+  nn.d3  = mad24(n.d2, qil, nn.d3);
+  nn.d4  = mad24(n.d2, qih, nn.d3 >> 15);
+  nn.d3 &= 0x7FFF;
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.3: nn=..:..:%x:%x:%x:%x:..\n",
+        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+#endif
+
+  nn.d4  = mad24(n.d3, qil, nn.d4);
+  nn.d5  = mad24(n.d3, qih, nn.d4 >> 15);
+  nn.d4 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.4: nn=..:%x:%x:%x:%x:%x:..\n",
+        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+#endif
+
+  nn.d5  = mad24(n.d4, qil, nn.d5);
+  nn.d6  = mad24(n.d4, qih, nn.d5 >> 15);
+  nn.d5 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.5: nn=..:%x:%x:%x:%x:%x:%x:..\n",
+        nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+#endif
+
+  nn.d6  = mad24(n.d5, qil, nn.d6);
+  nn.d7  = mad24(n.d5, qih, nn.d6 >> 15);
+  nn.d6 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.6: nn=..:%x:%x:%x:%x:%x:%x:%x:..\n",
+        nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+#endif
+
+// nn.d7 also contains the nn.d8 bits, will be distributed by the shifting below
+
+// now shift-left 7 bits
+#ifdef CHECKS_MODBASECASE
+  nn.d8  = nn.d7 >> 8;  // PERF: not needed as it will be gone anyway after sub
+#endif
+  nn.d7  = mad24(nn.d7 & 0xFF, 128u, nn.d6 >> 8);
+  nn.d6  = mad24(nn.d6 & 0xFF, 128u, nn.d5 >> 8);
+  nn.d5  = mad24(nn.d5 & 0xFF, 128u, nn.d4 >> 8);
+  nn.d4  = mad24(nn.d4 & 0xFF, 128u, nn.d3 >> 8);
+  nn.d3  = mad24(nn.d3 & 0xFF, 128u, nn.d2 >> 8);
+  nn.d2  = mad24(nn.d2 & 0xFF, 128u, nn.d1 >> 8);
+  nn.d1  = (nn.d1 & 0xFF) << 7;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.7: nn=..:..:%x!%x:%x:%x:%x:%x:%x:%x:..\n",
+        nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+#endif
+
+//  q = q - nn;  q.d1 is still 0
+  q.d1 = (-nn.d1) & 0x7FFF;
+  q.d2 = q.d2 - nn.d2 + AS_UINT_V((nn.d1 > 0));
+  q.d3 = q.d3 - nn.d3 + AS_UINT_V((q.d2 > 0x7FFF));
+  q.d4 = q.d4 - nn.d4 + AS_UINT_V((q.d3 > 0x7FFF));
+  q.d5 = q.d5 - nn.d5 + AS_UINT_V((q.d4 > 0x7FFF));
+  q.d6 = q.d6 - nn.d6 + AS_UINT_V((q.d5 > 0x7FFF));
+  q.d7 = q.d7 - nn.d7 + AS_UINT_V((q.d6 > 0x7FFF));
+#ifdef CHECKS_MODBASECASE
+  q.d8 = q.d8 - nn.d8 + AS_UINT_V((q.d7 > 0x7FFF)); // PERF: not needed: should be zero anyway
+  q.d8 &= 0x7FFF;
+#endif
+  q.d2 &= 0x7FFF;
+  q.d3 &= 0x7FFF;
+  q.d4 &= 0x7FFF;
+  q.d5 &= 0x7FFF;
+  q.d6 &= 0x7FFF;
+  q.d7 &= 0x7FFF;
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.8: q=..:%x!%x:%x:%x:%x:%x:%x:%x:..\n",
+        q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0);
+#endif
+
+  MODBASECASE_NONZERO_ERROR(q.d8, 3, 6, 6);
+
+  /********** Step 4, Offset 2^0 (0*15 + 0) **********/
+
+  qf= CONVERT_FLOAT_V(mad24(q.d7, 32768u, q.d6));
+  qf= qf * 1073741824.0f + CONVERT_FLOAT_V(mad24(q.d5, 32768u, q.d4));
+  qf*= 1073741824.0f;
+
+  qi=CONVERT_UINT_V(qf*nf);
+
+  MODBASECASE_QI_ERROR(1<<23, 4, qi, 7);
+
+  qil = qi & 0x7FFF;
+  qih = (qi >> 15);
+  res->d1 += qih;
+  res->d0 = qil;
+
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID) printf((__constant char *)"div_180_90#4: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:%x:%x:%x\n",
+                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+#endif
+
+  // skip the last part - it will change the result by one at most - we can live with a result that is off by one
+  // but need to handle outstanding carries instead
+  res->d2 += res->d1 >> 15;
+  res->d1 &= 0x7FFF;
+  res->d3 += res->d2 >> 15;
+  res->d2 &= 0x7FFF;
+  res->d4 += res->d3 >> 15;
+  res->d3 &= 0x7FFF;
+  res->d5 += res->d4 >> 15;
+  res->d4 &= 0x7FFF;
+}
+#endif
 
 void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uint8 b_in, const int bit_max65, __global uint * restrict RES
                         MODBASECASE_PAR_DEF)
@@ -2141,7 +2535,9 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
   __private int180_v b, tmp180;
   __private int90_v tmp90;
   __private float_v ff;
+#ifdef cl_khr_fp64
   __private double_v ffd;
+#endif
   __private uint tmp, bit_max_bot, bit_max_mult;
   __private int180_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5, b_in.s6, b_in.s7};
 
@@ -2155,26 +2551,32 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
   ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));
   ff = as_float(0x3f7ffffd) / ff;
 
+  tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
+
+#ifdef cl_khr_fp64
   // ffd = f as double, needed in div_180_90_d).
   ffd= CONVERT_DOUBLE_RTP_V(mad24(f.d5, 32768u, f.d4));
   ffd= ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d3, 32768u, f.d2));
   ffd= ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d1, 32768u, f.d0));
   ffd = as_double(0x3feffffffffffffdL) / ffd;     // should be a bit less than 1.0
 
-  // we need u=2^(2*bit_max)/f. As bit_max is between 61 and 82, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
-
-  tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
-
-  // tmp180.d7 = 0; tmp180.d6 = 0; tmp180.d5 = 0; tmp180.d4 = 0; tmp180.d3 = 0; tmp180.d2 = 0; tmp180.d1 = 0; tmp180.d0 = 0;
-  // PERF: as div is only used here, use all those zeros directly in there
-  //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
-
   div_180_90_d(&u, tmp, f, ffd
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
                   MODBASECASE_PAR);						// u = floor(tmp180 / f)
+#else
+
+  // PERF: as div is only used here, use all those zeros directly in there
+  //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
+  //       tmp contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
+
+  div_180_90(&u, tmp, f, ff
+#if (TRACE_KERNEL > 1)
+                  , tid
+#endif
+                  MODBASECASE_PAR);						// u = floor(tmp180 / f)
+#endif
 
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: u(d)=%x:%x:%x:%x:%x:%x, ffd=%G\n",
@@ -2341,7 +2743,9 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
   __private int180_v b, tmp180;
   __private int90_v tmp90;
   __private float_v ff;
+#ifdef cl_khr_fp64
   __private double_v ffd;
+#endif
   __private uint tmp, bit_max_bot, bit_max_mult;
   __private int180_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5, b_in.s6, b_in.s7};
 
@@ -2355,26 +2759,32 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
   ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));
   ff = as_float(0x3f7ffffd) / ff;
 
+  tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
+
+#ifdef cl_khr_fp64
   // ffd = f as double, needed in div_180_90_d).
   ffd= CONVERT_DOUBLE_RTP_V(mad24(f.d5, 32768u, f.d4));
   ffd= ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d3, 32768u, f.d2));
   ffd= ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d1, 32768u, f.d0));
   ffd = as_double(0x3feffffffffffffdL) / ffd;     // should be a bit less than 1.0
 
-  // we need u=2^(2*bit_max)/f. As bit_max is between 61 and 82, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
-
-  tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
-
-  // tmp180.d7 = 0; tmp180.d6 = 0; tmp180.d5 = 0; tmp180.d4 = 0; tmp180.d3 = 0; tmp180.d2 = 0; tmp180.d1 = 0; tmp180.d0 = 0;
-  // PERF: as div is only used here, use all those zeros directly in there
-  //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
-
   div_180_90_d(&u, tmp, f, ffd
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
                   MODBASECASE_PAR);						// u = floor(tmp180 / f)
+#else
+
+  // PERF: as div is only used here, use all those zeros directly in there
+  //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
+  //       tmp contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
+
+  div_180_90(&u, tmp, f, ff
+#if (TRACE_KERNEL > 1)
+                  , tid
+#endif
+                  MODBASECASE_PAR);						// u = floor(tmp180 / f)
+#endif
 
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
@@ -2542,7 +2952,9 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
   __private int180_v b, tmp180;
   __private int90_v tmp90;
   __private float_v ff;
+#ifdef cl_khr_fp64
   __private double_v ffd;
+#endif
   __private uint tmp, bit_max_bot, bit_max_mult;
   __private int180_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5, b_in.s6, b_in.s7};
 
@@ -2556,26 +2968,32 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
   ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));
   ff = as_float(0x3f7ffffd) / ff;
 
+  tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
+
+#ifdef cl_khr_fp64
   // ffd = f as double, needed in div_180_90_d).
   ffd= CONVERT_DOUBLE_RTP_V(mad24(f.d5, 32768u, f.d4));
   ffd= ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d3, 32768u, f.d2));
   ffd= ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d1, 32768u, f.d0));
   ffd = as_double(0x3feffffffffffffdL) / ffd;     // should be a bit less than 1.0
 
-  // we need u=2^(2*bit_max)/f. As bit_max is between 61 and 82, use 2 uint's to store the upper 60 bits of 2^(2*bit_max)
-
-  tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
-
-  // tmp180.d7 = 0; tmp180.d6 = 0; tmp180.d5 = 0; tmp180.d4 = 0; tmp180.d3 = 0; tmp180.d2 = 0; tmp180.d1 = 0; tmp180.d0 = 0;
-  // PERF: as div is only used here, use all those zeros directly in there
-  //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
-
   div_180_90_d(&u, tmp, f, ffd
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
                   MODBASECASE_PAR);						// u = floor(tmp180 / f)
+#else
+
+  // PERF: as div is only used here, use all those zeros directly in there
+  //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
+  //       tmp contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
+
+  div_180_90(&u, tmp, f, ff
+#if (TRACE_KERNEL > 1)
+                  , tid
+#endif
+                  MODBASECASE_PAR);						// u = floor(tmp180 / f)
+#endif
 
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
