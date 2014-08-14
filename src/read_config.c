@@ -28,6 +28,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 extern kernel_info_t       kernel_info[];
 extern struct GPU_type     gpu_types[];
+static int inifile_unavailable = 0;
 
 static int my_read_int(char *inifile, char *name, int *value)
 {
@@ -36,7 +37,17 @@ static int my_read_int(char *inifile, char *name, int *value)
   int found=0;
 
   in=fopen(inifile,"r");
-  if(!in)return 1;
+  if(!in)
+  {
+    if (!inifile_unavailable)
+    {
+      char msg[80];
+      inifile_unavailable = 1;
+      sprintf(msg, "Cannot load inifile \"%.55s\"", inifile);
+      perror(msg);
+    }
+    return 1;
+  }
   while(fgets(buf,100,in) && !found)
   {
     if(!strncmp(buf,name,strlen(name)) && buf[strlen(name)]=='=')
@@ -56,7 +67,17 @@ static int my_read_ulong(char *inifile, char *name, unsigned long long int *valu
   int found=0;
 
   in=fopen(inifile,"r");
-  if(!in)return 1;
+  if(!in)
+  {
+    if (!inifile_unavailable)
+    {
+      char msg[80];
+      inifile_unavailable = 1;
+      sprintf(msg, "Cannot load inifile \"%.55s\"", inifile);
+      perror(msg);
+    }
+    return 1;
+  }
   while(fgets(buf,100,in) && !found)
   {
     if(!strncmp(buf,name,strlen(name)) && buf[strlen(name)]=='=')
@@ -81,7 +102,17 @@ static int my_read_string(char *inifile, char *name, char *string, unsigned int 
   unsigned int idx = (unsigned int) strlen(name);
 
   in=fopen(inifile,"r");
-  if(!in)return 1;
+  if(!in)
+  {
+    if (!inifile_unavailable)
+    {
+      char msg[80];
+      inifile_unavailable = 1;
+      sprintf(msg, "Cannot load inifile \"%.55s\"", inifile);
+      perror(msg);
+    }
+    return 1;
+  }
   while(fgets(buf,512,in) && !found)
   {
     if(!strncmp(buf,name,idx) && buf[idx]=='=')
@@ -774,7 +805,17 @@ int read_array(char *filename, char *keyname, cl_uint num, cl_uint *arr)
   cl_uint i = 0;
 
   in=fopen(filename,"r");
-  if(!in)return -1;
+  if(!in)
+  {
+    if (!inifile_unavailable)
+    {
+      char msg[80];
+      inifile_unavailable = 1;
+      sprintf(msg, "Cannot load inifile \"%.55s\"", filename);
+      perror(msg);
+    }
+    return 1;
+  }
   while(fgets(buf,512,in) && !found)
   {
     if(!strncmp(buf, keyname, idx) && buf[idx]=='=')

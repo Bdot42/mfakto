@@ -958,6 +958,11 @@ int main(int argc, char **argv)
     else if(!strcmp((char*)"-i", argv[i]) || !strcmp((char*)"--inifile", argv[i]))
     {
       i++;
+      if (i >= argc)
+      {
+        printf("ERROR: missing parameters for option \"-i <inifile>\".\n");
+        return ERR_PARAM;
+      }
       strncpy(mystuff.inifile, argv[i], 50);
       mystuff.inifile[50]='\0';
     }
