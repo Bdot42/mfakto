@@ -788,6 +788,7 @@ RET_ERROR we might have a serios problem
     {
 //      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT73_MUL15_GS; ++kernel_index) // test-only: skip small 15-bit kernels
 //      for (kernel_index = BARRETT74_MUL15_GS; kernel_index <= BARRETT74_MUL15_GS; ++kernel_index) // test only the 74-bit kernel
+//      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT79_MUL32_GS; ++kernel_index) // test only 32-79
       for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT74_MUL15_GS; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;

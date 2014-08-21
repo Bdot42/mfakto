@@ -32,7 +32,7 @@ D = index for modbasecase_debug[];
   #define MODBASECASE_QI_ERROR(A, B, C, D) \
   if(C > (A)) \
   { \
-    printf((__constant char *)"EEEEEK, step %lld qi = %x\n", B, C); \
+    printf((__constant char *)"EEEEEK, step %lld qi = %x, tid=%u\n", B, C, get_global_id(0)); \
     modbasecase_debug[D]++; \
   }
 #else
@@ -55,7 +55,7 @@ D = index for modbasecase_debug[];
   #define MODBASECASE_NONZERO_ERROR(A, B, C, D) \
   if(A) \
   { \
-    printf((__constant char *)"EEEEEK, step %d q.d%d is nonzero: %u\n", B, C, A); \
+    printf((__constant char *)"EEEEEK, step %d q.d%d is nonzero: %u, tid=%u\n", B, C, A, get_global_id(0)); \
     modbasecase_debug[D]++; \
   }
 #else
@@ -78,7 +78,7 @@ D = index for modbasecase_debug[];
   #define MODBASECASE_NN_BIG_ERROR(A, B, C, D) \
   if(C > A) \
   { \
-    printf((__constant char *)"EEEEEK, step %d nn.dX is too big: %x\n", B, C); \
+    printf((__constant char *)"EEEEEK, step %d nn.dX is too big: %x, tid=%u\n", B, C, get_global_id(0)); \
     modbasecase_debug[D]++; \
   }
 #else

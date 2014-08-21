@@ -733,7 +733,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= ff * 16777216.0f;
 #endif
 
-  ff=as_float(0x3f7ffffd) / ff;	// just a little bit below 1.0f so we always underestimate the quotient
+  ff=as_float(0x3f7ffffc) / ff;	// just a little bit below 1.0f so we always underestimate the quotient
  
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_71: tid=%d: p=%x, *2 =%x:%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d, b=%x:%x:%x:%x:%x:%x\n",

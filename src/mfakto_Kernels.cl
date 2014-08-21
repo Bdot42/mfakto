@@ -20,7 +20,7 @@ Version 0.15
 
 */
 /*
- All OpenCL kernels for mfakto Trial-Factoring, version 0.10
+ All OpenCL kernels for mfakto Trial-Factoring
 
    is 2^p-1 divisible by q (q=2kp+1)? 
 	                        Remove   Optional   
@@ -69,6 +69,10 @@ Version 0.15
 #define MODBASECASE_NN_BIG_ERROR(A, B, C, D)
 #define MODBASECASE_PAR_DEF
 #define MODBASECASE_PAR
+#endif
+
+#if VECTOR_SIZE == 1 && TRACE_KERNEL > 0
+# error "Kernel tracing works only for VectorSize > 1"
 #endif
 
 #include "datatypes.h"

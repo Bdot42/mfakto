@@ -713,7 +713,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d4, 32768u, f.d3));
   ff= ff * 32768.0f + CONVERT_FLOAT_RTP_V(f.d2);   // f.d1 needed?
 
-  ff= as_float(0x3f7ffffd) / ff;
+  ff= as_float(0x3f7ffffc) / ff;
 
   tmp = 1 << bit_max_60;	// tmp150 = 2^(74 + bits in f)
 
@@ -835,7 +835,11 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
   }
 
-  mod_simple_even_75_and_check_big_factor75(a, f, ff, RES);
+  mod_simple_even_75_and_check_big_factor75(a, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                       , bit_max_75, 10, modbasecase_debug
+#endif
+                       );
 }
 
 void check_barrett15_70(uint shifter, const int75_v f, const uint tid, const uint8 b_in, const int bit_max65, __global uint * restrict RES
@@ -855,7 +859,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d4, 32768u, f.d3));
   ff= ff * 32768.0f + CONVERT_FLOAT_RTP_V(f.d2);   // f.d1 needed?
 
-  ff= as_float(0x3f7ffffd) / ff;
+  ff= as_float(0x3f7ffffc) / ff;
 
   tmp = 1 << bit_max_60;	// tmp150 = 2^(74 + bits in f)
 
@@ -977,7 +981,11 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
   }
 
-  mod_simple_75_and_check_big_factor75(a, f, ff, RES);
+  mod_simple_75_and_check_big_factor75(a, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                       , bit_max_75, 10, modbasecase_debug
+#endif
+                       );
 }
 
 
@@ -998,7 +1006,7 @@ ff = 1/f as float, needed in div_192_96().
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d4, 32768u, f.d3));
   ff= ff * 32768.0f + CONVERT_FLOAT_RTP_V(f.d2);   // f.d1 needed?
 
-  ff= as_float(0x3f7ffffd) / ff;
+  ff= as_float(0x3f7ffffc) / ff;
 
   tmp = 1 << bit_max_60;	// tmp150 = 2^(74 + bits in f)
 
@@ -1125,7 +1133,11 @@ ff = 1/f as float, needed in div_192_96().
 #endif
   }
 
-  mod_simple_75_and_check_big_factor75(a, f, ff, RES);
+  mod_simple_75_and_check_big_factor75(a, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                       , bit_max_75, 10, modbasecase_debug
+#endif
+                       );
 }
 
 
@@ -1146,7 +1158,7 @@ ff = 1/f as float, needed in div_192_96().
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d4, 32768u, f.d3));
   ff= ff * 32768.0f + CONVERT_FLOAT_RTP_V(f.d2);   // these are at least 30 significant bits for 60-bit FC's
 
-  ff= as_float(0x3f7ffffd) / ff;
+  ff= as_float(0x3f7ffffc) / ff;
 
   tmp = 1 << bit_max_60;	// tmp150 = 2^(74 + bits in f)
 
@@ -1215,9 +1227,9 @@ ff = 1/f as float, needed in div_192_96().
 #endif
                );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
 #else
-    int limit = 6;
-    if(bit_max_75 == 2) limit = 8;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-    if(bit_max_75 == 3) limit = 7;						// bit_max == 66, ...
+    int limit = 10;
+    if(bit_max_75 == 2) limit = 12;
+    if(bit_max_75 == 3) limit = 11;
     mod_simple_75(&a, tmp75, f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
@@ -1242,7 +1254,7 @@ ff = 1/f as float, needed in div_192_96().
     __private float_v f1 = CONVERT_FLOAT_RTP_V(mad24(a.d4, 32768, a.d3));
     f1= f1 * 32768.0f + CONVERT_FLOAT_RTP_V(a.d2);   // f.d1 needed?
 
-    f1= as_float(0x3f7ffffd) / f1;
+    f1= as_float(0x3f7ffffc) / f1;
     div_150_75(&tmp75, b, a, f1, tid
                MODBASECASE_PAR
               );
@@ -1298,7 +1310,11 @@ ff = 1/f as float, needed in div_192_96().
 #endif
   }
 
-  mod_simple_even_75_and_check_big_factor75(tmp75, f, ff, RES);
+  mod_simple_even_75_and_check_big_factor75(tmp75, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                       , bit_max_75, 10, modbasecase_debug
+#endif
+                       );
 }
 
 
@@ -1319,7 +1335,7 @@ ff = 1/f as float, needed in div_192_96().
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d4, 32768u, f.d3));
   ff= ff * 32768.0f + CONVERT_FLOAT_RTP_V(f.d2);   // these are at least 30 significant bits for 60-bit FC's
 
-  ff= as_float(0x3f7ffffd) / ff;
+  ff= as_float(0x3f7ffffc) / ff;
 
   tmp = 1 << bit_max_60;	// tmp150 = 2^(74 + bits in f)
 
@@ -1388,9 +1404,9 @@ ff = 1/f as float, needed in div_192_96().
 #endif
                );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
 #else
-    int limit = 6;
-    if(bit_max_75 == 2) limit = 8;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-    if(bit_max_75 == 3) limit = 7;						// bit_max == 66, ...
+    int limit = 14;
+    if(bit_max_75 == 2) limit = 16;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
+    if(bit_max_75 == 3) limit = 15;						// bit_max == 66, ...
     mod_simple_75(&a, tmp75, f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
@@ -1415,7 +1431,7 @@ ff = 1/f as float, needed in div_192_96().
     __private float_v f1 = CONVERT_FLOAT_RTP_V(mad24(a.d4, 32768, a.d3));
     f1= f1 * 32768.0f + CONVERT_FLOAT_RTP_V(a.d2);   // f.d1 needed?
 
-    f1= as_float(0x3f7ffffd) / f1;
+    f1= as_float(0x3f7ffffc) / f1;
     div_150_75(&tmp75, b, a, f1, tid
                MODBASECASE_PAR
               );
@@ -1470,9 +1486,9 @@ ff = 1/f as float, needed in div_192_96().
 #endif
                );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
 #else
-      int limit = 6;
-      if(bit_max_75 == 2) limit = 8;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-      if(bit_max_75 == 3) limit = 7;						// bit_max == 66, ...
+      int limit = 14;
+      if(bit_max_75 == 2) limit = 16;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
+      if(bit_max_75 == 3) limit = 15;						// bit_max == 66, ...
       mod_simple_75(&tmp75, tmp75, f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
@@ -1495,7 +1511,11 @@ ff = 1/f as float, needed in div_192_96().
 #endif
   }
 
-  mod_simple_even_75_and_check_big_factor75(tmp75, f, ff, RES);
+  mod_simple_even_75_and_check_big_factor75(tmp75, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                       , bit_max_75, 10, modbasecase_debug
+#endif
+                       );
 }
 
 /******
@@ -2549,7 +2569,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
   // ff = f as float, needed only for the final mod_simple
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
   ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));
-  ff = as_float(0x3f7ffffd) / ff;
+  ff = as_float(0x3f7ffffc) / ff;
 
   tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
 
@@ -2733,7 +2753,11 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
 #endif
   }
 
-  mod_simple_even_90_and_check_big_factor90(a, f, ff, RES);
+  mod_simple_even_90_and_check_big_factor90(a, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                                      , bit_max65, 10, modbasecase_debug
+#endif
+                                      );
 }
 
 void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uint8 b_in, const int bit_max65, __global uint * restrict RES
@@ -2757,7 +2781,7 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
   // ff = f as float, needed only for the final mod_simple
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
   ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));
-  ff = as_float(0x3f7ffffd) / ff;
+  ff = as_float(0x3f7ffffc) / ff;
 
   tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
 
@@ -2941,7 +2965,11 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
     shifter+=shifter;
   }
 
-  mod_simple_90_and_check_big_factor90(a, f, ff, RES);
+  mod_simple_90_and_check_big_factor90(a, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                                      , bit_max65, 10, modbasecase_debug
+#endif
+                                      );
 }
 
 
@@ -2966,7 +2994,7 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
   // ff = f as float, needed only for the final mod_simple
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
   ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));
-  ff = as_float(0x3f7ffffd) / ff;
+  ff = as_float(0x3f7ffffc) / ff;
 
   tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
 
@@ -3165,7 +3193,11 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
 #endif
   }
 
-  mod_simple_even_90_and_check_big_factor90(tmp90, f, ff, RES);
+  mod_simple_even_90_and_check_big_factor90(tmp90, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                                      , bit_max65, 10, modbasecase_debug
+#endif
+                                      );
 }
 
 

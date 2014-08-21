@@ -467,12 +467,18 @@ are "out of range".
 */
   if(n.d2 != 0 && n.d2 < (1 << bit_max64))
   {
-    MODBASECASE_QI_ERROR(limit, 100, qi, 12);
+    MODBASECASE_QI_ERROR(limit, 102, qi, 14);
   }
 #endif
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, n=%x:%x:%x, nf=%G, qf=%G, qi=%x\n",
-        q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+#if (VECTOR_SIZE == 1)
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, n=%x:%x:%x, nf=%G, qf=%G, qi=%x, tid=%u\n",
+        q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, nf, qf, qi, get_global_id(0));
+#else
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, %x:%x:%x, n=%x:%x:%x, %x:%x:%x, nf=%G,%G, qf=%G,%G, qi=%x,%x, tid=%u\n",
+        q.d2.s0, q.d1.s0, q.d0.s0, q.d2.s1, q.d1.s1, q.d0.s1, n.d2.s0, n.d1.s0, n.d0.s0, n.d2.s1, n.d1.s1, n.d0.s1,
+        nf.s0, nf.s1, qf.s0, qf.s1, qi.s0, qi.s1, get_global_id(0));
+#endif
 #endif
 
   nn.d0  = n.d0 * qi;
@@ -498,7 +504,11 @@ are "out of range".
 }
 
 
-void mod_simple_96_and_check_big_factor96(const int96_v q,const int96_v n, const float_v nf, __global uint * const RES)
+void mod_simple_96_and_check_big_factor96(const int96_v q,const int96_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+)
 /*
 This function is a combination of mod_simple_96(), check_big_factor96() and an additional correction step.
 If q mod n == 1 then n is a factor and written into the RES array.
@@ -513,6 +523,13 @@ q must be less than 100n!
   qf = qf * 4294967296.0f + CONVERT_FLOAT_V(q.d1);
 
   qi = CONVERT_UINT_V(qf*nf);
+
+#ifdef CHECKS_MODBASECASE
+  if(n.d2 != 0 && n.d2 < (1 << bit_max64))
+  {
+    MODBASECASE_QI_ERROR(10, 103, qi, 15);
+  }
+#endif
 
 /* at this point the quotient still is sometimes to small (the error is 1 in this case)
 --> final res odd and qi correct: n might be a factor
@@ -594,7 +611,11 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   }
 }
 
-void mod_simple_even_96_and_check_big_factor96(const int96_v q,const int96_v n, const float_v nf, __global uint * const RES)
+void mod_simple_even_96_and_check_big_factor96(const int96_v q,const int96_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+)
 /*
 This function is a combination of mod_simple_96(), check_big_factor96() and an additional correction step.
 If q mod n == 1 then n is a factor and written into the RES array.
@@ -609,6 +630,13 @@ q must be less than 100n!
   qf = qf * 4294967296.0f + CONVERT_FLOAT_V(q.d1);
 
   qi = CONVERT_UINT_V(qf*nf);
+
+#ifdef CHECKS_MODBASECASE
+  if(n.d2 != 0 && n.d2 < (1 << bit_max64))
+  {
+    MODBASECASE_QI_ERROR(100, 104, qi, 16);
+  }
+#endif
 
 /* at this point the quotient still is sometimes to small (the error is 1 in this case)
 --> final res odd and qi correct: n might be a factor
@@ -736,7 +764,7 @@ are "out of range".
 */
   if(n.d4 != 0 && n.d4 < (1 << bit_max64))
   {
-    MODBASECASE_QI_ERROR(limit, 100, qi, 12);
+    MODBASECASE_QI_ERROR(limit, 105, qi, 17);
   }
 #endif
 #if (TRACE_KERNEL > 2)
@@ -777,7 +805,11 @@ are "out of range".
 
 }
 
-void mod_simple_even_75_and_check_big_factor75(const int75_v q, const int75_v n, const float_v nf, __global uint * const RES)
+void mod_simple_even_75_and_check_big_factor75(const int75_v q, const int75_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+)
 /*
 This function is a combination of mod_simple_96(), check_big_factor96() and an additional correction step.
 If q mod n == 1 then n is a factor and written into the RES array.
@@ -793,6 +825,12 @@ q must be less than 100n!
   
   qi = CONVERT_UINT_V(qf*nf);
 
+#ifdef CHECKS_MODBASECASE
+  if(n.d4 != 0 && n.d4 < (1 << bit_max64))
+  {
+    MODBASECASE_QI_ERROR(10, 106, qi, 18);
+  }
+#endif
 /* at this point the quotient still is sometimes to small (the error is 1 in this case)
 --> final res odd and qi correct: n might be a factor
     final res odd and qi too small: n can't be a factor (because the correct res is even)
@@ -891,7 +929,11 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   }
 }
 
-void mod_simple_75_and_check_big_factor75(const int75_v q, const int75_v n, const float_v nf, __global uint * const RES)
+void mod_simple_75_and_check_big_factor75(const int75_v q, const int75_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+)
 /*
 This function is a combination of mod_simple_96(), check_big_factor96() and an additional correction step.
 If q mod n == 1 then n is a factor and written into the RES array.
@@ -907,6 +949,12 @@ q must be less than 100n!
   
   qi = CONVERT_UINT_V(qf*nf);
 
+#ifdef CHECKS_MODBASECASE
+  if(n.d4 != 0 && n.d4 < (1 << bit_max64))
+  {
+    MODBASECASE_QI_ERROR(10, 107, qi, 19);
+  }
+#endif
 /* at this point the quotient still is sometimes to small (the error is 1 in this case)
 --> final res odd and qi correct: n might be a factor
     final res odd and qi too small: n can't be a factor (because the correct res is even)
@@ -1150,7 +1198,7 @@ are "out of range".
 */
   if(n.d5 != 0 && n.d5 < (1 << bit_max64))
   {
-    MODBASECASE_QI_ERROR(limit, 100, qi, 12);
+    MODBASECASE_QI_ERROR(limit, 101, qi, 12);
   }
 #endif
 #if (TRACE_KERNEL > 2)
@@ -1194,9 +1242,13 @@ are "out of range".
 #endif
 }
 
-void mod_simple_even_90_and_check_big_factor90(const int90_v q, const int90_v n, const float_v nf, __global uint * const RES)
+void mod_simple_even_90_and_check_big_factor90(const int90_v q, const int90_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+)
 /*
-This function is a combination of mod_simple_96(), check_big_factor96() and an additional correction step.
+This function is a combination of mod_simple_90(), check_big_factor90() and an additional correction step.
 If q mod n == 1 then n is a factor and written into the RES array.
 q must be less than 100n!
 */
@@ -1209,6 +1261,13 @@ q must be less than 100n!
   qf = qf * 1073741824.0f;
   
   qi = CONVERT_UINT_V(qf*nf);
+#ifdef CHECKS_MODBASECASE
+  if(n.d5 != 0 && n.d5 < (1 << bit_max64))
+  {
+    MODBASECASE_QI_ERROR(10, 108, qi, 20);
+  }
+#endif
+
 /* at this point the quotient still is sometimes to small (the error is 1 in this case)
 --> final res odd and qi correct: n might be a factor
     final res odd and qi too small: n can't be a factor (because the correct res is even)
@@ -1311,9 +1370,13 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   }
 }
 
-void mod_simple_90_and_check_big_factor90(const int90_v q, const int90_v n, const float_v nf, __global uint * const RES)
+void mod_simple_90_and_check_big_factor90(const int90_v q, const int90_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+)
 /*
-This function is a combination of mod_simple_96(), check_big_factor96() and an additional correction step.
+This function is a combination of mod_simple_90(), check_big_factor90() and an additional correction step.
 If q mod n == 1 then n is a factor and written into the RES array.
 q must be less than 100n!
 */
@@ -1326,6 +1389,13 @@ q must be less than 100n!
   qf = qf * 1073741824.0f;
   
   qi = CONVERT_UINT_V(qf*nf);
+#ifdef CHECKS_MODBASECASE
+  if(n.d5 != 0 && n.d5 < (1 << bit_max64))
+  {
+    MODBASECASE_QI_ERROR(10, 109, qi, 21);
+  }
+#endif
+
 /* at this point the quotient still is sometimes to small (the error is 1 in this case)
 --> final res odd and qi correct: n might be a factor
     final res odd and qi too small: n can't be a factor (because the correct res is even)
