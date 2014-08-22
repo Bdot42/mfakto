@@ -77,7 +77,7 @@ COBJS  = $(CSRC:.c=.o) mfakto.o gpusieve.o perftest.o menu.o kbhit.o
 
 ##############################################################################
 
-all: ../mfakto ../barrett15.cl  ../barrett24.cl  ../barrett.cl  ../common.cl  ../gpusieve.cl  ../mfakto_Kernels.cl  ../montgomery.cl  ../mul24.cl ../datatypes.h ../tf_debug.h
+all: ../mfakto ../barrett15.cl  ../barrett24.cl  ../barrett.cl  ../common.cl  ../gpusieve.cl  ../mfakto_Kernels.cl  ../montgomery.cl  ../mul24.cl ../datatypes.h ../tf_debug.h ../mfakto.ini
 
 ../mfakto : $(COBJS)
 	$(LD) $^ $(LDFLAGS) -o $@
