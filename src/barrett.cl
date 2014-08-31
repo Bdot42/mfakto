@@ -513,8 +513,6 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
 #endif
 
 /********** Step 4, Offset 2^15 (0*32 + 15) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 4, 5, 4);
-
   qf= CONVERT_FLOAT_V(q.d4);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
@@ -595,7 +593,6 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
 
 
 /********** Step 5, Offset 2^0 (0*32 + 0) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 5, 5, 6);
   MODBASECASE_NONZERO_ERROR(q.d4, 5, 4, 7);
 
   qf= CONVERT_FLOAT_V(q.d3);
@@ -646,7 +643,7 @@ DIV_160_96 here. */
   qf= CONVERT_FLOAT_V(q.d5);
   qf= qf * 4294967296.0f;  // combining this and the the below 2M multiplier makes it slower!
 #else
-#ifdef CHECKS_MODBASECASE || (TRACE_KERNEL > 1)
+#if defined CHECKS_MODBASECASE || (TRACE_KERNEL > 1)
     q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
 #endif
   qf= CONVERT_FLOAT_V(q.d4);
@@ -887,8 +884,6 @@ DIV_160_96 here. */
 #endif
 
 /********** Step 4, Offset 2^15 (0*32 + 15) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 4, 5, 4);
-
   qf= CONVERT_FLOAT_V(q.d4);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
@@ -971,7 +966,6 @@ DIV_160_96 here. */
 
 
 /********** Step 5, Offset 2^0 (0*32 + 0) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 5, 5, 6);
   MODBASECASE_NONZERO_ERROR(q.d4, 5, 4, 7);
 
   qf= CONVERT_FLOAT_V(q.d3);
@@ -1082,8 +1076,8 @@ Precalculated here since it is the same for all steps in the following loop */
     square_96_160(&b, a);						// b = a^2
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x (b)\n",
+        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
 
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
@@ -1364,7 +1358,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
 
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)

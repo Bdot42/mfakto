@@ -26,8 +26,8 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "params.h"
 #include "my_types.h"
 
-extern kernel_info_t       kernel_info[];
-extern struct GPU_type     gpu_types[];
+extern kernel_info_t   kernel_info[];
+extern GPU_type        gpu_types[];
 static int inifile_unavailable = 0;
 
 static int my_read_int(char *inifile, char *name, int *value)

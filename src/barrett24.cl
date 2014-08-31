@@ -508,7 +508,6 @@ void div_144_72(int72_v * const res, __private int144_v q, const int72_v n, cons
   q.d3 &= 0xFFFFFF;
 
 /********** Step 4, Offset 2^0 (0*24 + 0) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 4, 5, 5);
   MODBASECASE_NONZERO_ERROR(q.d4, 4, 4, 6);
 
   qf= CONVERT_FLOAT_V(q.d3);

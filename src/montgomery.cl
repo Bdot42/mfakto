@@ -107,7 +107,7 @@ ulong_v mod_REDC64(const ulong_v a, const ulong_v N, const ulong_v Ns)
   return onemod_REDC64(N, Ns*a);
 }
 
-__kernel void __attribute__((work_group_size_hint(256, 1, 1))) cl_mg62(__private uint exp, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void __attribute__((work_group_size_hint(256, 1, 1))) cl_mg62(__private uint exponent, const int96_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else
@@ -131,11 +131,11 @@ bit_max64 is bit_max - 64!
   __private uint_v t;
 
 	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_mg62: exp=%d, k_base=%x:%x:%x\n",
-        exp, k_base.d2, k_base.d1, k_base.d0);
+        exponent, k_base.d2, k_base.d1, k_base.d0);
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -185,7 +185,7 @@ bit_max64 is bit_max - 64!
   k.d0 = mad24(t, 4620u, k_base.d0);
   k.d1 = mad_hi(t, 4620u, k_base.d1) - AS_UINT_V(k_base.d0 > k.d0);	/* k is limited to 2^64 -1 so there is no need for k.d2 */
 
-  f = upsample(k.d1, k.d0) * ((ulong)exp + exp) + 1;
+  f = upsample(k.d1, k.d0) * ((ulong)exponent + exponent) + 1;
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_mg62: k_tab[%d]=%x, f=%#llx, shift=%d\n",
@@ -220,7 +220,7 @@ bit_max64 is bit_max - 64!
    */
 // second case
 //   while ((exp&0x80000000) == 0) exp<<=1; // shift exp to the very left of the 32 bits
-   exp <<= clz(exp); // shift exp to the very left of the 32 bits
+   exponent <<= clz(exponent); // shift exp to the very left of the 32 bits
    As = (0 - f) % f;
 
    // verify As
@@ -229,16 +229,16 @@ bit_max64 is bit_max - 64!
 //   printf ("A=%#llx ==> Am=%llu, P=%llu (%#llx..<32>): ", A, As, P, P>>32);
 
    // A=1 => A*A=1 => As*As=As => skip the first mulmod
-   exp <<=1;
+   exponent <<=1;
    As  <<=1;
 
-   while(exp)
+   while(exponent)
    {
      As=mulmod_REDC64 (As, As, f, f_inv);  // square
  //    printf ("square=%llu\n", As);
-     if (exp&0x80000000) As <<=1;         // mul by 2
-     exp<<=1;
-//     printf ("loopend:exp=%#x, As=%llu (%#llx..<32>)\n", exp, As, As>>32UL);
+     if (exponent&0x80000000) As <<=1;         // mul by 2
+     exponent<<=1;
+//     printf ("loopend:exp=%#x, As=%llu (%#llx..<32>)\n", exponent, As, As>>32UL);
    }
 
    a = mod_REDC64 (As, f, f_inv);
@@ -413,7 +413,8 @@ uint_v neginvmod2pow15 (const uint_v n)
 int90_v squaremod_REDC90 (const int90_v x, const int90_v m, const uint_v t)
 {
   /*Alex Kruppa:
-Unless your modulus is quite large so that sub-quadratic multiplication algorithms become attractive, the best way to do REDC is usually just running k sequential one-word REDC passes, if the modulus has k words.
+Unless your modulus is quite large so that sub-quadratic multiplication algorithms become attractive,
+the best way to do REDC is usually just running k sequential one-word REDC passes, if the modulus has k words.
 
 E.g., given
 
@@ -431,35 +432,48 @@ a -= m
 }
 
 In our case, the word size is just 2^15 instead of 2^64.
-
+6x
+r = (a % 2^15 * t) % 2^15
+a = (a + r * m) / 2^15
 */
 
-  uint_v   r;
+  uint_v   r, tmp;
   int90_v ret;
   int180_v a;
 
   square_90_180(&a, x);
 
+#if (TRACE_KERNEL > 2)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90: x=%x:%x:%x:%x:%x:%x, x*x=a=%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x, m=%x:%x:%x:%x:%x:%x, t=%x\n",
+        x.d5.s0, x.d4.s0, x.d3.s0, x.d2.s0, x.d1.s0, x.d0.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0,
+        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, m.d5.s0, m.d4.s0, m.d3.s0, m.d2.s0, m.d1.s0, m.d0.s0, t.s0);
+#endif
+
   // loop unrolled 6 times
   r = mul24(a.d0, t) & 0x7FFF;
 
-  a.d0 = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
-  a.d0 = (a.d0 >> 15) + mad24(r, m.d1, a.d1);  // assigning the d1 value to d0 (etc.) is the div by 2^15
+  tmp = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
+  a.d0 = (tmp >> 15) + mad24(r, m.d1, a.d1);  // assigning the d1 value to d0 (etc.) is the div by 2^15
   a.d1 = (a.d0 >> 15) + mad24(r, m.d2, a.d2);
   a.d2 = (a.d1 >> 15) + mad24(r, m.d3, a.d3);
   a.d3 = (a.d2 >> 15) + mad24(r, m.d4, a.d4);
   a.d4 = (a.d3 >> 15) + mad24(r, m.d5, a.d5);
-  a.d5 = (a.d4 >> 15) + a.d6;  // always add in the next higher component
+  a.d5 = (a.d4 >> 15) + a.d6;  // always add in the next higher component; we may have 16 bits in a.d5
   a.d0 &= 0x7FFF;
   a.d1 &= 0x7FFF;
   a.d2 &= 0x7FFF;
   a.d3 &= 0x7FFF;
   a.d4 &= 0x7FFF;
 
+#if (TRACE_KERNEL > 3)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90#1: r=%x, a=%x:%x:%x:%x:%x:%x!%x:%x:%x:%x:%x:%x, tmp=%x\n",
+        r.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+#endif
+
   r = mul24(a.d0, t)  & 0x7FFF;
 
-  a.d0 = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
-  a.d0 = (a.d0 >> 15) + mad24(r, m.d1, a.d1);
+  tmp = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
+  a.d0 = (tmp >> 15) + mad24(r, m.d1, a.d1);
   a.d1 = (a.d0 >> 15) + mad24(r, m.d2, a.d2);
   a.d2 = (a.d1 >> 15) + mad24(r, m.d3, a.d3);
   a.d3 = (a.d2 >> 15) + mad24(r, m.d4, a.d4);
@@ -471,10 +485,15 @@ In our case, the word size is just 2^15 instead of 2^64.
   a.d3 &= 0x7FFF;
   a.d4 &= 0x7FFF;
 
+#if (TRACE_KERNEL > 3)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90#2: r=%x, a=%x:%x:%x:%x:%x:%x!%x:%x:%x:%x:%x:%x, tmp=%x\n",
+        r.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+#endif
+
   r = mul24(a.d0, t)  & 0x7FFF;
 
-  a.d0 = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
-  a.d0 = (a.d0 >> 15) + mad24(r, m.d1, a.d1);
+  tmp = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
+  a.d0 = (tmp >> 15) + mad24(r, m.d1, a.d1);
   a.d1 = (a.d0 >> 15) + mad24(r, m.d2, a.d2);
   a.d2 = (a.d1 >> 15) + mad24(r, m.d3, a.d3);
   a.d3 = (a.d2 >> 15) + mad24(r, m.d4, a.d4);
@@ -486,10 +505,15 @@ In our case, the word size is just 2^15 instead of 2^64.
   a.d3 &= 0x7FFF;
   a.d4 &= 0x7FFF;
 
+#if (TRACE_KERNEL > 3)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90#3: r=%x, a=%x:%x:%x:%x:%x:%x!%x:%x:%x:%x:%x:%x, tmp=%x\n",
+        r.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+#endif
+
   r = mul24(a.d0, t)  & 0x7FFF;
 
-  a.d0 = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
-  a.d0 = (a.d0 >> 15) + mad24(r, m.d1, a.d1);
+  tmp = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
+  a.d0 = (tmp >> 15) + mad24(r, m.d1, a.d1);
   a.d1 = (a.d0 >> 15) + mad24(r, m.d2, a.d2);
   a.d2 = (a.d1 >> 15) + mad24(r, m.d3, a.d3);
   a.d3 = (a.d2 >> 15) + mad24(r, m.d4, a.d4);
@@ -501,10 +525,15 @@ In our case, the word size is just 2^15 instead of 2^64.
   a.d3 &= 0x7FFF;
   a.d4 &= 0x7FFF;
 
+#if (TRACE_KERNEL > 3)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90#4: r=%x, a=%x:%x:%x:%x:%x:%x!%x:%x:%x:%x:%x:%x, tmp=%x\n",
+        r.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+#endif
+
   r = mul24(a.d0, t)  & 0x7FFF;
 
-  a.d0 = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
-  a.d0 = (a.d0 >> 15) + mad24(r, m.d1, a.d1);
+  tmp = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
+  a.d0 = (tmp >> 15) + mad24(r, m.d1, a.d1);
   a.d1 = (a.d0 >> 15) + mad24(r, m.d2, a.d2);
   a.d2 = (a.d1 >> 15) + mad24(r, m.d3, a.d3);
   a.d3 = (a.d2 >> 15) + mad24(r, m.d4, a.d4);
@@ -516,10 +545,15 @@ In our case, the word size is just 2^15 instead of 2^64.
   a.d3 &= 0x7FFF;
   a.d4 &= 0x7FFF;
 
+#if (TRACE_KERNEL > 3)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90#5: r=%x, a=%x:%x:%x:%x:%x:%x!%x:%x:%x:%x:%x:%x, tmp=%x\n",
+        r.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+#endif
+
   r = mul24(a.d0, t)  & 0x7FFF;
 
-  a.d0 = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
-  a.d0 = (a.d0 >> 15) + mad24(r, m.d1, a.d1);
+  tmp = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
+  a.d0 = (tmp >> 15) + mad24(r, m.d1, a.d1);
   a.d1 = (a.d0 >> 15) + mad24(r, m.d2, a.d2);
   a.d2 = (a.d1 >> 15) + mad24(r, m.d3, a.d3);
   a.d3 = (a.d2 >> 15) + mad24(r, m.d4, a.d4);
@@ -532,18 +566,27 @@ In our case, the word size is just 2^15 instead of 2^64.
   ret.d4 = a.d4 & 0x7FFF;
   ret.d5 = a.d5;
 
+#if (TRACE_KERNEL > 3)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90#6: r=%x, a=%x:%x:%x:%x:%x:%x!%x:%x:%x:%x:%x:%x, tmp=%x\n",
+        r.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0, a.d5.s0, ret.d4.s0, ret.d3.s0, ret.d2.s0, ret.d1.s0, ret.d0.s0, tmp.s0);
+#endif
+
   return sub_if_gte_90(ret, m);
 }
 
 
 int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
 {
-  uint_v   r;
+  uint_v   r, tmp;
   // loop unrolled 6 times
+#if (TRACE_KERNEL > 2)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90: a=%x:%x:%x:%x:%x:%x, m=%x:%x:%x:%x:%x:%x, t=%x\n",
+        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, m.d5.s0, m.d4.s0, m.d3.s0, m.d2.s0, m.d1.s0, m.d0.s0, t.s0);
+#endif
   r = mul24(a.d0, t) & 0x7FFF;
 
-  a.d0 = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
-  a.d0 = (a.d0 >> 15) + mad24(r, m.d1, a.d1);  // assigning the d1 value to d0 (etc.) is the div by 2^15
+  tmp = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
+  a.d0 = (tmp >> 15) + mad24(r, m.d1, a.d1);  // assigning the d1 value to d0 (etc.) is the div by 2^15
   a.d1 = (a.d0 >> 15) + mad24(r, m.d2, a.d2);
   a.d2 = (a.d1 >> 15) + mad24(r, m.d3, a.d3);
   a.d3 = (a.d2 >> 15) + mad24(r, m.d4, a.d4);
@@ -554,11 +597,16 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
   a.d2 &= 0x7FFF;
   a.d3 &= 0x7FFF;
   a.d4 &= 0x7FFF;
+
+#if (TRACE_KERNEL > 3)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90#1: r=%x, a=%x:%x:%x:%x:%x:%x, tmp=%x\n",
+        r.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+#endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
 
-  a.d0 = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
-  a.d0 = (a.d0 >> 15) + mad24(r, m.d1, a.d1);
+  tmp = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
+  a.d0 = (tmp >> 15) + mad24(r, m.d1, a.d1);
   a.d1 = (a.d0 >> 15) + mad24(r, m.d2, a.d2);
   a.d2 = (a.d1 >> 15) + mad24(r, m.d3, a.d3);
   a.d3 = (a.d2 >> 15) + mad24(r, m.d4, a.d4);
@@ -569,11 +617,16 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
   a.d2 &= 0x7FFF;
   a.d3 &= 0x7FFF;
   a.d4 &= 0x7FFF;
+
+#if (TRACE_KERNEL > 3)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90#2: r=%x, a=%x:%x:%x:%x:%x:%x, tmp=%x\n",
+        r.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+#endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
 
-  a.d0 = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
-  a.d0 = (a.d0 >> 15) + mad24(r, m.d1, a.d1);
+  tmp = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
+  a.d0 = (tmp >> 15) + mad24(r, m.d1, a.d1);
   a.d1 = (a.d0 >> 15) + mad24(r, m.d2, a.d2);
   a.d2 = (a.d1 >> 15) + mad24(r, m.d3, a.d3);
   a.d3 = (a.d2 >> 15) + mad24(r, m.d4, a.d4);
@@ -584,11 +637,16 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
   a.d2 &= 0x7FFF;
   a.d3 &= 0x7FFF;
   a.d4 &= 0x7FFF;
+
+#if (TRACE_KERNEL > 3)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90#3: r=%x, a=%x:%x:%x:%x:%x:%x, tmp=%x\n",
+        r.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+#endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
 
-  a.d0 = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
-  a.d0 = (a.d0 >> 15) + mad24(r, m.d1, a.d1);
+  tmp = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
+  a.d0 = (tmp >> 15) + mad24(r, m.d1, a.d1);
   a.d1 = (a.d0 >> 15) + mad24(r, m.d2, a.d2);
   a.d2 = (a.d1 >> 15) + mad24(r, m.d3, a.d3);
   a.d3 = (a.d2 >> 15) + mad24(r, m.d4, a.d4);
@@ -599,11 +657,16 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
   a.d2 &= 0x7FFF;
   a.d3 &= 0x7FFF;
   a.d4 &= 0x7FFF;
+
+#if (TRACE_KERNEL > 3)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90#4: r=%x, a=%x:%x:%x:%x:%x:%x, tmp=%x\n",
+        r.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+#endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
 
-  a.d0 = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
-  a.d0 = (a.d0 >> 15) + mad24(r, m.d1, a.d1);
+  tmp = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
+  a.d0 = (tmp >> 15) + mad24(r, m.d1, a.d1);
   a.d1 = (a.d0 >> 15) + mad24(r, m.d2, a.d2);
   a.d2 = (a.d1 >> 15) + mad24(r, m.d3, a.d3);
   a.d3 = (a.d2 >> 15) + mad24(r, m.d4, a.d4);
@@ -614,11 +677,16 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
   a.d2 &= 0x7FFF;
   a.d3 &= 0x7FFF;
   a.d4 &= 0x7FFF;
+
+#if (TRACE_KERNEL > 3)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90#5: r=%x, a=%x:%x:%x:%x:%x:%x, tmp=%x\n",
+        r.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+#endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
 
-  a.d0 = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
-  a.d0 = (a.d0 >> 15) + mad24(r, m.d1, a.d1);
+  tmp = mad24(r, m.d0, a.d0);   // this is not needed anymore, just to provide the carry to d1
+  a.d0 = (tmp >> 15) + mad24(r, m.d1, a.d1);
   a.d1 = (a.d0 >> 15) + mad24(r, m.d2, a.d2);
   a.d2 = (a.d1 >> 15) + mad24(r, m.d3, a.d3);
   a.d3 = (a.d2 >> 15) + mad24(r, m.d4, a.d4);
@@ -629,12 +697,17 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
   a.d2 &= 0x7FFF;
   a.d3 &= 0x7FFF;
   a.d4 &= 0x7FFF;
+
+#if (TRACE_KERNEL > 3)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90#6: r=%x, a=%x:%x:%x:%x:%x:%x, tmp=%x\n",
+        r.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+#endif
 
   return sub_if_gte_90(a, m);
 }
 
 
-__kernel void __attribute__((work_group_size_hint(256, 1, 1))) cl_mg88(__private uint exp, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
+__kernel void __attribute__((work_group_size_hint(256, 1, 1))) cl_mg88(__private uint exponent, const int75_t k_base, const __global uint * restrict k_tab, const int shiftcount,
 #ifdef WA_FOR_CATALYST11_10_BUG
                            const uint8 b_in,
 #else
@@ -652,109 +725,24 @@ a is precomputed on host ONCE.
 bit_max64 is bit_max - 64!
 */
 {
-  __private int90_v a, f, As, k;
-  __private int75_t exp75;
+  __private int90_v a, f, As;
   __private uint tid;
-  __private uint_v t, f_inv;
+  __private uint_v f_inv;
   __private float_v ff;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
-  exp75.d2=exp>>29;exp75.d1=(exp>>14)&0x7FFF;exp75.d0=(exp<<1)&0x7FFF;	// exp75 = 2 * exp
+  tid = mul24(get_global_id(0), VECTOR_SIZE);
 
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: exp=%d, x2=%x:%x:%x, k_base=%x:%x:%x:%x\n",
-        exp, exp75.d2, exp75.d1, exp75.d0, k_base.d3, k_base.d2, k_base.d1, k_base.d0);
+  if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: exp=%u=%x, k_base=%x:%x:%x:%x\n",
+        exponent, exponent, k_base.d3, k_base.d2, k_base.d1, k_base.d0);
 #endif
 
-#if (VECTOR_SIZE == 1)
-  t    = k_tab[tid];
-#elif (VECTOR_SIZE == 2)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-#elif (VECTOR_SIZE == 3)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-#elif (VECTOR_SIZE == 4)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-  t.w  = k_tab[tid+3];
-#elif (VECTOR_SIZE == 8)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-#elif (VECTOR_SIZE == 16)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-  t.s8 = k_tab[tid+8];
-  t.s9 = k_tab[tid+9];
-  t.sa = k_tab[tid+10];
-  t.sb = k_tab[tid+11];
-  t.sc = k_tab[tid+12];
-  t.sd = k_tab[tid+13];
-  t.se = k_tab[tid+14];
-  t.sf = k_tab[tid+15];
-#endif
-  a.d0 = t & 0x7FFF;
-  a.d1 = t >> 15;  // t is 24 bits at most
 
-  k.d0  = mad24(a.d0, 4620u, k_base.d0);
-  k.d1  = mad24(a.d1, 4620u, k_base.d1) + (k.d0 >> 15);
-  k.d0 &= 0x7FFF;
-  k.d2  = (k.d1 >> 15) + k_base.d2;
-  k.d1 &= 0x7FFF;
-  k.d3  = (k.d2 >> 15) + k_base.d3;
-  k.d2 &= 0x7FFF;
-  k.d4  = (k.d3 >> 15) + k_base.d4;  // PERF: k.d4 = 0, normally. Can we limit k to 2^60?
-  k.d3 &= 0x7FFF;
-
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
-#endif
-		// f = 2 * k * exp + 1
-  f.d0 = mad24(k.d0, exp75.d0, 1u);
-
-  f.d1 = mad24(k.d1, exp75.d0, f.d0 >> 15);
-  f.d1 = mad24(k.d0, exp75.d1, f.d1);
-  f.d0 &= 0x7FFF;
-
-  f.d2 = mad24(k.d2, exp75.d0, f.d1 >> 15);
-  f.d2 = mad24(k.d1, exp75.d1, f.d2);
-  f.d2 = mad24(k.d0, exp75.d2, f.d2);  // PERF: if we limit exp at kernel compile time to 2^29, then we can skip exp75.d2 here and above.
-  f.d1 &= 0x7FFF;
-
-  f.d3 = mad24(k.d3, exp75.d0, f.d2 >> 15);
-  f.d3 = mad24(k.d2, exp75.d1, f.d3);
-  f.d3 = mad24(k.d1, exp75.d2, f.d3);
-//  f.d3 = mad24(k.d0, exp75.d3, f.d3);    // exp75.d3 = 0
-  f.d2 &= 0x7FFF;
-
-  f.d4 = mad24(k.d4, exp75.d0, f.d3 >> 15);  // PERF: see above
-  f.d4 = mad24(k.d3, exp75.d1, f.d4);
-  f.d4 = mad24(k.d2, exp75.d2, f.d4);
-  f.d3 &= 0x7FFF;
-
-//  f.d5 = mad24(k.d5, exp75.d0, f.d4 >> 15);  // k.d5 = 0
-  f.d5 = mad24(k.d4, exp75.d1, f.d4 >> 15);
-  f.d5 = mad24(k.d3, exp75.d2, f.d5);
-  f.d4 &= 0x7FFF;
+  calculate_FC90(exponent, tid, k_tab, k_base, &f);
 
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: k_tab[%d]=%x, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x, shift=%d\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: f=%x:%x:%x:%x:%x:%x, shift=%d\n",
+        f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
   f_inv = neginvmod2pow15(f.d0);
@@ -765,40 +753,22 @@ bit_max64 is bit_max - 64!
    R = 2^90 for this kernel.
 
    In the later case, we can start with A=1 (no preshifting), which means As = R mod f = R-f mod f (which is just a 90-bit mod).
-   If we furthermore limit f > 2^75, then we can use mod_simple for this calculation - with a little more effort mod_simple could handle f>2^68
+   If we furthermore limit f > 2^73, then we can use mod_simple for this calculation - with a little more effort mod_simple could handle f>2^68
    */
 
-// first case - not used because of the full-mod required.
-  /*
-  shiftcount=4;  // no exp below 2^10 ;-)
-  while((A=exp>>shiftcount) > 63)shiftcount++;
-  A=(ulong)1<<A;
-  exp=exp<<(32-shiftcount);
-  Rs = R-P; // R=2^64, Rs = R - P = R (mod P), but Rs is now less than 2^64
-        Rs = Rs % P;
-        Rs = Rs * Rs;  // works only if P < 2^32
-        Rs = Rs % P;
-
-//  printf ("\nR=%llu ==> Rs=%llu\n", R, Rs);
-
-   As=mulmod_REDC64 (A, Rs, P, Pinv);
-
-   */
-// second case
   ff= CONVERT_FLOAT_RTP_V(mad24(f.d5, 32768u, f.d4));
   ff= ff * 1073741824.0f+ CONVERT_FLOAT_RTP_V(mad24(f.d3, 32768u, f.d2));   // f.d1 needed?
 
   ff = as_float(0x3f7ffffd) / ff;
 
-//   while ((exp&0x80000000) == 0) exp<<=1; // shift exp to the very left of the 32 bits
-exp <<= clz(exp); // shift exp to the very left of the 32 bits
+  exponent <<= clz(exponent); // shift exp to the very left of the 32 bits
 
 #ifndef CHECKS_MODBASECASE
   mod_simple_90(&As, neg_90(f), f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
-                 );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
+                 );
 #else
   mod_simple_90(&As, neg_90(f), f, ff
 #if (TRACE_KERNEL > 1)
@@ -809,40 +779,40 @@ exp <<= clz(exp); // shift exp to the very left of the 32 bits
 
   // As is now the montgomery-representation of 1
 #if (TRACE_KERNEL > 2)
-   if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: exp=0x%x, As=%x:%x:%x:%x:%x:%x, f_inv=%x\n",
-        exp, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, f_inv.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: exp=%#x, As=%x:%x:%x:%x:%x:%x, f_inv=%x\n",
+        exponent, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, f_inv.s0);
 #endif
 #if (TRACE_KERNEL > 3)
      a = mod_REDC90 (As, f, f_inv);
      if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-beforeshift: exp=0x%x, As=%x:%x:%x:%x:%x:%x (a=%x:%x:%x:%x:%x:%x)\n",
-        exp, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        exponent, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
 
    // A=1 => A*A=1 => As*As=As => skip the first mulmod
-   exp <<=1;
+   exponent <<=1;
    shl_90(&As);
 
 #if (TRACE_KERNEL > 3)
      a = mod_REDC90 (As, f, f_inv);
      if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-beforeloop: exp=0x%x, As=%x:%x:%x:%x:%x:%x (a=%x:%x:%x:%x:%x:%x)\n",
-        exp, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        exponent, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
-   while(exp)
+   while(exponent)
    {
      As=squaremod_REDC90 (As, f, f_inv);      // square
-     if (exp&0x80000000) shl_90(&As);         // mul by 2
+     if (exponent&0x80000000) shl_90(&As);         // mul by 2
 #if (TRACE_KERNEL > 3)
      a = mod_REDC90 (As, f, f_inv);
      if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-loop: exp=0x%x, As=%x:%x:%x:%x:%x:%x (a=%x:%x:%x:%x:%x:%x)\n",
-        exp, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        exponent, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
-     exp<<=1;
+     exponent<<=1;
    }
 
    a = mod_REDC90 (As, f, f_inv);
 #if (TRACE_KERNEL > 1)
    if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-end: exp=0x%x, As=%x:%x:%x:%x:%x:%x, a=%x:%x:%x:%x:%x:%x\n",
-        exp, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        exponent, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
 
 /* finally check if we found a factor and write the factor to RES[] */

@@ -49,7 +49,7 @@ mystuff_t mystuff;
 
 extern OpenCL_deviceinfo_t deviceinfo;
 extern kernel_info_t       kernel_info[];
-struct GPU_type gpu_types[]={
+GPU_type gpu_types[]={
   {GPU_AUTO,     0,  "AUTO"},
   {GPU_VLIW4,   64,  "VLIW4"},
   {GPU_VLIW5,   80,  "VLIW5"},
@@ -100,9 +100,9 @@ The variables exp, bit_min and bit_max must be a valid assignment! */
   // if GPU-sieving: check that we have an appropriate kernel
   if (mystuff->gpu_sieving == 1)
   {
-    if ((kernel >= BARRETT79_MUL32) && (kernel <= BARRETT74_MUL15))
+    if ((kernel >= BARRETT79_MUL32) && (kernel <= BARRETT78_MUL16))
       kernel += BARRETT79_MUL32_GS - BARRETT79_MUL32;  // adjust: if asked for the CPU version, check the GPU one
-    if ((kernel < BARRETT79_MUL32_GS) || (kernel > BARRETT74_MUL15_GS))
+    if ((kernel < BARRETT79_MUL32_GS) || (kernel >= UNKNOWN_GS_KERNEL))
       return 0;  // no GPU version available
   }
 
@@ -526,7 +526,7 @@ other return value
         if (mystuff->gpu_sieving == 1)
         {
           gpusieve_init_class(mystuff, k_min+cur_class);
-          if ((use_kernel >= BARRETT79_MUL32_GS) && (use_kernel <= BARRETT74_MUL15_GS))
+          if ((use_kernel >= BARRETT79_MUL32_GS) && (use_kernel < UNKNOWN_GS_KERNEL))
           {
             numfactors = tf_class_opencl (k_min+cur_class, k_max, mystuff, use_kernel);
           }
@@ -726,7 +726,7 @@ RET_ERROR we might have a serios problem
   int retval=1, ind;
   enum GPUKernels kernels[UNKNOWN_KERNEL], kernel_index;
   // this index is 1 less than what -st/-st2 report
-  unsigned int index[] = {   27, 161, 2583, 646, 647, 648, 30,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+  unsigned int index[] = {   134, 91, 27, 161, 2583, 646, 647, 648, 30,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
                              70,   72,   73,   82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
                            1547    // some factors below 2^95 (test 95 bit kernel)
@@ -772,9 +772,9 @@ RET_ERROR we might have a serios problem
     if (mystuff->gpu_sieving == 0)
     {
 //      for (kernel_index = _71BIT_MUL24; kernel_index < BARRETT88_MUL15; ++kernel_index) // test-only: skip 6x15-bit kernels
-//      for (kernel_index = BARRETT79_MUL32; kernel_index <= BARRETT87_MUL32; ++kernel_index) // test-only: only use 32-bit kernels
-//      for (kernel_index = MG62; kernel_index < MG88; ++kernel_index) // Specific montgomery test
-//      for (kernel_index = BARRETT88_MUL15; kernel_index <= BARRETT82_MUL15; ++kernel_index) // test only the 74-bit kernel
+//      for (kernel_index = BARRETT79_MUL32; kernel_index <= BARRETT79_MUL32; ++kernel_index) // test-only: only use 32-bit kernels
+//      for (kernel_index = MG62; kernel_index <= MG88; ++kernel_index) // Specific montgomery test
+//      for (kernel_index = BARRETT71_MUL15; kernel_index <= BARRETT78_MUL16; ++kernel_index) // test only the 74-bit kernel
       for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index) // this is the real one !!
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
@@ -789,7 +789,7 @@ RET_ERROR we might have a serios problem
 //      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT73_MUL15_GS; ++kernel_index) // test-only: skip small 15-bit kernels
 //      for (kernel_index = BARRETT74_MUL15_GS; kernel_index <= BARRETT74_MUL15_GS; ++kernel_index) // test only the 74-bit kernel
 //      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT79_MUL32_GS; ++kernel_index) // test only 32-79
-      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT74_MUL15_GS; ++kernel_index)
+      for (kernel_index = BARRETT79_MUL32_GS; kernel_index < UNKNOWN_GS_KERNEL; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }

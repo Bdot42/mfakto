@@ -55,7 +55,8 @@ int75_v sub_if_gte_75(const int75_v a, const int75_v b)
 }
 
 void mul_75(int75_v * const res, const int75_v a, const int75_v b)
-/* res = a * b */
+/* res = a * b (low 75 bits)
+  15x mul24/mad24, 4x >>, 5x &   = 24 ops  */
 {
   res->d0 = mul24(a.d0, b.d0);
 
@@ -546,7 +547,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 
 //  q = q - nn
   q.d2 = -nn.d0;
-  q.d3 = q.d3 - nn.d1 + AS_UINT_V((q.d2 > 0x7FFF));
+  q.d3 = -nn.d1 + AS_UINT_V((q.d2 > 0x7FFF));
   q.d4 = q.d4 - nn.d2 + AS_UINT_V((q.d3 > 0x7FFF));
   q.d5 = q.d5 - nn.d3 + AS_UINT_V((q.d4 > 0x7FFF));
   q.d6 = q.d6 - nn.d4 + AS_UINT_V((q.d5 > 0x7FFF));
@@ -658,7 +659,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
         q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0);
 #endif
 
-  MODBASECASE_NONZERO_ERROR(q.d7, 3, 6, 6);
+  MODBASECASE_NONZERO_ERROR(q.d7, 3, 7, 6);
 
   /********** Step 4, Offset 2^0 (0*15 + 0) **********/
 
@@ -1255,11 +1256,11 @@ ff = 1/f as float, needed in div_192_96().
     f1= f1 * 32768.0f + CONVERT_FLOAT_RTP_V(a.d2);   // f.d1 needed?
 
     f1= as_float(0x3f7ffffc) / f1;
-    div_150_75(&tmp75, b, a, f1, tid
+    div_150_75(&tmp75, b.d9.s0, a, f1, tid
                MODBASECASE_PAR
               );
-    if (tid==TRACE_TID) printf((__constant char *)"vrfy: b = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x / a=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x\n",
-        b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
+    if (tid==TRACE_TID) printf((__constant char *)"vrfy: b = %x:0:0:0:0:0:0:0:0:0 / a=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x\n",
+        b.d9.s0,
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
     a.d0 = mad24(b.d5, bit_max75_mult, (b.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
@@ -1352,8 +1353,15 @@ ff = 1/f as float, needed in div_192_96().
 );						// u = floor(tmp150 / f)
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: u=%x:%x:%x:%x:%x, ff=%G\n",
-        u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: bit_max65=%u, u=%x:%x:%x:%x:%x, ff=%G\n",
+        bit_max65, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+#endif
+#if (TRACE_KERNEL > 10)
+    // verify u
+    mul_75_150(&tmp150, u, f);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: vrfy: f*u=%x:%x:%x:%x:%x:%x:%x:%x:%x:%x\n",
+        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0,
+        tmp150.d4.s0, tmp150.d3.s0, tmp150.d2.s0, tmp150.d1.s0, tmp150.d0.s0);
 #endif
   a.d0 = mad24(bb.d5, bit_max75_mult, (bb.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
   a.d1 = mad24(bb.d6, bit_max75_mult, (bb.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
@@ -1432,11 +1440,11 @@ ff = 1/f as float, needed in div_192_96().
     f1= f1 * 32768.0f + CONVERT_FLOAT_RTP_V(a.d2);   // f.d1 needed?
 
     f1= as_float(0x3f7ffffc) / f1;
-    div_150_75(&tmp75, b, a, f1, tid
+    div_150_75(&tmp75, b.d9.s0, a, f1, tid
                MODBASECASE_PAR
               );
-    if (tid==TRACE_TID) printf((__constant char *)"vrfy: b = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x / a=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x\n",
-        b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
+    if (tid==TRACE_TID) printf((__constant char *)"vrfy: b = %x:0:0:0:0:0:0:0:0:0 / a=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x\n",
+        b.d9.s0,
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
     a.d0 = mad24(b.d5, bit_max75_mult, (b.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
@@ -1479,6 +1487,7 @@ ff = 1/f as float, needed in div_192_96().
 #endif
     if(shifter&0x80000000)
     { /* When working on 74 bit FC's. we don't have room to shift here without this modulo */
+      shl_75(&tmp75);					// "optional multiply by 2" in Prime 95 documentation
 #ifndef CHECKS_MODBASECASE
       mod_simple_75(&tmp75, tmp75, f, ff
 #if (TRACE_KERNEL > 1)
@@ -1500,7 +1509,6 @@ ff = 1/f as float, needed in div_192_96().
       if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: before shift: tmp=%x:%x:%x:%x:%x \n",
         tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
-      shl_75(&tmp75);					// "optional multiply by 2" in Prime 95 documentation
     }
 
     shifter+=shifter;
@@ -2282,7 +2290,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.8: q=%x!%x:%x:%x:%x:%x:%x:%x:..:..\n",
         q.db.s0, q.da.s0, q.d9.s0, q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0);
 #endif
-  MODBASECASE_NONZERO_ERROR(q.db, 1, 9, 1);
+  MODBASECASE_NONZERO_ERROR(q.db, 1, 11, 1);
 
   /********** Step 2, Offset 2^45 (3*15 + 0) **********/
 
@@ -2399,8 +2407,8 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
         q.d9.s0, q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0);
 #endif
 
-  MODBASECASE_NONZERO_ERROR(q.da, 2, 8, 3);
-  MODBASECASE_NONZERO_ERROR(q.d9, 2, 7, 4);
+  MODBASECASE_NONZERO_ERROR(q.da, 2, 10, 3);
+  MODBASECASE_NONZERO_ERROR(q.d9, 2, 9, 4);
 
   /********** Step 3, Offset 2^22 (1*15 + 7) **********/
 
@@ -2513,7 +2521,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
         q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0);
 #endif
 
-  MODBASECASE_NONZERO_ERROR(q.d8, 3, 6, 6);
+  MODBASECASE_NONZERO_ERROR(q.d8, 3, 8, 6);
 
   /********** Step 4, Offset 2^0 (0*15 + 0) **********/
 
@@ -3213,7 +3221,7 @@ __kernel void cl_barrett15_82(__private uint exponent, const int75_t k_base, con
   __private int90_v f;
   __private uint tid;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+  tid = mul24(get_global_id(0), VECTOR_SIZE);
 
   calculate_FC90(exponent, tid, k_tab, k_base, &f);
 
@@ -3232,7 +3240,7 @@ __kernel void cl_barrett15_83(__private uint exponent, const int75_t k_base, con
   __private int90_v f;
   __private uint tid;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+  tid = mul24(get_global_id(0), VECTOR_SIZE);
 
   calculate_FC90(exponent, tid, k_tab, k_base, &f);
 
@@ -3251,7 +3259,7 @@ __kernel void cl_barrett15_88(__private uint exponent, const int75_t k_base, con
   __private int90_v f;
   __private uint tid;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+  tid = mul24(get_global_id(0), VECTOR_SIZE);
 
   calculate_FC90(exponent, tid, k_tab, k_base, &f);
 
