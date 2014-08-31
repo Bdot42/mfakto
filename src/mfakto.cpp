@@ -69,7 +69,7 @@ kernel_info_t       kernel_info[] = {
      {   _TEST_MOD_,          "test_k",                0,      0,         0,      NULL}, // used for various tests
      {   _71BIT_MUL24,        "mfakto_cl_71",         61,     71,         1,      NULL},
      {   _63BIT_MUL24,        "mfakto_cl_63",         58,     64,         1,      NULL},
-     {   BARRETT70_MUL24,     "cl_barrett24_70",      64,     70,         0,      NULL},
+     {   BARRETT70_MUL24,     "cl_barrett24_70",      64,     60,         0,      NULL},
      {   BARRETT79_MUL32,     "cl_barrett32_79",      64,     79,         1,      NULL},
      {   BARRETT77_MUL32,     "cl_barrett32_77",      64,     77,         1,      NULL},
      {   BARRETT76_MUL32,     "cl_barrett32_76",      64,     76,         1,      NULL},
@@ -84,7 +84,7 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL},
      {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL},
      {   BARRETT74_MUL15,     "cl_barrett15_74",      73,     10,         0,      NULL}, // disabled
-     {   BARRETT78_MUL16,     "cl_barrett16_78",      64,     78,         0,      NULL},
+     {   BARRETT78_MUL16,     "cl_barrett16_78",      64,     64,         0,      NULL},
      {   MG62,                "cl_mg62",              58,     62,         1,      NULL},
      {   MG88,                "cl_mg88",              73,     88,         1,      NULL},
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         0,      NULL}, // end of automatic loading
@@ -107,7 +107,7 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     83,         0,      NULL},
      {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL},
      {   BARRETT74_MUL15_GS,  "cl_barrett15_74_gs",   60,      0,         0,      NULL},  // disabled
-     {   BARRETT78_MUL16_GS,  "cl_barrett16_78_gs",   64,     78,         0,      NULL}
+     {   BARRETT78_MUL16_GS,  "cl_barrett16_78_gs",   64,     64,         0,      NULL}
 };
 
 /* allocate memory buffer arrays, test a small kernel */
