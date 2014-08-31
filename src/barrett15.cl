@@ -3221,7 +3221,7 @@ __kernel void cl_barrett15_82(__private uint exponent, const int75_t k_base, con
   __private int90_v f;
   __private uint tid;
 
-  tid = mul24(get_global_id(0), VECTOR_SIZE);
+  tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC90(exponent, tid, k_tab, k_base, &f);
 
@@ -3240,7 +3240,7 @@ __kernel void cl_barrett15_83(__private uint exponent, const int75_t k_base, con
   __private int90_v f;
   __private uint tid;
 
-  tid = mul24(get_global_id(0), VECTOR_SIZE);
+  tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC90(exponent, tid, k_tab, k_base, &f);
 
@@ -3259,7 +3259,7 @@ __kernel void cl_barrett15_88(__private uint exponent, const int75_t k_base, con
   __private int90_v f;
   __private uint tid;
 
-  tid = mul24(get_global_id(0), VECTOR_SIZE);
+  tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC90(exponent, tid, k_tab, k_base, &f);
 

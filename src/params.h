@@ -38,7 +38,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 */
 
-#define SIEVE_SIZE_LIMIT 36
+#define SIEVE_SIZE_LIMIT 64
 
 
 /* EXTENDED_SELFTEST will add about 30k additional tests to the -st2 test */

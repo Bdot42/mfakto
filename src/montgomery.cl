@@ -730,7 +730,7 @@ bit_max64 is bit_max - 64!
   __private uint_v f_inv;
   __private float_v ff;
 
-  tid = mul24(get_global_id(0), VECTOR_SIZE);
+  tid = get_global_id(0) * VECTOR_SIZE;
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: exp=%u=%x, k_base=%x:%x:%x:%x\n",

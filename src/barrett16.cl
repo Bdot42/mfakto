@@ -735,44 +735,22 @@ ff = 1/f as float, needed in div_192_96().
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp80.d4.s0, tmp80.d3.s0, tmp80.d2.s0, tmp80.d1.s0, tmp80.d0.s0);
 #endif
     // all those bb's are 0 due to preprocessing on the host, thus always require a borrow
-  tmp80.d0 = (-tmp80.d0) & 0xFFFF;
-  tmp80.d1 = (-tmp80.d1 + AS_UINT_V((tmp80.d0 > 0)  ));
-  tmp80.d2 = (-tmp80.d2 + AS_UINT_V((tmp80.d1 > 0xFFFF)  ));
-  tmp80.d3 = (-tmp80.d3 + AS_UINT_V((tmp80.d2 > 0xFFFF)  ));
-  tmp80.d4 = (bb.d4-tmp80.d4 + AS_UINT_V((tmp80.d3 > 0xFFFF)  )) & 0xFFFF;
-  tmp80.d1 &= 0xFFFF;
-  tmp80.d2 &= 0xFFFF;
-  tmp80.d3 &= 0xFFFF;
+  a.d0 = (-tmp80.d0) & 0xFFFF;
+  a.d1 = (-tmp80.d1 + AS_UINT_V((a.d0 > 0)  ));
+  a.d2 = (-tmp80.d2 + AS_UINT_V((a.d1 > 0xFFFF)  ));
+  a.d3 = (-tmp80.d3 + AS_UINT_V((a.d2 > 0xFFFF)  ));
+  a.d4 = (bb.d4-tmp80.d4 + AS_UINT_V((a.d3 > 0xFFFF)  )) & 0xFFFF;
+  a.d1 &= 0xFFFF;
+  a.d2 &= 0xFFFF;
+  a.d3 &= 0xFFFF;
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett16_78: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (tmp)\n",
-        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, tmp80.d4.s0, tmp80.d3.s0, tmp80.d2.s0, tmp80.d1.s0, tmp80.d0.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett16_78: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
+        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
 
   while(shifter)
   {
-#ifndef CHECKS_MODBASECASE
-    mod_simple_80_big(&a, tmp80, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-               );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
-#else
-    int limit = 10;
-    if(bit_max_80 == 2) limit = 12;
-    if(bit_max_80 == 3) limit = 11;
-    mod_simple_80_big(&a, tmp80, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                   , bit_max_80, limit, modbasecase_debug);
-#endif
-
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett16_78: tmp=%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x (a)\n",
-        tmp80.d4.s0, tmp80.d3.s0, tmp80.d2.s0, tmp80.d1.s0, tmp80.d0.s0,
-        f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
     square_80_160(&b, a);						// b = a^2
 
 #if (TRACE_KERNEL > 2)
@@ -817,30 +795,30 @@ ff = 1/f as float, needed in div_192_96().
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp80.d4.s0, tmp80.d3.s0, tmp80.d2.s0, tmp80.d1.s0, tmp80.d0.s0);
 #endif
-    tmp80.d0 = (b.d0 - tmp80.d0) & 0xFFFF;
-    tmp80.d1 = (b.d1 - tmp80.d1 + AS_UINT_V((tmp80.d0 > b.d0)  ));
-    tmp80.d2 = (b.d2 - tmp80.d2 + AS_UINT_V((tmp80.d1 > 0xFFFF)  ));
-    tmp80.d3 = (b.d3 - tmp80.d3 + AS_UINT_V((tmp80.d2 > 0xFFFF)  ));
-    tmp80.d4 = (b.d4 - tmp80.d4 + AS_UINT_V((tmp80.d3 > 0xFFFF)  ));
-    tmp80.d1 &= 0xFFFF;
-    tmp80.d2 &= 0xFFFF;
-    tmp80.d3 &= 0xFFFF;
-    tmp80.d4 &= 0xFFFF;
+    a.d0 = (b.d0 - tmp80.d0) & 0xFFFF;
+    a.d1 = (b.d1 - tmp80.d1 + AS_UINT_V((a.d0 > b.d0)  ));
+    a.d2 = (b.d2 - tmp80.d2 + AS_UINT_V((a.d1 > 0xFFFF)  ));
+    a.d3 = (b.d3 - tmp80.d3 + AS_UINT_V((a.d2 > 0xFFFF)  ));
+    a.d4 = (b.d4 - tmp80.d4 + AS_UINT_V((a.d3 > 0xFFFF)  ));
+    a.d1 &= 0xFFFF;
+    a.d2 &= 0xFFFF;
+    a.d3 &= 0xFFFF;
+    a.d4 &= 0xFFFF;
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (tmp)\n",
-        b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, tmp80.d4.s0, tmp80.d3.s0, tmp80.d2.s0, tmp80.d1.s0, tmp80.d0.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
+        b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
-    if(shifter&0x80000000)shl_80(&tmp80);					// "optional multiply by 2" in Prime 95 documentation
+    if(shifter&0x80000000)shl_80(&a);
 
     shifter+=shifter;
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x:%x:%x (a)\n",
-        shifter, tmp80.d4.s0, tmp80.d3.s0, tmp80.d2.s0, tmp80.d1.s0, tmp80.d0.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, a=%x:%x:%x:%x:%x\n",
+        shifter, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
   }
 
-  mod_simple_even_80_and_check_big_factor80(tmp80, f, ff, RES
+  mod_simple_even_80_and_check_big_factor80(a, f, ff, RES
 #ifdef CHECKS_MODBASECASE
                        , bit_max_80, 10, modbasecase_debug
 #endif

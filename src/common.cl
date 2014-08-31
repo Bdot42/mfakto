@@ -1785,7 +1785,8 @@ works up to q < (1<<15) * n
   __private uint_v qi, tmp;
   __private int80_v nn;
 
-  qf = CONVERT_FLOAT_V(q.d4) * 65536.0f + CONVERT_FLOAT_V(q.d3);
+  qf = CONVERT_FLOAT_V(mad24(q.d4, 0x10000, q.d3)); // q.d4 must be < 0x10000
+//  qf = CONVERT_FLOAT_V(q.d4) * 65536.0f + CONVERT_FLOAT_V(q.d3);
   qf = qf * 65336.0f;
   
   qi = CONVERT_UINT_V(qf*nf);
