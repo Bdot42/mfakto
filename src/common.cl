@@ -352,7 +352,7 @@ void calculate_FC32(const uint exponent, const uint tid, const __global uint * r
 #endif
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf("calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
+    if (tid==TRACE_TID) printf((__constant char *)"calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
         tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
 #endif
 

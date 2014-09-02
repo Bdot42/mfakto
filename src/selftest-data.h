@@ -250,6 +250,8 @@ static test_set st_data[] =
 
 /* some (all) known factors from the primenet server (2010-02-14) http://www.mersenne.org/
 for exponents from 60000000 to 60010000 */
+/* mfakto does not deliver kernels below 58 bits: skip these
+
   { 60000359, 26, 1ULL },   // M60000359 has a factor: 120000719
   { 60000851, 26, 1ULL },   // M60000851 has a factor: 120001703
   { 60001451, 26, 1ULL },   // M60001451 has a factor: 120002903
@@ -682,7 +684,7 @@ for exponents from 60000000 to 60010000 */
   { 60002353, 57, 1721641491ULL },   // M60002353 has a factor: 206605080964856647
   { 60001349, 57, 1726131087ULL },   // M60001349 has a factor: 207140387541672727
   { 60007687, 57, 1847732669ULL },   // M60007687 has a factor: 221756327322053207
-  { 60003089, 57, 2181993532ULL },   // M60003089 has a factor: 261852704196040697
+  { 60003089, 57, 2181993532ULL },   // M60003089 has a factor: 261852704196040697  end skip */
   { 60001237, 58, 2563304064ULL },   // M60001237 has a factor: 307602829294254337
   { 60006761, 58, 2663587080ULL },   // M60006761 has a factor: 319666466624495761
   { 60003157, 58, 3404512407ULL },   // M60003157 has a factor: 408562984931337799
@@ -721,6 +723,7 @@ for exponents from 60000000 to 60010000 */
 
 /* some (all) known factors from the primenet server (2010-02-14) http://www.mersenne.org/
 for exponents from 332192857 to 332200000 (aka 100M digit range) */
+/* mfakto does not deliver kernels below 58 bits: skip these
   { 332192879, 29, 1ULL },   // M332192879 has a factor: 664385759
   { 332192891, 29, 1ULL },   // M332192891 has a factor: 664385783
   { 332192963, 29, 1ULL },   // M332192963 has a factor: 664385927
@@ -973,7 +976,7 @@ for exponents from 332192857 to 332200000 (aka 100M digit range) */
   { 332193137, 57, 274988919ULL },   // M332193137 has a factor: 182698863285697807
   { 332193947, 57, 362103133ULL },   // M332193947 has a factor: 240576937944671903
   { 332194327, 57, 387013637ULL },   // M332194327 has a factor: 257127469366074599
-  { 332193053, 57, 421997196ULL },   // M332193053 has a factor: 280369073793358777
+  { 332193053, 57, 421997196ULL },   // M332193053 has a factor: 280369073793358777   end skip */
   { 332192953, 58, 527503223ULL },   // M332192953 has a factor: 350465706730775039
   { 332192977, 58, 594222332ULL },   // M332192977 has a factor: 394792970933924729
   { 332197361, 58, 718216063ULL },   // M332197361 has a factor: 477178961512819487
@@ -1026,6 +1029,7 @@ for exponents from 332192857 to 332200000 (aka 100M digit range) */
 
 /* some (all) known factors from the primenet server (2010-02-14) http://www.mersenne.org/
 for exponents from 800000000 to 800010000 */
+/* mfakto does not deliver kernels below 58 bits: skip these
   { 800000171, 30, 1ULL },   // M800000171 has a factor: 1600000343
   { 800000711, 30, 1ULL },   // M800000711 has a factor: 1600001423
   { 800000759, 30, 1ULL },   // M800000759 has a factor: 1600001519
@@ -1335,7 +1339,7 @@ for exponents from 800000000 to 800010000 */
   { 800001281, 56, 76731144ULL },   // M800001281 has a factor: 122770026985190929
   { 800003311, 56, 78822249ULL },   // M800003311 has a factor: 126116120360932879
   { 800008177, 57, 115262312ULL },   // M800008177 has a factor: 184421584199850449
-  { 800005447, 57, 148096644ULL },   // M800005447 has a factor: 236956243764839737
+  { 800005447, 57, 148096644ULL },   // M800005447 has a factor: 236956243764839737   end skip */
   { 800009293, 58, 195263607ULL },   // M800009293 has a factor: 312425400369399703
   { 800003843, 58, 233053653ULL },   // M800003843 has a factor: 372887636050376959
   { 800009107, 58, 236086613ULL },   // M800009107 has a factor: 377742880881569183
@@ -1368,6 +1372,7 @@ for exponents from 800000000 to 800010000 */
 
 /* some (all) known factors from ElevenSmooth "Operation Billion Digits"
 2010-02-07 http://www.moregimps.it/billion/expo_f.php */
+/* mfakto does not deliver kernels below 58 bits: skip these
   { 3321929603, 32, 1ULL },   // M3321929603 has a factor: 6643859207
   { 3321929843, 32, 1ULL },   // M3321929843 has a factor: 6643859687
   { 3321930431, 32, 1ULL },   // M3321930431 has a factor: 6643860863
@@ -1530,7 +1535,7 @@ for exponents from 800000000 to 800010000 */
   { 3321931727, 56, 16491100ULL },   // M3321931727 has a factor: 109564616606259401
   { 3321931927, 57, 23164788ULL },   // M3321931927 has a factor: 153903697678772953
   { 3321930769, 57, 31528151ULL },   // M3321930769 has a factor: 209468669793156239
-  { 3321933281, 57, 37202620ULL },   // M3321933281 has a factor: 247169243036792441
+  { 3321933281, 57, 37202620ULL },   // M3321933281 has a factor: 247169243036792441   end skip */
   { 3321933073, 58, 56160011ULL },   // M3321933073 has a factor: 373119595841887607
   { 3321932591, 58, 66850224ULL },   // M3321932591 has a factor: 444143875642500769
   { 3321929129, 58, 67245844ULL },   // M3321929129 has a factor: 446771855975579753

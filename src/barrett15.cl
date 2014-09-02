@@ -81,8 +81,38 @@ void mul_75(int75_v * const res, const int75_v a, const int75_v b)
   res->d4 = mad24(a.d1, b.d3, res->d4);
   res->d4 = mad24(a.d0, b.d4, res->d4);  // the 5th mad can overflow d4, but that's ok for this function.
   res->d3 &= 0x7FFF;
-  res->d4 &= 0x7FFF;
+//  res->d4 &= 0x7FFF;
+}
 
+void mul_75_big(int75_v * const res, const int75_v a, const int75_v b)
+/* res = a * b (low 75 bits)
+  15x mul24/mad24, 4x >>, 5x &   = 24 ops  */
+{
+  res->d0 = mul24(a.d0, b.d0);
+
+  res->d1 = mad24(a.d1, b.d0, res->d0 >> 15);
+  res->d1 = mad24(a.d0, b.d1, res->d1);
+  res->d0 &= 0x7FFF;
+
+  res->d2 = mad24(a.d2, b.d0, res->d1 >> 15);
+  res->d2 = mad24(a.d1, b.d1, res->d2);
+  res->d2 = mad24(a.d0, b.d2, res->d2);
+  res->d1 &= 0x7FFF;
+
+  res->d3 = mad24(a.d3, b.d0, res->d2 >> 15);
+  res->d3 = mad24(a.d2, b.d1, res->d3);
+  res->d3 = mad24(a.d1, b.d2, res->d3);
+  res->d3 = mad24(a.d0, b.d3, res->d3);
+  res->d2 &= 0x7FFF;
+
+  // in order to get one more bit in the result, we need to add the next bigger component into each multiplicant
+  res->d4 = mad24(a.d4, b.d0, res->d3 >> 15);
+  res->d4 = mad24(mad24(a.d4, 32768u, a.d3), b.d1, res->d4);
+  res->d4 = mad24(mad24(a.d3, 32768u, a.d2), b.d2, res->d4);
+  res->d4 = mad24(mad24(a.d2, 32768u, a.d1), b.d3, res->d4);
+  res->d4 = mad24(mad24(a.d1, 32768u, a.d0), b.d4, res->d4);
+  res->d3 &= 0x7FFF;
+//  res->d4 &= 0xFFFF;
 }
 
 
@@ -1329,10 +1359,11 @@ void check_barrett15_74(uint shifter, const int75_v f, const uint tid, const uin
   __private int150_v b, tmp150;
   __private int75_v tmp75;
   __private float_v ff;
-  __private uint bit_max_75=11-bit_max65, bit_max_60=bit_max65+4; //bit_max is 61 .. 70
+  __private uint bit_max_75=10-bit_max65, bit_max_60=bit_max65+5; //bit_max is 61 .. 70
   __private uint tmp, bit_max75_mult = 1 << bit_max_75; /* used for bit shifting... */
   __private int150_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 
+  // this kernel is based on the 73-bit kernel but stores one more bit in the top word, allowing to factor up to 74 bits.
 /*
 ff = 1/f as float, needed in div_192_96().
 */
@@ -1356,8 +1387,9 @@ ff = 1/f as float, needed in div_192_96().
 );						// u = floor(tmp150 / f)
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: bit_max65=%u, u=%x:%x:%x:%x:%x, ff=%G\n",
-        bit_max65, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: bit_max65=%u, u=%x:%x:%x:%x:%x, ff=%G, bb=%x:%x:%x:%x:%x:%x:0:0:0:0\n",
+        bit_max65, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0,
+        bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4);
 #endif
 #if (TRACE_KERNEL > 10)
     // verify u
@@ -1385,51 +1417,29 @@ ff = 1/f as float, needed in div_192_96().
   a.d3 = tmp150.d8;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
   a.d4 = tmp150.d9;		        	// a = ((b / (2^bit_max)) * u) / (2^bit_max)
 
-  mul_75(&tmp75, a, f);							// tmp75 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
+  mul_75_big(&tmp75, a, f);							// tmp75 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
         a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
     // all those bb's are 0 due to preprocessing on the host, thus always require a borrow
-  tmp75.d0 = (-tmp75.d0) & 0x7FFF;
-  tmp75.d1 = (-tmp75.d1 + AS_UINT_V((tmp75.d0 > 0)  ));
-  tmp75.d2 = (-tmp75.d2 + AS_UINT_V((tmp75.d1 > 0x7FFF)  ));
-  tmp75.d3 = (-tmp75.d3 + AS_UINT_V((tmp75.d2 > 0x7FFF)  ));
-  tmp75.d4 = (bb.d4-tmp75.d4 + AS_UINT_V((tmp75.d3 > 0x7FFF)  )) & 0x7FFF;
-  tmp75.d1 &= 0x7FFF;
-  tmp75.d2 &= 0x7FFF;
-  tmp75.d3 &= 0x7FFF;
+  a.d0 = (-tmp75.d0) & 0x7FFF;
+  a.d1 = (-tmp75.d1 + AS_UINT_V((a.d0 > 0)  ));
+  a.d2 = (-tmp75.d2 + AS_UINT_V((a.d1 > 0x7FFF)  ));
+  a.d3 = (-tmp75.d3 + AS_UINT_V((a.d2 > 0x7FFF)  ));
+  a.d4 = (mad24(bb.d5, 32768u, bb.d4) - tmp75.d4 + AS_UINT_V((a.d3 > 0x7FFF)  )) & 0xFFFF;
+  a.d1 &= 0x7FFF;
+  a.d2 &= 0x7FFF;
+  a.d3 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (tmp)\n",
-        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        mad24(bb.d5, 32768u, bb.d4), bb.d3, bb.d2, bb.d1, bb.d0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
 
-  while(shifter)
+  for(;;)
   {
-#ifndef CHECKS_MODBASECASE
-    mod_simple_75(&a, tmp75, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-               );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
-#else
-    int limit = 14;
-    if(bit_max_75 == 2) limit = 16;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-    if(bit_max_75 == 3) limit = 15;						// bit_max == 66, ...
-    mod_simple_75(&a, tmp75, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                   , bit_max_75, limit, modbasecase_debug);
-#endif
-
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: tmp=%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x (a)\n",
-        tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0,
-        f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
     square_75_150(&b, a);						// b = a^2
 
 #if (TRACE_KERNEL > 2)
@@ -1468,7 +1478,7 @@ ff = 1/f as float, needed in div_192_96().
     a.d2 = tmp150.d7;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
     a.d3 = tmp150.d8;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
     a.d4 = tmp150.d9;		        	// a = ((b / (2^bit_max)) * u) / (2^bit_max)
-    mul_75(&tmp75, a, f);						// tmp75 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
+    mul_75_big(&tmp75, a, f);						// tmp75 = (((b / (2^bit_max)) * u) / (2^bit_max)) * f
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
@@ -1478,30 +1488,41 @@ ff = 1/f as float, needed in div_192_96().
     tmp75.d1 = (b.d1 - tmp75.d1 + AS_UINT_V((tmp75.d0 > b.d0)  ));
     tmp75.d2 = (b.d2 - tmp75.d2 + AS_UINT_V((tmp75.d1 > 0x7FFF)  ));
     tmp75.d3 = (b.d3 - tmp75.d3 + AS_UINT_V((tmp75.d2 > 0x7FFF)  ));
-    tmp75.d4 = (b.d4 - tmp75.d4 + AS_UINT_V((tmp75.d3 > 0x7FFF)  ));
+    tmp75.d4 = (mad24(b.d5, 32768u, b.d4) - tmp75.d4 + AS_UINT_V((tmp75.d3 > 0x7FFF)  ));
     tmp75.d1 &= 0x7FFF;
     tmp75.d2 &= 0x7FFF;
     tmp75.d3 &= 0x7FFF;
-    tmp75.d4 &= 0x7FFF;
+    tmp75.d4 &= 0xFFFF;
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (tmp)\n",
-        b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        mad24(b.d5.s0, 32768u, b.d4.s0), b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
     if(shifter&0x80000000)
-    { /* When working on 74 bit FC's. we don't have room to shift here without this modulo */
-      shl_75(&tmp75);					// "optional multiply by 2" in Prime 95 documentation
+    {
+      shl_75(&tmp75);
+    }
+
+    shifter+=shifter;
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x (a)\n",
+        shifter, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0,
+        f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+#endif
+
+    if (shifter == 0) break;
+
 #ifndef CHECKS_MODBASECASE
-      mod_simple_75(&tmp75, tmp75, f, ff
+    mod_simple_75(&a, tmp75, f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
                );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
 #else
-      int limit = 14;
-      if(bit_max_75 == 2) limit = 16;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
-      if(bit_max_75 == 3) limit = 15;						// bit_max == 66, ...
-      mod_simple_75(&tmp75, tmp75, f, ff
+    int limit = 14;
+    if(bit_max_75 == 2) limit = 16;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
+    if(bit_max_75 == 3) limit = 15;						// bit_max == 66, ...
+    mod_simple_75(&a, tmp75, f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
@@ -1509,15 +1530,8 @@ ff = 1/f as float, needed in div_192_96().
 #endif
 
 #if (TRACE_KERNEL > 2)
-      if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: before shift: tmp=%x:%x:%x:%x:%x \n",
-        tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
-#endif
-    }
-
-    shifter+=shifter;
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x (a)\n",
-        shifter, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0,
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: tmp=%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x (a)\n",
+        tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0,
         f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
   }

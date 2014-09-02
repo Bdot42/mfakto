@@ -83,7 +83,7 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     88,         0,      NULL},
      {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL},
      {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL},
-     {   BARRETT74_MUL15,     "cl_barrett15_74",      73,     10,         0,      NULL}, // disabled
+     {   BARRETT74_MUL15,     "cl_barrett15_74",      60,     74,         0,      NULL}, // disabled
      {   BARRETT78_MUL16,     "cl_barrett16_78",      64,     64,         0,      NULL},
      {   MG62,                "cl_mg62",              58,     62,         1,      NULL},
      {   MG88,                "cl_mg88",              73,     88,         1,      NULL},
@@ -106,7 +106,7 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     88,         0,      NULL},
      {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     83,         0,      NULL},
      {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL},
-     {   BARRETT74_MUL15_GS,  "cl_barrett15_74_gs",   60,      0,         0,      NULL},  // disabled
+     {   BARRETT74_MUL15_GS,  "cl_barrett15_74_gs",   60,     74,         0,      NULL},  // disabled
      {   BARRETT78_MUL16_GS,  "cl_barrett16_78_gs",   64,     64,         0,      NULL}
 };
 
