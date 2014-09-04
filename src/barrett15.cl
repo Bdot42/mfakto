@@ -1551,7 +1551,7 @@ __kernel void cl_barrett15_69(__private uint exponent, const int75_t k_base, con
   __private int75_v f;
   __private uint tid;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC75(exponent, tid, k_tab, k_base, &f);
 
@@ -1572,7 +1572,7 @@ __kernel void cl_barrett15_70(__private uint exponent, const int75_t k_base, con
   __private int75_v f;
   __private uint tid;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC75(exponent, tid, k_tab, k_base, &f);
 
@@ -1593,15 +1593,13 @@ __kernel void cl_barrett15_71(__private uint exponent, const int75_t k_base, con
   __private int75_v f;
   __private uint tid;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC75(exponent, tid, k_tab, k_base, &f);
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_71: f=%x:%x:%x:%x:%x, shift=%d\n",
         f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
-  if (any(f.d0 == 0x4601 && f.d1 == 0x2ea)) printf((__constant char *)"cl_barrett15_71: tid=%u, f=%x:%x:%x:%x:%x, shift=%d\n",
-        tid, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
 #endif
 
   check_barrett15_71(exponent << (32 - shiftcount), f, tid, b_in, bit_max65, RES
@@ -1616,7 +1614,7 @@ __kernel void cl_barrett15_73(__private uint exponent, const int75_t k_base, con
   __private int75_v f;
   __private uint tid;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC75(exponent, tid, k_tab, k_base, &f);
 
@@ -1636,7 +1634,7 @@ __kernel void cl_barrett15_74(__private uint exponent, const int75_t k_base, con
   __private int75_v f;
   __private uint tid;
 
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC75(exponent, tid, k_tab, k_base, &f);
 
@@ -2604,6 +2602,11 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
                   , tid
 #endif
                   MODBASECASE_PAR);						// u = floor(tmp180 / f)
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: u(d)=%x:%x:%x:%x:%x:%x, ffd=%G\n",
+        u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ffd.s0);
+#endif
+
 #else
 
   // PERF: as div is only used here, use all those zeros directly in there
@@ -2615,11 +2618,10 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
                   , tid
 #endif
                   MODBASECASE_PAR);						// u = floor(tmp180 / f)
-#endif
-
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: u(d)=%x:%x:%x:%x:%x:%x, ffd=%G\n",
-        u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ffd.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
+        u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+#endif
 #endif
 
   if (bit_max65 > 10)  // need to distiguish how far to shift; the same branch will be taken by all threads
@@ -2816,6 +2818,10 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
                   , tid
 #endif
                   MODBASECASE_PAR);						// u = floor(tmp180 / f)
+#if (TRACE_KERNEL > 2)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: u(d)=%x:%x:%x:%x:%x:%x, ffd=%G\n",
+        u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ffd.s0);
+#endif
 #else
 
   // PERF: as div is only used here, use all those zeros directly in there
@@ -2827,11 +2833,10 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
                   , tid
 #endif
                   MODBASECASE_PAR);						// u = floor(tmp180 / f)
-#endif
-
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
         u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+#endif
 #endif
 
   if (bit_max65 > 10)  // need to distiguish how far to shift; the same branch will be taken by all threads

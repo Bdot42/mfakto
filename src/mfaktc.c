@@ -195,21 +195,21 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       UNKNOWN_KERNEL },
     {
 /*  GPU_VLIW5, HD5770@960MHz, v=4 */
-      BARRETT69_MUL15,  // "cl_barrett15_69" (253.99 M/s)
-      BARRETT70_MUL15,  // "cl_barrett15_70" (253.78 M/s)
-      BARRETT71_MUL15,  // "cl_barrett15_71" (249.86 M/s)
+      BARRETT69_MUL15,  // "cl_barrett15_69" (258.16 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (257.82 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (250.03 M/s)
       MG62,             // "cl_mg_62"        (226.15 M/s) !! was (230.09 M/s) on 0.14
-      BARRETT77_MUL32,  // "cl_barrett32_77" (220.90 M/s)
-      BARRETT76_MUL32,  // "cl_barrett32_76" (208.53 M/s)  v=2: (212.63 M/s)
-      BARRETT73_MUL15,  // "cl_barrett15_73" (203.89 M/s) !! was (205.75 M/s) on 0.14
-      BARRETT74_MUL15,  // "cl_barrett15_74" (203.68 M/s)
-      BARRETT88_MUL32,  // "cl_barrett32_88" (195.49 M/s)
-      BARRETT87_MUL32,  // "cl_barrett32_87" (191.21 M/s)  v=2: (196.85 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (221.07 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (208.67 M/s)  v=2: (212.63 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (204.44 M/s) !! was (205.75 M/s) on 0.14
+      BARRETT74_MUL15,  // "cl_barrett15_74" (203.87 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (195.75 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (191.39 M/s)  v=2: (196.85 M/s)
       BARRETT82_MUL15,  // "cl_barrett15_82" (0) (no doubles) (186.75 M/s)
       BARRETT83_MUL15,  // "cl_barrett15_83" (0) (no doubles) (176.76 M/s)
-      BARRETT79_MUL32,  // "cl_barrett32_79" (165.83 M/s)  v=2: (179.51 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (165.91 M/s)  v=2: (179.51 M/s)
       BARRETT88_MUL15,  // "cl_barrett15_88" (0) (no doubles) (155.48 M/s)
-      BARRETT92_MUL32,  // "cl_barrett32_92" (155.41 M/s)  v=2: (169.63 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (155.52 M/s)  v=2: (169.63 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (141.31 M/s)
       MG88,             // "cl_mg88"         (110.75 M/s) //new with 0.15
       UNKNOWN_KERNEL,   //
