@@ -800,7 +800,7 @@ are "out of range".
   }
 #endif
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
         q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
 #endif
 
@@ -814,11 +814,6 @@ are "out of range".
   nn.d1 &= 0x7FFF;
   nn.d2 &= 0x7FFF;
   nn.d3 &= 0x7FFF;
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#5: nn=%x:%x:%x:%x:%x\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
 
   res->d0 = q.d0 - nn.d0;
   res->d1 = q.d1 - nn.d1 + AS_UINT_V(res->d0 > 0x7FFF);
@@ -830,9 +825,89 @@ are "out of range".
   res->d2 &= 0x7FFF;
   res->d3 &= 0x7FFF;
 
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#2: nn=%x:%x:%x:%x:%x, res=%x:%x:%x:%x:%x\n",
+        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+#endif
+
+}
+
+void mod_simple_75_big(int75_v * const res, const int75_v q, const int75_v n, const float_v nf
+#if (TRACE_KERNEL > 1)
+                  , const uint tid
+#endif
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+)
+/*
+res = q mod n
+used for refinement in barrett modular multiplication
+assumes q < 6n (6n includes "optional mul 2")
+*/
+{
+  __private float_v qf;
+  __private uint_v qi;
+  __private int75_v nn;
+
+  qf = CONVERT_FLOAT_V(q.d4) * 1073741824.0f;
+  
+  qi = CONVERT_UINT_V(qf*nf);
+
+#ifdef CHECKS_MODBASECASE
+/* both barrett based kernels are made for factor candidates above 2^64,
+atleast the 79bit variant fails on factor candidates less than 2^64!
+Lets ignore those errors...
+Factor candidates below 2^64 can occur when TFing from 2^64 to 2^65, the
+first candidate in each class can be smaller than 2^64.
+This is NOT an issue because those exponents should be TFed to 2^64 with a
+kernel which can handle those "small" candidates before starting TF from
+2^64 to 2^65. So in worst case we have a false positive which is cought
+easily by the primenetserver.
+The same applies to factor candidates which are bigger than 2^bit_max for the
+barrett92 kernel. If the factor candidate is bigger than 2^bit_max then
+usually just the correction factor is bigger than expected. There are tons
+of messages that qi is to high (better: higher than expected) e.g. when trial
+factoring huge exponents from 2^64 to 2^65 with the barrett92 kernel (during
+selftest). The factor candidates might be as high a 2^68 in some of these
+cases! This is related to the _HUGE_ blocks that mfaktc processes at once.
+To make it short: let's ignore warnings/errors from factor candidates which
+are "out of range".
+*/
+  if(n.d4 != 0 && n.d4 < (1 << bit_max64))
+  {
+    MODBASECASE_QI_ERROR(limit, 105, qi, 17);
+  }
+#endif
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#6: res=%x:%x:%x:%x:%x\n",
-        res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
+        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+#endif
+
+// nn = n * qi
+  nn.d0  = mul24(n.d0, qi);
+  nn.d1  = mad24(n.d1, qi, nn.d0 >> 15);
+  nn.d2  = mad24(n.d2, qi, nn.d1 >> 15);
+  nn.d3  = mad24(n.d3, qi, nn.d2 >> 15);
+  nn.d4  = mad24(n.d4, qi, nn.d3 >> 15);
+  nn.d0 &= 0x7FFF;
+  nn.d1 &= 0x7FFF;
+  nn.d2 &= 0x7FFF;
+  nn.d3 &= 0x7FFF;
+
+  res->d0 = q.d0 - nn.d0;
+  res->d1 = q.d1 - nn.d1 + AS_UINT_V(res->d0 > 0x7FFF);
+  res->d2 = q.d2 - nn.d2 + AS_UINT_V(res->d1 > 0x7FFF);
+  res->d3 = q.d3 - nn.d3 + AS_UINT_V(res->d2 > 0x7FFF);
+  res->d4 = q.d4 - nn.d4 + AS_UINT_V(res->d3 > 0x7FFF);
+  res->d0 &= 0x7FFF;
+  res->d1 &= 0x7FFF;
+  res->d2 &= 0x7FFF;
+  res->d3 &= 0x7FFF;
+
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#2: nn=%x:%x:%x:%x:%x, res=%x:%x:%x:%x:%x\n",
+        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
 #endif
 
 }
@@ -876,6 +951,11 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   nn.d1  = nn.d0 >> 15;
   nn.d0 &= 0x7FFF;
 
+#if (TRACE_KERNEL > 1)
+	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
+        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+#endif
+
 #if (VECTOR_SIZE == 1)
   if(q.d0 == nn.d0)
 #else
@@ -884,7 +964,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-	  printf((__constant char *)"mod_simple_e_75_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
+	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
         q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
 #endif
 
@@ -903,9 +983,140 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     tmp |= q.d3 - nn.d3;
     tmp |= q.d4 - nn.d4;
 
-#if (TRACE_KERNEL > 3)
-    if (any( tmp == 0)) printf((__constant char *)"mod_simple_e_75_a: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x\n",
-        get_global_id(1), tmp.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+#if (TRACE_KERNEL > 1)
+//    if (any( tmp == 0))
+     printf((__constant char *)"mod_simple_e_75_a#3: tid=%u, tmp=%u, q=%x:%x:%x:%x:%x, nn=%x:%x:%x:%x:%x\n",
+        get_global_id(0), tmp.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+#endif
+#if (VECTOR_SIZE == 1)
+    if(tmp == 0)
+    {
+      int index;
+      index =ATOMIC_INC(RES[0]);
+      if(index < 10)                              /* limit to 10 factors per class */
+      {
+        RES[index*3 + 1]=n.d4;
+        RES[index*3 + 2]=mad24(n.d3,0x8000u, n.d2);
+        RES[index*3 + 3]=mad24(n.d1,0x8000u, n.d0);
+      }
+    }
+#elif (VECTOR_SIZE == 2)
+    EVAL_RES_tmp75(x)
+    EVAL_RES_tmp75(y)
+#elif (VECTOR_SIZE == 3)
+    EVAL_RES_tmp75(x)
+    EVAL_RES_tmp75(y)
+    EVAL_RES_tmp75(z)
+#elif (VECTOR_SIZE == 4)
+    EVAL_RES_tmp75(x)
+    EVAL_RES_tmp75(y)
+    EVAL_RES_tmp75(z)
+    EVAL_RES_tmp75(w)
+#elif (VECTOR_SIZE == 8)
+    EVAL_RES_tmp75(s0)
+    EVAL_RES_tmp75(s1)
+    EVAL_RES_tmp75(s2)
+    EVAL_RES_tmp75(s3)
+    EVAL_RES_tmp75(s4)
+    EVAL_RES_tmp75(s5)
+    EVAL_RES_tmp75(s6)
+    EVAL_RES_tmp75(s7)
+#elif (VECTOR_SIZE == 16)
+    EVAL_RES_tmp75(s0)
+    EVAL_RES_tmp75(s1)
+    EVAL_RES_tmp75(s2)
+    EVAL_RES_tmp75(s3)
+    EVAL_RES_tmp75(s4)
+    EVAL_RES_tmp75(s5)
+    EVAL_RES_tmp75(s6)
+    EVAL_RES_tmp75(s7)
+    EVAL_RES_tmp75(s8)
+    EVAL_RES_tmp75(s9)
+    EVAL_RES_tmp75(sa)
+    EVAL_RES_tmp75(sb)
+    EVAL_RES_tmp75(sc)
+    EVAL_RES_tmp75(sd)
+    EVAL_RES_tmp75(se)
+    EVAL_RES_tmp75(sf)
+#endif
+  }
+}
+
+void mod_simple_even_75_and_check_big_factor75_big(const int75_v q, const int75_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+)
+/*
+This function is a combination of mod_simple_96(), check_big_factor96() and an additional correction step.
+If q mod n == 1 then n is a factor and written into the RES array.
+q must be less than 100n!
+*/
+{
+  __private float_v qf;
+  __private uint_v qi, tmp;
+  __private int75_v nn;
+
+  qf = CONVERT_FLOAT_V(q.d4);
+  qf = qf * 1073741824.0f;
+  
+  qi = CONVERT_UINT_V(qf*nf);
+
+#ifdef CHECKS_MODBASECASE
+  if(n.d4 != 0 && n.d4 < (1 << bit_max64))
+  {
+    MODBASECASE_QI_ERROR(10, 106, qi, 18);
+  }
+#endif
+/* at this point the quotient still is sometimes to small (the error is 1 in this case)
+--> final res odd and qi correct: n might be a factor
+    final res odd and qi too small: n can't be a factor (because the correct res is even)
+    final res even and qi correct: n can't be a factor (because the res is even)
+    final res even and qi too small: n might be a factor
+so we compare the LSB of qi and q.d0, if they are the same (both even or both odd) the res (without correction) would be even. In this case increment qi by one.*/
+
+  qi |= 1;
+ 
+  nn.d0  = mad24(n.d0, qi, 1u);
+  nn.d1  = nn.d0 >> 15;
+  nn.d0 &= 0x7FFF;
+
+#if (TRACE_KERNEL > 1)
+	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
+        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+#endif
+
+#if (VECTOR_SIZE == 1)
+  if(q.d0 == nn.d0)
+#else
+  if(any(q.d0 == nn.d0)) /* the lowest word of the final result would be 1 for at least one of the vector components (only in this case n might be a factor) */
+#endif
+  { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
+
+#if (TRACE_KERNEL > 1)
+	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
+        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+#endif
+
+// nn = n * qi
+    nn.d1  = mad24(n.d1, qi, nn.d1);
+    nn.d2  = mad24(n.d2, qi, nn.d1 >> 15);
+    nn.d3  = mad24(n.d3, qi, nn.d2 >> 15);
+    nn.d4  = mad24(n.d4, qi, nn.d3 >> 15);
+    nn.d1 &= 0x7FFF;
+    nn.d2 &= 0x7FFF;
+    nn.d3 &= 0x7FFF;
+
+// for the subtraction we don't need to evaluate any borrow: if any component is >0, then we won't have a factor anyway
+    tmp  = q.d1 - nn.d1;
+    tmp |= q.d2 - nn.d2;
+    tmp |= q.d3 - nn.d3;
+    tmp |= q.d4 - nn.d4;
+
+#if (TRACE_KERNEL > 1)
+//    if (any( tmp == 0))
+     printf((__constant char *)"mod_simple_e_75_a#3: tid=%u, tmp=%u, q=%x:%x:%x:%x:%x, nn=%x:%x:%x:%x:%x\n",
+        get_global_id(0), tmp.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 #if (VECTOR_SIZE == 1)
     if(tmp == 0)
@@ -1234,7 +1445,7 @@ are "out of range".
   }
 #endif
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
         q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
 #endif
 
@@ -1250,11 +1461,6 @@ are "out of range".
   nn.d2 &= 0x7FFF;
   nn.d3 &= 0x7FFF;
   nn.d4 &= 0x7FFF;
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90#5: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
 
   res->d0 = q.d0 - nn.d0;
   res->d1 = q.d1 - nn.d1 + AS_UINT_V(res->d0 > 0x7FFF);
@@ -1268,9 +1474,9 @@ are "out of range".
   res->d3 &= 0x7FFF;
   res->d4 &= 0x7FFF;
 
-#if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90#6: res=%x:%x:%x:%x:%x:%x\n",
-        res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+#if (TRACE_KERNEL > 4)
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90#2: nn=%x:%x:%x:%x:%x:%x, res=%x:%x:%x:%x:%x:%x\n",
+        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
 #endif
 }
 
@@ -1312,6 +1518,10 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   nn.d0  = mad24(n.d0, qi, 1u);
   nn.d1  = nn.d0 >> 15;
   nn.d0 &= 0x7FFF;
+#if (TRACE_KERNEL > 1)
+	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_90_a#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.8G, qf=%#G, qi=%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+#endif
 
 #if (VECTOR_SIZE == 1)
   if(q.d0 == nn.d0)
@@ -1321,7 +1531,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-	  printf((__constant char *)"mod_simple_e_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.8G, qf=%#G, qi=%x\n",
+	  printf((__constant char *)"mod_simple_e_90_a#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.8G, qf=%#G, qi=%x\n",
         q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
 #endif
 
@@ -1343,9 +1553,9 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     tmp |= q.d4 - nn.d4;
     tmp |= q.d5 - nn.d5;
 
-#if (TRACE_KERNEL > 3)
-    if (any( tmp == 0)) printf((__constant char *)"mod_simple_e_90_a: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x:%x\n",
-        get_global_id(1), tmp.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+#if (TRACE_KERNEL > 1)
+    if (any( tmp == 0)) printf((__constant char *)"mod_simple_e_90_a#3: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x:%x\n",
+        get_global_id(0), tmp.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1441,6 +1651,10 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   nn.d1  = nn.d0 >> 15;
   nn.d0 &= 0x7FFF;
 
+#if (TRACE_KERNEL > 1)
+	  if(get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+#endif
 #if (VECTOR_SIZE == 1)
   if(q.d0 == nn.d0)
 #else

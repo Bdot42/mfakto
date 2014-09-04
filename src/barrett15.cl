@@ -1434,8 +1434,8 @@ ff = 1/f as float, needed in div_192_96().
   a.d3 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (tmp)\n",
-        mad24(bb.d5, 32768u, bb.d4), bb.d3, bb.d2, bb.d1, bb.d0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
+        mad24(bb.d5, 32768u, bb.d4), bb.d3, bb.d2, bb.d1, bb.d0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
 
   for(;;)
@@ -1492,9 +1492,9 @@ ff = 1/f as float, needed in div_192_96().
     tmp75.d1 &= 0x7FFF;
     tmp75.d2 &= 0x7FFF;
     tmp75.d3 &= 0x7FFF;
-    tmp75.d4 &= 0xFFFF;
+    tmp75.d4 &= 0x1FFFF; // keep 2 extra bits
 
-#if (TRACE_KERNEL > 3)
+#if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (tmp)\n",
         mad24(b.d5.s0, 32768u, b.d4.s0), b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
@@ -1504,16 +1504,10 @@ ff = 1/f as float, needed in div_192_96().
     }
 
     shifter+=shifter;
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x (a)\n",
-        shifter, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0,
-        f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
-
     if (shifter == 0) break;
 
 #ifndef CHECKS_MODBASECASE
-    mod_simple_75(&a, tmp75, f, ff
+    mod_simple_75_big(&a, tmp75, f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
@@ -1522,21 +1516,21 @@ ff = 1/f as float, needed in div_192_96().
     int limit = 14;
     if(bit_max_75 == 2) limit = 16;						// bit_max == 65, due to decreased accuracy of mul_96_192_no_low2() above we need a higher threshold
     if(bit_max_75 == 3) limit = 15;						// bit_max == 66, ...
-    mod_simple_75(&a, tmp75, f, ff
+    mod_simple_75_big(&a, tmp75, f, ff
 #if (TRACE_KERNEL > 1)
                    , tid
 #endif
                    , bit_max_75, limit, modbasecase_debug);
 #endif
 
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: tmp=%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x (a)\n",
-        tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0,
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x (a)\n",
+        shifter, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0,
         f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
   }
 
-  mod_simple_even_75_and_check_big_factor75(tmp75, f, ff, RES
+  mod_simple_even_75_and_check_big_factor75_big(tmp75, f, ff, RES
 #ifdef CHECKS_MODBASECASE
                        , bit_max_75, 10, modbasecase_debug
 #endif
@@ -3108,45 +3102,25 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
         tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
 #endif
     // bb.d0-bb.d3 are 0
-  tmp90.d0 = (-tmp90.d0) & 0x7FFF;
-  tmp90.d1 = (-tmp90.d1 + AS_UINT_V((tmp90.d0 > 0)  ));
-  tmp90.d2 = (-tmp90.d2 + AS_UINT_V((tmp90.d1 > 0x7FFF)  ));
-  tmp90.d3 = (-tmp90.d3 + AS_UINT_V((tmp90.d2 > 0x7FFF)  ));
-  tmp90.d4 = (bb.d4-tmp90.d4 + AS_UINT_V((tmp90.d3 > 0x7FFF)  ));
-  tmp90.d5 = (bb.d5-tmp90.d5 + AS_UINT_V((tmp90.d4 > 0x7FFF)  ));
-  tmp90.d1 &= 0x7FFF;
-  tmp90.d2 &= 0x7FFF;
-  tmp90.d3 &= 0x7FFF;
-  tmp90.d4 &= 0x7FFF;
-  tmp90.d5 &= 0x7FFF;
+  a.d0 = (-tmp90.d0) & 0x7FFF;
+  a.d1 = (-tmp90.d1 + AS_UINT_V((a.d0 > 0)  ));
+  a.d2 = (-tmp90.d2 + AS_UINT_V((a.d1 > 0x7FFF)  ));
+  a.d3 = (-tmp90.d3 + AS_UINT_V((a.d2 > 0x7FFF)  ));
+  a.d4 = (bb.d4-tmp90.d4 + AS_UINT_V((a.d3 > 0x7FFF)  ));
+  a.d5 = (bb.d5-tmp90.d5 + AS_UINT_V((a.d4 > 0x7FFF)  ));
+  a.d1 &= 0x7FFF;
+  a.d2 &= 0x7FFF;
+  a.d3 &= 0x7FFF;
+  a.d4 &= 0x7FFF;
+  a.d5 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (tmp)\n",
-        bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (a)\n",
+        bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
 #endif
 
-  while(shifter)
-  {
-#ifndef CHECKS_MODBASECASE
-    mod_simple_90(&a, tmp90, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-               );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
-#else
-    int limit = 6;
-    mod_simple_90(&a, tmp90, f, ff
-#if (TRACE_KERNEL > 1)
-                   , tid
-#endif
-                   , bit_max65, limit, modbasecase_debug);
-#endif
-
-#if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: tmp=%x:%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x (a)\n",
-        tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0,
-        f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
-#endif
+for(;;)
+{
     square_90_180(&b, a);						// b = a^2
 
 #if (TRACE_KERNEL > 2)
@@ -3175,9 +3149,9 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
       // PERF: could be no_low_5
     mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)
 #if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:...\n",
+    if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:...\n",
         a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0, tmp180.d5.s0);
+        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0);
 #endif
 
     a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
@@ -3205,16 +3179,34 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
     tmp90.d4 &= 0x7FFF;
     tmp90.d5 &= 0x7FFF;
 
-#if (TRACE_KERNEL > 3)
+#if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (tmp)\n",
         b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
 #endif
     if(shifter&0x80000000)shl_90(&tmp90);			// "optional multiply by 2" in Prime 95 documentation, can be up to 91 bits (16 in tmp90.d5)
 
     shifter+=shifter;
+    if (shifter == 0) break;
+
+#ifndef CHECKS_MODBASECASE
+    mod_simple_90(&a, tmp90, f, ff
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x:%x:%x:%x\n",
-        shifter, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
+                   , tid
+#endif
+               );					// adjustment, plain barrett returns N = AB mod M where N < 3M!
+#else
+    int limit = 6;
+    mod_simple_90(&a, tmp90, f, ff
+#if (TRACE_KERNEL > 1)
+                   , tid
+#endif
+                   , bit_max65, limit, modbasecase_debug);
+#endif
+
+#if (TRACE_KERNEL > 1)
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x (a)\n",
+        shifter, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0,
+        f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
   }
 
