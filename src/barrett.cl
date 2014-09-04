@@ -513,8 +513,6 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
 #endif
 
 /********** Step 4, Offset 2^15 (0*32 + 15) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 4, 5, 4);
-
   qf= CONVERT_FLOAT_V(q.d4);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
@@ -595,7 +593,6 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
 
 
 /********** Step 5, Offset 2^0 (0*32 + 0) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 5, 5, 6);
   MODBASECASE_NONZERO_ERROR(q.d4, 5, 4, 7);
 
   qf= CONVERT_FLOAT_V(q.d3);
@@ -646,7 +643,7 @@ DIV_160_96 here. */
   qf= CONVERT_FLOAT_V(q.d5);
   qf= qf * 4294967296.0f;  // combining this and the the below 2M multiplier makes it slower!
 #else
-#ifdef CHECKS_MODBASECASE || (TRACE_KERNEL > 1)
+#if defined CHECKS_MODBASECASE || (TRACE_KERNEL > 1)
     q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
 #endif
   qf= CONVERT_FLOAT_V(q.d4);
@@ -887,8 +884,6 @@ DIV_160_96 here. */
 #endif
 
 /********** Step 4, Offset 2^15 (0*32 + 15) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 4, 5, 4);
-
   qf= CONVERT_FLOAT_V(q.d4);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
@@ -971,7 +966,6 @@ DIV_160_96 here. */
 
 
 /********** Step 5, Offset 2^0 (0*32 + 0) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 5, 5, 6);
   MODBASECASE_NONZERO_ERROR(q.d4, 5, 4, 7);
 
   qf= CONVERT_FLOAT_V(q.d3);
@@ -1082,8 +1076,8 @@ Precalculated here since it is the same for all steps in the following loop */
     square_96_160(&b, a);						// b = a^2
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x (b)\n",
+        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
 
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
@@ -1364,7 +1358,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
 
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
@@ -1858,8 +1852,7 @@ __kernel void cl_barrett32_76(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -1888,8 +1881,7 @@ __kernel void cl_barrett32_77(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -1918,8 +1910,7 @@ __kernel void cl_barrett32_79(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -1948,8 +1939,7 @@ __kernel void cl_barrett32_87(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-  //tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-  tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+  tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -1978,8 +1968,7 @@ __kernel void cl_barrett32_88(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-  //tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-  tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+  tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -2008,8 +1997,7 @@ __kernel void cl_barrett32_92(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -2893,8 +2881,6 @@ a is precomputed on host ONCE.
         i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
         i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
-    if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_92_gs: tid=%d, kdelta x: %d, y: %d\n",
-      lid, k_delta.x, k_delta.y);
 #endif
 
     // Compute f = 2 * k * exp + 1
@@ -2903,7 +2889,7 @@ a is precomputed on host ONCE.
     f.d0 = (f.d0 << 1) + 1;
 
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID || get_group_id(0) == 4703)
+    if (tid==TRACE_TID)
        printf((__constant char *)"cl_barrett32_92_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
         lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif

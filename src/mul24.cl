@@ -522,7 +522,6 @@ void mod_144_72
   q.d3 &= 0xFFFFFF;
 
 /********** Step 4, Offset 2^0 (0*24 + 0) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 4, 5, 5);
   MODBASECASE_NONZERO_ERROR(q.d4, 4, 4, 6);
 
 #ifdef _63BIT_MUL24_K
@@ -621,8 +620,6 @@ void mod_144_72
   res->d1 = q.d1 & 0xFFFFFF;
   res->d2 = q.d2 & 0xFFFFFF;
 
-  MODBASECASE_NONZERO_ERROR(q.d5, 5, 5, 8);
-  MODBASECASE_NONZERO_ERROR(q.d4, 5, 4, 9);
   MODBASECASE_NONZERO_ERROR(q.d3, 5, 3, 10);
 
 #if (TRACE_KERNEL > 1)

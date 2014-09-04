@@ -83,6 +83,18 @@ typedef struct _int180_t
   uint d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,da,db;
 }int180_t;
 
+// 5x16bit
+typedef struct _int80_t
+{
+  uint d0,d1,d2,d3,d4;
+}int80_t;
+
+// 10x16bit
+typedef struct _int160_t
+{
+  uint d0,d1,d2,d3,d4,d5,d6,d7,d8,d9;
+}int160_t;
+
 ////////// vectorized data types /////////////
 
 #if (VECTOR_SIZE == 1)
@@ -125,6 +137,16 @@ typedef struct _int180_v
 {
   uint d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,da,db;
 }int180_v;
+
+typedef struct _int80_v
+{
+  uint d0,d1,d2,d3,d4;
+}int80_v;
+
+typedef struct _int160_v
+{
+  uint d0,d1,d2,d3,d4,d5,d6,d7,d8,d9;
+}int160_v;
 
 #define int_v int
 #define uint_v uint
@@ -183,6 +205,16 @@ typedef struct _int180_v
 {
   CONC(uint,VECTOR_SIZE) d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,da,db;
 }int180_v;
+
+typedef struct _int80_v
+{
+  CONC(uint,VECTOR_SIZE) d0,d1,d2,d3,d4;
+}int80_v;
+
+typedef struct _int160_v
+{
+  CONC(uint,VECTOR_SIZE) d0,d1,d2,d3,d4,d5,d6,d7,d8,d9;
+}int160_v;
 
 #define int_v CONC(int,VECTOR_SIZE)
 #define uint_v CONC(uint,VECTOR_SIZE)

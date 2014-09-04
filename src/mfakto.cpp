@@ -61,7 +61,7 @@ extern "C"
 
 #include "signal_handler.h"
 extern mystuff_t    mystuff;
-extern struct GPU_type     gpu_types[];
+extern GPU_type     gpu_types[];
 OpenCL_deviceinfo_t deviceinfo={{0}};
 kernel_info_t       kernel_info[] = {
   /*   kernel (in sequence) | kernel function name | bit_min | bit_max | stages? | loaded kernel pointer */
@@ -69,7 +69,6 @@ kernel_info_t       kernel_info[] = {
      {   _TEST_MOD_,          "test_k",                0,      0,         0,      NULL}, // used for various tests
      {   _71BIT_MUL24,        "mfakto_cl_71",         61,     71,         1,      NULL},
      {   _63BIT_MUL24,        "mfakto_cl_63",         58,     64,         1,      NULL},
-     {   BARRETT70_MUL24,     "cl_barrett24_70",      64,     70,         0,      NULL},
      {   BARRETT79_MUL32,     "cl_barrett32_79",      64,     79,         1,      NULL},
      {   BARRETT77_MUL32,     "cl_barrett32_77",      64,     77,         1,      NULL},
      {   BARRETT76_MUL32,     "cl_barrett32_76",      64,     76,         1,      NULL},
@@ -83,9 +82,10 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     88,         0,      NULL},
      {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL},
      {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL},
-     {   BARRETT74_MUL15,     "cl_barrett15_74",      60,      0,         0,      NULL}, // disabled
+     {   BARRETT74_MUL15,     "cl_barrett15_74",      60,     74,         0,      NULL}, // disabled
+     {   BARRETT78_MUL16,     "cl_barrett16_78",      64,     64,         0,      NULL},
      {   MG62,                "cl_mg62",              58,     62,         1,      NULL},
-     {   MG88,                "cl_mg88",              58,     10,         1,      NULL}, // bit_max=10: this kernel does not work yet
+     {   MG88,                "cl_mg88",              73,     88,         1,      NULL},
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         0,      NULL}, // end of automatic loading
      {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         0,      NULL}, // slow shift-cmp-sub kernel: removed
      {   BARRETT92_64_OpenCL, "cl_barrett32_92",      64,     92,         0,      NULL}, // mapped to 32-bit barrett so far
@@ -105,7 +105,8 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     88,         0,      NULL},
      {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     83,         0,      NULL},
      {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL},
-     {   BARRETT74_MUL15_GS,  "cl_barrett15_74_gs",   60,      0,         0,      NULL}  // disabled
+     {   BARRETT74_MUL15_GS,  "cl_barrett15_74_gs",   60,     74,         0,      NULL},  // disabled
+     {   BARRETT78_MUL16_GS,  "cl_barrett16_78_gs",   64,     64,         0,      NULL}
 };
 
 /* allocate memory buffer arrays, test a small kernel */
@@ -525,8 +526,8 @@ int init_CL(int num_streams, cl_int *devnumber)
 
   if (strstr(deviceinfo.exts, "cl_khr_fp64") == NULL)
   {
-    printf("\nWARNING: Device does not support double precision operations. Disabling\n"
-      "         some kernels requiring support for doubles.\n");
+    printf("\nINFO: Device does not support double precision operations. Disabling\n"
+      "      some kernels requiring support for doubles.\n");
     // setting bix_max to 0 makes them unsuitable for any task. They still need to compile and be loadable.
     kernel_info[BARRETT82_MUL15].bit_max = 0;
     kernel_info[BARRETT82_MUL15_GS].bit_max = 0;
@@ -1067,7 +1068,7 @@ int load_kernels(cl_int *devnumber)
   }
   else
   {
-    for (i=CL_CALC_BIT_TO_CLEAR; i<=BARRETT74_MUL15_GS; i++)
+    for (i=CL_CALC_BIT_TO_CLEAR; i<UNKNOWN_GS_KERNEL; i++)
     {
       kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
       if(status != CL_SUCCESS)
@@ -1776,9 +1777,6 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
 */
 {
   cl_int   status;
-#ifdef CHECKS_MODBASECASE
-  cl_int   argnum;
-#endif
   /*
   __kernel void mfakto_cl_71(__private uint exp, __private int72_t k_base,
                              __global uint *k_tab, __private int shiftcount,
@@ -1838,28 +1836,10 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
       return 1;
     }
 #ifdef CHECKS_MODBASECASE
-    argnum=6;
-#endif
-    if ((kernel_info[BARRETT70_MUL24].kernel == l_kernel))
-    {
-      /* the bit_max-64 for the barrett kernels (the others ignore it) */
-      status = clSetKernelArg(l_kernel,
-                      6,
-                      sizeof(cl_int),
-                      (void *)&bin_min63);
-      if(status != CL_SUCCESS)
-      {
-        std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_min)\n";
-      }
-#ifdef CHECKS_MODBASECASE
-      argnum=7;
-#endif
-    }
-#ifdef CHECKS_MODBASECASE
-    if ((kernel_info[_71BIT_MUL24].kernel == l_kernel) || (kernel_info[_63BIT_MUL24].kernel == l_kernel) || (kernel_info[BARRETT70_MUL24].kernel == l_kernel))
+    if ((kernel_info[_71BIT_MUL24].kernel == l_kernel) || (kernel_info[_63BIT_MUL24].kernel == l_kernel))
     {
       status = clSetKernelArg(l_kernel,
-                    argnum,
+                    6,
                     sizeof(cl_mem),
                     (void *)&mystuff.d_modbasecase_debug);
       if(status != CL_SUCCESS)
@@ -2533,6 +2513,18 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     else             b_preinit.d5=1<<(ln2b-120);  // b_preinit = 2^ln2b
   }
 
+  if ((use_kernel == BARRETT78_MUL16) || (use_kernel == BARRETT78_MUL16_GS))  // tweak to use the same params for 15- and 16-bits
+  { // skip the "lowest" 4 levels, so that uint8 is sufficient for 12 components of int180
+    if     (ln2b<64 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
+    else if(ln2b<80 )b_in.s[0]=1<<(ln2b-64);
+    else if(ln2b<96 )b_in.s[1]=1<<(ln2b-80);
+    else if(ln2b<112)b_in.s[2]=1<<(ln2b-96);
+    else if(ln2b<128)b_in.s[3]=1<<(ln2b-112);
+    else if(ln2b<144)b_in.s[4]=1<<(ln2b-128);
+    else if(ln2b<160)b_in.s[5]=1<<(ln2b-144);
+    else             b_in.s[6]=1<<(ln2b-160);
+  }
+  else
   { // skip the "lowest" 4 levels, so that uint8 is sufficient for 12 components of int180
     if     (ln2b<60 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
     else if(ln2b<75 )b_in.s[0]=1<<(ln2b-60);
@@ -2544,6 +2536,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     else if(ln2b<165)b_in.s[6]=1<<(ln2b-150);
     else             b_in.s[7]=1<<(ln2b-165);
   }
+
 
   {
     if     (ln2b<32 )b_192.d0=1<< ln2b;       // should not happen
@@ -2690,6 +2683,16 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
           k_base.d2 = 0;
           status = run_gs_kernel32(kernel_info[use_kernel].kernel, numblocks, shared_mem_required, k_base, b_192, shiftcount);
         }
+        else if (use_kernel == BARRETT78_MUL16_GS)
+        {
+          int75 k_base; // use it as int80
+          k_base.d0 =  k_min & 0xFFFF;
+          k_base.d1 = (k_min >> 16) & 0xFFFF;
+          k_base.d2 = (k_min >> 32) & 0xFFFF;
+          k_base.d3 = (k_min >> 48);
+          k_base.d4 = 0;
+          status = run_gs_kernel15(kernel_info[use_kernel].kernel, numblocks, shared_mem_required, k_base, b_in, shiftcount);
+        }
         else
         {
           fprintf(stderr, "Programming error: kernel %d unknown or not prepared for GPU-sieving\n", use_kernel);
@@ -2736,7 +2739,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
           }
         case PREPARED:                   // start the calculation of a preprocessed dataset on the device
           {
-            if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24))
+            if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24))
             {
               k_base.d0 =  k_min_grid[i] & 0xFFFFFF;
               k_base.d1 = (k_min_grid[i] >> 24) & 0xFFFFFF;
@@ -2760,6 +2763,16 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               k.d1 = k_min_grid[i] >> 32;
               k.d2 = 0;
               status = run_barrett_kernel32(kernel_info[use_kernel].kernel, mystuff->exponent, k, i, b_192, mystuff->d_RES, shiftcount, mystuff->bit_max_stage-65);
+            }
+            else if (use_kernel == BARRETT78_MUL16)
+            {
+              int75 k_base; // use it as int80
+              k_base.d0 =  k_min_grid[i] & 0xFFFF;
+              k_base.d1 = (k_min_grid[i] >> 16) & 0xFFFF;
+              k_base.d2 = (k_min_grid[i] >> 32) & 0xFFFF;
+              k_base.d3 = (k_min_grid[i] >> 48);
+              k_base.d4 = 0;
+              status = run_kernel15(kernel_info[use_kernel].kernel, mystuff->exponent, k_base, i, b_in, mystuff->d_RES, shiftcount, mystuff->bit_max_stage-65);
             }
             else
             {
@@ -3057,7 +3070,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
       continue;
     }
 
-    if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24))
+    if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24))
     {
       print_dez72(factor, string);
     }

@@ -61,7 +61,7 @@
     <None Include="src\mfakto_Kernels.cl" />
     <None Include="src\barrett.cl" />
     <None Include="src\barrett15.cl" />
-    <None Include="src\barrett24.cl" />
+    <None Include="src\barrett16.cl" />
     <None Include="src\common.cl" />
     <None Include="src\gpusieve.cl" />
     <None Include="src\mfakto.ini" />
@@ -157,7 +157,7 @@
       </Command>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\barrett15.cl "$(OUTDIR)"\barrett15.cl &amp; copy src\barrett24.cl "$(OUTDIR)"\barrett24.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\gpusieve.cl "$(OUTDIR)"\gpusieve.cl &amp; copy src\tf_debug.h "$(OUTDIR)"\tf_debug.h &amp; copy src\datatypes.h "$(OUTDIR)"\datatypes.h &amp; copy src\montgomery.cl "$(OUTDIR)"\montgomery.cl &amp; copy src\common.cl "$(OUTDIR)"\common.cl</Command>
+      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\barrett15.cl "$(OUTDIR)"\barrett15.cl &amp; copy src\barrett16.cl "$(OUTDIR)"\barrett16.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\gpusieve.cl "$(OUTDIR)"\gpusieve.cl &amp; copy src\tf_debug.h "$(OUTDIR)"\tf_debug.h &amp; copy src\datatypes.h "$(OUTDIR)"\datatypes.h &amp; copy src\montgomery.cl "$(OUTDIR)"\montgomery.cl &amp; copy src\common.cl "$(OUTDIR)"\common.cl</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Copy kernels</Message>
@@ -188,7 +188,7 @@
       </Command>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\barrett15.cl "$(OUTDIR)"\barrett15.cl &amp; copy src\barrett24.cl "$(OUTDIR)"\barrett24.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\gpusieve.cl "$(OUTDIR)"\gpusieve.cl &amp; copy src\tf_debug.h "$(OUTDIR)"\tf_debug.h &amp; copy src\datatypes.h "$(OUTDIR)"\datatypes.h &amp; copy src\montgomery.cl "$(OUTDIR)"\montgomery.cl &amp; copy src\common.cl "$(OUTDIR)"\common.cl</Command>
+      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\barrett15.cl "$(OUTDIR)"\barrett15.cl &amp; copy src\barrett16.cl "$(OUTDIR)"\barrett16.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\gpusieve.cl "$(OUTDIR)"\gpusieve.cl &amp; copy src\tf_debug.h "$(OUTDIR)"\tf_debug.h &amp; copy src\datatypes.h "$(OUTDIR)"\datatypes.h &amp; copy src\montgomery.cl "$(OUTDIR)"\montgomery.cl &amp; copy src\common.cl "$(OUTDIR)"\common.cl</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Copy kernels</Message>
@@ -231,7 +231,7 @@
       </Command>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\barrett15.cl "$(OUTDIR)"\barrett15.cl &amp; copy src\barrett24.cl "$(OUTDIR)"\barrett24.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\gpusieve.cl "$(OUTDIR)"\gpusieve.cl &amp; copy src\tf_debug.h "$(OUTDIR)"\tf_debug.h &amp; copy src\datatypes.h "$(OUTDIR)"\datatypes.h &amp; copy src\montgomery.cl "$(OUTDIR)"\montgomery.cl &amp; copy src\common.cl "$(OUTDIR)"\common.cl</Command>
+      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\barrett15.cl "$(OUTDIR)"\barrett15.cl &amp; copy src\barrett16.cl "$(OUTDIR)"\barrett16.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\gpusieve.cl "$(OUTDIR)"\gpusieve.cl &amp; copy src\tf_debug.h "$(OUTDIR)"\tf_debug.h &amp; copy src\datatypes.h "$(OUTDIR)"\datatypes.h &amp; copy src\montgomery.cl "$(OUTDIR)"\montgomery.cl &amp; copy src\common.cl "$(OUTDIR)"\common.cl</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Copy kernels</Message>
@@ -273,7 +273,7 @@
       </Command>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\barrett15.cl "$(OUTDIR)"\barrett15.cl &amp; copy src\barrett24.cl "$(OUTDIR)"\barrett24.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\gpusieve.cl "$(OUTDIR)"\gpusieve.cl &amp; copy src\tf_debug.h "$(OUTDIR)"\tf_debug.h &amp; copy src\datatypes.h "$(OUTDIR)"\datatypes.h &amp; copy src\montgomery.cl "$(OUTDIR)"\montgomery.cl &amp; copy src\common.cl "$(OUTDIR)"\common.cl</Command>
+      <Command>copy src\$(RootNamespace)_Kernels.cl "$(OUTDIR)"\$(RootNamespace)_Kernels.cl &amp; copy src\barrett.cl "$(OUTDIR)"\barrett.cl &amp; copy src\barrett15.cl "$(OUTDIR)"\barrett15.cl &amp; copy src\barrett16.cl "$(OUTDIR)"\barrett16.cl &amp; copy src\mul24.cl "$(OUTDIR)"\mul24.cl &amp; copy src\gpusieve.cl "$(OUTDIR)"\gpusieve.cl &amp; copy src\tf_debug.h "$(OUTDIR)"\tf_debug.h &amp; copy src\datatypes.h "$(OUTDIR)"\datatypes.h &amp; copy src\montgomery.cl "$(OUTDIR)"\montgomery.cl &amp; copy src\common.cl "$(OUTDIR)"\common.cl</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Copy kernels</Message>
