@@ -82,13 +82,11 @@ Version 0.15
 #ifdef CL_GPU_SIEVE
   #include "gpusieve.cl"
   #include "barrett15.cl"  // mul24-based barrett kernels using a word size of 15 bit
-  #include "barrett16.cl"  // mul24-based barrett kernels using a word size of 16 bit
   #include "barrett.cl"   // one kernel file for 32-bit-barrett of different vector sizes (1, 2, 4, 8, 16)
 #else
   #define EVAL_RES(x) EVAL_RES_b(x)  // no check for f==1 if running the "big" version
 
   #include "barrett15.cl"  // mul24-based barrett kernels using a word size of 15 bit
-  #include "barrett16.cl"  // mul24-based barrett kernels using a word size of 16 bit
   #include "barrett.cl"   // one kernel file for 32-bit-barrett of different vector sizes (1, 2, 4, 8, 16)
 
   #include "mul24.cl" // one kernel file for 24-bit-kernels of different vector sizes (1, 2, 4, 8, 16)

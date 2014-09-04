@@ -82,8 +82,7 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     88,         0,      NULL},
      {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL},
      {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL},
-     {   BARRETT74_MUL15,     "cl_barrett15_74",      60,     74,         0,      NULL}, // disabled
-     {   BARRETT78_MUL16,     "cl_barrett16_78",      64,     64,         0,      NULL},
+     {   BARRETT74_MUL15,     "cl_barrett15_74",      60,     74,         0,      NULL},
      {   MG62,                "cl_mg62",              58,     62,         1,      NULL},
      {   MG88,                "cl_mg88",              73,     88,         1,      NULL},
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         0,      NULL}, // end of automatic loading
@@ -105,8 +104,8 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     88,         0,      NULL},
      {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     83,         0,      NULL},
      {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL},
-     {   BARRETT74_MUL15_GS,  "cl_barrett15_74_gs",   60,     74,         0,      NULL},  // disabled
-     {   BARRETT78_MUL16_GS,  "cl_barrett16_78_gs",   64,     64,         0,      NULL}
+     {   BARRETT74_MUL15_GS,  "cl_barrett15_74_gs",   60,     74,         0,      NULL},
+     {   UNKNOWN_GS_KERNEL,   "UNKNOWN GS kernel",     0,      0,         0,      NULL}, // delimiter
 };
 
 /* allocate memory buffer arrays, test a small kernel */
@@ -2513,18 +2512,6 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     else             b_preinit.d5=1<<(ln2b-120);  // b_preinit = 2^ln2b
   }
 
-  if ((use_kernel == BARRETT78_MUL16) || (use_kernel == BARRETT78_MUL16_GS))  // tweak to use the same params for 15- and 16-bits
-  { // skip the "lowest" 4 levels, so that uint8 is sufficient for 12 components of int180
-    if     (ln2b<64 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
-    else if(ln2b<80 )b_in.s[0]=1<<(ln2b-64);
-    else if(ln2b<96 )b_in.s[1]=1<<(ln2b-80);
-    else if(ln2b<112)b_in.s[2]=1<<(ln2b-96);
-    else if(ln2b<128)b_in.s[3]=1<<(ln2b-112);
-    else if(ln2b<144)b_in.s[4]=1<<(ln2b-128);
-    else if(ln2b<160)b_in.s[5]=1<<(ln2b-144);
-    else             b_in.s[6]=1<<(ln2b-160);
-  }
-  else
   { // skip the "lowest" 4 levels, so that uint8 is sufficient for 12 components of int180
     if     (ln2b<60 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
     else if(ln2b<75 )b_in.s[0]=1<<(ln2b-60);
@@ -2683,16 +2670,6 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
           k_base.d2 = 0;
           status = run_gs_kernel32(kernel_info[use_kernel].kernel, numblocks, shared_mem_required, k_base, b_192, shiftcount);
         }
-        else if (use_kernel == BARRETT78_MUL16_GS)
-        {
-          int75 k_base; // use it as int80
-          k_base.d0 =  k_min & 0xFFFF;
-          k_base.d1 = (k_min >> 16) & 0xFFFF;
-          k_base.d2 = (k_min >> 32) & 0xFFFF;
-          k_base.d3 = (k_min >> 48);
-          k_base.d4 = 0;
-          status = run_gs_kernel15(kernel_info[use_kernel].kernel, numblocks, shared_mem_required, k_base, b_in, shiftcount);
-        }
         else
         {
           fprintf(stderr, "Programming error: kernel %d unknown or not prepared for GPU-sieving\n", use_kernel);
@@ -2763,16 +2740,6 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               k.d1 = k_min_grid[i] >> 32;
               k.d2 = 0;
               status = run_barrett_kernel32(kernel_info[use_kernel].kernel, mystuff->exponent, k, i, b_192, mystuff->d_RES, shiftcount, mystuff->bit_max_stage-65);
-            }
-            else if (use_kernel == BARRETT78_MUL16)
-            {
-              int75 k_base; // use it as int80
-              k_base.d0 =  k_min_grid[i] & 0xFFFF;
-              k_base.d1 = (k_min_grid[i] >> 16) & 0xFFFF;
-              k_base.d2 = (k_min_grid[i] >> 32) & 0xFFFF;
-              k_base.d3 = (k_min_grid[i] >> 48);
-              k_base.d4 = 0;
-              status = run_kernel15(kernel_info[use_kernel].kernel, mystuff->exponent, k_base, i, b_in, mystuff->d_RES, shiftcount, mystuff->bit_max_stage-65);
             }
             else
             {
