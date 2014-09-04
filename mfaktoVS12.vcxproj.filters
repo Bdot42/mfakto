@@ -111,7 +111,7 @@
     <None Include="src\barrett.cl">
       <Filter>kernel files</Filter>
     </None>
-    <None Include="src\barrett24.cl">
+    <None Include="src\barrett16.cl">
       <Filter>kernel files</Filter>
     </None>
     <None Include="src\barrett15.cl">

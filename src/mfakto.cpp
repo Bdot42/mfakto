@@ -69,7 +69,6 @@ kernel_info_t       kernel_info[] = {
      {   _TEST_MOD_,          "test_k",                0,      0,         0,      NULL}, // used for various tests
      {   _71BIT_MUL24,        "mfakto_cl_71",         61,     71,         1,      NULL},
      {   _63BIT_MUL24,        "mfakto_cl_63",         58,     64,         1,      NULL},
-     {   BARRETT70_MUL24,     "cl_barrett24_70",      64,     60,         0,      NULL},
      {   BARRETT79_MUL32,     "cl_barrett32_79",      64,     79,         1,      NULL},
      {   BARRETT77_MUL32,     "cl_barrett32_77",      64,     77,         1,      NULL},
      {   BARRETT76_MUL32,     "cl_barrett32_76",      64,     76,         1,      NULL},
@@ -527,8 +526,8 @@ int init_CL(int num_streams, cl_int *devnumber)
 
   if (strstr(deviceinfo.exts, "cl_khr_fp64") == NULL)
   {
-    printf("\nWARNING: Device does not support double precision operations. Disabling\n"
-      "         some kernels requiring support for doubles.\n");
+    printf("\nINFO: Device does not support double precision operations. Disabling\n"
+      "      some kernels requiring support for doubles.\n");
     // setting bix_max to 0 makes them unsuitable for any task. They still need to compile and be loadable.
     kernel_info[BARRETT82_MUL15].bit_max = 0;
     kernel_info[BARRETT82_MUL15_GS].bit_max = 0;
@@ -1778,9 +1777,6 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
 */
 {
   cl_int   status;
-#ifdef CHECKS_MODBASECASE
-  cl_int   argnum;
-#endif
   /*
   __kernel void mfakto_cl_71(__private uint exp, __private int72_t k_base,
                              __global uint *k_tab, __private int shiftcount,
@@ -1840,28 +1836,10 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
       return 1;
     }
 #ifdef CHECKS_MODBASECASE
-    argnum=6;
-#endif
-    if ((kernel_info[BARRETT70_MUL24].kernel == l_kernel))
-    {
-      /* the bit_max-64 for the barrett kernels (the others ignore it) */
-      status = clSetKernelArg(l_kernel,
-                      6,
-                      sizeof(cl_int),
-                      (void *)&bin_min63);
-      if(status != CL_SUCCESS)
-      {
-        std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_min)\n";
-      }
-#ifdef CHECKS_MODBASECASE
-      argnum=7;
-#endif
-    }
-#ifdef CHECKS_MODBASECASE
-    if ((kernel_info[_71BIT_MUL24].kernel == l_kernel) || (kernel_info[_63BIT_MUL24].kernel == l_kernel) || (kernel_info[BARRETT70_MUL24].kernel == l_kernel))
+    if ((kernel_info[_71BIT_MUL24].kernel == l_kernel) || (kernel_info[_63BIT_MUL24].kernel == l_kernel))
     {
       status = clSetKernelArg(l_kernel,
-                    argnum,
+                    6,
                     sizeof(cl_mem),
                     (void *)&mystuff.d_modbasecase_debug);
       if(status != CL_SUCCESS)
@@ -2761,7 +2739,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
           }
         case PREPARED:                   // start the calculation of a preprocessed dataset on the device
           {
-            if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24))
+            if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24))
             {
               k_base.d0 =  k_min_grid[i] & 0xFFFFFF;
               k_base.d1 = (k_min_grid[i] >> 24) & 0xFFFFFF;
@@ -3092,7 +3070,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
       continue;
     }
 
-    if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24))
+    if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24))
     {
       print_dez72(factor, string);
     }

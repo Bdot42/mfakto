@@ -160,12 +160,13 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s)
       BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s)
       BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
+//      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
       BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
       MG62,             // "cl_mg_62"        (158.62 M/s)
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -185,31 +186,32 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT88_MUL32,  // "cl_barrett32_88" (222.63 M/s)
       BARRETT79_MUL32,  // "cl_barrett32_79" (215.58 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (212.98 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (202.59 M/s)
+//      BARRETT70_MUL24,  // "cl_barrett24_70" (202.59 M/s)
       BARRETT92_MUL32,  // "cl_barrett32_92" (190.36 M/s)
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
 /*  GPU_VLIW5, HD5770@960MHz, v=4 */
-      BARRETT69_MUL15,  // "cl_barrett15_69" (253.77 M/s)
-      BARRETT70_MUL15,  // "cl_barrett15_70" (253.48 M/s)
-      BARRETT71_MUL15,  // "cl_barrett15_71" (248.20 M/s)
-      MG62,             // "cl_mg_62"        (230.09 M/s)
-      BARRETT77_MUL32,  // "cl_barrett32_77" (220.02 M/s)
+      BARRETT69_MUL15,  // "cl_barrett15_69" (253.99 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (253.78 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (249.86 M/s)
+      MG62,             // "cl_mg_62"        (226.15 M/s) !! was (230.09 M/s) on 0.14
+      BARRETT77_MUL32,  // "cl_barrett32_77" (220.90 M/s)
       BARRETT76_MUL32,  // "cl_barrett32_76" (208.53 M/s)  v=2: (212.63 M/s)
-      BARRETT73_MUL15,  // "cl_barrett15_73" (205.75 M/s)
-      BARRETT88_MUL32,  // "cl_barrett32_88" (194.25 M/s)
-      BARRETT87_MUL32,  // "cl_barrett32_87" (190.83 M/s)  v=2: (196.85 M/s)
-      BARRETT74_MUL15,  // "cl_barrett15_74" (187.20 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (187.10 M/s)
-      BARRETT82_MUL15,  // "cl_barrett15_82" (186.75 M/s)
-      BARRETT83_MUL15,  // "cl_barrett15_83" (176.76 M/s)
-      BARRETT79_MUL32,  // "cl_barrett32_79" (165.80 M/s)  v=2: (179.51 M/s)
-      BARRETT88_MUL15,  // "cl_barrett15_88" (155.48 M/s)
-      BARRETT92_MUL32,  // "cl_barrett32_92" (155.17 M/s)  v=2: (169.63 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (203.89 M/s) !! was (205.75 M/s) on 0.14
+      BARRETT74_MUL15,  // "cl_barrett15_74" (203.68 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (195.49 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (191.21 M/s)  v=2: (196.85 M/s)
+      BARRETT82_MUL15,  // "cl_barrett15_82" (0) (no doubles) (186.75 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (0) (no doubles) (176.76 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (165.83 M/s)  v=2: (179.51 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (0) (no doubles) (155.48 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (155.41 M/s)  v=2: (169.63 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (141.31 M/s)
+      MG88,             // "cl_mg88"         (110.75 M/s) //new with 0.15
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,
@@ -229,12 +231,13 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s) / (159.38 M/s) / 391.52  2,456519011168277073660434182457
       BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s) / (158.46 M/s) / 399.98  2,5241701375741512053515082670706
       BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s) / (158.22 M/s) / 389.25  2,4601820250284414106939704209329
-      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s) / (149.63 M/s) / 378.13  2,5271001804450979081734946200628
+//      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s) / (149.63 M/s) / 378.13  2,5271001804450979081734946200628
       BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s) / (142.61 M/s) / 349.29  2,449267232311899586284271790197
       _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s) / (132.38 M/s) / 344.40  2,6016014503701465478168907689983
       MG62,             // "cl_mg_62"        (158.62 M/s) / (104.55 M/s) / 367.04  3,5106647537063605930176948828312
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -249,7 +252,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT70_MUL15,  // "cl_barrett15_70" (3.60 M/s)
       BARRETT92_MUL32,  // "cl_barrett32_92" (3.56 M/s)
       BARRETT71_MUL15,  // "cl_barrett15_71" (3.43 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (3.40 M/s)
+//      BARRETT70_MUL24,  // "cl_barrett24_70" (3.40 M/s)
       BARRETT73_MUL15,  // "cl_barrett15_73" (3.07 M/s)
       BARRETT74_MUL15,  // "cl_barrett15_74"
       BARRETT82_MUL15,  // "cl_barrett15_82" (2.72 M/s)
@@ -258,6 +261,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT88_MUL15,  // "cl_barrett15_88" (2.43 M/s)
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -271,7 +275,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT76_MUL32,  // "cl_barrett32_76" (60.14 M/s)
       BARRETT74_MUL15,  // "cl_barrett15_74"
       BARRETT82_MUL15,  // "cl_barrett15_82" (58.78 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (56.79 M/s)
+//      BARRETT70_MUL24,  // "cl_barrett24_70" (56.79 M/s)
       BARRETT88_MUL32,  // "cl_barrett32_88" (56.63 M/s)
       BARRETT83_MUL15,  // "cl_barrett15_83" (55.65 M/s)
       BARRETT87_MUL32,  // "cl_barrett32_87" (54.18 M/s)
@@ -281,6 +285,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       _63BIT_MUL24,     // "mfakto_cl_63"    (42.09 M/s)
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -295,7 +300,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT69_MUL15,  // "cl_barrett15_69" (7.90 / 54.36 M/s)
       BARRETT70_MUL15,  // "cl_barrett15_70" (7.90 / 54.31 M/s)
       BARRETT71_MUL15,  // "cl_barrett15_71" (7.54 / 51.57 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (6.53 / 44.92 M/s)
+//      BARRETT70_MUL24,  // "cl_barrett24_70" (6.53 / 44.92 M/s)
       BARRETT73_MUL15,  // "cl_barrett15_73" (6.81 / 47.47 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (6.49 / 38.87 M/s)
       BARRETT74_MUL15,  // "cl_barrett15_74"
@@ -304,6 +309,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT88_MUL15,  // "cl_barrett15_88" (2.43 M/s)
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -318,7 +324,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT70_MUL15,  // "cl_barrett15_70" (19.30 M/s)
       BARRETT92_MUL32,  // "cl_barrett32_92" (18.41 M/s)
       BARRETT71_MUL15,  // "cl_barrett15_71" (18.22 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (17.12 M/s)
+//      BARRETT70_MUL24,  // "cl_barrett24_70" (17.12 M/s)
       BARRETT73_MUL15,  // "cl_barrett15_73" (16.31 M/s)
       BARRETT74_MUL15,  // "cl_barrett15_74"
       BARRETT82_MUL15,  // "cl_barrett15_82" (14.03 M/s)
@@ -327,6 +333,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       _63BIT_MUL24,     // "mfakto_cl_63"    (?)
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
@@ -344,12 +351,13 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s)
       BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s)
       BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s)
-      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
+//      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s)
       BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s)
       MG62,             // "cl_mg_62"        (158.62 M/s)
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL }
 
@@ -628,7 +636,7 @@ k_max and k_min are used as 64bit temporary integers here...
 
       f_hi  = (unsigned int ) (k_min + (mystuff->exponent * f_hi)); /* f_{hi|med|low} = 2 * k_hint * exp +1 */
 
-      if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24)) /* these kernels use 24bit per int */
+      if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24)) /* these kernels use 24bit per int */
       {
         f_hi  <<= 16;
         f_hi   += f_med >> 16;
@@ -774,8 +782,8 @@ RET_ERROR we might have a serios problem
 //      for (kernel_index = _71BIT_MUL24; kernel_index < BARRETT88_MUL15; ++kernel_index) // test-only: skip 6x15-bit kernels
 //      for (kernel_index = BARRETT79_MUL32; kernel_index <= BARRETT79_MUL32; ++kernel_index) // test-only: only use 32-bit kernels
 //      for (kernel_index = MG62; kernel_index <= MG88; ++kernel_index) // Specific montgomery test
-      for (kernel_index = BARRETT74_MUL15; kernel_index <= BARRETT74_MUL15; ++kernel_index) // test only the 74-bit kernel
-//      for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index) // this is the real one !!
+//      for (kernel_index = BARRETT74_MUL15; kernel_index <= BARRETT74_MUL15; ++kernel_index) // test only the 74-bit kernel
+      for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index) // this is the real one !!
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }
@@ -787,9 +795,9 @@ RET_ERROR we might have a serios problem
     else
     {
 //      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT73_MUL15_GS; ++kernel_index) // test-only: skip small 15-bit kernels
-      for (kernel_index = BARRETT74_MUL15_GS; kernel_index <= BARRETT74_MUL15_GS; ++kernel_index) // test only the 74-bit kernel
+//      for (kernel_index = BARRETT74_MUL15_GS; kernel_index <= BARRETT74_MUL15_GS; ++kernel_index) // test only the 74-bit kernel
 //      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT79_MUL32_GS; ++kernel_index) // test only 32-79
-//      for (kernel_index = BARRETT79_MUL32_GS; kernel_index < UNKNOWN_GS_KERNEL; ++kernel_index)
+      for (kernel_index = BARRETT79_MUL32_GS; kernel_index < UNKNOWN_GS_KERNEL; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }

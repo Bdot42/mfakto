@@ -92,7 +92,6 @@ Version 0.15
   #include "barrett.cl"   // one kernel file for 32-bit-barrett of different vector sizes (1, 2, 4, 8, 16)
 
   #include "mul24.cl" // one kernel file for 24-bit-kernels of different vector sizes (1, 2, 4, 8, 16)
-  #include "barrett24.cl"  // mul24-based barrett 72-bit kernel (all vector sizes)
   #include "montgomery.cl"  // montgomery kernels
 
   #define _63BIT_MUL24_K
