@@ -215,24 +215,24 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       UNKNOWN_KERNEL },
     {
 /*  GPU_GCN  (7850@1050MHz, v=2) / (7770@1100MHz) / 7870XT@1180MHz (Tahiti) / 7950@1100MHz  */
-      BARRETT69_MUL15,  // "cl_barrett15_69" (393.88 M/s) / (259.96 M/s) / 653.21  / 709.49
-      BARRETT70_MUL15,  // "cl_barrett15_70" (393.47 M/s) / (259.69 M/s) / 653.18  / 708.46
-      BARRETT71_MUL15,  // "cl_barrett15_71" (365.89 M/s) / (241.50 M/s) / 606.71  / 660.93
-      BARRETT73_MUL15,  // "cl_barrett15_73" (322.45 M/s) / (212.96 M/s) / 536.63  / 586.60
-      BARRETT74_MUL15,  // "cl_barrett15_74"                                       / 570.94
-      BARRETT82_MUL15,  // "cl_barrett15_82" (285.47 M/s) / (188.74 M/s) / 475.97  / 528.38
+      BARRETT69_MUL15,  // "cl_barrett15_69" (392.77 M/s) / (259.96 M/s) / 653.21  / 709.49
+      BARRETT70_MUL15,  // "cl_barrett15_70" (392.43 M/s) / (259.69 M/s) / 653.18  / 708.46
+      BARRETT71_MUL15,  // "cl_barrett15_71" (366.05 M/s) / (241.50 M/s) / 606.71  / 660.93
+      BARRETT73_MUL15,  // "cl_barrett15_73" (324.36 M/s) / (212.96 M/s) / 536.63  / 586.60
+      BARRETT74_MUL15,  // "cl_barrett15_74" (315.70 M/s) /                        / 570.94
+      BARRETT82_MUL15,  // "cl_barrett15_82" 285.47|257.58/ (188.74 M/s) / 475.97  / 528.38
       BARRETT76_MUL32,  // "cl_barrett32_76" (282.95 M/s) / (186.72 M/s) / 460.40  / 498.64
       BARRETT77_MUL32,  // "cl_barrett32_77" (274.09 M/s) / (180.93 M/s) / 446.44  / 484.64
-      BARRETT83_MUL15,  // "cl_barrett15_83" (267.27 M/s) / (176.79 M/s) / 445.01  / 495.23
+      BARRETT83_MUL15,  // "cl_barrett15_83" 267.27|243.11/ (176.79 M/s) / 445.01  / 495.23
       BARRETT87_MUL32,  // "cl_barrett32_87" (248.77 M/s) / (164.12 M/s) / 403.05  / 436.60
       BARRETT79_MUL32,  // "cl_barrett32_79" (241.48 M/s) / (159.38 M/s) / 391.52  / 424.12
-      BARRETT88_MUL15,  // "cl_barrett15_88" (239.83 M/s) / (158.46 M/s) / 399.98  / 445.67
+      BARRETT88_MUL15,  // "cl_barrett15_88" 239.83|221.19/ (158.46 M/s) / 399.98  / 445.67
       BARRETT88_MUL32,  // "cl_barrett32_88" (239.69 M/s) / (158.22 M/s) / 389.25  / 422.84
 //      BARRETT70_MUL24,  // "cl_barrett24_70" (226.74 M/s) / (149.63 M/s) / 378.13  ---
       BARRETT92_MUL32,  // "cl_barrett32_92" (216.10 M/s) / (142.61 M/s) / 349.29  / 378.50
       _63BIT_MUL24,     // "mfakto_cl_63"    (200.56 M/s) / (132.38 M/s) / 344.40  / 362.55
       MG62,             // "cl_mg_62"        (158.62 M/s) / (104.55 M/s) / 367.04  / 323.39
-      MG88,             // "cl_mg88"                                               / 305.38
+      MG88,             // "cl_mg88"          167.88                               / 305.38
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },

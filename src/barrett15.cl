@@ -1309,16 +1309,15 @@ ff = 1/f as float, needed in div_192_96().
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (tmp)\n",
         b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
-    if(shifter&0x80000000)shl_75(&tmp75);					// "optional multiply by 2" in Prime 95 documentation
-
+    if (shifter & 0x80000000) shl_75(&tmp75);
+    if (shifter == 0x80000000) break;
     shifter+=shifter;
+
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x (a)\n",
         shifter, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0,
         f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
-
-    if (shifter == 0) break;
 
     #ifndef CHECKS_MODBASECASE
     mod_simple_75(&a, tmp75, f, ff
@@ -1498,13 +1497,9 @@ ff = 1/f as float, needed in div_192_96().
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (tmp)\n",
         mad24(b.d5.s0, 32768u, b.d4.s0), b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
 #endif
-    if(shifter&0x80000000)
-    {
-      shl_75(&tmp75);
-    }
-
+    if (shifter & 0x80000000) shl_75(&tmp75);
+    if (shifter == 0x80000000) break;
     shifter+=shifter;
-    if (shifter == 0) break;
 
 #ifndef CHECKS_MODBASECASE
     mod_simple_75_big(&a, tmp75, f, ff
@@ -3188,10 +3183,9 @@ for(;;)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (tmp)\n",
         b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
 #endif
-    if(shifter&0x80000000)shl_90(&tmp90);			// "optional multiply by 2" in Prime 95 documentation, can be up to 91 bits (16 in tmp90.d5)
-
+    if (shifter & 0x80000000) shl_90(&tmp90);
+    if (shifter == 0x80000000) break;
     shifter+=shifter;
-    if (shifter == 0) break;
 
 #ifndef CHECKS_MODBASECASE
     mod_simple_90(&a, tmp90, f, ff
