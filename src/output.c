@@ -294,11 +294,7 @@ void print_status_line(mystuff_t *mystuff)
       }
       else if(mystuff->stats.progressformat[i+1] == 'w') // CPU wait time
       {
-       #ifdef __MINGW32__
-         index += sprintf(buffer + index, "%6I64u", mystuff->stats.cpu_wait_time / mystuff->stats.grid_count); /* mfakto only */
-       #else
-        index += sprintf(buffer + index, "%6llu", mystuff->stats.cpu_wait_time / mystuff->stats.grid_count); /* mfakto only */
-       #endif
+        index += sprintf(buffer + index, "%6u", (unsigned int) (mystuff->stats.cpu_wait_time / mystuff->stats.grid_count)); /* mfakto only */
       }
       else if(mystuff->stats.progressformat[i+1] == 'W') // CPU wait fraction
       {

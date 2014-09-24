@@ -16,11 +16,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.14
+Version 0.15
 
 */
 /*
- All OpenCL kernels for mfakto Trial-Factoring, version 0.10
+ All OpenCL kernels for mfakto Trial-Factoring
 
    is 2^p-1 divisible by q (q=2kp+1)? 
 	                        Remove   Optional   
@@ -71,22 +71,25 @@ Version 0.14
 #define MODBASECASE_PAR
 #endif
 
+#if VECTOR_SIZE == 1 && TRACE_KERNEL > 0
+# error "Kernel tracing works only for VectorSize > 1"
+#endif
+
 #include "datatypes.h"
 #include "common.cl"
 
 // for the GPU sieve, we don't implement some kernels
 #ifdef CL_GPU_SIEVE
   #include "gpusieve.cl"
-  #include "barrett15.cl"  // mul24-based barrett 73-bit kernel using a word size of 15 bit
+  #include "barrett15.cl"  // mul24-based barrett kernels using a word size of 15 bit
   #include "barrett.cl"   // one kernel file for 32-bit-barrett of different vector sizes (1, 2, 4, 8, 16)
 #else
   #define EVAL_RES(x) EVAL_RES_b(x)  // no check for f==1 if running the "big" version
 
-  #include "barrett15.cl"  // mul24-based barrett 73-bit kernel using a word size of 15 bit
+  #include "barrett15.cl"  // mul24-based barrett kernels using a word size of 15 bit
   #include "barrett.cl"   // one kernel file for 32-bit-barrett of different vector sizes (1, 2, 4, 8, 16)
 
   #include "mul24.cl" // one kernel file for 24-bit-kernels of different vector sizes (1, 2, 4, 8, 16)
-  #include "barrett24.cl"  // mul24-based barrett 72-bit kernel (all vector sizes)
   #include "montgomery.cl"  // montgomery kernels
 
   #define _63BIT_MUL24_K
@@ -103,7 +106,11 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   int180_v resv;
   int90_v a, b, r;
   tid = get_global_id(0);
+#ifdef cl_khr_fp64
+  double_v ff = 1.0;
+#else
   float_v ff = 1.0f;
+#endif
   uint_v carry0, carry1;
 
 
@@ -252,7 +259,11 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 
   i=mad24(resv.db.s0, 32768u, resv.da.s0)>>2;
   f=(mad24(resv.db.s0, 32768u, resv.da.s0)<<30) + mad24(resv.d9.s0, 32768u, resv.d8.s0);
+#ifdef cl_khr_fp64
+  div_180_90_d(&r, i, a, ff
+#else
   div_180_90(&r, i, a, ff
+#endif
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif
@@ -267,15 +278,24 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
         r.d5.s0, r.d4.s0, r.d3.s0, r.d2.s0, r.d1.s0, r.d0.s0);
 #endif
 
+#ifdef cl_khr_fp64
+  ff= CONVERT_DOUBLE_RTP_V(mad24(b.d5, 32768u, b.d4));
+  ff= ff * 32768.0 * 32768.0+ CONVERT_DOUBLE_RTP_V(mad24(b.d3, 32768u, b.d2));   // f.d1 needed?
+  ff= as_double(0x3feffffffffffffdL) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+#else
   ff= CONVERT_FLOAT_RTP_V(mad24(b.d5, 32768u, b.d4));
   ff= ff * 32768.0f * 32768.0f+ CONVERT_FLOAT_RTP_V(mad24(b.d3, 32768u, b.d2));   // f.d1 needed?
-
   ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+#endif
         
   i=mad24(resv.db.s0, 32768u, resv.da.s0)>>2;
   f=(mad24(resv.db.s0, 32768u, resv.da.s0)<<30) + mad24(resv.d9.s0, 32768u, resv.d8.s0);
 
+#ifdef cl_khr_fp64
+  div_180_90_d(&r, i, b, ff
+#else
   div_180_90(&r, i, b, ff
+#endif
 #if (TRACE_KERNEL > 1)
                   , tid
 #endif

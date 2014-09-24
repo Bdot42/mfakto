@@ -1,9 +1,7 @@
 // simulate _kbhit() on Linux
 // taken from http://linux-sxs.org/programming/kbhit.html
 
-#ifndef _MSC_VER
-#ifndef __MINGW32__
-#ifndef __CYGWIN__
+#ifndef _WIN32
 
 #include "kbhit.h"
 #include <unistd.h> // read()
@@ -13,8 +11,8 @@ keyboard::keyboard()
     tcgetattr(0,&initial_settings);
     new_settings = initial_settings;
     new_settings.c_lflag &= ~ICANON;
-    new_settings.c_lflag &= ~ECHO;
-    new_settings.c_lflag &= ~ISIG;
+//    new_settings.c_lflag &= ~ECHO;
+//    new_settings.c_lflag &= ~ISIG;
     new_settings.c_cc[VMIN] = 1;
     new_settings.c_cc[VTIME] = 0;
     tcsetattr(0, TCSANOW, &new_settings);
@@ -59,6 +57,4 @@ char ch;
     return ch;
 }
 
-#endif
-#endif
 #endif

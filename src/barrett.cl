@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.14
+Version 0.15
 */
 
 /****************************************
@@ -513,8 +513,6 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
 #endif
 
 /********** Step 4, Offset 2^15 (0*32 + 15) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 4, 5, 4);
-
   qf= CONVERT_FLOAT_V(q.d4);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
@@ -590,14 +588,11 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
 #else
     if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4: q=%x:%x:%x:%x:%x:%x(c=%x), nn=%x:%x:%x:%x, res=%x:%x:%x\n",
         q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, carry, nn.d3, nn.d2, nn.d1, nn.d0, res->d2, res->d1, res->d0);
-//    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.7: q.d4=%x, carry=%x, nn.d3=%x\n",
-//        q.d4, carry, nn.d3);
 #endif
 #endif
 
 
 /********** Step 5, Offset 2^0 (0*32 + 0) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 5, 5, 6);
   MODBASECASE_NONZERO_ERROR(q.d4, 5, 4, 7);
 
   qf= CONVERT_FLOAT_V(q.d3);
@@ -610,8 +605,9 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
 
   res->d0 += qi;
   carry    = AS_UINT_V(qi > res->d0);
-  res->d1 -= carry;
-  res->d2 -= AS_UINT_V(carry > res->d1);
+  tmp      = res->d1 - carry;
+  res->d2 -= AS_UINT_V(tmp < res->d1);
+  res->d1  = tmp;
 
 #if (TRACE_KERNEL > 2)
 #if (VECTOR_SIZE > 1)
@@ -647,7 +643,7 @@ DIV_160_96 here. */
   qf= CONVERT_FLOAT_V(q.d5);
   qf= qf * 4294967296.0f;  // combining this and the the below 2M multiplier makes it slower!
 #else
-#ifdef CHECKS_MODBASECASE
+#if defined CHECKS_MODBASECASE || (TRACE_KERNEL > 1)
     q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
 #endif
   qf= CONVERT_FLOAT_V(q.d4);
@@ -888,8 +884,6 @@ DIV_160_96 here. */
 #endif
 
 /********** Step 4, Offset 2^15 (0*32 + 15) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 4, 5, 4);
-
   qf= CONVERT_FLOAT_V(q.d4);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
   qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
@@ -906,11 +900,11 @@ DIV_160_96 here. */
 
 #if (TRACE_KERNEL > 2)
 #if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4.1: q=%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4.1: q=%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G, nf*qf=%G\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0, nf.s0*qf.s0);
 #else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4.1: q=%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, n.d2, n.d1, n.d0, qi, nf);
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4.1: q=%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G, nf*qf=%G\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, n.d2, n.d1, n.d0, qi, nf, nf*qf);
 #endif
 #endif
 
@@ -972,7 +966,6 @@ DIV_160_96 here. */
 
 
 /********** Step 5, Offset 2^0 (0*32 + 0) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 5, 5, 6);
   MODBASECASE_NONZERO_ERROR(q.d4, 5, 4, 7);
 
   qf= CONVERT_FLOAT_V(q.d3);
@@ -985,8 +978,9 @@ DIV_160_96 here. */
 
   res->d0 += qi;
   carry    = AS_UINT_V(qi > res->d0);
-  res->d1 -= carry;
-  res->d2 -= AS_UINT_V(carry > res->d1);
+  tmp      = res->d1 - carry;
+  res->d2 -= AS_UINT_V(tmp < res->d1);
+  res->d1  = tmp;
 
 #if (TRACE_KERNEL > 2)
 #if (VECTOR_SIZE > 1)
@@ -1082,8 +1076,8 @@ Precalculated here since it is the same for all steps in the following loop */
     square_96_160(&b, a);						// b = a^2
 
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+    if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x (b)\n",
+        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
 
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
@@ -1134,7 +1128,11 @@ Precalculated here since it is the same for all steps in the following loop */
     if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
-  mod_simple_even_96_and_check_big_factor96(a, f, ff, RES);
+  mod_simple_even_96_and_check_big_factor96(a, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                       , 15, 10 , modbasecase_debug
+#endif
+                       );
 }
 
 /*
@@ -1155,7 +1153,7 @@ Precalculated here since it is the same for all steps in the following loop */
     ff= CONVERT_FLOAT_RTP_V(f.d2);
     ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-    ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+    ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
     tmp192.d4 = 0xFFFFFFFF;						// tmp192 is nearly 2^(81)
     tmp192.d3 = 0xFFFFFFFF;
@@ -1262,7 +1260,11 @@ Precalculated here since it is the same for all steps in the following loop */
         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
 
-    mod_simple_96_and_check_big_factor96(a, f, ff, RES);
+    mod_simple_96_and_check_big_factor96(a, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                       , 15, 10 , modbasecase_debug
+#endif
+                       );
 }
 
 void check_barrett32_79(uint shifter, const int96_v f, const uint tid, const int192_t bb, __global uint * restrict RES
@@ -1279,7 +1281,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d4 = 0xFFFFFFFF;						// tmp is nearly 2^(81)
   tmp192.d3 = 0xFFFFFFFF;
@@ -1356,7 +1358,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, a.d2.s0, a.d1.s0, a.d0.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
 #endif
 
     a.d0 = b.d2;// & 0xFFFF8000;					// a = b / (2^80) (the result is leftshifted by 15 bits, this is corrected later)
@@ -1408,7 +1410,11 @@ Precalculated here since it is the same for all steps in the following loop */
     if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
         f.d2.s0, f.d1.s0, f.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0 );
 #endif
-  mod_simple_even_96_and_check_big_factor96(tmp96, f, ff, RES);
+  mod_simple_even_96_and_check_big_factor96(tmp96, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                       , 15, 10 , modbasecase_debug
+#endif
+                       );
 }
 
 void check_barrett32_87(uint shifter, const int96_v f, const uint tid, const int192_t bb, const uint bit_max65, __global uint * restrict RES
@@ -1426,8 +1432,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-//  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
@@ -1540,7 +1545,11 @@ Precalculated here since it is the same for all steps in the following loop */
     if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
-  mod_simple_even_96_and_check_big_factor96(a, f, ff, RES);
+  mod_simple_even_96_and_check_big_factor96(a, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                       , 15, 10 , modbasecase_debug
+#endif
+                       );
 }
 
 void check_barrett32_88(uint shifter, const int96_v f, const uint tid, const int192_t bb, const uint bit_max65, __global uint * restrict RES
@@ -1558,8 +1567,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-//  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
@@ -1660,7 +1668,11 @@ Precalculated here since it is the same for all steps in the following loop */
         shifter, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
 #endif
   }
-  mod_simple_96_and_check_big_factor96(a, f, ff, RES);
+  mod_simple_96_and_check_big_factor96(a, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                       , 15, 10 , modbasecase_debug
+#endif
+                       );
 }
 
 
@@ -1679,8 +1691,7 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= CONVERT_FLOAT_RTP_V(f.d2);
   ff= ff * 4294967296.0f + CONVERT_FLOAT_RTP_V(f.d1);		// f.d0 ingored because lower limit for this kernel are 64 bit which yields at least 32 significant digits without f.d0!
 
-  ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
-//  ff= 1.0f / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
+  ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
   tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
   tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
@@ -1807,7 +1818,11 @@ Precalculated here since it is the same for all steps in the following loop */
         shifter, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0);
 #endif
   }
-  mod_simple_even_96_and_check_big_factor96(tmp96, f, ff, RES);
+  mod_simple_even_96_and_check_big_factor96(tmp96, f, ff, RES
+#ifdef CHECKS_MODBASECASE
+                       , 15, 10 , modbasecase_debug
+#endif
+                       );
 }
 
 /*
@@ -1837,8 +1852,7 @@ __kernel void cl_barrett32_76(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -1867,8 +1881,7 @@ __kernel void cl_barrett32_77(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -1897,8 +1910,7 @@ __kernel void cl_barrett32_79(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -1927,8 +1939,7 @@ __kernel void cl_barrett32_87(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-  //tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-  tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+  tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -1957,8 +1968,7 @@ __kernel void cl_barrett32_88(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-  //tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-  tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+  tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -1987,8 +1997,7 @@ __kernel void cl_barrett32_92(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-	tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+	tid = get_global_id(0) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -2037,7 +2046,7 @@ a is precomputed on host ONCE.
 #endif
 #ifdef INTEL
   // WA for another bug
-  cl_uint num_c;
+  uint num_c;
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
@@ -2184,7 +2193,7 @@ a is precomputed on host ONCE.
 #endif
 #ifdef INTEL
   // WA for another bug
-  cl_uint num_c;
+  uint num_c;
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
@@ -2331,7 +2340,7 @@ a is precomputed on host ONCE.
 #endif
 #ifdef INTEL
   // WA for another bug
-  cl_uint num_c;
+  uint num_c;
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
@@ -2478,7 +2487,7 @@ a is precomputed on host ONCE.
 #endif
 #ifdef INTEL
   // WA for another bug
-  cl_uint num_c;
+  uint num_c;
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
@@ -2625,7 +2634,7 @@ a is precomputed on host ONCE.
 #endif
 #ifdef INTEL
   // WA for another bug
-  cl_uint num_c;
+  uint num_c;
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
@@ -2772,7 +2781,7 @@ a is precomputed on host ONCE.
 #endif
 #ifdef INTEL
   // WA for another bug
-  cl_uint num_c;
+  uint num_c;
 #endif
 
 #if (TRACE_SIEVE_KERNEL > 0)
@@ -2872,8 +2881,6 @@ a is precomputed on host ONCE.
         i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
         i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
-    if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_92_gs: tid=%d, kdelta x: %d, y: %d\n",
-      lid, k_delta.x, k_delta.y);
 #endif
 
     // Compute f = 2 * k * exp + 1
@@ -2882,7 +2889,7 @@ a is precomputed on host ONCE.
     f.d0 = (f.d0 << 1) + 1;
 
 #if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID || get_group_id(0) == 4703)
+    if (tid==TRACE_TID)
        printf((__constant char *)"cl_barrett32_92_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
         lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
 #endif

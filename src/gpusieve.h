@@ -16,18 +16,23 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifndef GPUSIEVE_H_
+#define GPUSIEVE_H_
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "my_types.h"
 
 int gpusieve_init (mystuff_t *mystuff, cl_context context);
 void gpusieve_init_exponent (mystuff_t *mystuff);
 void gpusieve_init_class (mystuff_t *mystuff, unsigned long long k_min);
 void gpusieve (mystuff_t *mystuff, unsigned long long num_k_remaining);
 int gpusieve_free (mystuff_t *mystuff);
+void tiny_soe (cl_uint limit, cl_uint *primes);
 
 #ifdef __cplusplus
 }
 #endif
-
-void tiny_soe (cl_uint limit, cl_uint *primes);
+#endif

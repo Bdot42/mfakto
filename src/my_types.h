@@ -23,45 +23,45 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 /* 60bit (4x 15bit) integer
 D=d0 + d1*(2^15) + d2*(2^30) ... */
-typedef struct
+typedef struct _int60
 {
   cl_uint d0,d1,d2,d3;
-}int60;
+} int60;
 
 /* 120bit (8x 15bit) integer
 D=d0 + d1*(2^15) + d2*(2^30) + ... */
-typedef struct
+typedef struct _int120
 {
   cl_uint d0,d1,d2,d3,d4,d5,d6,d7;
-}int120;
+} int120;
 
 /* 75bit (5x 15bit) integer
 D=d0 + d1*(2^15) + d2*(2^30) ... */
-typedef struct
+typedef struct _int75
 {
   cl_uint d0,d1,d2,d3,d4;
-}int75;
+} int75;
 
 /* 150bit (10x 15bit) integer
 D=d0 + d1*(2^15) + d2*(2^30) + ... */
-typedef struct
+typedef struct _int150
 {
   cl_uint d0,d1,d2,d3,d4,d5,d6,d7,d8,d9;
-}int150;
+} int150;
 
 /* 72bit (3x 24bit) integer
 D=d0 + d1*(2^24) + d2*(2^48) */
-typedef struct
+typedef struct _int72
 {
   cl_uint d0,d1,d2;
-}int72;
+} int72;
 
 /* 144bit (6x 24bit) integer
 D=d0 + d1*(2^24) + d2*(2^48) + ... */
-typedef struct
+typedef struct _int144
 {
   cl_uint d0,d1,d2,d3,d4,d5;
-}int144;
+} int144;
 
 
 /* int72 and int96 are the same but this way the compiler warns
@@ -70,17 +70,17 @@ The applies to int144 and int192, too. */
 
 /* 96bit (3x 32bit) integer
 D= d0 + d1*(2^32) + d2*(2^64) */
-typedef struct
+typedef struct _int96
 {
   cl_uint d0,d1,d2;
-}int96;
+} int96;
 
 /* 192bit (6x 32bit) integer
 D=d0 + d1*(2^32) + d2*(2^64) + ... */
-typedef struct _int192_t
+typedef struct _int192
 {
   cl_uint d0,d1,d2,d3,d4,d5;
-}int192;
+} int192;
 
 enum STREAM_STATUS
 {
@@ -115,7 +115,6 @@ enum GPUKernels
   _TEST_MOD_,
   _71BIT_MUL24,
   _63BIT_MUL24,
-  BARRETT70_MUL24,
   BARRETT79_MUL32,
   BARRETT77_MUL32,
   BARRETT76_MUL32,
@@ -152,7 +151,7 @@ enum GPUKernels
   BARRETT83_MUL15_GS,
   BARRETT82_MUL15_GS,
   BARRETT74_MUL15_GS,
-  _95BIT_MUL32  /* not yet there */
+  UNKNOWN_GS_KERNEL  /* not yet there */
 };
 
 typedef enum GPUKernels GPUKernels;
@@ -170,7 +169,7 @@ enum GPU_types
   GPU_UNKNOWN   // must be the last one
 };
 
-typedef struct GPU_type
+typedef struct _GPU_type
 {
   enum GPU_types gpu_type;
   unsigned int   CE_per_multiprocessor;
@@ -201,14 +200,14 @@ enum PRINT_PARM // cCpgtenrswWdTUHulM .. CcpgtenrswWdTUHMlu
   NUM_PRINT_PARM  //
 };
 
-typedef struct
+typedef struct _print_parameter
 {
   cl_uint  pos;  /* the position where this parameter shall appear, 0=unused */
   char     out[16]; /* fixed size output string */
   char     parm; /* the parameter, one of cCpgtenrswWdTuhf */
 } print_parameter;
 
-typedef struct
+typedef struct _stats_t
 {
   char     progressheader[256];       /* userconfigureable progress header */
   char     progressformat[256];       /* userconfigureable progress line */
@@ -223,7 +222,7 @@ typedef struct
   char     kernelname[32];
 }stats_t;
 
-typedef struct
+typedef struct _mystuff_t
 {
   cl_event copy_events[NUM_STREAMS_MAX];
   cl_event exec_events[NUM_STREAMS_MAX];
@@ -256,9 +255,9 @@ typedef struct
   cl_uint  sieve_size;
 
   cl_uint  gpu_sieving;			             /* TRUE if we're letting the GPU do the sieving */
-  cl_uint  gpu_sieve_size;			         /* Size (in bits) of the GPU sieve.  Default is 128M bits. */
+  cl_uint  gpu_sieve_size;			         /* Size (in bits) of the GPU sieve.  4..128M bits. */
   cl_uint  gpu_sieve_primes;             /* the actual number of primes using for sieving */
-  cl_uint  gpu_sieve_processing_size;	   /* The number of GPU sieve bits each thread in a Barrett kernel will process.  Default is 2K bits. */
+  cl_uint  gpu_sieve_processing_size;	   /* The number of GPU sieve bits each thread in a kernel will process.  8,16,24,32K bits. */
 
   cl_uint  flush;                        /* GPU sieving only: flush the queue after # kernels, 0=off */
   cl_uint  num_streams;

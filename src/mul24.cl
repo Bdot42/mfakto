@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
-Version 0.14
+Version 0.15
 */
 
 /* This file will be included TWICE by the main kernel file, once with
@@ -522,7 +522,6 @@ void mod_144_72
   q.d3 &= 0xFFFFFF;
 
 /********** Step 4, Offset 2^0 (0*24 + 0) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 4, 5, 5);
   MODBASECASE_NONZERO_ERROR(q.d4, 4, 4, 6);
 
 #ifdef _63BIT_MUL24_K
@@ -621,8 +620,6 @@ void mod_144_72
   res->d1 = q.d1 & 0xFFFFFF;
   res->d2 = q.d2 & 0xFFFFFF;
 
-  MODBASECASE_NONZERO_ERROR(q.d5, 5, 5, 8);
-  MODBASECASE_NONZERO_ERROR(q.d4, 5, 4, 9);
   MODBASECASE_NONZERO_ERROR(q.d3, 5, 3, 10);
 
 #if (TRACE_KERNEL > 1)
@@ -733,8 +730,6 @@ Precalculated here since it is the same for all steps in the following loop */
   ff= ff * 16777216.0f;
 #endif
 
-//  ff=0.9999997f/ff;
-//  ff=__int_as_float(0x3f7ffffc) / ff;	// just a little bit below 1.0f so we allways underestimate the quotient
   ff=as_float(0x3f7ffffc) / ff;	// just a little bit below 1.0f so we always underestimate the quotient
  
 #if (TRACE_KERNEL > 1)

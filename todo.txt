@@ -118,6 +118,7 @@ TODO
 +DONE+ - save and reload binary kernels
 +DONE+ - migrate to newer VS version (to VS12 - +2% CPU sieving speed)
 +NO+ - AllowSleep + not needed due to GPU sieving +
++DONE+ - _kbhit + getchar to allow config changes at runtime
 - add James' PM1-F-vs-TF-NF list to selftest
 - perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
 - serialize memory access for vector kernels
@@ -130,7 +131,6 @@ TODO
 - repunit
 - SDK 2.6: __attribute__((always_inline)), set environment variable GPU_ASYNC_MEM_COPY=2, Profiler
 - dummy kernel for performance testing of sieve and transfer
-- _kbhit + getchar to allow config changes at runtime
 - __kernel __attribute__((vec_type_hint(uintn)))
 - test different local workgroup sizes, also in combination with the __attribute__((reqd_work_group_size(X, Y, Z))) qualifier
 - test speed without event sync (just in-order-queue)
@@ -142,4 +142,4 @@ TODO
   let a test mode find out about the best config
 - Try and build an assembler kernel for GCN (find possible optimizations like carry, mul24_hi, scalar unit etc)
 - Split device detection from kernel compilation to make use of device's capabilities
-
+- Complete instuctions on building on Windows(VS and MinGW)

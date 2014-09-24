@@ -22,9 +22,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <fstream>
 #include "string.h"
-#include "CL/cl.h"
-#include "params.h"
-#include "my_types.h"
+#include "mfakto.h"
 #include "compatibility.h"
 #include "read_config.h"
 #include "parse.h"
@@ -33,7 +31,6 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include "checkpoint.h"
 #include "filelocking.h"
 #include "perftest.h"
-#include "mfakto.h"
 #include "output.h"
 #include "gpusieve.h"
 #include "menu.h"
@@ -64,7 +61,7 @@ extern "C"
 
 #include "signal_handler.h"
 extern mystuff_t    mystuff;
-extern struct GPU_type     gpu_types[];
+extern GPU_type     gpu_types[];
 OpenCL_deviceinfo_t deviceinfo={{0}};
 kernel_info_t       kernel_info[] = {
   /*   kernel (in sequence) | kernel function name | bit_min | bit_max | stages? | loaded kernel pointer */
@@ -72,7 +69,6 @@ kernel_info_t       kernel_info[] = {
      {   _TEST_MOD_,          "test_k",                0,      0,         0,      NULL}, // used for various tests
      {   _71BIT_MUL24,        "mfakto_cl_71",         61,     71,         1,      NULL},
      {   _63BIT_MUL24,        "mfakto_cl_63",         58,     64,         1,      NULL},
-     {   BARRETT70_MUL24,     "cl_barrett24_70",      64,     70,         0,      NULL},
      {   BARRETT79_MUL32,     "cl_barrett32_79",      64,     79,         1,      NULL},
      {   BARRETT77_MUL32,     "cl_barrett32_77",      64,     77,         1,      NULL},
      {   BARRETT76_MUL32,     "cl_barrett32_76",      64,     76,         1,      NULL},
@@ -86,9 +82,9 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     88,         0,      NULL},
      {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL},
      {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL},
-     {   BARRETT74_MUL15,     "cl_barrett15_74",      60,      0,         0,      NULL}, // disabled
+     {   BARRETT74_MUL15,     "cl_barrett15_74",      60,     74,         0,      NULL},
      {   MG62,                "cl_mg62",              58,     62,         1,      NULL},
-     {   MG88,                "cl_mg88",              58,     10,         1,      NULL}, // bit_max=10: this kernel does not work yet
+     {   MG88,                "cl_mg88",              73,     88,         1,      NULL},
      {   UNKNOWN_KERNEL,      "UNKNOWN kernel",        0,      0,         0,      NULL}, // end of automatic loading
      {   _64BIT_64_OpenCL,    "mfakto_cl_64",          0,     64,         0,      NULL}, // slow shift-cmp-sub kernel: removed
      {   BARRETT92_64_OpenCL, "cl_barrett32_92",      64,     92,         0,      NULL}, // mapped to 32-bit barrett so far
@@ -108,7 +104,8 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     88,         0,      NULL},
      {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     83,         0,      NULL},
      {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL},
-     {   BARRETT74_MUL15_GS,  "cl_barrett15_74_gs",   60,      0,         0,      NULL}  // disabled
+     {   BARRETT74_MUL15_GS,  "cl_barrett15_74_gs",   60,     74,         0,      NULL},
+     {   UNKNOWN_GS_KERNEL,   "UNKNOWN GS kernel",     0,      0,         0,      NULL}, // delimiter
 };
 
 /* allocate memory buffer arrays, test a small kernel */
@@ -257,7 +254,7 @@ int init_CL(int num_streams, cl_int *devnumber)
   cl_uint numplatforms, i;
   cl_platform_id platform = NULL;
   cl_platform_id* platformlist = NULL;
-  cl_device_type devtype = CL_DEVICE_TYPE_GPU;
+  cl_device_type devtype = CL_DEVICE_TYPE_GPU|CL_DEVICE_TYPE_ACCELERATOR;
 
   if (mystuff.verbosity > 0) {printf("Select device - "); fflush(NULL);}
   status = clGetPlatformIDs(0, NULL, &numplatforms);
@@ -327,9 +324,10 @@ int init_CL(int num_streams, cl_int *devnumber)
         std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetPlatformInfo(VENDOR)\n";
         return 1;
       }
+      platform = platformlist[i];  // use any platform, but ...
       if(strcmp(buf, "Advanced Micro Devices, Inc.") == 0)
       {
-        platform = platformlist[i];
+        break;  // ... prefer AMD, otherwise use the last one
       }
 #ifdef DETAILED_INFO
       std::cout << "OpenCL Platform " << (i+1) << "/" << numplatforms << ": " << buf;
@@ -378,7 +376,6 @@ int init_CL(int num_streams, cl_int *devnumber)
   if(status != CL_SUCCESS)
   {
     std::cerr << "Error " << status << " (" << ClErrorString(status) << "): clGetContextInfo(CL_CONTEXT_NUM_DEVICES) - assuming one device\n";
-    // return 1;
     num_devices = 1;
   }
 
@@ -526,6 +523,19 @@ int init_CL(int num_streams, cl_int *devnumber)
            "         please re-run this test on the CPU, or on a GPU with atomics.\n");
   }
 
+  if (strstr(deviceinfo.exts, "cl_khr_fp64") == NULL)
+  {
+    printf("\nINFO: Device does not support double precision operations. Disabling\n"
+      "      some kernels requiring support for doubles.\n");
+    // setting bix_max to 0 makes them unsuitable for any task. They still need to compile and be loadable.
+    kernel_info[BARRETT82_MUL15].bit_max = 0;
+    kernel_info[BARRETT82_MUL15_GS].bit_max = 0;
+    kernel_info[BARRETT83_MUL15].bit_max = 0;
+    kernel_info[BARRETT83_MUL15_GS].bit_max = 0;
+    kernel_info[BARRETT88_MUL15].bit_max = 0;
+    kernel_info[BARRETT88_MUL15_GS].bit_max = 0;
+  }
+
   deviceinfo.maxThreadsPerBlock = deviceinfo.wi_sizes[0];
   deviceinfo.maxThreadsPerGrid  = deviceinfo.wi_sizes[0];
   for (i=1; i<deviceinfo.w_dim && i<5; i++)
@@ -644,7 +654,7 @@ void set_gpu_type()
     }
     else if (strstr(deviceinfo.d_name, "Intel(R) HD Graphics"))
     {
-      mystuff.gpu_type = GPU_INTEL;  // not (yet) working
+      mystuff.gpu_type = GPU_INTEL;  // IntelHD
     }
     else
     {
@@ -882,24 +892,31 @@ int load_kernels(cl_int *devnumber)
     if (status != CL_SUCCESS) return 1;
   }
 
-  if (!binary_loaded && mystuff.binfile[0])
+  size_t numDevices=0;
+  char **binaries=NULL;
+  size_t *binarySizes=NULL;
+  while (!binary_loaded && mystuff.binfile[0]) // should be an if, but I want to use break on errors
   {
     // write the binary file if we did not load from there
-    size_t numDevices;
     status = clGetProgramInfo(
                  program,
                  CL_PROGRAM_NUM_DEVICES,
                  sizeof(numDevices),
                  &numDevices,
                  NULL );
-    if(status != CL_SUCCESS)
+    if(status != CL_SUCCESS || numDevices == 0)
     {
-       std::cerr << "clGetProgramInfo(CL_PROGRAM_NUM_DEVICES) failed.";
+      std::cerr << "clGetProgramInfo(CL_PROGRAM_NUM_DEVICES) failed. Cannot save binary kernel.\n";
+      break;
     }
 
     cl_device_id *devices = (cl_device_id *)malloc( sizeof(cl_device_id) *
                             numDevices );
-    if(!devices) std::cerr << "Failed to allocate host memory.(devices)";
+    if(!devices)
+    {
+      std::cerr << "Failed to allocate host memory.(devices, " << sizeof(cl_device_id) << " bytes)\n";
+      break;
+    }
     /* grab the handles to all of the devices in the program. */
     status = clGetProgramInfo(
                  program,
@@ -909,11 +926,16 @@ int load_kernels(cl_int *devnumber)
                  NULL );
     if(status != CL_SUCCESS)
     {
-       std::cerr << "clGetProgramInfo(CL_PROGRAM_DEVICES) failed.";
+      std::cerr << "clGetProgramInfo(CL_PROGRAM_DEVICES) failed.";
+      break;
     }
     /* figure out the sizes of each of the binaries. */
-    size_t *binarySizes = (size_t*)malloc( sizeof(size_t) * numDevices );
-    if (!binarySizes) std::cerr << "Failed to allocate host memory.(binarySizes)";
+    binarySizes = (size_t*)malloc( sizeof(size_t) * numDevices );
+    if (!binarySizes)
+    {
+      std::cerr << "Failed to allocate host memory.(binarySizes, " << (sizeof(size_t) * numDevices) << " bytes)\n";
+      break;
+    }
     status = clGetProgramInfo(
                  program,
                  CL_PROGRAM_BINARY_SIZES,
@@ -922,22 +944,31 @@ int load_kernels(cl_int *devnumber)
                  NULL);
     if(status != CL_SUCCESS)
     {
-       std::cerr << "clGetProgramInfo(CL_PROGRAM_BINARY_SIZES) failed.";
+      std::cerr << "clGetProgramInfo(CL_PROGRAM_BINARY_SIZES) failed.";
+      break;
     }
     // we copy only the first binary, but numDevices is usually 1 anyway
-    char **binaries = (char **)malloc( sizeof(char *) * numDevices );
-    if (!binaries) std::cerr << "Failed to allocate host memory.(binaries)";
+    binaries = (char **)calloc( sizeof(char *), numDevices );
+    if (!binaries)
+    {
+      std::cerr << "Failed to allocate host memory.(binaries, " << (sizeof(char *) * numDevices) << " bytes)\n";
+      break;
+    }
     for(i = 0; i < numDevices; i++)
     {
-        if(binarySizes[i] != 0)
+      if(binarySizes[i] != 0)
+      {
+        binaries[i] = (char *)malloc( sizeof(char) * binarySizes[i]);
+        if(!binaries[i])
         {
-            binaries[i] = (char *)malloc( sizeof(char) * binarySizes[i]);
-            if(!binaries[i]) std::cerr << "Failed to allocate host memory.(binaries[i])";
+          std::cerr << "Failed to allocate host memory.(binaries[i], " << (sizeof(char) * binarySizes[i]) << " bytes)\n";
+          break;
         }
-        else
-        {
-            binaries[i] = NULL;
-        }
+      }
+      else
+      {
+        binaries[i] = NULL;
+      }
     }
     status = clGetProgramInfo(
                  program,
@@ -948,6 +979,7 @@ int load_kernels(cl_int *devnumber)
     if(status != CL_SUCCESS)
     {
        std::cerr << "clGetProgramInfo(CL_PROGRAM_BINARIES) failed.";
+       break;
     }
     /* dump out each binary into its own separate file. */
     if (1 < numDevices)
@@ -967,6 +999,7 @@ int load_kernels(cl_int *devnumber)
         if(status != CL_SUCCESS)
         {
           std::cerr << "clGetProgramInfo(CL_DEVICE_NAME) failed.";
+          break;
         }
 
         std::fstream f(mystuff.binfile, (std::fstream::out | std::fstream::binary | std::fstream::trunc));
@@ -989,33 +1022,34 @@ int load_kernels(cl_int *devnumber)
         printf(
             "binary kernel(%s) : %s\n",
             mystuff.binfile,
-            "Skipping as there is no binary data to write.");
+            "Skipping as there is no binary data to write.\n");
         remove(mystuff.binfile);
     }
-    // Release all resouces and memory
-    for(i = 0; i < numDevices; i++)
+    break;
+  }
+  // Release all resouces and memory
+  for(i = 0; i < numDevices; i++)
+  {
+    if(binaries != NULL && binaries[i] != NULL)
     {
-        if(binaries[i] != NULL)
-        {
-            free(binaries[i]);
-            binaries[i] = NULL;
-        }
+      free(binaries[i]);
+      binaries[i] = NULL;
     }
-    if(binaries != NULL)
-    {
-        free(binaries);
-        binaries = NULL;
-    }
-    if(binarySizes != NULL)
-    {
-        free(binarySizes);
-        binarySizes = NULL;
-    }
-    if(devices != NULL)
-    {
-        free(devices);
-        devices = NULL;
-    }
+  }
+  if(binaries != NULL)
+  {
+    free(binaries);
+    binaries = NULL;
+  }
+  if(binarySizes != NULL)
+  {
+    free(binarySizes);
+    binarySizes = NULL;
+  }
+  if(devices != NULL)
+  {
+    free(devices);
+    devices = NULL;
   }
 
   /* get kernels by name */
@@ -1033,7 +1067,7 @@ int load_kernels(cl_int *devnumber)
   }
   else
   {
-    for (i=CL_CALC_BIT_TO_CLEAR; i<=BARRETT74_MUL15_GS; i++)
+    for (i=CL_CALC_BIT_TO_CLEAR; i<UNKNOWN_GS_KERNEL; i++)
     {
       kernel_info[i].kernel = clCreateKernel(program, kernel_info[i].kernelname, &status);
       if(status != CL_SUCCESS)
@@ -1393,7 +1427,6 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1))) SegSieve (__globa
 */
 cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event, cl_uint maxp)
 {
-  static cl_uint last_maxp = 0xFFFFFFFF;  // 0 is a bad choice for "uninitialized" as it can happen for small GPUSievePrimes
   cl_int         status;
   size_t         globalThreads = numblocks * localThreads;
 
@@ -1402,9 +1435,8 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
         (int) numblocks, (int) localThreads, (int) globalThreads, mystuff.exponent, maxp);
 #endif
 
-  if (last_maxp != maxp) // only copy primes-per-thread if it changed
+  if (0xFFFFFFFF != maxp) // only copy primes-per-thread if it changed, otherwise this function receives 0xFFFFFFFF as "unchanged"
   {
-    last_maxp = maxp;
     status = clSetKernelArg(kernel_info[CL_SIEVE].kernel,
                     2,
                     sizeof(cl_uint),
@@ -1743,7 +1775,7 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
   run_kernel24(kernel_info[use_kernel].kernel, exp, k_base, i, b_preinit, mystuff->d_RES, shiftcount);
 */
 {
-  cl_int   status, argnum;
+  cl_int   status;
   /*
   __kernel void mfakto_cl_71(__private uint exp, __private int72_t k_base,
                              __global uint *k_tab, __private int shiftcount,
@@ -1802,25 +1834,11 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
       std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (b_preinit)\n";
       return 1;
     }
-    argnum=6;
-    if ((kernel_info[BARRETT70_MUL24].kernel == l_kernel))
-    {
-      /* the bit_max-64 for the barrett kernels (the others ignore it) */
-      status = clSetKernelArg(l_kernel,
-                      6,
-                      sizeof(cl_int),
-                      (void *)&bin_min63);
-      if(status != CL_SUCCESS)
-      {
-        std::cerr<<"Warning " << status << " (" << ClErrorString(status) << "): Setting kernel argument. (bit_min)\n";
-      }
-      argnum=7;
-    }
 #ifdef CHECKS_MODBASECASE
-    if ((kernel_info[_71BIT_MUL24].kernel == l_kernel) || (kernel_info[_63BIT_MUL24].kernel == l_kernel) || (kernel_info[BARRETT70_MUL24].kernel == l_kernel))
+    if ((kernel_info[_71BIT_MUL24].kernel == l_kernel) || (kernel_info[_63BIT_MUL24].kernel == l_kernel))
     {
       status = clSetKernelArg(l_kernel,
-                    argnum,
+                    6,
                     sizeof(cl_mem),
                     (void *)&mystuff.d_modbasecase_debug);
       if(status != CL_SUCCESS)
@@ -2506,6 +2524,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     else             b_in.s[7]=1<<(ln2b-165);
   }
 
+
   {
     if     (ln2b<32 )b_192.d0=1<< ln2b;       // should not happen
     else if(ln2b<64 )b_192.d1=1<<(ln2b-32);   // should not happen
@@ -2697,7 +2716,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
           }
         case PREPARED:                   // start the calculation of a preprocessed dataset on the device
           {
-            if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24))
+            if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24))
             {
               k_base.d0 =  k_min_grid[i] & 0xFFFFFF;
               k_base.d1 = (k_min_grid[i] >> 24) & 0xFFFFFF;
@@ -3018,7 +3037,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
       continue;
     }
 
-    if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24) || (use_kernel == BARRETT70_MUL24))
+    if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24))
     {
       print_dez72(factor, string);
     }
