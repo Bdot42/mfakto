@@ -237,4 +237,8 @@ typedef struct _int160_v
 #define AS_ULONG_V CONC(as_ulong,VECTOR_SIZE)
 #endif
 
+#define CONVERT_FLOAT convert_float
+#define CONVERT_FLOAT_RTP convert_float
+#define CONVERT_DOUBLE convert_double
+#define CONVERT_DOUBLE_RTP convert_double
 

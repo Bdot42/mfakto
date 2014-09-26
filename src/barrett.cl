@@ -26,8 +26,8 @@ Version 0.15
  ****************************************
  ****************************************/
 
-void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, const float_v nf   MODBASECASE_PAR_DEF);
-void div_160_96(int96_v * const res, __private int192_v q, const int96_v n, const float_v nf   MODBASECASE_PAR_DEF);
+void div_192_96(int96_v * const res, __private uint qd5, const int96_v n, const float_v nf   MODBASECASE_PAR_DEF);
+void div_160_96(int96_v * const res, __private uint qd5, const int96_v n, const float_v nf   MODBASECASE_PAR_DEF);
 void mul_96(int96_v * const res, const int96_v a, const int96_v b);
 void mul_96_192_no_low2(int192_v *const res, const int96_v a, const int96_v b);
 void mul_96_192_no_low3(int192_v *const res, const int96_v a, const int96_v b);
@@ -258,28 +258,581 @@ void shl_192(int192_v * const a)
   a->d0 = a->d0 << 1;
 }
 
-
 #undef DIV_160_96
-void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, const float_v nf   MODBASECASE_PAR_DEF)
+
+#if defined cl_khr_fp64 && ! defined GCN
+void div_192_96_d(int96_v * const res, __private uint qd5, const int96_v n, const double_v nf   MODBASECASE_PAR_DEF)
 /* res = q / n (integer division) */
 {
-  __private float_v qf;
-  __private uint_v qi, tmp, carry;
-  __private int192_v nn;
+  __private double_v qf;
+  __private double qf_1; // the first conversion does not need a vector yet
+  __private ulong_v qi;
+  __private uint_v qi_l, qi_h, tmp, carry;
+  __private int192_v nn, q = {0, 0, 0, 0, 0, qd5};
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
-  qf= CONVERT_FLOAT_V(q.d5);
-  qf= qf * 4294967296.0f;  // combining this and the the below 2M multiplier makes it slower!
+  qf_1 = CONVERT_DOUBLE(qd5);
+  qf_1 = qf_1 * 4294967296.0 * 4294967296.0;
 #else
-#ifdef CHECKS_MODBASECASE
+#if defined CHECKS_MODBASECASE || TRACE_KERNEL > 1
     q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
 #endif
+  // div_160_96 will always be called with qd5 = 1 ==> q = 2^160 
+  qf_1 = 4294967296.0 * 4294967296.0;
+#endif
+  qf_1 = qf_1 * 4294967296.0 * 65536.0;
+
+  qi = CONVERT_ULONG_V(qf_1*nf);
+
+  MODBASECASE_QI_ERROR(1UL<<49, 1, qi, 0);
+
+  res->d2 = qi_h = CONVERT_UINT_V(qi >> 16);
+  res->d1 = qi_l = CONVERT_UINT_V(qi << 16);
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%llx, nf=%G\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%llx, nf=%G\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, nf);
+#endif
+#endif
+
+// nn = n * qi
+// 3 x 2 components => 6x mul + 6x mul_hi
+  nn.d0  = n.d0 * qi_l; // 1
+
+  nn.d1  = mul_hi(n.d0, qi_l); // 1
+  tmp    = n.d1 * qi_l; // 2
+  nn.d1 += tmp;
+  nn.d2  = AS_UINT_V(tmp > nn.d1);
+  tmp    = n.d0 * qi_h; // 3
+  nn.d1 += tmp;
+  nn.d2 += AS_UINT_V(tmp > nn.d1);
+
+  tmp    = mul_hi(n.d1, qi_l); // 2
+  nn.d2  = tmp - nn.d2; // carries are negative in OpenCL vectors; in fact this is an addition
+  nn.d3  = AS_UINT_V(tmp > nn.d2);
+  tmp    = n.d2 * qi_l; // 4
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V(tmp > nn.d2);
+  tmp    = mul_hi(n.d0, qi_h); // 3
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V(tmp > nn.d2);
+  tmp    = n.d1 * qi_h; // 5
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V(tmp > nn.d2);
+
+  tmp    = mul_hi(n.d2, qi_l); // 4
+  nn.d3  = tmp - nn.d3; // add negative carries
+  nn.d4  = AS_UINT_V(tmp > nn.d3);
+  tmp    = mul_hi(n.d1, qi_h); // 5
+  nn.d3 += tmp;
+  nn.d4 += AS_UINT_V(tmp > nn.d3);
+  tmp    = n.d2 * qi_h; // 6
+  nn.d3 += tmp;
+  nn.d4 += AS_UINT_V(tmp > nn.d3);
+
+  nn.d4  = mul_hi(n.d2, qi_h) - nn.d4; // 6
+
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.2: nn=%x:%x:%x:%x:%x, qi=%x:%x\n",
+        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, qi_h.s0, qi_l.s0);
+#else
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.2: nn=%x:%x:%x:%x:%x, qi=%x:%x\n",
+        nn.d4, nn.d3, nn.d2, nn.d1, nn.d0, qi_h, qi_l);
+#endif
+#endif
+
+// q = q - nn;
+
+}
+#else
+void div_192_96(int96_v * const res, __private uint qd5, const int96_v n, const float_v nf   MODBASECASE_PAR_DEF)
+/* res = q / n (integer division) */
+{
+  __private float_v qf;
+  __private float qf_1; // to do the first few calculations once per vector, as long as all vector elements would do the same.
+  __private uint_v qi, tmp, carry;
+  __private int192_v nn, q = {0,0,0,0,0,qd5};
+
+/********** Step 1, Offset 2^75 (2*32 + 11) **********/
+#ifndef DIV_160_96
+  qf_1 = CONVERT_FLOAT(qd5);
+  qf_1 = qf_1 * 9007199254740992.0f;
+#else
+  // qf_1 = 1.0f; // DIV_160_96 will always be called with qd5=1
+  qf_1 = 9007199254740992.0f;
+#endif
+
+  qi=CONVERT_UINT_V(qf_1*nf); // the multiplication implicitely promotes qf_1 to a vector of the right size
+
+  MODBASECASE_QI_ERROR(1<<22, 1, qi, 0);
+
+  res->d2 = qi << 11;
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, nf);
+#endif
+#endif
+
+// nn = n * qi
+  nn.d0  = n.d0 * qi;
+  nn.d1  = mul_hi(n.d0, qi);
+  tmp    = n.d1 * qi;
+  nn.d1 += tmp;
+  nn.d2  = AS_UINT_V(tmp > nn.d1);
+  tmp    = mul_hi(n.d1, qi);
+  nn.d2  = tmp - nn.d2;
+#ifndef DIV_160_96
+  nn.d3  = AS_UINT_V(tmp > nn.d2);
+  tmp    = n.d2 * qi;
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V(tmp > nn.d2);
+  nn.d3  = mul_hi(n.d2, qi) - nn.d3;
+#else
+  nn.d2 += n.d2 * qi;
+#endif
+
+// shiftleft nn 11 bits
+#ifndef DIV_160_96
+  nn.d3 = (nn.d3 << 11) + (nn.d2 >> 21);
+#endif
+  nn.d2 = amd_bitalign(nn.d2, nn.d1, 21);
+  nn.d1 = amd_bitalign(nn.d1, nn.d0, 21);
+//  nn.d2 = (nn.d2 << 11) + (nn.d1 >> 21);
+//  nn.d1 = (nn.d1 << 11) + (nn.d0 >> 21);
+  nn.d0 =  nn.d0 << 11;
+
+//  q = q - nn
+  carry= AS_UINT_V(nn.d0 > q.d2);
+  q.d2 = q.d2 - nn.d0;
+
+  tmp  = q.d3 - nn.d1 + carry ;
+  carry= AS_UINT_V((tmp > q.d3) || (carry && AS_UINT_V(tmp == q.d3)));
+  q.d3 = tmp;
+
+#ifndef DIV_160_96
+  tmp  = q.d4 - nn.d2 + carry;
+  carry= AS_UINT_V((tmp > q.d4) || (carry && AS_UINT_V(tmp == q.d4)));
+  q.d4 = tmp;
+  q.d5 = q.d5 - nn.d3 + carry;
+#else
+  q.d4 = q.d4 - nn.d2 + carry;
+#endif
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1: q=%x:%x:%x:%x, nn=%x:%x:%x:%x, res=%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d2.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1: q=%x:%x:%x:%x, nn=%x:%x:%x:%x, res=%x\n",
+        q.d5, q.d4, q.d3, q.d2, nn.d3, nn.d2, nn.d1, nn.d0, res->d2);
+#endif
+#endif
+/********** Step 2, Offset 2^55 (1*32 + 23) **********/
+#ifndef DIV_160_96
+  qf= CONVERT_FLOAT_V(q.d5);
+  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d4);
+#else
   qf= CONVERT_FLOAT_V(q.d4);
 #endif
-  qf*= 2097152.0f;
+  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
+  qf*= 512.0f;
 
-  qi=CONVERT_UINT_V(qf*nf);
+  qi= CONVERT_UINT_V(qf*nf);
+
+  MODBASECASE_QI_ERROR(1<<22, 2, qi, 1);
+
+  res->d1 =  qi << 23;
+  res->d2 += qi >>  9;
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, nf);
+#endif
+#endif
+
+// nn = n * qi
+  nn.d0 = n.d0 * qi;
+  nn.d1  = mul_hi(n.d0, qi);
+  tmp    = n.d1* qi;
+  nn.d1 += tmp;
+  nn.d2  = AS_UINT_V(tmp > nn.d1);
+  tmp    = mul_hi(n.d1, qi);
+  nn.d2  = tmp - nn.d2;
+  nn.d3  = AS_UINT_V(tmp > nn.d2);
+  tmp    = n.d2* qi;
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V(tmp > nn.d2);
+  nn.d3  = mul_hi(n.d2, qi) - nn.d3;
+
+  // shiftleft nn 23 bits
+#ifdef CHECKS_MODBASECASE
+  nn.d4 =                  nn.d3 >> 9;
+#endif
+//  nn.d3 = amd_bitalign(nn.d3, nn.d2, 9);
+  nn.d3 = (nn.d3 << 23) + (nn.d2 >> 9);
+  nn.d2 = amd_bitalign(nn.d2, nn.d1, 9);
+//  nn.d2 = (nn.d2 << 23) + (nn.d1 >> 9);
+//  nn.d1 = amd_bitalign(nn.d1, nn.d0, 9);
+  nn.d1 = (nn.d1 << 23) + (nn.d0 >> 9);
+  nn.d0 =  nn.d0 << 23;
+
+// q = q - nn
+  carry= AS_UINT_V(nn.d0 > q.d1);
+  q.d1 = q.d1 - nn.d0;
+
+  tmp  = q.d2 - nn.d1 + carry;
+  carry= AS_UINT_V((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2)));
+  q.d2 = tmp;
+
+  tmp  = q.d3 - nn.d2 + carry;
+  carry= AS_UINT_V((tmp > q.d3) || (carry && AS_UINT_V(tmp == q.d3)));
+  q.d3 = tmp;
+#if (TRACE_KERNEL > 4)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.6: q=%x:%x:%x:%x:%x, nn=%x:%x:%x:%x, tmp=%x, c=%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, tmp.s0, carry.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.6: q=%x:%x:%x:%x:%x, nn=%x:%x:%x:%x, tmp=%x, c=%x\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, nn.d3, nn.d2, nn.d1, nn.d0, tmp, carry);
+//    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.6: q.d4=%x, carry=%x, nn.d3=%x\n",
+//        q.d4, carry, nn.d3);
+#endif
+#endif
+
+#ifdef CHECKS_MODBASECASE
+  tmp  = q.d4 - nn.d3 + carry;
+  carry= AS_UINT_V((tmp > q.d4) || (carry && AS_UINT_V(tmp == q.d4)));
+  q.d4 = tmp;
+  q.d5 = q.d5 - nn.d4 + carry;
+#else
+  q.d4 = q.d4 - nn.d3 + carry;
+#endif
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2: q=%x:%x:%x:%x:%x(c=%x), nn=%x:%x:%x:%x, res=%x:%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, carry.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d2.s0, res->d1.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2: q=%x:%x:%x:%x:%x(c=%x), nn=%x:%x:%x:%x, res=%x:%x\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, carry, nn.d3, nn.d2, nn.d1, nn.d0, res->d2, res->d1);
+//    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.7: q.d4=%x, carry=%x, nn.d3=%x\n",
+//        q.d4, carry, nn.d3);
+#endif
+#endif
+
+/********** Step 3, Offset 2^35 (1*32 + 3) **********/
+  MODBASECASE_NONZERO_ERROR(q.d5, 3, 5, 2);
+
+  qf= CONVERT_FLOAT_V(q.d4);
+  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
+  qf*= 536870912.0f; // add (q.d1 >> 3) ???
+//  qf*= 4294967296.0f; /* this includes the shiftleft of qi by 3 bits! */
+
+  qi= CONVERT_UINT_V(qf*nf);
+
+  MODBASECASE_QI_ERROR(1<<22, 3, qi, 3);
+
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div3.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div3.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, nf);
+#endif
+#endif
+
+  tmp     = (qi << 3);
+  res->d1 = res->d1 + tmp;
+  res->d2 = res->d2 + (qi >> 29) - AS_UINT_V(tmp > res->d1);
+
+// shiftleft qi 3 bits to avoid "long shiftleft" after multiplication
+  qi <<= 3;
+
+
+// nn = n * qi
+
+  nn.d0 = n.d0 * qi;
+  nn.d1  = mul_hi(n.d0, qi);
+  tmp    = n.d1* qi;
+  nn.d1 += tmp;
+  nn.d2  = AS_UINT_V(tmp > nn.d1);
+  tmp    = mul_hi(n.d1, qi);
+  nn.d2  = tmp - nn.d2;
+  nn.d3  = AS_UINT_V(tmp > nn.d2);
+  tmp    = n.d2* qi;
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V(tmp > nn.d2);
+  nn.d3  = mul_hi(n.d2, qi) - nn.d3;
+
+//  q = q - nn
+  carry= AS_UINT_V(nn.d0 > q.d1);
+  q.d1 = q.d1 - nn.d0;
+
+  tmp  = q.d2 - nn.d1 + carry;
+  carry= AS_UINT_V((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2)));
+  q.d2 = tmp;
+
+  tmp  = q.d3 - nn.d2 + carry;
+  carry= AS_UINT_V((tmp > q.d3) || (carry && AS_UINT_V(tmp == q.d3)));
+  q.d3 = tmp;
+
+  q.d4 = q.d4 - nn.d3 + carry;
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div3: q=%x:%x:%x:%x:%x:(c=%x), nn=%x:%x:%x:%x, res=%x:%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, carry.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d2.s0, res->d1.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div3: q=%x:%x:%x:%x:%x(c=%x), nn=%x:%x:%x:%x, res=%x:%x\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, carry, nn.d3, nn.d2, nn.d1, nn.d0, res->d2, res->d1);
+//    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.7: q.d4=%x, carry=%x, nn.d3=%x\n",
+//        q.d4, carry, nn.d3);
+#endif
+#endif
+
+/********** Step 4, Offset 2^15 (0*32 + 15) **********/
+  qf= CONVERT_FLOAT_V(q.d4);
+  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
+  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
+  qf*= 131072.0f;
+
+  qi= CONVERT_UINT_V(qf*nf);
+
+  MODBASECASE_QI_ERROR(1<<22, 4, qi, 5);
+
+  tmp     = qi >> 17;
+  res->d0 = qi << 15;
+  res->d1 = res->d1 + tmp;
+  res->d2 = res->d2 - AS_UINT_V(tmp > res->d1);
+
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4.1: q=%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4.1: q=%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, n.d2, n.d1, n.d0, qi, nf);
+#endif
+#endif
+
+// nn = n * qi
+  nn.d0  = n.d0 * qi;
+  nn.d1  = mul_hi(n.d0, qi);
+  tmp    = n.d1* qi;
+  nn.d1 += tmp;
+  nn.d2  = AS_UINT_V(tmp > nn.d1);
+  tmp    = mul_hi(n.d1, qi);
+  nn.d2  = tmp - nn.d2;
+  nn.d3  = AS_UINT_V(tmp > nn.d2);
+  tmp    = n.d2* qi;
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V(tmp > nn.d2);
+  nn.d3  = mul_hi(n.d2, qi) - nn.d3;
+
+// shiftleft nn 15 bits
+#ifdef CHECKS_MODBASECASE
+  nn.d4 =                  nn.d3 >> 17;
+#endif
+  nn.d3 = (nn.d3 << 15) + (nn.d2 >> 17);
+  nn.d2 = (nn.d2 << 15) + (nn.d1 >> 17);
+  nn.d1 = (nn.d1 << 15) + (nn.d0 >> 17);
+  nn.d0 =  nn.d0 << 15;
+
+//  q = q - nn
+  carry= AS_UINT_V(nn.d0 > q.d0);
+  q.d0 = q.d0 - nn.d0;
+
+  tmp  = q.d1 - nn.d1 + carry;
+  carry= AS_UINT_V((tmp > q.d1) || (carry && AS_UINT_V(tmp == q.d1)));
+  q.d1 = tmp;
+
+  tmp  = q.d2 - nn.d2 + carry;
+  carry= AS_UINT_V((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2)));
+  q.d2 = tmp;
+
+#ifndef CHECKS_MODBASECASE
+  q.d3 = q.d3 - nn.d3 + carry;
+#else
+  tmp  = q.d3 - nn.d3 + carry;
+  carry= AS_UINT_V((tmp > q.d3) || (carry && AS_UINT_V(tmp == q.d3)));
+  q.d3 = tmp;
+
+  q.d4 = q.d4 - nn.d4 + carry;
+#endif
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4: q=%x:%x:%x:%x:%x:%x(c=%x), nn=%x:%x:%x:%x, res=%x:%x:%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, carry.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4: q=%x:%x:%x:%x:%x:%x(c=%x), nn=%x:%x:%x:%x, res=%x:%x:%x\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, carry, nn.d3, nn.d2, nn.d1, nn.d0, res->d2, res->d1, res->d0);
+#endif
+#endif
+
+
+/********** Step 5, Offset 2^0 (0*32 + 0) **********/
+  MODBASECASE_NONZERO_ERROR(q.d4, 5, 4, 7);
+
+  qf= CONVERT_FLOAT_V(q.d3);
+  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
+  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d1);
+
+  qi= CONVERT_UINT_V(qf*nf);
+
+  MODBASECASE_QI_ERROR(1<<20, 5, qi, 8);
+
+  res->d0 += qi;
+  carry    = AS_UINT_V(qi > res->d0);
+  tmp      = res->d1 - carry;
+  res->d2 -= AS_UINT_V(tmp < res->d1);
+  res->d1  = tmp;
+
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div5: qi=%x, nf=%G, res=%x:%x:%x\n",
+        qi.s0, nf.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div5: qi=%x, nf=%G, res=%x:%x:%x\n",
+        qi, nf, res->d2, res->d1, res->d0);
+#endif
+#endif
+
+
+  return;
+
+// not finishing the final multiplication/subtraction/comparison leaves the result off by 1 at most.
+}
+#endif
+
+
+#define DIV_160_96
+#if defined cl_khr_fp64 && ! defined GCN
+void div_160_96_d(int96_v * const res, __private uint qd5, const int96_v n, const double_v nf   MODBASECASE_PAR_DEF)
+/* res = q / n (integer division) */
+/* the code of div_160_96() is an EXACT COPY of div_192_96(), the only
+difference is that the 160bit version ignores the most significant
+word of q (q.d5) because it assumes it is 0. This is controlled by defining
+DIV_160_96 here. */
+{
+  __private double_v qf;
+  __private double qf_1; // the first conversion does not need a vector yet
+  __private ulong_v qi;
+  __private uint_v qi_l, qi_h, tmp, carry;
+  __private int192_v nn, q = {0, 0, 0, 0, 0, qd5};
+
+/********** Step 1, Offset 2^75 (2*32 + 11) **********/
+#ifndef DIV_160_96
+  qf_1 = CONVERT_DOUBLE(qd5);
+  qf_1 = qf_1 * 4294967296.0 * 4294967296.0;
+#else
+#if defined CHECKS_MODBASECASE || TRACE_KERNEL > 1
+    q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
+#endif
+  // div_160_96 will always be called with qd5 = 1 ==> q = 2^160 
+  qf_1 = 4294967296.0 * 4294967296.0;
+#endif
+  qf_1 = qf_1 * 4294967296.0 * 65536.0;
+
+  qi = CONVERT_ULONG_V(qf_1*nf);
+
+  MODBASECASE_QI_ERROR(1UL<<49, 1, qi, 0);
+
+  res->d2 = qi_h = CONVERT_UINT_V(qi >> 16);
+  res->d1 = qi_l = CONVERT_UINT_V(qi << 16);
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%llx, nf=%G\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%llx, nf=%G\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, nf);
+#endif
+#endif
+
+// nn = n * qi
+// 3 x 2 components => 6x mul + 6x mul_hi
+  nn.d0  = n.d0 * qi_l; // 1
+
+  nn.d1  = mul_hi(n.d0, qi_l); // 1
+  tmp    = n.d1 * qi_l; // 2
+  nn.d1 += tmp;
+  nn.d2  = AS_UINT_V(tmp > nn.d1);
+  tmp    = n.d0 * qi_h; // 3
+  nn.d1 += tmp;
+  nn.d2 += AS_UINT_V(tmp > nn.d1);
+
+  tmp    = mul_hi(n.d1, qi_l); // 2
+  nn.d2  = tmp - nn.d2; // carries are negative in OpenCL vectors; in fact this is an addition
+  nn.d3  = AS_UINT_V(tmp > nn.d2);
+  tmp    = n.d2 * qi_l; // 4
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V(tmp > nn.d2);
+  tmp    = mul_hi(n.d0, qi_h); // 3
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V(tmp > nn.d2);
+  tmp    = n.d1 * qi_h; // 5
+  nn.d2 += tmp;
+  nn.d3 += AS_UINT_V(tmp > nn.d2);
+
+  tmp    = mul_hi(n.d2, qi_l); // 4
+  nn.d3  = tmp - nn.d3; // add negative carries
+  nn.d4  = AS_UINT_V(tmp > nn.d3);
+  tmp    = mul_hi(n.d1, qi_h); // 5
+  nn.d3 += tmp;
+  nn.d4 += AS_UINT_V(tmp > nn.d3);
+  tmp    = n.d2 * qi_h; // 6
+  nn.d3 += tmp;
+  nn.d4 += AS_UINT_V(tmp > nn.d3);
+
+  nn.d4  = mul_hi(n.d2, qi_h) - nn.d4; // 6
+
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.2: nn=%x:%x:%x:%x:%x, qi=%x:%x\n",
+        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, qi_h.s0, qi_l.s0);
+#else
+  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.2: nn=%x:%x:%x:%x:%x, qi=%x:%x\n",
+        nn.d4, nn.d3, nn.d2, nn.d1, nn.d0, qi_h, qi_l);
+#endif
+#endif
+
+// q = q - nn;
+
+}
+#endif
+
+void div_160_96(int96_v * const res, __private uint qd5, const int96_v n, const float_v nf   MODBASECASE_PAR_DEF)
+/* res = q / n (integer division) */
+/* the code of div_160_96() is an EXACT COPY of div_192_96(), the only
+difference is that the 160bit version ignores the most significant
+word of q (q.d5) because it assumes it is 0. This is controlled by defining
+DIV_160_96 here. */
+{
+  __private float_v qf;
+  __private float qf_1; // to do the first few calculations once per vector, as long as all vector elements would do the same.
+  __private uint_v qi, tmp, carry;
+  __private int192_v nn, q = {0,0,0,0,0,qd5};
+
+/********** Step 1, Offset 2^75 (2*32 + 11) **********/
+#ifndef DIV_160_96
+  qf_1 = CONVERT_FLOAT(qd5);
+  qf_1 = qf_1 * 9007199254740992.0f
+#else
+  // qf_1 = 1.0f; // DIV_160_96 will always be called with qd5=1
+  qf_1 = 9007199254740992.0f;
+#endif
+
+  qi=CONVERT_UINT_V(qf_1*nf); // the multiplication implicitely promotes qf_1 to a vector of the right size
 
   MODBASECASE_QI_ERROR(1<<22, 1, qi, 0);
 
@@ -625,379 +1178,6 @@ void div_192_96(int96_v * const res, __private int192_v q, const int96_v n, cons
 // not finishing the final multiplication/subtraction/comparison leaves the result off by 1 at most.
 }
 
-
-#define DIV_160_96
-void div_160_96(int96_v * const res, __private int192_v q, const int96_v n, const float_v nf   MODBASECASE_PAR_DEF)
-/* res = q / n (integer division) */
-/* the code of div_160_96() is an EXACT COPY of div_192_96(), the only
-difference is that the 160bit version ignores the most significant
-word of q (q.d5) because it assumes it is 0. This is controlled by defining
-DIV_160_96 here. */
-{
-  __private float_v qf;
-  __private uint_v qi, tmp, carry;
-  __private int192_v nn;
-
-/********** Step 1, Offset 2^75 (2*32 + 11) **********/
-#ifndef DIV_160_96
-  qf= CONVERT_FLOAT_V(q.d5);
-  qf= qf * 4294967296.0f;  // combining this and the the below 2M multiplier makes it slower!
-#else
-#if defined CHECKS_MODBASECASE || (TRACE_KERNEL > 1)
-    q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
-#endif
-  qf= CONVERT_FLOAT_V(q.d4);
-#endif
-  qf*= 2097152.0f;
-
-  qi=CONVERT_UINT_V(qf*nf);
-
-  MODBASECASE_QI_ERROR(1<<22, 1, qi, 0);
-
-  res->d2 = qi << 11;
-#if (TRACE_KERNEL > 2)
-#if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
-#else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, nf);
-#endif
-#endif
-
-// nn = n * qi
-  nn.d0  = n.d0 * qi;
-  nn.d1  = mul_hi(n.d0, qi);
-  tmp    = n.d1 * qi;
-  nn.d1 += tmp;
-  nn.d2  = AS_UINT_V(tmp > nn.d1);
-  tmp    = mul_hi(n.d1, qi);
-  nn.d2  = tmp - nn.d2;
-#ifndef DIV_160_96
-  nn.d3  = AS_UINT_V(tmp > nn.d2);
-  tmp    = n.d2 * qi;
-  nn.d2 += tmp;
-  nn.d3 += AS_UINT_V(tmp > nn.d2);
-  nn.d3  = mul_hi(n.d2, qi) - nn.d3;
-#else
-  nn.d2 += n.d2 * qi;
-#endif
-
-// shiftleft nn 11 bits
-#ifndef DIV_160_96
-  nn.d3 = (nn.d3 << 11) + (nn.d2 >> 21);
-#endif
-  nn.d2 = amd_bitalign(nn.d2, nn.d1, 21);
-  nn.d1 = amd_bitalign(nn.d1, nn.d0, 21);
-//  nn.d2 = (nn.d2 << 11) + (nn.d1 >> 21);
-//  nn.d1 = (nn.d1 << 11) + (nn.d0 >> 21);
-  nn.d0 =  nn.d0 << 11;
-
-//  q = q - nn
-  carry= AS_UINT_V(nn.d0 > q.d2);
-  q.d2 = q.d2 - nn.d0;
-
-  tmp  = q.d3 - nn.d1 + carry ;
-  carry= AS_UINT_V((tmp > q.d3) || (carry && AS_UINT_V(tmp == q.d3)));
-  q.d3 = tmp;
-
-#ifndef DIV_160_96
-  tmp  = q.d4 - nn.d2 + carry;
-  carry= AS_UINT_V((tmp > q.d4) || (carry && AS_UINT_V(tmp == q.d4)));
-  q.d4 = tmp;
-  q.d5 = q.d5 - nn.d3 + carry;
-#else
-  q.d4 = q.d4 - nn.d2 + carry;
-#endif
-#if (TRACE_KERNEL > 2)
-#if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1: q=%x:%x:%x:%x, nn=%x:%x:%x:%x, res=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d2.s0);
-#else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1: q=%x:%x:%x:%x, nn=%x:%x:%x:%x, res=%x\n",
-        q.d5, q.d4, q.d3, q.d2, nn.d3, nn.d2, nn.d1, nn.d0, res->d2);
-#endif
-#endif
-/********** Step 2, Offset 2^55 (1*32 + 23) **********/
-#ifndef DIV_160_96
-  qf= CONVERT_FLOAT_V(q.d5);
-  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d4);
-#else
-  qf= CONVERT_FLOAT_V(q.d4);
-#endif
-  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
-  qf*= 512.0f;
-
-  qi= CONVERT_UINT_V(qf*nf);
-
-  MODBASECASE_QI_ERROR(1<<22, 2, qi, 1);
-
-  res->d1 =  qi << 23;
-  res->d2 += qi >>  9;
-#if (TRACE_KERNEL > 2)
-#if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
-#else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, nf);
-#endif
-#endif
-
-// nn = n * qi
-  nn.d0 = n.d0 * qi;
-  nn.d1  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d1 += tmp;
-  nn.d2  = AS_UINT_V(tmp > nn.d1);
-  tmp    = mul_hi(n.d1, qi);
-  nn.d2  = tmp - nn.d2;
-  nn.d3  = AS_UINT_V(tmp > nn.d2);
-  tmp    = n.d2* qi;
-  nn.d2 += tmp;
-  nn.d3 += AS_UINT_V(tmp > nn.d2);
-  nn.d3  = mul_hi(n.d2, qi) - nn.d3;
-
-  // shiftleft nn 23 bits
-#ifdef CHECKS_MODBASECASE
-  nn.d4 =                  nn.d3 >> 9;
-#endif
-//  nn.d3 = amd_bitalign(nn.d3, nn.d2, 9);
-  nn.d3 = (nn.d3 << 23) + (nn.d2 >> 9);
-  nn.d2 = amd_bitalign(nn.d2, nn.d1, 9);
-//  nn.d2 = (nn.d2 << 23) + (nn.d1 >> 9);
-//  nn.d1 = amd_bitalign(nn.d1, nn.d0, 9);
-  nn.d1 = (nn.d1 << 23) + (nn.d0 >> 9);
-  nn.d0 =  nn.d0 << 23;
-
-// q = q - nn
-  carry= AS_UINT_V(nn.d0 > q.d1);
-  q.d1 = q.d1 - nn.d0;
-
-  tmp  = q.d2 - nn.d1 + carry;
-  carry= AS_UINT_V((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2)));
-  q.d2 = tmp;
-
-  tmp  = q.d3 - nn.d2 + carry;
-  carry= AS_UINT_V((tmp > q.d3) || (carry && AS_UINT_V(tmp == q.d3)));
-  q.d3 = tmp;
-#if (TRACE_KERNEL > 4)
-#if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.6: q=%x:%x:%x:%x:%x, nn=%x:%x:%x:%x, tmp=%x, c=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, tmp.s0, carry.s0);
-#else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.6: q=%x:%x:%x:%x:%x, nn=%x:%x:%x:%x, tmp=%x, c=%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, nn.d3, nn.d2, nn.d1, nn.d0, tmp, carry);
-//    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.6: q.d4=%x, carry=%x, nn.d3=%x\n",
-//        q.d4, carry, nn.d3);
-#endif
-#endif
-
-#ifdef CHECKS_MODBASECASE
-  tmp  = q.d4 - nn.d3 + carry;
-  carry= AS_UINT_V((tmp > q.d4) || (carry && AS_UINT_V(tmp == q.d4)));
-  q.d4 = tmp;
-  q.d5 = q.d5 - nn.d4 + carry;
-#else
-  q.d4 = q.d4 - nn.d3 + carry;
-#endif
-#if (TRACE_KERNEL > 2)
-#if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2: q=%x:%x:%x:%x:%x(c=%x), nn=%x:%x:%x:%x, res=%x:%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, carry.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d2.s0, res->d1.s0);
-#else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2: q=%x:%x:%x:%x:%x(c=%x), nn=%x:%x:%x:%x, res=%x:%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, carry, nn.d3, nn.d2, nn.d1, nn.d0, res->d2, res->d1);
-//    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.7: q.d4=%x, carry=%x, nn.d3=%x\n",
-//        q.d4, carry, nn.d3);
-#endif
-#endif
-
-/********** Step 3, Offset 2^35 (1*32 + 3) **********/
-  MODBASECASE_NONZERO_ERROR(q.d5, 3, 5, 2);
-
-  qf= CONVERT_FLOAT_V(q.d4);
-  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
-  qf*= 536870912.0f; // add (q.d1 >> 3) ???
-//  qf*= 4294967296.0f; /* this includes the shiftleft of qi by 3 bits! */
-
-  qi= CONVERT_UINT_V(qf*nf);
-
-  MODBASECASE_QI_ERROR(1<<22, 3, qi, 3);
-
-#if (TRACE_KERNEL > 2)
-#if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div3.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
-#else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div3.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, nf);
-#endif
-#endif
-
-  tmp     = (qi << 3);
-  res->d1 = res->d1 + tmp;
-  res->d2 = res->d2 + (qi >> 29) - AS_UINT_V(tmp > res->d1);
-
-// shiftleft qi 3 bits to avoid "long shiftleft" after multiplication
-  qi <<= 3;
-
-
-// nn = n * qi
-
-  nn.d0 = n.d0 * qi;
-  nn.d1  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d1 += tmp;
-  nn.d2  = AS_UINT_V(tmp > nn.d1);
-  tmp    = mul_hi(n.d1, qi);
-  nn.d2  = tmp - nn.d2;
-  nn.d3  = AS_UINT_V(tmp > nn.d2);
-  tmp    = n.d2* qi;
-  nn.d2 += tmp;
-  nn.d3 += AS_UINT_V(tmp > nn.d2);
-  nn.d3  = mul_hi(n.d2, qi) - nn.d3;
-
-//  q = q - nn
-  carry= AS_UINT_V(nn.d0 > q.d1);
-  q.d1 = q.d1 - nn.d0;
-
-  tmp  = q.d2 - nn.d1 + carry;
-  carry= AS_UINT_V((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2)));
-  q.d2 = tmp;
-
-  tmp  = q.d3 - nn.d2 + carry;
-  carry= AS_UINT_V((tmp > q.d3) || (carry && AS_UINT_V(tmp == q.d3)));
-  q.d3 = tmp;
-
-  q.d4 = q.d4 - nn.d3 + carry;
-#if (TRACE_KERNEL > 2)
-#if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div3: q=%x:%x:%x:%x:%x:(c=%x), nn=%x:%x:%x:%x, res=%x:%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, carry.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d2.s0, res->d1.s0);
-#else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div3: q=%x:%x:%x:%x:%x(c=%x), nn=%x:%x:%x:%x, res=%x:%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, carry, nn.d3, nn.d2, nn.d1, nn.d0, res->d2, res->d1);
-//    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.7: q.d4=%x, carry=%x, nn.d3=%x\n",
-//        q.d4, carry, nn.d3);
-#endif
-#endif
-
-/********** Step 4, Offset 2^15 (0*32 + 15) **********/
-  qf= CONVERT_FLOAT_V(q.d4);
-  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d3);
-  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
-  qf*= 131072.0f;
-
-  qi= CONVERT_UINT_V(qf*nf);
-
-  MODBASECASE_QI_ERROR(1<<22, 4, qi, 5);
-
-  tmp     = qi >> 17;
-  res->d0 = qi << 15;
-  res->d1 = res->d1 + tmp;
-  res->d2 = res->d2 - AS_UINT_V(tmp > res->d1);
-
-#if (TRACE_KERNEL > 2)
-#if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4.1: q=%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G, nf*qf=%G\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0, nf.s0*qf.s0);
-#else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4.1: q=%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x, nf=%G, nf*qf=%G\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, n.d2, n.d1, n.d0, qi, nf, nf*qf);
-#endif
-#endif
-
-// nn = n * qi
-  nn.d0  = n.d0 * qi;
-  nn.d1  = mul_hi(n.d0, qi);
-  tmp    = n.d1* qi;
-  nn.d1 += tmp;
-  nn.d2  = AS_UINT_V(tmp > nn.d1);
-  tmp    = mul_hi(n.d1, qi);
-  nn.d2  = tmp - nn.d2;
-  nn.d3  = AS_UINT_V(tmp > nn.d2);
-  tmp    = n.d2* qi;
-  nn.d2 += tmp;
-  nn.d3 += AS_UINT_V(tmp > nn.d2);
-  nn.d3  = mul_hi(n.d2, qi) - nn.d3;
-
-// shiftleft nn 15 bits
-#ifdef CHECKS_MODBASECASE
-  nn.d4 =                  nn.d3 >> 17;
-#endif
-  nn.d3 = (nn.d3 << 15) + (nn.d2 >> 17);
-  nn.d2 = (nn.d2 << 15) + (nn.d1 >> 17);
-  nn.d1 = (nn.d1 << 15) + (nn.d0 >> 17);
-  nn.d0 =  nn.d0 << 15;
-
-//  q = q - nn
-  carry= AS_UINT_V(nn.d0 > q.d0);
-  q.d0 = q.d0 - nn.d0;
-
-  tmp  = q.d1 - nn.d1 + carry;
-  carry= AS_UINT_V((tmp > q.d1) || (carry && AS_UINT_V(tmp == q.d1)));
-  q.d1 = tmp;
-
-  tmp  = q.d2 - nn.d2 + carry;
-  carry= AS_UINT_V((tmp > q.d2) || (carry && AS_UINT_V(tmp == q.d2)));
-  q.d2 = tmp;
-
-#ifndef CHECKS_MODBASECASE
-  q.d3 = q.d3 - nn.d3 + carry;
-#else
-  tmp  = q.d3 - nn.d3 + carry;
-  carry= AS_UINT_V((tmp > q.d3) || (carry && AS_UINT_V(tmp == q.d3)));
-  q.d3 = tmp;
-
-  q.d4 = q.d4 - nn.d4 + carry;
-#endif
-#if (TRACE_KERNEL > 2)
-#if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4: q=%x:%x:%x:%x:%x:%x(c=%x), nn=%x:%x:%x:%x, res=%x:%x:%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, carry.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d2.s0, res->d1.s0, res->d0.s0);
-#else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div4: q=%x:%x:%x:%x:%x:%x(c=%x), nn=%x:%x:%x:%x, res=%x:%x:%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, carry, nn.d3, nn.d2, nn.d1, nn.d0, res->d2, res->d1, res->d0);
-//    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.7: q.d4=%x, carry=%x, nn.d3=%x\n",
-//        q.d4, carry, nn.d3);
-#endif
-#endif
-
-
-/********** Step 5, Offset 2^0 (0*32 + 0) **********/
-  MODBASECASE_NONZERO_ERROR(q.d4, 5, 4, 7);
-
-  qf= CONVERT_FLOAT_V(q.d3);
-  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d2);
-  qf= qf * 4294967296.0f + CONVERT_FLOAT_V(q.d1);
-
-  qi= CONVERT_UINT_V(qf*nf);
-
-  MODBASECASE_QI_ERROR(1<<20, 5, qi, 8);
-
-  res->d0 += qi;
-  carry    = AS_UINT_V(qi > res->d0);
-  tmp      = res->d1 - carry;
-  res->d2 -= AS_UINT_V(tmp < res->d1);
-  res->d1  = tmp;
-
-#if (TRACE_KERNEL > 2)
-#if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div5: qi=%x, nf=%G, res=%x:%x:%x\n",
-        qi.s0, nf.s0, res->d2.s0, res->d1.s0, res->d0.s0);
-#else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div5: qi=%x, nf=%G, res=%x:%x:%x\n",
-        qi, nf, res->d2, res->d1, res->d0);
-#endif
-#endif
-
-
-  return;
-
-// not finishing the final multiplication/subtraction/comparison leaves the result off by 1 at most.
-}
-
 #undef DIV_160_96
 
 
@@ -1010,6 +1190,9 @@ void check_barrett32_76(uint shifter, const int96_v f, const uint tid, const int
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
+#if defined cl_khr_fp64 && ! defined GCN
+  __private double_v  ffd;
+#endif
   __private float_v  ff;
   __private uint_v   carry;
 
@@ -1021,20 +1204,33 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffc) / ff;		// just a little bit below 1.0f so we allways underestimate the quotient
 
-  tmp192.d4 = 0xFFFFFFFF;						// tmp is nearly 2^(81)
-  tmp192.d3 = 0xFFFFFFFF;
-  tmp192.d2 = 0xFFFFFFFF;
-  tmp192.d1 = 0xFFFFFFFF;
-  tmp192.d0 = 0xFFFFFFFF;
+#if defined cl_khr_fp64 && ! defined GCN
+  // use double when available, but not for the low and mid level GCN cards as they have 1:16 DP rate which is too slow
+  ffd= CONVERT_DOUBLE_RTP_V(f.d2);
+  ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d1);
+  ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d0);
+
+  ffd= as_double(0x3feffffffffffffdL) / ffd;		// just a little bit below 1.0f so we allways underestimate the quotient
 
 #ifndef CHECKS_MODBASECASE
-  div_160_96(&u,tmp192,f,ff);						// u = floor(2^(80*2) / f)
+  div_160_96_d(&u, 1, f, ffd);						// u = floor(2^(80*2) / f)
 #else
-  div_160_96(&u,tmp192,f,ff,modbasecase_debug);				// u = floor((2^80)*2 / f)
+  div_160_96_d(&u, 1, f, ffd, modbasecase_debug);				// u = floor((2^80)*2 / f)
+#endif
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett76: u=%x:%x:%x, ffd=%G\n",
+        u.d2.s0, u.d1.s0, u.d0.s0, ffd.s0);
+#endif
+#else // no doubles or GCN (low/mid)
+#ifndef CHECKS_MODBASECASE
+  div_160_96(&u,1,f,ff);						// u = floor(2^(80*2) / f)
+#else
+  div_160_96(&u,1,f,ff,modbasecase_debug);				// u = floor((2^80)*2 / f)
 #endif
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett76: u=%x:%x:%x, ff=%G\n",
         u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+#endif
 #endif
 
 // bb is still the preprocessed scalar passed in to the kernel - it is widened here to the required vector size automatically
@@ -1144,6 +1340,9 @@ void check_barrett32_77(uint shifter, const int96_v f, const uint tid, const int
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
+#if defined cl_khr_fp64 && ! defined GCN
+  __private double_v  ffd;
+#endif
   __private float_v  ff;
   __private uint_v   carry;
 
@@ -1155,24 +1354,38 @@ Precalculated here since it is the same for all steps in the following loop */
 
     ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
-    tmp192.d4 = 0xFFFFFFFF;						// tmp192 is nearly 2^(81)
-    tmp192.d3 = 0xFFFFFFFF;
-    tmp192.d2 = 0xFFFFFFFF;
-    tmp192.d1 = 0xFFFFFFFF;
-    tmp192.d0 = 0xFFFFFFFF;
 #if (TRACE_KERNEL > 2)
       if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: f=%x:%x:%x, ff=%G\n",
           f.d2.s0, f.d1.s0, f.d0.s0, ff.s0);
 #endif
 
+#if defined cl_khr_fp64 && ! defined GCN
+  // use double when available, but not for the low and mid level GCN cards as they have 1:16 DP rate which is too slow
+  ffd= CONVERT_DOUBLE_RTP_V(f.d2);
+  ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d1);
+  ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d0);
+
+  ffd= as_double(0x3feffffffffffffdL) / ffd;		// just a little bit below 1.0f so we allways underestimate the quotient
+
 #ifndef CHECKS_MODBASECASE
-    div_160_96(&u,tmp192,f,ff);						// u = floor(2^(80*2) / f)
+  div_160_96_d(&u, 1, f, ffd);						// u = floor(2^(80*2) / f)
 #else
-    div_160_96(&u,tmp192,f,ff,modbasecase_debug);				// u = floor((2^80)*2 / f)
+  div_160_96_d(&u, 1, f, ffd, modbasecase_debug);				// u = floor((2^80)*2 / f)
 #endif
 #if (TRACE_KERNEL > 2)
-      if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: u=%x:%x:%x, ff=%G\n",
-          u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett77: u=%x:%x:%x, ffd=%G\n",
+        u.d2.s0, u.d1.s0, u.d0.s0, ffd.s0);
+#endif
+#else // no doubles or GCN (low/mid)
+#ifndef CHECKS_MODBASECASE
+  div_160_96(&u,1,f,ff);						// u = floor(2^(80*2) / f)
+#else
+  div_160_96(&u,1,f,ff,modbasecase_debug);				// u = floor((2^80)*2 / f)
+#endif
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett77: u=%x:%x:%x, ff=%G\n",
+        u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+#endif
 #endif
 
   // bb is still the preprocessed scalar passed in to the kernel - it is widened here to the required vector size automatically
@@ -1272,6 +1485,9 @@ void check_barrett32_79(uint shifter, const int96_v f, const uint tid, const int
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
+#if defined cl_khr_fp64 && ! defined GCN
+  __private double_v  ffd;
+#endif
   __private float_v  ff;
   __private uint_v   tmp, carry;
 
@@ -1283,20 +1499,33 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
-  tmp192.d4 = 0xFFFFFFFF;						// tmp is nearly 2^(81)
-  tmp192.d3 = 0xFFFFFFFF;
-  tmp192.d2 = 0xFFFFFFFF;
-  tmp192.d1 = 0xFFFFFFFF;
-  tmp192.d0 = 0xFFFFFFFF;
+#if defined cl_khr_fp64 && ! defined GCN
+  // use double when available, but not for the low and mid level GCN cards as they have 1:16 DP rate which is too slow
+  ffd= CONVERT_DOUBLE_RTP_V(f.d2);
+  ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d1);
+  ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d0);
+
+  ffd= as_double(0x3feffffffffffffdL) / ffd;		// just a little bit below 1.0f so we allways underestimate the quotient
 
 #ifndef CHECKS_MODBASECASE
-  div_160_96(&u,tmp192,f,ff);						// u = floor(2^(80*2) / f)
+  div_160_96_d(&u, 1, f, ffd);						// u = floor(2^(80*2) / f)
 #else
-  div_160_96(&u,tmp192,f,ff,modbasecase_debug);				// u = floor((2^80)*2 / f)
+  div_160_96_d(&u, 1, f, ffd, modbasecase_debug);				// u = floor((2^80)*2 / f)
 #endif
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79: u=%x:%x:%x, ff=%G\n",
+    if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett79: u=%x:%x:%x, ffd=%G\n",
+        u.d2.s0, u.d1.s0, u.d0.s0, ffd.s0);
+#endif
+#else // no doubles or GCN (low/mid)
+#ifndef CHECKS_MODBASECASE
+  div_160_96(&u,1,f,ff);						// u = floor(2^(80*2) / f)
+#else
+  div_160_96(&u,1,f,ff,modbasecase_debug);				// u = floor((2^80)*2 / f)
+#endif
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett79: u=%x:%x:%x, ff=%G\n",
         u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+#endif
 #endif
 
 // bb is still the preprocessed scalar passed in to the kernel - it is widened here to the required vector size automatically
@@ -1422,6 +1651,9 @@ void check_barrett32_87(uint shifter, const int96_v f, const uint tid, const int
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
+#if defined cl_khr_fp64 && ! defined GCN
+  __private double_v  ffd;
+#endif
   __private float_v  ff;
   __private uint_v   carry;
   __private int bit_max65_32 = 32 - bit_max65; /* used for bit shifting... */
@@ -1434,21 +1666,32 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
-  tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
-  tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
+#if defined cl_khr_fp64 && ! defined GCN
+  // use double when available, but not for the low and mid level GCN cards as they have 1:16 DP rate which is too slow
+  ffd= CONVERT_DOUBLE_RTP_V(f.d2);
+  ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d1);
+  ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d0);
+
+  ffd= as_double(0x3feffffffffffffdL) / ffd;		// just a little bit below 1.0f so we allways underestimate the quotient
 
 #ifndef CHECKS_MODBASECASE
-  div_192_96(&u,tmp192,f,ff);						// u = floor(tmp192 / f)
+  div_192_96_d(&u, 1 << bit_max65, f, ffd);						// u = floor(2^(80*2) / f)
 #else
-  div_192_96(&u,tmp192,f,ff,modbasecase_debug);				// u = floor(tmp192 / f)
+  div_192_96_d(&u, 1 << bit_max65, f, ffd, modbasecase_debug);				// u = floor((2^80)*2 / f)
 #endif
 #if (TRACE_KERNEL > 2)
-#if (VECTOR_SIZE > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87: f=%x:%x:%x, u=%x:%x:%x, ff=%G\n",
-        f.d2.s0, f.d1.s0, f.d0.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+    if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett87: u=%x:%x:%x, ffd=%G\n",
+        u.d2.s0, u.d1.s0, u.d0.s0, ffd.s0);
+#endif
+#else // no doubles or GCN (low/mid)
+#ifndef CHECKS_MODBASECASE
+  div_192_96(&u,1 << bit_max65,f,ff);						// u = floor(2^(80*2) / f)
 #else
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87: f=%x:%x:%x, u=%x:%x:%x, ff=%G\n",
-        f.d2, f.d1, f.d0, u.d2, u.d1, u.d0, ff);
+  div_192_96(&u,1 << bit_max65,f,ff,modbasecase_debug);				// u = floor((2^80)*2 / f)
+#endif
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett87: u=%x:%x:%x, ff=%G\n",
+        u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
 #endif
 #endif
 
@@ -1557,6 +1800,9 @@ void check_barrett32_88(uint shifter, const int96_v f, const uint tid, const int
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
+#if defined cl_khr_fp64 && ! defined GCN
+  __private double_v  ffd;
+#endif
   __private float_v  ff;
   __private uint_v   carry;
   __private int bit_max65_32 = 32 - bit_max65; /* used for bit shifting... */
@@ -1569,17 +1815,33 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
-  tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
-  tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
+#if defined cl_khr_fp64 && ! defined GCN
+  // use double when available, but not for the low and mid level GCN cards as they have 1:16 DP rate which is too slow
+  ffd= CONVERT_DOUBLE_RTP_V(f.d2);
+  ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d1);
+  ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d0);
+
+  ffd= as_double(0x3feffffffffffffdL) / ffd;		// just a little bit below 1.0f so we allways underestimate the quotient
 
 #ifndef CHECKS_MODBASECASE
-  div_192_96(&u,tmp192,f,ff);						// u = floor(tmp192 / f)
+  div_192_96_d(&u, 1 << bit_max65, f, ffd);						// u = floor(2^(80*2) / f)
 #else
-  div_192_96(&u,tmp192,f,ff,modbasecase_debug);				// u = floor(tmp192 / f)
+  div_192_96_d(&u, 1 << bit_max65, f, ffd, modbasecase_debug);				// u = floor((2^80)*2 / f)
 #endif
 #if (TRACE_KERNEL > 2)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88: u=%x:%x:%x, ff=%G\n",
+    if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett88: u=%x:%x:%x, ffd=%G\n",
+        u.d2.s0, u.d1.s0, u.d0.s0, ffd.s0);
+#endif
+#else // no doubles or GCN (low/mid)
+#ifndef CHECKS_MODBASECASE
+  div_192_96(&u,1 << bit_max65,f,ff);						// u = floor(2^(80*2) / f)
+#else
+  div_192_96(&u,1 << bit_max65,f,ff,modbasecase_debug);				// u = floor((2^80)*2 / f)
+#endif
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett88: u=%x:%x:%x, ff=%G\n",
         u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+#endif
 #endif
 
   a.d0 = (bb.d2 >> bit_max65) + (bb.d3 << bit_max65_32);	// a = floor(b / 2 ^ (bits_in_f - 1))
@@ -1681,6 +1943,9 @@ void check_barrett32_92(uint shifter, const int96_v f, const uint tid, const int
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
+#if defined cl_khr_fp64 && ! defined GCN
+  __private double_v  ffd;
+#endif
   __private float_v  ff;
   __private uint_v   carry;
   __private int bit_max65_32 = 32 - bit_max65; /* used for bit shifting... */
@@ -1693,17 +1958,33 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
-  tmp192.d5 = 1 << bit_max65;			  // tmp192 = 2^(95 + bits_in_f)
-  tmp192.d4 = 0; tmp192.d3 = 0; tmp192.d2 = 0; tmp192.d1 = 0; tmp192.d0 = 0;
+#if defined cl_khr_fp64 && ! defined GCN
+  // use double when available, but not for the low and mid level GCN cards as they have 1:16 DP rate which is too slow
+  ffd= CONVERT_DOUBLE_RTP_V(f.d2);
+  ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d1);
+  ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d0);
+
+  ffd= as_double(0x3feffffffffffffdL) / ffd;		// just a little bit below 1.0f so we allways underestimate the quotient
 
 #ifndef CHECKS_MODBASECASE
-  div_192_96(&u,tmp192,f,ff);				// u = floor(2^(95 + bits_in_f) / f), giving 96 bits of precision
+  div_192_96_d(&u, 1 << bit_max65, f, ffd);						// u = floor(2^(80*2) / f)
 #else
-  div_192_96(&u,tmp192,f,ff,modbasecase_debug);
+  div_192_96_d(&u, 1 << bit_max65, f, ffd, modbasecase_debug);				// u = floor((2^80)*2 / f)
 #endif
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92: u=%x:%x:%x, ff=%G\n",
+    if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett92: u=%x:%x:%x, ffd=%G\n",
+        u.d2.s0, u.d1.s0, u.d0.s0, ffd.s0);
+#endif
+#else // no doubles or GCN (low/mid)
+#ifndef CHECKS_MODBASECASE
+  div_192_96(&u,1 << bit_max65,f,ff);						// u = floor(2^(80*2) / f)
+#else
+  div_192_96(&u,1 << bit_max65,f,ff,modbasecase_debug);				// u = floor((2^80)*2 / f)
+#endif
+#if (TRACE_KERNEL > 2)
+    if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_barrett92: u=%x:%x:%x, ff=%G\n",
         u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+#endif
 #endif
 
   a.d0 = (bb.d2 >> bit_max65) + (bb.d3 << bit_max65_32);	// a = floor(b / 2 ^ (bits_in_f - 1))
