@@ -230,3 +230,9 @@ typedef struct _int180_v
 #define ADD_COND(val, cond) ((val) + AS_UINT_V((cond) ? 1 : 0))
 #define SUB_COND(val, cond) ((val) - AS_UINT_V((cond) ? 1 : 0))
 #endif
+
+#define CONVERT_FLOAT convert_float
+#define CONVERT_FLOAT_RTP convert_float
+#define CONVERT_DOUBLE convert_double
+#define CONVERT_DOUBLE_RTP convert_double
+
