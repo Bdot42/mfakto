@@ -418,8 +418,13 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   __private int150_v nn, q;
 
 #if (TRACE_KERNEL > 1)
+#if (VECTOR_SIZE > 1)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#0: q=%x:<135x0>, n=%x:%x:%x:%x:%x, nf=%#G\n",
         qhi, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0);
+#else
+  if (tid==TRACE_TID) printf((__constant char *)"div_150_75#0: q=%x:<135x0>, n=%x:%x:%x:%x:%x, nf=%#G\n",
+        qhi, n.d4, n.d3, n.d2, n.d1, n.d0, nf);
+#endif
 #endif
 
 /********** Step 1, Offset 2^60 (4*15 + 0) **********/
