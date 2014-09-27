@@ -54,7 +54,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 
 
 /* do some checks on the mod/div routines */
-//#define CHECKS_MODBASECASE
+#define CHECKS_MODBASECASE
 
 
 /* print stream, kernel schedule and h_ktab usage */
@@ -80,7 +80,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
    pure times needed to copy the data over, and to test the FC's of the chunk
    (pure run time per kernel invokation) - best measure to compare changes in
    the kernels, or drivers. */
-//#define CL_PERFORMANCE_INFO
+#define CL_PERFORMANCE_INFO
 
 
 /* Tell the OpenCL compiler to create debuggable code for the Kernels */

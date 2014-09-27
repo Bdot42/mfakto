@@ -776,8 +776,13 @@ Precalculated here since it is the same for all steps in the following loop */
     exp+=exp;
   }
 #if (TRACE_KERNEL > 0)
+#if (VECTOR_SIZE > 1)
   if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_71 result: f=%x:%x:%x, a=%x:%x:%x\n",
                               f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+#else
+  if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_71 result: f=%x:%x:%x, a=%x:%x:%x\n",
+                              f.d2, f.d1, f.d0, a.d2, a.d1, a.d0);
+#endif
 #endif
 
   a=sub_if_gte_72(a,f);

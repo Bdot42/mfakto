@@ -267,7 +267,7 @@ void div_192_96_d(int96_v * const res, __private uint qd5, const int96_v n, cons
   __private double_v qf;
   __private double qf_1; // the first conversion does not need a vector yet
   __private ulong_v qi;
-  __private uint_v qi_l, qi_h, tmp, carry;
+  __private uint_v qi_l, qi_h, tmp;
   __private int192_v nn, q;
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
@@ -770,7 +770,7 @@ DIV_160_96 here. */
   __private double_v qf;
   __private double qf_1; // the first conversion does not need a vector yet
   __private ulong_v qi;
-  __private uint_v qi_l, qi_h, tmp, carry;
+  __private uint_v qi_l, qi_h, tmp;
   __private int192_v nn, q;
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
@@ -1407,8 +1407,13 @@ Precalculated here since it is the same for all steps in the following loop */
     shifter+=shifter;
   }
 #if (TRACE_KERNEL > 0)
+#if (VECTOR_SIZE > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+#else
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
+        f.d2, f.d1, f.d0, a.d2, a.d1, a.d0 );
+#endif
 #endif
   mod_simple_even_96_and_check_big_factor96(a, f, ff, RES
 #ifdef CHECKS_MODBASECASE
@@ -1555,8 +1560,13 @@ Precalculated here since it is the same for all steps in the following loop */
       shifter+=shifter;
     }
 #if (TRACE_KERNEL > 0)
+#if (VECTOR_SIZE > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+#else
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
+        f.d2, f.d1, f.d0, a.d2, a.d1, a.d0 );
+#endif
 #endif
 
     mod_simple_96_and_check_big_factor96(a, f, ff, RES
@@ -1722,8 +1732,13 @@ Precalculated here since it is the same for all steps in the following loop */
     shifter+=shifter;
   }
 #if (TRACE_KERNEL > 0)
+#if (VECTOR_SIZE > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
         f.d2.s0, f.d1.s0, f.d0.s0, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0 );
+#else
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
+        f.d2, f.d1, f.d0, tmp96.d2, tmp96.d1, tmp96.d0 );
+#endif
 #endif
   mod_simple_even_96_and_check_big_factor96(tmp96, f, ff, RES
 #ifdef CHECKS_MODBASECASE
@@ -1871,8 +1886,13 @@ Precalculated here since it is the same for all steps in the following loop */
     shifter+=shifter;
   }
 #if (TRACE_KERNEL > 0)
+#if (VECTOR_SIZE > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
         f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+#else
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: f=%x:%x:%x, a=%x:%x:%x\n",
+        f.d2, f.d1, f.d0, a.d2, a.d1, a.d0 );
+#endif
 #endif
   mod_simple_even_96_and_check_big_factor96(a, f, ff, RES
 #ifdef CHECKS_MODBASECASE
@@ -2012,8 +2032,13 @@ Precalculated here since it is the same for all steps in the following loop */
 
     shifter+=shifter;
 #if (TRACE_KERNEL > 0)
+#if (VECTOR_SIZE > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
         shifter, tmp96.d2.s0, tmp96.d1.s0, tmp96.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+#else
+    if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x mod f=%x:%x:%x = %x:%x:%x (a)\n",
+        shifter, tmp96.d2, tmp96.d1, tmp96.d0, f.d2, f.d1, f.d0, a.d2, a.d1, a.d0 );
+#endif
 #endif
   }
   mod_simple_96_and_check_big_factor96(a, f, ff, RES
@@ -2224,8 +2249,13 @@ __kernel void cl_barrett32_76(__private uint exponent, const int96_t k_base, con
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
 #if (TRACE_KERNEL > 0)
+#if (VECTOR_SIZE > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_76: exp=%d, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
         exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+#else
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_76: exp=%d, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
+        exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2, f.d1, f.d0, shiftcount);
+#endif
 #endif
 
   check_barrett32_76(exponent << (32 - shiftcount), f, tid, bb, RES
@@ -2253,8 +2283,13 @@ __kernel void cl_barrett32_77(__private uint exponent, const int96_t k_base, con
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
 #if (TRACE_KERNEL > 0)
+#if (VECTOR_SIZE > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: exp=%d, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
         exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+#else
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77: exp=%d, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
+        exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2, f.d1, f.d0, shiftcount);
+#endif
 #endif
 
   check_barrett32_77(exponent << (32 - shiftcount), f, tid, bb, RES
@@ -2282,8 +2317,13 @@ __kernel void cl_barrett32_79(__private uint exponent, const int96_t k_base, con
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
 #if (TRACE_KERNEL > 0)
+#if (VECTOR_SIZE > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79: exp=%d, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
         exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+#else
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79: exp=%d, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
+        exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2, f.d1, f.d0, shiftcount);
+#endif
 #endif
 
   check_barrett32_79(exponent << (32 - shiftcount), f, tid, bb, RES
@@ -2310,9 +2350,14 @@ __kernel void cl_barrett32_87(__private uint exponent, const int96_t k_base, con
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
-#if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87: tid=%d, f=%x:%x:%x, shift=%d\n",
-        tid, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+#if (TRACE_KERNEL > 0)
+#if (VECTOR_SIZE > 1)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87: exp=%d, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
+        exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+#else
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87: exp=%d, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
+        exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2, f.d1, f.d0, shiftcount);
+#endif
 #endif
 
   check_barrett32_87(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES
@@ -2339,9 +2384,14 @@ __kernel void cl_barrett32_88(__private uint exponent, const int96_t k_base, con
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
-#if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88: tid=%d, f=%x:%x:%x, shift=%d\n",
-        tid, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+#if (TRACE_KERNEL > 0)
+#if (VECTOR_SIZE > 1)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88: exp=%d, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
+        exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+#else
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88: exp=%d, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
+        exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2, f.d1, f.d0, shiftcount);
+#endif
 #endif
 
   check_barrett32_88(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES
@@ -2368,9 +2418,14 @@ __kernel void cl_barrett32_92(__private uint exponent, const int96_t k_base, con
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
-#if (TRACE_KERNEL > 1)
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92: tid=%d, f=%x:%x:%x, shift=%d\n",
-        tid, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+#if (TRACE_KERNEL > 0)
+#if (VECTOR_SIZE > 1)
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92: exp=%d, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
+        exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+#else
+  if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92: exp=%d, b=%x:%x:%x:%x:%x:%x, k_base=%x:%x:%x, f=%x:%x:%x, shift=%d\n",
+        exponent, bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, k_base.d2, k_base.d1, k_base.d0, f.d2, f.d1, f.d0, shiftcount);
+#endif
 #endif
   check_barrett32_92(exponent << (32 - shiftcount), f, tid, bb, bit_max65, RES
                      MODBASECASE_PAR);

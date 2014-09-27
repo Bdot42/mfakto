@@ -427,7 +427,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 
   qi=CONVERT_UINT_V(qf_1*nf);  // vectorize just here
 
-  MODBASECASE_QI_ERROR(1<<15, 1, qi, 0);  // first step is smaller
+  MODBASECASE_QI_ERROR(1<<16, 1, qi, 0);  // first step is smaller, but 74 kernel needs 16 bits here
 
   res->d4 = qi;
 #if (TRACE_KERNEL > 2)

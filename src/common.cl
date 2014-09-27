@@ -202,7 +202,7 @@ now used everywhere. */
   if( ((a.d2|a.d1)==0 && a.d0==1) )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-    printf((__constant char *)"tid=%ld found factor: q=%x:%x:%x\n", get_local_id(0), f.d2.s0, f.d1.s0, f.d0.s0);
+    printf((__constant char *)"tid=%ld found factor: q=%x:%x:%x\n", get_local_id(0), f.d2, f.d1, f.d0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     int index=ATOMIC_INC(RES[0]);

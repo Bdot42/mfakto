@@ -42,10 +42,10 @@ Version 0.15
 #define WA_FOR_CATALYST11_10_BUG
 
 // TRACE_KERNEL: higher is more trace, 0-5 currently used
-#define TRACE_KERNEL 0
+#define TRACE_KERNEL 1
 
 // If above tracing is on, only the thread with the ID below will trace
-#define TRACE_TID 0
+#define TRACE_TID 984257
 
 /***********************************
  * DONT CHANGE ANYTHING BELOW THIS *
@@ -71,8 +71,8 @@ Version 0.15
 #define MODBASECASE_PAR
 #endif
 
-#if VECTOR_SIZE == 1 && TRACE_KERNEL > 0
-# error "Kernel tracing works only for VectorSize > 1"
+#if VECTOR_SIZE == 1 && TRACE_KERNEL > 1
+# error "Kernel tracing >1 works only for VectorSize > 1"
 #endif
 
 #include "datatypes.h"

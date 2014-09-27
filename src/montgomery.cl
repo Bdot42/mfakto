@@ -249,7 +249,11 @@ bit_max64 is bit_max - 64!
   if( a==1 )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
+#if (VECTOR_SIZE > 1)
     printf((__constant char *)"cl_mg62: tid=%ld found factor: q=%#llx, k=%x:%x:%x\n", tid, f.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+#else
+    printf((__constant char *)"cl_mg62: tid=%ld found factor: q=%#llx, k=%x:%x:%x\n", tid, f, k.d2, k.d1, k.d0);
+#endif
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
