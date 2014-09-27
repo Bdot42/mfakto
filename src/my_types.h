@@ -161,7 +161,8 @@ enum GPU_types
   GPU_AUTO,
   GPU_VLIW4,
   GPU_VLIW5,
-  GPU_GCN,
+  GPU_GCN,   // low and mid-level GCN with slow DP 1:16
+  GPU_GCN2,  // high-end GCN with faster DP 1:4
   GPU_APU,
   GPU_CPU,
   GPU_NVIDIA,

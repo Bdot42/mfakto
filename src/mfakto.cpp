@@ -523,11 +523,11 @@ int init_CL(int num_streams, cl_int *devnumber)
            "         please re-run this test on the CPU, or on a GPU with atomics.\n");
   }
 
-  if (strstr(deviceinfo.exts, "cl_khr_fp64") == NULL)
+  /*if (strstr(deviceinfo.exts, "cl_khr_fp64") == NULL)
   {
     printf("\nINFO: Device does not support double precision operations. Disabling\n"
       "      some kernels requiring support for doubles.\n");
-    // setting bix_max to 0 makes them unsuitable for any task. They still need to compile and be loadable.
+    // setting bit_max to 0 makes them unsuitable for any task. They still need to compile and be loadable.
     kernel_info[BARRETT82_MUL15].bit_max = 0;
     kernel_info[BARRETT82_MUL15_GS].bit_max = 0;
     kernel_info[BARRETT83_MUL15].bit_max = 0;
@@ -535,7 +535,7 @@ int init_CL(int num_streams, cl_int *devnumber)
     kernel_info[BARRETT88_MUL15].bit_max = 0;
     kernel_info[BARRETT88_MUL15_GS].bit_max = 0;
   }
-
+  */
   deviceinfo.maxThreadsPerBlock = deviceinfo.wi_sizes[0];
   deviceinfo.maxThreadsPerGrid  = deviceinfo.wi_sizes[0];
   for (i=1; i<deviceinfo.w_dim && i<5; i++)
@@ -588,22 +588,28 @@ void set_gpu_type()
     if (strstr(deviceinfo.d_name, "Capeverde")  ||    // 7730, 7750, 7770, 8760, 8740, R7 250X
         strstr(deviceinfo.d_name, "Bonaire")    ||    // 7790, R7 260, R7 260X
         strstr(deviceinfo.d_name, "Pitcairn")   ||    // 7850, 7870, 8870
-        strstr(deviceinfo.d_name, "Newzealand") ||    // 7990
         strstr(deviceinfo.d_name, "Oland")      ||    // 8670, 8570, R9 240, R9 250
-        strstr(deviceinfo.d_name, "Sun")       ||    // 85x0M
-        strstr(deviceinfo.d_name, "Mars")      ||    // 86x0M, 87x0M
-        strstr(deviceinfo.d_name, "Venus")     ||    // 88x0M
-        strstr(deviceinfo.d_name, "Saturn")    ||    // 8930M, 8950M
-        strstr(deviceinfo.d_name, "Neptune")   ||    // 8970M, 8990M
-        strstr(deviceinfo.d_name, "Malta")      ||    // 7990
+        strstr(deviceinfo.d_name, "Sun")        ||    // 85x0M
+        strstr(deviceinfo.d_name, "Mars")       ||    // 86x0M, 87x0M
+        strstr(deviceinfo.d_name, "Venus")      ||    // 88x0M
+        strstr(deviceinfo.d_name, "Saturn")     ||    // 8930M, 8950M
+        strstr(deviceinfo.d_name, "Neptune")    ||    // 8970M, 8990M
         strstr(deviceinfo.d_name, "Vesuvius")   ||    // 295X2
-        strstr(deviceinfo.d_name, "Tahiti")     ||    // 7950, 7970, 8970, 8950, R9 280X
-        strstr(deviceinfo.d_name, "Hawaii")     ||    // R9 290, R9 290X
         strstr(deviceinfo.d_name, "Curacao")    ||    // R9 265, R9 270, R9 270X
+        strstr(deviceinfo.d_name, "Tonga")      ||    // R9 285
+        strstr(deviceinfo.d_name, "Hawaii")     ||    // R9 290, R9 290X
+                // Hawaii is both desktop graphics (1:8) and workstation graphics (1:2) in W8100, W9100, S9150
+                // 1:8 is just below the sweet spot for using DP. FirePro cards run faster as GCN2
         strstr(deviceinfo.d_name, "Kalindi")          // GCN APU, Kabini, R7 ???
         )
     {
       mystuff.gpu_type = GPU_GCN;
+    }
+    else if (strstr(deviceinfo.d_name, "Malta")      ||    // 7990
+             strstr(deviceinfo.d_name, "Tahiti")           // 7870XT, 7950, 7970, 8970, 8950, R9 280X
+             )
+    {
+      mystuff.gpu_type = GPU_GCN2;   // these cards have faster DP performance, allowing to use it for the division algorithms
     }
     else if (strstr(deviceinfo.d_name, "Cayman")      ||  // 6950, 6970
              strstr(deviceinfo.d_name, "Devastator")  ||  // 7xx0D (iGPUs of A4/6/8/10)
@@ -673,7 +679,7 @@ void set_gpu_type()
            "See http://devgurus.amd.com/thread/167571 for latest news about this issue.");
   }
 
-  if ((mystuff.gpu_type == GPU_GCN) && (mystuff.vectorsize > 3))
+  if (((mystuff.gpu_type == GPU_GCN) || (mystuff.gpu_type == GPU_GCN2)) && (mystuff.vectorsize > 3))
   {
     printf("\nWARNING: Your GPU was detected as GCN (Graphics Core Next). "
       "These chips perform very slow with vector sizes of 4 or higher. "
