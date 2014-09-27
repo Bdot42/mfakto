@@ -268,16 +268,13 @@ void div_192_96_d(int96_v * const res, __private uint qd5, const int96_v n, cons
   __private double qf_1; // the first conversion does not need a vector yet
   __private ulong_v qi;
   __private uint_v qi_l, qi_h, tmp, carry;
-  __private int192_v nn, q = {0, 0, 0, 0, 0, qd5};
+  __private int192_v nn, q;
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
   qf_1 = CONVERT_DOUBLE(qd5);
   qf_1 = qf_1 * 4294967296.0 * 4294967296.0;
 #else
-#if defined CHECKS_MODBASECASE || TRACE_KERNEL > 1
-    q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
-#endif
   // div_160_96 will always be called with qd5 = 1 ==> q = 2^160 
   qf_1 = 4294967296.0 * 4294967296.0;
 #endif
@@ -291,11 +288,11 @@ void div_192_96_d(int96_v * const res, __private uint qd5, const int96_v n, cons
   res->d1 = qi_l = CONVERT_UINT_V(qi << 16);
 #if (TRACE_KERNEL > 2)
 #if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%llx, nf=%G\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:0:0:0:0:0, n=%x:%x:%x, qi=%llx, nf=%G\n",
+        qd5, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
 #else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%llx, nf=%G\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, nf);
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:0:0:0:0:0, n=%x:%x:%x, qi=%llx, nf=%G\n",
+        qd5, n.d2, n.d1, n.d0, qi, nf);
 #endif
 #endif
 
@@ -346,7 +343,53 @@ void div_192_96_d(int96_v * const res, __private uint qd5, const int96_v n, cons
 #endif
 #endif
 
-// q = q - nn;
+// q = q - nn; q.d0..q.d4 are all zero, q.d5 was passed in as qd5
+
+  q.d1 = -nn.d0;
+  q.d2 = AS_UINT_V(nn.d0 > 0) - nn.d1;
+  q.d3 = AS_UINT_V((nn.d0 > 0) || (nn.d1 > 0)) - nn.d2;
+#if defined CHECKS_MODBASECASE || TRACE_KERNEL > 1
+  // PERF: is q.d3 always zero?
+  q.d4 = 0xFFFFFFFF - nn.d3; // assume we have a carry: one of the prev 128 bits will be non-zero
+                             // otherwise AS_UINT_V((nn.d0 > 0) || (nn.d1 > 0) || (nn.d2 > 0)) instead of 0xffffffff
+  q.d5 = qd5 + 0xFFFFFFFF - nn.d4; // assume we have a carry
+#endif
+
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.3: q=%x:%x:%x:%x:%x:0\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.3: q=%x:%x:%x:%x:%x:0\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1);
+#endif
+#endif
+
+  MODBASECASE_NONZERO_ERROR(q.d5, 3, 5, 2);
+  MODBASECASE_NONZERO_ERROR(q.d4, 3, 5, 2);
+
+  qf = CONVERT_DOUBLE_V(q.d3);
+  qf = qf * 4294967296.0 + CONVERT_DOUBLE_V(q.d2);
+  qf = qf * 4294967296.0; // + CONVERT_DOUBLE_V(q.d1); // PERF: q.d1 needed?
+  qf = qf * 4294967296.0; // q.d0 not needed
+
+  qi = CONVERT_ULONG_V(qf*nf);
+
+  MODBASECASE_QI_ERROR(1UL<<49, 1, qi, 0);
+
+  qi_h = CONVERT_UINT_V(qi >> 32);
+  res->d1 += qi_h;
+  res->d0 = qi_l = CONVERT_UINT_V(qi);
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.1: qi=%llx=%x:%x,  res=%x:%x:%x\n",
+        qi.s0, qi_h.s0, qi_l.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.1: qi=%llx=%x:%x,  res=%x:%x:%x\n",
+        qi
+        , qi_h, qi_l, res->d2, res->d1, res->d0);
+#endif
+#endif
 
 }
 #else
@@ -728,16 +771,13 @@ DIV_160_96 here. */
   __private double qf_1; // the first conversion does not need a vector yet
   __private ulong_v qi;
   __private uint_v qi_l, qi_h, tmp, carry;
-  __private int192_v nn, q = {0, 0, 0, 0, 0, qd5};
+  __private int192_v nn, q;
 
 /********** Step 1, Offset 2^75 (2*32 + 11) **********/
 #ifndef DIV_160_96
   qf_1 = CONVERT_DOUBLE(qd5);
   qf_1 = qf_1 * 4294967296.0 * 4294967296.0;
 #else
-#if defined CHECKS_MODBASECASE || TRACE_KERNEL > 1
-    q.d5 = 0;	// later checks in debug code will test if q.d5 is 0 or not but 160bit variant ignores q.d5
-#endif
   // div_160_96 will always be called with qd5 = 1 ==> q = 2^160 
   qf_1 = 4294967296.0 * 4294967296.0;
 #endif
@@ -751,11 +791,11 @@ DIV_160_96 here. */
   res->d1 = qi_l = CONVERT_UINT_V(qi << 16);
 #if (TRACE_KERNEL > 2)
 #if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%llx, nf=%G\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:0:0:0:0:0, n=%x:%x:%x, qi=%llx, nf=%G\n",
+        qd5, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
 #else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%llx, nf=%G\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, nf);
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:0:0:0:0:0, n=%x:%x:%x, qi=%llx, nf=%G\n",
+        qd5, n.d2, n.d1, n.d0, qi, nf);
 #endif
 #endif
 
@@ -806,7 +846,53 @@ DIV_160_96 here. */
 #endif
 #endif
 
-// q = q - nn;
+// q = q - nn; q.d0..q.d4 are all zero, q.d5 was passed in as qd5
+
+  q.d1 = -nn.d0;
+  q.d2 = AS_UINT_V(nn.d0 > 0) - nn.d1;
+  q.d3 = AS_UINT_V((nn.d0 > 0) || (nn.d1 > 0)) - nn.d2;
+#if defined CHECKS_MODBASECASE || TRACE_KERNEL > 1
+  // PERF: is q.d3 always zero?
+  q.d4 = 0xFFFFFFFF - nn.d3; // assume we have a carry: one of the prev 128 bits will be non-zero
+                             // otherwise AS_UINT_V((nn.d0 > 0) || (nn.d1 > 0) || (nn.d2 > 0)) instead of 0xffffffff
+  q.d5 = qd5 + 0xFFFFFFFF - nn.d4; // assume we have a carry
+#endif
+
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.3: q=%x:%x:%x:%x:%x:%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.3: q=%x:%x:%x:%x:%x:%x\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0);
+#endif
+#endif
+
+  MODBASECASE_NONZERO_ERROR(q.d5, 3, 5, 2);
+  MODBASECASE_NONZERO_ERROR(q.d4, 3, 5, 2);
+
+  qf = CONVERT_DOUBLE_V(q.d3);
+  qf = qf * 4294967296.0 + CONVERT_DOUBLE_V(q.d2);
+  qf = qf * 4294967296.0 + CONVERT_DOUBLE_V(q.d1);
+  qf = qf * 4294967296.0;
+
+  qi = CONVERT_ULONG_V(qf*nf);
+
+  MODBASECASE_QI_ERROR(1UL<<49, 1, qi, 0);
+
+  qi_h = CONVERT_UINT_V(qi >> 32);
+  res->d1 += qi_h;
+  res->d0 = qi_l = CONVERT_UINT_V(qi);
+#if (TRACE_KERNEL > 2)
+#if (VECTOR_SIZE > 1)
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.1: qi=%llx=%x:%x,  res=%x:%x:%x\n",
+        qi.s0, qi_h.s0, qi_l.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+#else
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div2.1: qi=%llx=%x:%x,  res=%x:%x:%x\n",
+        qi
+        , qi_h, qi_l, res->d2, res->d1, res->d0);
+#endif
+#endif
 
 }
 #endif
