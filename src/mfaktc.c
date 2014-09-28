@@ -749,7 +749,7 @@ RET_ERROR we might have a serios problem
   int retval=1, ind;
   enum GPUKernels kernels[UNKNOWN_KERNEL], kernel_index;
   // this index is 1 less than what -st/-st2 report
-  unsigned int index[] = {   1433, 91, 27, 161, 2583, 646, 647, 648, 30,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
+  unsigned int index[] = {   164, 30,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
                              70,   72,   73,   82,  88,   // some factors below 2^75 (test 75 bit kernel)
                             106,  355,  358,  666,   // some very small factors
                            1547    // some factors below 2^95 (test 95 bit kernel)
@@ -795,7 +795,7 @@ RET_ERROR we might have a serios problem
     if (mystuff->gpu_sieving == 0)
     {
 //      for (kernel_index = _71BIT_MUL24; kernel_index < BARRETT88_MUL15; ++kernel_index) // test-only: skip 6x15-bit kernels
-      for (kernel_index = BARRETT79_MUL32; kernel_index <= BARRETT79_MUL32; ++kernel_index) // test-only: only use 32-bit kernels
+      for (kernel_index = BARRETT92_MUL32; kernel_index <= BARRETT92_MUL32; ++kernel_index) // test-only: only use 32-bit kernels
 //      for (kernel_index = MG62; kernel_index <= MG88; ++kernel_index) // Specific montgomery test
 //      for (kernel_index = BARRETT74_MUL15; kernel_index <= BARRETT74_MUL15; ++kernel_index) // test only the 74-bit kernel
 //      for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index) // this is the real one !!
@@ -811,8 +811,8 @@ RET_ERROR we might have a serios problem
     {
 //      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT73_MUL15_GS; ++kernel_index) // test-only: skip small 15-bit kernels
 //      for (kernel_index = BARRETT74_MUL15_GS; kernel_index <= BARRETT74_MUL15_GS; ++kernel_index) // test only the 74-bit kernel
-      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT79_MUL32_GS; ++kernel_index) // test only 32-79
-//      for (kernel_index = BARRETT79_MUL32_GS; kernel_index < UNKNOWN_GS_KERNEL; ++kernel_index)
+//      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT79_MUL32_GS; ++kernel_index) // test only 32-79
+      for (kernel_index = BARRETT79_MUL32_GS; kernel_index < UNKNOWN_GS_KERNEL; ++kernel_index)
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }

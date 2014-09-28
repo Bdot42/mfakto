@@ -366,9 +366,13 @@ void div_192_96_d(int96_v * const res, __private uint qd5, const int96_v n, cons
 #endif
 
   MODBASECASE_NONZERO_ERROR(q.d5, 3, 5, 2);
+#ifdef DIV_160_96
   MODBASECASE_NONZERO_ERROR(q.d4, 3, 5, 2);
 
   qf = CONVERT_DOUBLE_V(q.d3);
+#else
+  qf = CONVERT_DOUBLE_V(q.d4) * 4294967296.0 + CONVERT_DOUBLE_V(q.d3);
+#endif
   qf = qf * 4294967296.0 + CONVERT_DOUBLE_V(q.d2);
   qf = qf * 4294967296.0; // + CONVERT_DOUBLE_V(q.d1); // PERF: q.d1 needed?
   qf = qf * 4294967296.0; // q.d0 not needed
@@ -860,21 +864,25 @@ DIV_160_96 here. */
 
 #if (TRACE_KERNEL > 2)
 #if (VECTOR_SIZE > 1)
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.3: q=%x:%x:%x:%x:%x:%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0, nf.s0);
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.3: q=%x:%x:%x:%x:%x:0\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0);
 #else
-    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.3: q=%x:%x:%x:%x:%x:%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0);
+    if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.3: q=%x:%x:%x:%x:%x:0\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1);
 #endif
 #endif
 
   MODBASECASE_NONZERO_ERROR(q.d5, 3, 5, 2);
+#ifdef DIV_160_96
   MODBASECASE_NONZERO_ERROR(q.d4, 3, 5, 2);
 
   qf = CONVERT_DOUBLE_V(q.d3);
+#else
+  qf = CONVERT_DOUBLE_V(q.d4) * 4294967296.0 + CONVERT_DOUBLE_V(q.d3);
+#endif
   qf = qf * 4294967296.0 + CONVERT_DOUBLE_V(q.d2);
-  qf = qf * 4294967296.0 + CONVERT_DOUBLE_V(q.d1);
-  qf = qf * 4294967296.0;
+  qf = qf * 4294967296.0; // + CONVERT_DOUBLE_V(q.d1); // PERF: q.d1 needed?
+  qf = qf * 4294967296.0; // q.d0 not needed
 
   qi = CONVERT_ULONG_V(qf*nf);
 

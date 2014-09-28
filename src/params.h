@@ -90,7 +90,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
    the factor to be found the first candidate during the selftest, so that
    debugging/tracing thread 0 of the first block should yield a factor found result
    (this works only for the CPU sieve as the GPU sieve reverts the order) */
-//#define DEBUG_FACTOR_FIRST
+#define DEBUG_FACTOR_FIRST
 
 
 /******************************************************************************
@@ -102,11 +102,11 @@ than an equal SIEVE_SIZE_LIMIT #define.
 ******************************************************************************/
 
 #ifdef _MSC_VER
-  #define MFAKTO_VERSION "mfakto 0.15pre3-Win" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.15pre4-Win" /* DO NOT CHANGE! */
 #elif defined __MINGW32__
-  #define MFAKTO_VERSION "mfakto 0.15pre3-MGW" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.15pre4-MGW" /* DO NOT CHANGE! */
 #else
-  #define MFAKTO_VERSION "mfakto 0.15pre3" /* DO NOT CHANGE! */
+  #define MFAKTO_VERSION "mfakto 0.15pre4" /* DO NOT CHANGE! */
 #endif
 
 

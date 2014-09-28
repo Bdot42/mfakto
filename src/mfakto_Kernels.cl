@@ -42,7 +42,7 @@ Version 0.15
 #define WA_FOR_CATALYST11_10_BUG
 
 // TRACE_KERNEL: higher is more trace, 0-5 currently used
-#define TRACE_KERNEL 0
+#define TRACE_KERNEL 6
 
 // If above tracing is on, only the thread with the ID below will trace
 #define TRACE_TID 0

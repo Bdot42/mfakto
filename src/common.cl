@@ -471,12 +471,12 @@ are "out of range".
 #endif
 #if (TRACE_KERNEL > 2)
 #if (VECTOR_SIZE == 1)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, n=%x:%x:%x, nf=%G, qf=%G, qi=%x, tid=%u\n",
-        q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, nf, qf, qi, get_global_id(0));
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, n=%x:%x:%x, qi=%x, tid=%u\n",
+        q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, tid);
 #else
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, %x:%x:%x, n=%x:%x:%x, %x:%x:%x, nf=%G,%G, qf=%G,%G, qi=%x,%x, tid=%u\n",
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, %x:%x:%x, n=%x:%x:%x, %x:%x:%x, qi=%x,%x, tid=%u\n",
         q.d2.s0, q.d1.s0, q.d0.s0, q.d2.s1, q.d1.s1, q.d0.s1, n.d2.s0, n.d1.s0, n.d0.s0, n.d2.s1, n.d1.s1, n.d0.s1,
-        nf.s0, nf.s1, qf.s0, qf.s1, qi.s0, qi.s1, get_global_id(0));
+        qi.s0, qi.s1, tid);
 #endif
 #endif
 
@@ -767,8 +767,8 @@ are "out of range".
   }
 #endif
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
 // nn = n * qi
@@ -847,8 +847,8 @@ are "out of range".
   }
 #endif
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
 // nn = n * qi
@@ -920,11 +920,11 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 1)
 #if (VECTOR_SIZE > 1)
-	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #else
-	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, nf, qf, qi);
+	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
 #endif
 #endif
 
@@ -937,11 +937,11 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 1)
 #if (VECTOR_SIZE > 1)
-	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #else
-	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, nf, qf, qi);
+	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
 #endif
 #endif
 
@@ -1065,11 +1065,11 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 1)
 #if (VECTOR_SIZE > 1)
-	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #else
-	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, nf, qf, qi);
+	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
 #endif
 #endif
 
@@ -1082,11 +1082,11 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 1)
 #if (VECTOR_SIZE > 1)
-	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #else
-	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, nf, qf, qi);
+	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
 #endif
 #endif
 
@@ -1217,11 +1217,11 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 1)
 #if (VECTOR_SIZE > 1)
-	  printf((__constant char *)"mod_simple_75_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  printf((__constant char *)"mod_simple_75_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #else
-	  printf((__constant char *)"mod_simple_75_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, nf, qf, qi);
+	  printf((__constant char *)"mod_simple_75_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
 #endif
 #endif
 
@@ -1447,8 +1447,8 @@ are "out of range".
   }
 #endif
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #endif
 
 // nn = n * qi
@@ -1522,11 +1522,11 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   nn.d0 &= 0x7FFF;
 #if (TRACE_KERNEL > 1)
 #if (VECTOR_SIZE > 1)
-	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_90_a#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.8G, qf=%#G, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_90_a#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #else
-	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_90_a#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.8G, qf=%#G, qi=%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d5, n.d4, n.d3, n.d2, n.d1, n.d0, nf, qf, qi);
+	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_90_a#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d5, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
 #endif
 #endif
 
@@ -1539,11 +1539,11 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 1)
 #if (VECTOR_SIZE > 1)
-	  printf((__constant char *)"mod_simple_e_90_a#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.8G, qf=%#G, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  printf((__constant char *)"mod_simple_e_90_a#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #else
-	  printf((__constant char *)"mod_simple_e_90_a#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.8G, qf=%#G, qi=%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d5, n.d4, n.d3, n.d2, n.d1, n.d0, nf, qf, qi);
+	  printf((__constant char *)"mod_simple_e_90_a#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d5, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
 #endif
 #endif
 
@@ -1670,11 +1670,11 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 1)
 #if (VECTOR_SIZE > 1)
-	  if(get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  if(get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #else
-	  if(get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d5, n.d4, n.d3, n.d2, n.d1, n.d0, nf, qf, qi);
+	  if(get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d5, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
 #endif
 #endif
 #if (VECTOR_SIZE == 1)
@@ -1686,11 +1686,11 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 1)
 #if (VECTOR_SIZE > 1)
-	  printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
 #else
-	  printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d5, n.d4, n.d3, n.d2, n.d1, n.d0, nf, qf, qi);
+	  printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d5, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
 #endif
 #endif
 
