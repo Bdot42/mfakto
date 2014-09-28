@@ -278,14 +278,14 @@ void div_192_96_d(int96_v * const res, __private uint qd5, const int96_v n, cons
   // div_160_96 will always be called with qd5 = 1 ==> q = 2^160 
   qf_1 = 4294967296.0 * 4294967296.0;
 #endif
-  qf_1 = qf_1 * 4294967296.0 * 65536.0;
+  qf_1 = qf_1 * 4294967296.0 * 1048576.0;
 
   qi = CONVERT_ULONG_V(qf_1*nf);
 
-  MODBASECASE_QI_ERROR(1UL<<49, 1, qi, 0);
+  MODBASECASE_QI_ERROR(1UL<<52, 1, qi, 0);
 
-  res->d2 = qi_h = CONVERT_UINT_V(qi >> 16);
-  res->d1 = qi_l = CONVERT_UINT_V(qi << 16);
+  res->d2 = qi_h = CONVERT_UINT_V(qi >> 20);
+  res->d1 = qi_l = CONVERT_UINT_V(qi << 12);
 #if (TRACE_KERNEL > 2)
 #if (VECTOR_SIZE > 1)
     if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:0:0:0:0:0, n=%x:%x:%x, qi=%llx, nf=%G\n",
@@ -379,7 +379,7 @@ void div_192_96_d(int96_v * const res, __private uint qd5, const int96_v n, cons
 
   qi = CONVERT_ULONG_V(qf*nf);
 
-  MODBASECASE_QI_ERROR(1UL<<49, 1, qi, 0);
+  MODBASECASE_QI_ERROR(1UL<<46, 1, qi, 0);
 
   qi_h = CONVERT_UINT_V(qi >> 32);
   res->d1 += qi_h;
@@ -785,14 +785,14 @@ DIV_160_96 here. */
   // div_160_96 will always be called with qd5 = 1 ==> q = 2^160 
   qf_1 = 4294967296.0 * 4294967296.0;
 #endif
-  qf_1 = qf_1 * 4294967296.0 * 65536.0;
+  qf_1 = qf_1 * 4294967296.0 * 1048576.0;
 
   qi = CONVERT_ULONG_V(qf_1*nf);
 
-  MODBASECASE_QI_ERROR(1UL<<49, 1, qi, 0);
+  MODBASECASE_QI_ERROR(1UL<<52, 1, qi, 0);
 
-  res->d2 = qi_h = CONVERT_UINT_V(qi >> 16);
-  res->d1 = qi_l = CONVERT_UINT_V(qi << 16);
+  res->d2 = qi_h = CONVERT_UINT_V(qi >> 20);
+  res->d1 = qi_l = CONVERT_UINT_V(qi << 12);
 #if (TRACE_KERNEL > 2)
 #if (VECTOR_SIZE > 1)
     if (get_global_id(0)==TRACE_TID) printf((__constant char *)"div1.1: q=%x:0:0:0:0:0, n=%x:%x:%x, qi=%llx, nf=%G\n",
@@ -886,7 +886,7 @@ DIV_160_96 here. */
 
   qi = CONVERT_ULONG_V(qf*nf);
 
-  MODBASECASE_QI_ERROR(1UL<<49, 1, qi, 0);
+  MODBASECASE_QI_ERROR(1UL<<46, 1, qi, 0);
 
   qi_h = CONVERT_UINT_V(qi >> 32);
   res->d1 += qi_h;

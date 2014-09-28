@@ -155,6 +155,8 @@ typedef struct _int180_v
 #define AS_LONG_V(x) as_long((x)?-1:0)
 #define AS_UINT_V(x) as_uint((x)?-1:0)
 #define AS_ULONG_V(x) as_ulong((x)?-1:0)
+// to unify printf's:
+#define V(x) x
 #else
 typedef struct _int72_v
 {
@@ -215,6 +217,8 @@ typedef struct _int180_v
 #define AS_LONG_V CONC(as_long,VECTOR_SIZE)
 #define AS_UINT_V CONC(as_uint,VECTOR_SIZE)
 #define AS_ULONG_V CONC(as_ulong,VECTOR_SIZE)
+// to unify printf's:
+#define V(x) x.s0
 #endif
 
 // define to efficiently handle carry/borrow

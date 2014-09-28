@@ -795,10 +795,10 @@ RET_ERROR we might have a serios problem
     if (mystuff->gpu_sieving == 0)
     {
 //      for (kernel_index = _71BIT_MUL24; kernel_index < BARRETT88_MUL15; ++kernel_index) // test-only: skip 6x15-bit kernels
-      for (kernel_index = BARRETT92_MUL32; kernel_index <= BARRETT92_MUL32; ++kernel_index) // test-only: only use 32-bit kernels
+//      for (kernel_index = BARRETT79_MUL32; kernel_index <= BARRETT87_MUL32; ++kernel_index) // test-only: only use 32-bit kernels
 //      for (kernel_index = MG62; kernel_index <= MG88; ++kernel_index) // Specific montgomery test
 //      for (kernel_index = BARRETT74_MUL15; kernel_index <= BARRETT74_MUL15; ++kernel_index) // test only the 74-bit kernel
-//      for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index) // this is the real one !!
+      for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index) // this is the real one !!
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }
@@ -812,7 +812,7 @@ RET_ERROR we might have a serios problem
 //      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT73_MUL15_GS; ++kernel_index) // test-only: skip small 15-bit kernels
 //      for (kernel_index = BARRETT74_MUL15_GS; kernel_index <= BARRETT74_MUL15_GS; ++kernel_index) // test only the 74-bit kernel
 //      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT79_MUL32_GS; ++kernel_index) // test only 32-79
-      for (kernel_index = BARRETT79_MUL32_GS; kernel_index < UNKNOWN_GS_KERNEL; ++kernel_index)
+      for (kernel_index = BARRETT79_MUL32_GS; kernel_index < UNKNOWN_GS_KERNEL; ++kernel_index) // this is the real one !!
       {
         if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
       }

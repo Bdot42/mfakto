@@ -418,13 +418,8 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   __private int150_v nn, q;
 
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#0: q=%x:<135x0>, n=%x:%x:%x:%x:%x, nf=%#G\n",
-        qhi, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0);
-#else
-  if (tid==TRACE_TID) printf((__constant char *)"div_150_75#0: q=%x:<135x0>, n=%x:%x:%x:%x:%x, nf=%#G\n",
-        qhi, n.d4, n.d3, n.d2, n.d1, n.d0, nf);
-#endif
+        qhi, V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(nf));
 #endif
 
 /********** Step 1, Offset 2^60 (4*15 + 0) **********/
@@ -437,7 +432,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   res->d4 = qi;
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"div_150_75#1: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:..:..:..:..\n",
-                                 qf_1, nf.s0, qf_1*nf.s0, qi.s0, qi.s0, res->d4.s0);
+                                 qf_1, V(nf), qf_1*V(nf), V(qi), V(qi), V(res->d4));
 #endif
 
   /*******************************************************/
@@ -446,34 +441,34 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   nn.d0  = mul24(n.d0, qi);
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#1.1: nn=..:..:..:..:..:%x:..:..:..:..\n",
-        nn.d0.s0);
+        V(nn.d0));
 #endif
 
   nn.d1  = mad24(n.d1, qi, nn.d0 >> 15);
   nn.d0 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#1.2: nn=..:..:..:..:%x:%x:...\n",
-        nn.d1.s0, nn.d0.s0);
+        V(nn.d1), V(nn.d0));
 #endif
 
   nn.d2  = mad24(n.d2, qi, nn.d1 >> 15);
   nn.d1 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#1.3: nn=..:..:..:%x:%x:%x:...\n",
-        nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   nn.d3  = mad24(n.d3, qi, nn.d2 >> 15);
   nn.d2 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#1.4: nn=..:..:%x:%x:%x:%x:...\n",
-        nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
   nn.d4  = mad24(n.d4, qi, nn.d3 >> 15);
   nn.d3 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#1.5: nn=..:%x:%x:%x:%x:%x:...\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 // no shift-left
@@ -498,7 +493,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   q.d8 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#1.7: q=%x!%x:%x:%x:%x:%x:..:..:..:..\n",
-        q.d9.s0, q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0);
+        V(q.d9), V(q.d8), V(q.d7), V(q.d6), V(q.d5), V(q.d4));
 #endif
   MODBASECASE_NONZERO_ERROR(q.d9, 1, 9, 1);
 
@@ -518,7 +513,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   qih = (qi >> 15);
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"div_150_75#2: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:..:..\n",
-                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d4.s0, res->d3.s0, res->d2.s0);
+                                 V(qf), V(nf), V(qf)*V(nf), V(qi), V(qi), V(res->d4), V(res->d3), V(res->d2));
 #endif
 
   /*******************************************************/
@@ -529,7 +524,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   nn.d0 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#2.1: nn=..:..:..:..:%x:%x:..:..\n",
-        nn.d1.s0, nn.d0.s0);
+        V(nn.d1), V(nn.d0));
 #endif
 
   nn.d1  = mad24(n.d1, qil, nn.d1);
@@ -722,7 +717,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#4: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:%x:%x\n",
-                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+                                 V(qf), V(nf), V(qf)*V(nf), V(qi), V(qi), V(res->d4), V(res->d3), V(res->d2), V(res->d1), V(res->d0));
 #endif
 
 }
