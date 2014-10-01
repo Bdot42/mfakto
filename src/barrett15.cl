@@ -532,7 +532,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   nn.d1 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#2.2: nn=..:..:..:%x:%x:%x:..:..\n",
-        nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   nn.d2  = mad24(n.d2, qil, nn.d2);
@@ -540,7 +540,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   nn.d2 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#2.3: nn=..:..:%x:%x:%x:%x:..:..\n",
-        nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   nn.d3  = mad24(n.d3, qil, nn.d3);
@@ -548,7 +548,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   nn.d3 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#2.4: nn=..:%x:%x:%x:%x:%x:..:..\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   nn.d4  = mad24(n.d4, qil, nn.d4);
@@ -557,7 +557,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#2.5: nn=..:%x:%x:%x:%x:%x:%x:..:..\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 // now shift-left 10 bits
@@ -572,7 +572,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   nn.d0  = (nn.d0 & 0x1F) << 10;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#2.6: nn=..:%x:%x:%x:%x:%x:%x:%x:..:..\n",
-        nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 //  q = q - nn
@@ -593,7 +593,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   q.d7 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#2.7: q=..:%x!%x:%x:%x:%x:%x:%x:..:..\n",
-        q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0);
+        V(q.d8), V(q.d7), V(q.d6), V(q.d5), V(q.d4), V(q.d3), V(q.d2));
 #endif
 
   MODBASECASE_NONZERO_ERROR(q.d8, 2, 8, 3);
@@ -613,7 +613,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   res->d1  = qi;  // carry to d2 is handled at the end anyway
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"div_150_75#3: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:%x:..\n",
-                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0);
+                                 V(qf), V(nf), V(qf)*V(nf), V(qi), V(qi), V(res->d4), V(res->d3), V(res->d2), V(res->d1));
 #endif
 
   /*******************************************************/
@@ -624,7 +624,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   nn.d0 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#3.1: nn=..:..:..:..:%x:%x:..\n",
-        nn.d1.s0, nn.d0.s0);
+        V(nn.d1), V(nn.d0));
 #endif
 
   nn.d1  = mad24(n.d1, qil, nn.d1);
@@ -632,7 +632,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   nn.d1 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#3.2: nn=..:..:..:%x:%x:%x:..\n",
-        nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   nn.d2  = mad24(n.d2, qil, nn.d2);
@@ -640,7 +640,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   nn.d2 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#3.3: nn=..:..:%x:%x:%x:%x:..\n",
-        nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   nn.d3  = mad24(n.d3, qil, nn.d3);
@@ -648,14 +648,14 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   nn.d3 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#3.4: nn=..:%x:%x:%x:%x:%x:..\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
   nn.d4  = mad24(n.d4, qil, nn.d4);
   nn.d5  = mad24(n.d4, qih, nn.d4 >> 15);
   nn.d4 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#3.5: nn=..:%x:%x:%x:%x:%x:%x:..\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 #ifdef CHECKS_MODBASECASE
   nn.d6  = nn.d5 >> 15;  // PERF: not needed as it will be gone anyway after sub
@@ -664,7 +664,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#3.6: nn=..:..:%x:%x:%x:%x:%x:%x:..\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 //  q = q - nn
@@ -686,7 +686,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   q.d6 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#3.7: q=..:%x:%x!%x:%x:%x:%x:%x:%x:..\n",
-        q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0);
+        V(q.d8), V(q.d7), V(q.d6), V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1));
 #endif
 
   MODBASECASE_NONZERO_ERROR(q.d7, 3, 7, 6);
@@ -762,7 +762,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: u=%x:%x:%x:%x:%x, ff=%G\n",
-        u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+        V(u.d4), V(u.d3), V(u.d2), V(u.d1), V(u.d0), V(ff));
 #endif
   a.d0 = mad24(bb.d5, bit_max75_mult, (bb.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
   a.d1 = mad24(bb.d6, bit_max75_mult, (bb.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
@@ -773,8 +773,8 @@ Precalculated here since it is the same for all steps in the following loop */
   mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp150.d9), V(tmp150.d8), V(tmp150.d7), V(tmp150.d6), V(tmp150.d5), V(tmp150.d4));
 #endif
 
   a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
@@ -787,7 +787,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     // bb.d0-bb.d3 are 0 due to preprocessing on the host, thus always require a borrow
   a.d0 = (-tmp75.d0) & 0x7FFF;
@@ -801,7 +801,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
-        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
   while(shifter)
@@ -810,8 +810,8 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(b.d9), V(b.d8), V(b.d7), V(b.d6), V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0) );
 #endif
     a.d0 = mad24(b.d5, bit_max75_mult, (b.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
     a.d1 = mad24(b.d6, bit_max75_mult, (b.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
@@ -823,8 +823,8 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp150.d9), V(tmp150.d8), V(tmp150.d7), V(tmp150.d6), V(tmp150.d5), V(tmp150.d4));
 #endif
     a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
     a.d1 = tmp150.d6;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
@@ -836,7 +836,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     a.d0 = (b.d0 - tmp75.d0) & 0x7FFF;
     a.d1 = (b.d1 - tmp75.d1 + AS_UINT_V((a.d0 > b.d0)  ));
@@ -850,7 +850,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
-        b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
     if(shifter&0x80000000)shl_75(&a);					// "optional multiply by 2" in Prime 95 documentation
@@ -862,7 +862,7 @@ Precalculated here since it is the same for all steps in the following loop */
     shifter+=shifter;
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, a= %x:%x:%x:%x:%x\n",
-        shifter, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+        shifter, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0) );
 #endif
   }
 
@@ -908,7 +908,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: u=%x:%x:%x:%x:%x, ff=%G\n",
-        u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+        V(u.d4), V(u.d3), V(u.d2), V(u.d1), V(u.d0), V(ff));
 #endif
   a.d0 = mad24(bb.d5, bit_max75_mult, (bb.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
   a.d1 = mad24(bb.d6, bit_max75_mult, (bb.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
@@ -919,8 +919,8 @@ Precalculated here since it is the same for all steps in the following loop */
   mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp150.d9), V(tmp150.d8), V(tmp150.d7), V(tmp150.d6), V(tmp150.d5), V(tmp150.d4));
 #endif
 
   a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
@@ -933,7 +933,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     // bb.d0-bb.d3 are 0 due to preprocessing on the host, thus always require a borrow
   a.d0 = (-tmp75.d0) & 0x7FFF;
@@ -947,7 +947,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
-        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
   while(shifter)
@@ -956,8 +956,8 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(b.d9), V(b.d8), V(b.d7), V(b.d6), V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0) );
 #endif
     a.d0 = mad24(b.d5, bit_max75_mult, (b.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
     a.d1 = mad24(b.d6, bit_max75_mult, (b.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
@@ -969,8 +969,8 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp150.d9), V(tmp150.d8), V(tmp150.d7), V(tmp150.d6), V(tmp150.d5), V(tmp150.d4));
 #endif
     a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
     a.d1 = tmp150.d6;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
@@ -982,7 +982,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     a.d0 = (b.d0 - tmp75.d0) & 0x7FFF;
     a.d1 = (b.d1 - tmp75.d1 + AS_UINT_V((a.d0 > b.d0)  ));
@@ -996,7 +996,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
-        b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
     if(shifter&0x80000000)shl_75(&a);					// "optional multiply by 2" in Prime 95 documentation
@@ -1008,7 +1008,7 @@ Precalculated here since it is the same for all steps in the following loop */
     shifter+=shifter;
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, a= %x:%x:%x:%x:%x\n",
-        shifter, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+        shifter, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0) );
 #endif
   }
 
@@ -1055,7 +1055,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_71: u=%x:%x:%x:%x:%x, ff=%G\n",
-        u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+        V(u.d4), V(u.d3), V(u.d2), V(u.d1), V(u.d0), V(ff));
 #endif
   a.d0 = mad24(bb.d5, bit_max75_mult, (bb.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
   a.d1 = mad24(bb.d6, bit_max75_mult, (bb.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
@@ -1066,8 +1066,8 @@ ff = 1/f as float, needed in div_192_96().
   mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_71: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp150.d9), V(tmp150.d8), V(tmp150.d7), V(tmp150.d6), V(tmp150.d5), V(tmp150.d4));
 #endif
 
   a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
@@ -1080,7 +1080,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_71: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     // bb.d0-bb.d3 are 0 due to preprocessing on the host, thus always require a borrow
   a.d0 = (-tmp75.d0) & 0x7FFF;
@@ -1094,7 +1094,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_71: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
-        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
   while(shifter)
@@ -1103,8 +1103,8 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(b.d9), V(b.d8), V(b.d7), V(b.d6), V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0) );
 #endif
 
     if(shifter&0x80000000)
@@ -1112,8 +1112,8 @@ ff = 1/f as float, needed in div_192_96().
       shl_150(&b);					// "optional multiply by 2" in Prime 95 documentation
 #if (TRACE_KERNEL > 2)
       if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(b.d9), V(b.d8), V(b.d7), V(b.d6), V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0) );
 #endif
     }
 
@@ -1127,8 +1127,8 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp150.d9), V(tmp150.d8), V(tmp150.d7), V(tmp150.d6), V(tmp150.d5), V(tmp150.d4));
 #endif
     a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
     a.d1 = tmp150.d6;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
@@ -1140,7 +1140,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     a.d0 = (b.d0 - tmp75.d0) & 0x7FFF;
     a.d1 = (b.d1 - tmp75.d1 + AS_UINT_V((a.d0 > b.d0)  ));
@@ -1154,13 +1154,13 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
-        b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
     shifter+=shifter;
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, a= %x:%x:%x:%x:%x\n",
-        shifter, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+        shifter, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0) );
 #endif
   }
 
@@ -1207,7 +1207,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73: u=%x:%x:%x:%x:%x, ff=%G\n",
-        u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+        V(u.d4), V(u.d3), V(u.d2), V(u.d1), V(u.d0), V(ff));
 #endif
   a.d0 = mad24(bb.d5, bit_max75_mult, (bb.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
   a.d1 = mad24(bb.d6, bit_max75_mult, (bb.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
@@ -1218,8 +1218,8 @@ ff = 1/f as float, needed in div_192_96().
   mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp150.d9), V(tmp150.d8), V(tmp150.d7), V(tmp150.d6), V(tmp150.d5), V(tmp150.d4));
 #endif
 
   a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
@@ -1232,7 +1232,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     // all those bb's are 0 due to preprocessing on the host, thus always require a borrow
   a.d0 = (-tmp75.d0) & 0x7FFF;
@@ -1246,7 +1246,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
-        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
   for(;;)
@@ -1255,21 +1255,21 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(b.d9), V(b.d8), V(b.d7), V(b.d6), V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0) );
 #endif
 #if (TRACE_KERNEL > 14)
     // verify squaring by dividing again.
-    __private float_v f1 = CONVERT_FLOAT_RTP_V(mad24(a.d4, 32768, a.d3));
+    __private float_v f1 = CONVERT_FLOAT_RTP_V(mad24(a.d4, 32768u, a.d3));
     f1= f1 * 32768.0f + CONVERT_FLOAT_RTP_V(a.d2);   // f.d1 needed?
 
     f1= as_float(0x3f7ffffc) / f1;
-    div_150_75(&tmp75, b.d9.s0, a, f1, tid
+    div_150_75(&tmp75, V(b.d9), a, f1, tid
                MODBASECASE_PAR
               );
     if (tid==TRACE_TID) printf((__constant char *)"vrfy: b = %x:0:0:0:0:0:0:0:0:0 / a=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x\n",
-        b.d9.s0,
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(b.d9),
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     a.d0 = mad24(b.d5, bit_max75_mult, (b.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
     a.d1 = mad24(b.d6, bit_max75_mult, (b.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
@@ -1281,8 +1281,8 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp150.d9), V(tmp150.d8), V(tmp150.d7), V(tmp150.d6), V(tmp150.d5), V(tmp150.d4));
 #endif
     a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
     a.d1 = tmp150.d6;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
@@ -1293,7 +1293,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     tmp75.d0 = (b.d0 - tmp75.d0) & 0x7FFF;
     tmp75.d1 = (b.d1 - tmp75.d1 + AS_UINT_V((tmp75.d0 > b.d0)  ));
@@ -1307,7 +1307,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (tmp)\n",
-        b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     if (shifter & 0x80000000) shl_75(&tmp75);
     if (shifter == 0x80000000) break;
@@ -1315,8 +1315,8 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x (a)\n",
-        shifter, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0,
-        f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+        shifter, V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0),
+        V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0) );
 #endif
 
     #ifndef CHECKS_MODBASECASE
@@ -1338,8 +1338,8 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73: tmp=%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x (a)\n",
-        tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0,
-        f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+        V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0),
+        V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0) );
 #endif
   }
 
@@ -1387,15 +1387,15 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: bit_max65=%u, u=%x:%x:%x:%x:%x, ff=%G, bb=%x:%x:%x:%x:%x:%x:0:0:0:0\n",
-        bit_max65, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0,
+        bit_max65, V(u.d4), V(u.d3), V(u.d2), V(u.d1), V(u.d0), V(ff),
         bb.d9, bb.d8, bb.d7, bb.d6, bb.d5, bb.d4);
 #endif
 #if (TRACE_KERNEL > 10)
     // verify u
     mul_75_150(&tmp150, u, f);
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: vrfy: f*u=%x:%x:%x:%x:%x:%x:%x:%x:%x:%x\n",
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0,
-        tmp150.d4.s0, tmp150.d3.s0, tmp150.d2.s0, tmp150.d1.s0, tmp150.d0.s0);
+        V(tmp150.d9), V(tmp150.d8), V(tmp150.d7), V(tmp150.d6), V(tmp150.d5),
+        V(tmp150.d4), V(tmp150.d3), V(tmp150.d2), V(tmp150.d1), V(tmp150.d0));
 #endif
   a.d0 = mad24(bb.d5, bit_max75_mult, (bb.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
   a.d1 = mad24(bb.d6, bit_max75_mult, (bb.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
@@ -1406,8 +1406,8 @@ ff = 1/f as float, needed in div_192_96().
   mul_75_150_no_low5(&tmp150, a, u);					// tmp150 = (b / (2^bit_max)) * u # at least close to ;)
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp150.d9), V(tmp150.d8), V(tmp150.d7), V(tmp150.d6), V(tmp150.d5), V(tmp150.d4));
 #endif
 
   a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
@@ -1420,7 +1420,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     // all those bb's are 0 due to preprocessing on the host, thus always require a borrow
   a.d0 = (-tmp75.d0) & 0x7FFF;
@@ -1434,7 +1434,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (a)\n",
-        mad24(bb.d5, 32768u, bb.d4), bb.d3, bb.d2, bb.d1, bb.d0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        mad24(bb.d5, 32768u, bb.d4), bb.d3, bb.d2, bb.d1, bb.d0, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
   for(;;)
@@ -1443,21 +1443,21 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(b.d9), V(b.d8), V(b.d7), V(b.d6), V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0) );
 #endif
 #if (TRACE_KERNEL > 14)
     // verify squaring by dividing again.
-    __private float_v f1 = CONVERT_FLOAT_RTP_V(mad24(a.d4, 32768, a.d3));
+    __private float_v f1 = CONVERT_FLOAT_RTP_V(mad24(a.d4, 32768u, a.d3));
     f1= f1 * 32768.0f + CONVERT_FLOAT_RTP_V(a.d2);   // f.d1 needed?
 
     f1= as_float(0x3f7ffffc) / f1;
-    div_150_75(&tmp75, b.d9.s0, a, f1, tid
+    div_150_75(&tmp75, V(b.d9), a, f1, tid
                MODBASECASE_PAR
               );
     if (tid==TRACE_TID) printf((__constant char *)"vrfy: b = %x:0:0:0:0:0:0:0:0:0 / a=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x\n",
-        b.d9.s0,
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(b.d9),
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     a.d0 = mad24(b.d5, bit_max75_mult, (b.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
     a.d1 = mad24(b.d6, bit_max75_mult, (b.d5 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)
@@ -1469,8 +1469,8 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:...\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp150.d9.s0, tmp150.d8.s0, tmp150.d7.s0, tmp150.d6.s0, tmp150.d5.s0, tmp150.d4.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp150.d9), V(tmp150.d8), V(tmp150.d7), V(tmp150.d6), V(tmp150.d5), V(tmp150.d4));
 #endif
     a.d0 = tmp150.d5;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
     a.d1 = tmp150.d6;			// a = ((b / (2^bit_max)) * u) / (2^bit_max)
@@ -1481,7 +1481,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x (tmp)\n",
-        a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     tmp75.d0 = (b.d0 - tmp75.d0) & 0x7FFF;
     tmp75.d1 = (b.d1 - tmp75.d1 + AS_UINT_V((tmp75.d0 > b.d0)  ));
@@ -1495,7 +1495,7 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x (tmp)\n",
-        mad24(b.d5.s0, 32768u, b.d4.s0), b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0);
+        mad24(V(b.d5), 32768u, V(b.d4)), V(b.d3), V(b.d2), V(b.d1), V(b.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     if (shifter & 0x80000000) shl_75(&tmp75);
     if (shifter == 0x80000000) break;
@@ -1520,8 +1520,8 @@ ff = 1/f as float, needed in div_192_96().
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x (a)\n",
-        shifter, tmp75.d4.s0, tmp75.d3.s0, tmp75.d2.s0, tmp75.d1.s0, tmp75.d0.s0,
-        f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+        shifter, V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0),
+        V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0) );
 #endif
   }
 
@@ -1552,7 +1552,7 @@ __kernel void cl_barrett15_69(__private uint exponent, const int75_t k_base, con
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: f=%x:%x:%x:%x:%x, shift=%d\n",
-        f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+        V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), shiftcount);
 #endif
 
   check_barrett15_69(exponent << (32 - shiftcount), f, tid, b_in, bit_max65, RES
@@ -1573,7 +1573,7 @@ __kernel void cl_barrett15_70(__private uint exponent, const int75_t k_base, con
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70: f=%x:%x:%x:%x:%x, shift=%d\n",
-        f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+        V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), shiftcount);
 #endif
 
   check_barrett15_70(exponent << (32 - shiftcount), f, tid, b_in, bit_max65, RES
@@ -1594,7 +1594,7 @@ __kernel void cl_barrett15_71(__private uint exponent, const int75_t k_base, con
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_71: f=%x:%x:%x:%x:%x, shift=%d\n",
-        f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+        V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), shiftcount);
 #endif
 
   check_barrett15_71(exponent << (32 - shiftcount), f, tid, b_in, bit_max65, RES
@@ -1615,7 +1615,7 @@ __kernel void cl_barrett15_73(__private uint exponent, const int75_t k_base, con
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73: f=%x:%x:%x:%x:%x, shift=%d\n",
-        f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+        V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), shiftcount);
 #endif
 
   check_barrett15_73(exponent << (32 - shiftcount), f, tid, b_in, bit_max65, RES
@@ -1635,7 +1635,7 @@ __kernel void cl_barrett15_74(__private uint exponent, const int75_t k_base, con
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74: f=%x:%x:%x:%x:%x, shift=%d\n",
-        f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+        V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), shiftcount);
 #endif
 
   check_barrett15_74(exponent << (32 - shiftcount), f, tid, b_in, bit_max65, RES
@@ -2038,7 +2038,7 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90_d#0: q=%x:<150x0>, n=%x:%x:%x:%x:%x:%x, nf=%#G\n",
-        qhi, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0);
+        qhi, V(n.d5), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(nf));
 #endif
 
 /********** Step 1, Offset 2^67 (4*15 + 7) **********/
@@ -2056,7 +2056,7 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
   qil = res->d3 = CONVERT_UINT_V(qi      ) & 0x7FFF;
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"div_180_90_d#1: qf=%#G, nf=%#G, *=%#G, qi=%lld=0x%llx, res=%x:%x:%x:..:..:..\n",
-                                 qf_1, nf.s0, qf_1*nf.s0, qi.s0, qi.s0, res->d5.s0, res->d4.s0, res->d3.s0);
+                                 qf_1, V(nf), qf_1*V(nf), V(qi), V(qi), V(res->d5), V(res->d4), V(res->d3));
 #endif
 
   /*******************************************************/
@@ -2068,7 +2068,7 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
   nn.d3 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90_d#1.1: nn=..:..:..:..:..:..:%x:%x:..:..:..\n",
-        nn.d4.s0, nn.d3.s0);
+        V(nn.d4), V(nn.d3));
 #endif
 
   nn.d5  = mad24(n.d0, qih, nn.d4 >> 15);
@@ -2077,7 +2077,7 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
   nn.d4 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90_d#1.2: nn=..:..:..:..:..:%x:%x:%x:...\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3));
 #endif
 
   nn.d6  = mad24(n.d1, qih, nn.d5 >> 15);
@@ -2086,7 +2086,7 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
   nn.d5 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90_d#1.3: nn=..:..:..:..:%x:%x:%x:%x:...\n",
-        nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+        V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3));
 #endif
 
   nn.d7  = mad24(n.d2, qih, nn.d6 >> 15);
@@ -2095,7 +2095,7 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
   nn.d6 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90_d#1.4: nn=..:..:..:%x:%x:%x:%x:%x:...\n",
-        nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+        V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3));
 #endif
 
   nn.d8  = mad24(n.d3, qih, nn.d7 >> 15);
@@ -2104,7 +2104,7 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
   nn.d7 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90_d#1.5: nn=..:..:%x:%x:%x:%x:%x:%x:...\n",
-        nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+        V(nn.d8), V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3));
 #endif
 
   nn.d9  = mad24(n.d4, qih, nn.d8 >> 15);
@@ -2112,13 +2112,13 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
   nn.d8 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90_d#1.6: nn=..:%x:%x:%x:%x:%x:%x:%x:...\n",
-        nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+        V(nn.d9), V(nn.d8), V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3));
 #endif
   nn.da  = mad24(n.d5, qih, nn.d9 >> 15);  // can be up to 30 bits, just as the input qhi
   nn.d9 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90_d#1.7: nn=..:%x:%x:%x:%x:%x:%x:%x:%x:...\n",
-        nn.da.s0, nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+        V(nn.da), V(nn.d9), V(nn.d8), V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3));
 #endif
 
 //  q = q - nn, but upon function entry, qhi contains all the bits for db:da. All bits below are zero.
@@ -2139,7 +2139,7 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
   q.da &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90_d#1.8: q=..:%x:%x!%x:%x:%x:%x:%x:%x:..:..\n",
-        q.da.s0, q.d9.s0, q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0);
+        V(q.da), V(q.d9), V(q.d8), V(q.d7), V(q.d6), V(q.d5), V(q.d4), V(q.d3));
 #endif
   MODBASECASE_NONZERO_ERROR(q.da, 2, 10, 1);
   MODBASECASE_NONZERO_ERROR(q.d9, 2, 9, 2);
@@ -2160,7 +2160,7 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
   res->d0  = CONVERT_UINT_V(qi) & 0x7FFF;
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"div_180_90_d#2: qf=%#G, nf=%#G, *=%#G, qi=%lld=0x%llx, res=%x:%x:%x:%x:%x:%x\n",
-                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+                                 V(qf), V(nf), V(qf)*V(nf), V(qi), V(qi), V(res->d5), V(res->d4), V(res->d3), V(res->d2), V(res->d1), V(res->d0));
 #endif
 
   /*******************************************************/
@@ -2186,7 +2186,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#0: q=%x:<150x0>, n=%x:%x:%x:%x:%x:%x, nf=%#G\n",
-        qhi, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0);
+        qhi, V(n.d5), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(nf));
 #endif
 
 /********** Step 1, Offset 2^67 (4*15 + 7) **********/
@@ -2204,7 +2204,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   qih = (qi >> 15);
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:..:..:..:..\n",
-                                 qf_1, nf.s0, qf_1*nf.s0, qi.s0, qi.s0, res->d5.s0, res->d4.s0);
+                                 qf_1, V(nf), qf_1*V(nf), V(qi), V(qi), V(res->d5), V(res->d4));
 #endif
 
   /*******************************************************/
@@ -2215,7 +2215,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d4 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.1: nn=..:..:..:..:..:%x:%x:..:..:..\n",
-        nn.d5.s0, nn.d4.s0);
+        V(nn.d5), V(nn.d4));
 #endif
 
   nn.d5  = mad24(n.d1, qil, nn.d5);
@@ -2223,7 +2223,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d5 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.2: nn=..:..:..:..:%x:%x:%x:...\n",
-        nn.d6.s0, nn.d5.s0, nn.d4.s0);
+        V(nn.d6), V(nn.d5), V(nn.d4));
 #endif
 
   nn.d6  = mad24(n.d2, qil, nn.d6);
@@ -2231,7 +2231,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d6 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.3: nn=..:..:..:%x:%x:%x:%x:...\n",
-        nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0);
+        V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4));
 #endif
 
   nn.d7  = mad24(n.d3, qil, nn.d7);
@@ -2239,21 +2239,21 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d7 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.4: nn=..:..:%x:%x:%x:%x:%x:...\n",
-        nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0);
+        V(nn.d8), V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4));
 #endif
   nn.d8  = mad24(n.d4, qil, nn.d8);
   nn.d9  = mad24(n.d4, qih, nn.d8 >> 15);
   nn.d8 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.5: nn=..:%x:%x:%x:%x:%x:%x:...\n",
-        nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0);
+        V(nn.d9), V(nn.d8), V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4));
 #endif
   nn.d9  = mad24(n.d5, qil, nn.d9);
   nn.da  = mad24(n.d5, qih, nn.d9 >> 15);
   nn.d9 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.6: nn=..:%x:%x:%x:%x:%x:%x:%x:...\n",
-        nn.da.s0, nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0);
+        V(nn.da), V(nn.d9), V(nn.d8), V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4));
 #endif
 
 // now shift-left 7 bits  PERF: would that still fit into qi to avoid the long shift?
@@ -2269,7 +2269,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d4  = (nn.d4 & 0x3FF) << 7;
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.7: nn=%x!%x:%x:%x:%x:%x:%x:%x:..:..:..\n",
-        nn.db.s0, nn.da.s0, nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0);
+        V(nn.db), V(nn.da), V(nn.d9), V(nn.d8), V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4));
 #endif
 
 //  q = q - nn, but upon function entry, qhi contains all the bits for db:da. All bits below are zero.
@@ -2292,7 +2292,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   q.da &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#1.8: q=%x!%x:%x:%x:%x:%x:%x:%x:..:..\n",
-        q.db.s0, q.da.s0, q.d9.s0, q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0);
+        V(q.db), V(q.da), V(q.d9), V(q.d8), V(q.d7), V(q.d6), V(q.d5), V(q.d4));
 #endif
   MODBASECASE_NONZERO_ERROR(q.db, 1, 11, 1);
 
@@ -2313,7 +2313,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   res->d2  = (qi << 13) &0x7FFF;
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:%x:..:..\n",
-                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0);
+                                 V(qf), V(nf), V(qf)*V(nf), V(qi), V(qi), V(res->d5), V(res->d4), V(res->d3), V(res->d2));
 #endif
 
   /*******************************************************/
@@ -2324,7 +2324,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d3 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.1: nn=..:..:..:..:%x:%x:..:..:..\n",
-        nn.d4.s0, nn.d3.s0);
+        V(nn.d4), V(nn.d3));
 #endif
 
   nn.d4  = mad24(n.d1, qil, nn.d4);
@@ -2332,7 +2332,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d4 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.2: nn=..:..:..:%x:%x:%x:..:..:..\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3));
 #endif
 
   nn.d5  = mad24(n.d2, qil, nn.d5);
@@ -2340,7 +2340,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d5 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.3: nn=..:..:%x:%x:%x:%x:..:..:..\n",
-        nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+        V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3));
 #endif
 
   nn.d6  = mad24(n.d3, qil, nn.d6);
@@ -2348,7 +2348,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d6 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.4: nn=..:%x:%x:%x:%x:%x:..:..:..\n",
-        nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+        V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3));
 #endif
 
   nn.d7  = mad24(n.d4, qil, nn.d7);
@@ -2356,7 +2356,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d7 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.5: nn=..:%x:%x:%x:%x:%x:%x:..:..:..\n",
-        nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+        V(nn.d8), V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3));
 #endif
 
   nn.d8  = mad24(n.d5, qil, nn.d8);
@@ -2364,7 +2364,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d8 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.6: nn=..:..:%x:%x:%x:%x:%x:%x:%x:..:..:..\n",
-        nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0);
+        V(nn.d9), V(nn.d8), V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3));
 #endif
 #ifdef CHECKS_MODBASECASE
   nn.da  = nn.d9 >> 15;
@@ -2386,7 +2386,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.8: nn=..:%x:%x!%x:%x:%x:%x:%x:%x:%x:..:..\n",
-        nn.da.s0, nn.d9.s0, nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0);
+        V(nn.da), V(nn.d9), V(nn.d8), V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2));
 #endif
   //  q = q - nn; q.d2 and q.d3 are still 0
   q.d2 = (-nn.d2) & 0x7FFF;
@@ -2408,7 +2408,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   q.d8 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#2.9: q=..:..:%x:%x:%x:%x:%x:%x:%x:..:..\n",
-        q.d9.s0, q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0);
+        V(q.d9), V(q.d8), V(q.d7), V(q.d6), V(q.d5), V(q.d4), V(q.d3));
 #endif
 
   MODBASECASE_NONZERO_ERROR(q.da, 2, 10, 3);
@@ -2430,7 +2430,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   res->d1  = (qi << 7) & 0x7FFF;
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:%x:%x:..\n",
-                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0);
+                                 V(qf), V(nf), V(qf)*V(nf), V(qi), V(qi), V(res->d5), V(res->d4), V(res->d3), V(res->d2), V(res->d1));
 #endif
 
   /*******************************************************/
@@ -2441,7 +2441,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d1 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.1: nn=..:..:..:..:%x:%x:..\n",
-        nn.d2.s0, nn.d1.s0);
+        V(nn.d2), V(nn.d1));
 #endif
 
   nn.d2  = mad24(n.d1, qil, nn.d2);
@@ -2449,7 +2449,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d2 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.2: nn=..:..:..:%x:%x:%x:..\n",
-        nn.d3.s0, nn.d2.s0, nn.d1.s0);
+        V(nn.d3), V(nn.d2), V(nn.d1));
 #endif
 
   nn.d3  = mad24(n.d2, qil, nn.d3);
@@ -2457,7 +2457,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d3 &= 0x7FFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.3: nn=..:..:%x:%x:%x:%x:..\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+        V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1));
 #endif
 
   nn.d4  = mad24(n.d3, qil, nn.d4);
@@ -2465,7 +2465,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d4 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.4: nn=..:%x:%x:%x:%x:%x:..\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1));
 #endif
 
   nn.d5  = mad24(n.d4, qil, nn.d5);
@@ -2473,7 +2473,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d5 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.5: nn=..:%x:%x:%x:%x:%x:%x:..\n",
-        nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+        V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1));
 #endif
 
   nn.d6  = mad24(n.d5, qil, nn.d6);
@@ -2481,7 +2481,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d6 &= 0x7FFF;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.6: nn=..:%x:%x:%x:%x:%x:%x:%x:..\n",
-        nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+        V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1));
 #endif
 
 // nn.d7 also contains the nn.d8 bits, will be distributed by the shifting below
@@ -2499,7 +2499,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   nn.d1  = (nn.d1 & 0xFF) << 7;
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.7: nn=..:..:%x!%x:%x:%x:%x:%x:%x:%x:..\n",
-        nn.d8.s0, nn.d7.s0, nn.d6.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0);
+        V(nn.d8), V(nn.d7), V(nn.d6), V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1));
 #endif
 
 //  q = q - nn;  q.d1 is still 0
@@ -2522,7 +2522,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
   q.d7 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"div_180_90#3.8: q=..:%x!%x:%x:%x:%x:%x:%x:%x:..\n",
-        q.d8.s0, q.d7.s0, q.d6.s0, q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0);
+        V(q.d8), V(q.d7), V(q.d6), V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1));
 #endif
 
   MODBASECASE_NONZERO_ERROR(q.d8, 3, 8, 6);
@@ -2544,7 +2544,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"div_180_90#4: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:%x:%x:%x:%x:%x\n",
-                                 qf.s0, nf.s0, qf.s0*nf.s0, qi.s0, qi.s0, res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+                                 V(qf), V(nf), V(qf)*V(nf), V(qi), V(qi), V(res->d5), V(res->d4), V(res->d3), V(res->d2), V(res->d1), V(res->d0));
 #endif
 
   // skip the last part - it will change the result by one at most - we can live with a result that is off by one
@@ -2599,7 +2599,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
                   MODBASECASE_PAR);						// u = floor(tmp180 / f)
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: u(d)=%x:%x:%x:%x:%x:%x, ffd=%G\n",
-        u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ffd.s0);
+        V(u.d5), V(u.d4), V(u.d3), V(u.d2), V(u.d1), V(u.d0), V(ffd));
 #endif
 
 #else
@@ -2615,7 +2615,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
                   MODBASECASE_PAR);						// u = floor(tmp180 / f)
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
-        u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+        V(u.d5), V(u.d4), V(u.d3), V(u.d2), V(u.d1), V(u.d0), V(ff));
 #endif
 #endif
 
@@ -2656,8 +2656,8 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:...\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0, tmp180.d5.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp180.db), V(tmp180.da), V(tmp180.d9), V(tmp180.d8), V(tmp180.d7), V(tmp180.d6), V(tmp180.d5));
 #endif
   a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
   a.d1 = tmp180.d7;
@@ -2670,8 +2670,8 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: a=%x:%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x:%x (tmp)\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp90.d5), V(tmp90.d4), V(tmp90.d3), V(tmp90.d2), V(tmp90.d1), V(tmp90.d0));
 #endif
     // bb.d0-bb.d3 are all 0
   a.d0 = (-tmp90.d0) & 0x7FFF;
@@ -2688,7 +2688,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: b=%x:%x:0:0:0:0 - tmp = %x:%x:%x:%x:%x:%x (a)\n",
-        bb.d5, bb.d4, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        bb.d5, bb.d4, V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
     ///
     ///// here it starts to become different between the 3 6x15bit kernels
@@ -2700,8 +2700,8 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.db.s0, b.da.s0, b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(b.db), V(b.da), V(b.d9), V(b.d8), V(b.d7), V(b.d6), V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0) );
 #endif
     if (bit_max65 > 10)  // need to distiguish how far to shift
     {
@@ -2726,8 +2726,8 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loopl: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:...\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0, tmp180.d5.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp180.db), V(tmp180.da), V(tmp180.d9), V(tmp180.d8), V(tmp180.d7), V(tmp180.d6), V(tmp180.d5));
 #endif
 
     a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
@@ -2741,7 +2741,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x:%x (tmp)\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp90.d5), V(tmp90.d4), V(tmp90.d3), V(tmp90.d2), V(tmp90.d1), V(tmp90.d0));
 #endif
     a.d0 = (b.d0 - tmp90.d0) & 0x7FFF;
     a.d1 = (b.d1 - tmp90.d1 + AS_UINT_V((a.d0 > b.d0)  ));
@@ -2757,7 +2757,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=...:%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (a)\n",
-        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
     if(shifter&0x80000000)shl_90(&a);					// "optional multiply by 2" in Prime 95 documentation
@@ -2765,7 +2765,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
     shifter+=shifter;
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, a= %x:%x:%x:%x:%x:%x \n",
-        shifter, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+        shifter, V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0) );
 #endif
   }
 
@@ -2815,7 +2815,7 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
                   MODBASECASE_PAR);						// u = floor(tmp180 / f)
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: u(d)=%x:%x:%x:%x:%x:%x, ffd=%G\n",
-        u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ffd.s0);
+        V(u.d5), V(u.d4), V(u.d3), V(u.d2), V(u.d1), V(u.d0), V(ffd));
 #endif
 #else
 
@@ -2830,7 +2830,7 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
                   MODBASECASE_PAR);						// u = floor(tmp180 / f)
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
-        u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+        V(u.d5), V(u.d4), V(u.d3), V(u.d2), V(u.d1), V(u.d0), V(ff));
 #endif
 #endif
 
@@ -2870,8 +2870,8 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
   mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:...\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0, tmp180.d5.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp180.db), V(tmp180.da), V(tmp180.d9), V(tmp180.d8), V(tmp180.d7), V(tmp180.d6), V(tmp180.d5));
 #endif
 
   a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
@@ -2885,8 +2885,8 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: a=%x:%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x:%x (tmp)\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp90.d5), V(tmp90.d4), V(tmp90.d3), V(tmp90.d2), V(tmp90.d1), V(tmp90.d0));
 #endif
   // bb.d0-bb.d3 are 0
   a.d0 = (-tmp90.d0) & 0x7FFF;
@@ -2903,7 +2903,7 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (a)\n",
-        bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
   while(shifter)
@@ -2911,8 +2911,8 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
     square_90_180(&b, a);						// b = a^2
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.db.s0, b.da.s0, b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(b.db), V(b.da), V(b.d9), V(b.d8), V(b.d7), V(b.d6), V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0) );
 #endif
     if(shifter&0x80000000)
     {
@@ -2920,7 +2920,7 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
       if (tid==TRACE_TID) printf((__constant char *)"loop: shl: %x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        b.db.s0, b.da.s0, b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        V(b.db), V(b.da), V(b.d9), V(b.d8), V(b.d7), V(b.d6), V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0) );
 #endif
     }
 
@@ -2947,8 +2947,8 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:...\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0, tmp180.d5.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp180.db), V(tmp180.da), V(tmp180.d9), V(tmp180.d8), V(tmp180.d7), V(tmp180.d6), V(tmp180.d5));
 #endif
     a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
     a.d1 = tmp180.d7;
@@ -2961,7 +2961,7 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x:%x (tmp)\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp90.d5), V(tmp90.d4), V(tmp90.d3), V(tmp90.d2), V(tmp90.d1), V(tmp90.d0));
 #endif
     // PERF: faster to compare against 0x7fff instead of b.dx?
     a.d0 = (b.d0 - tmp90.d0) & 0x7FFF;
@@ -2978,7 +2978,7 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (a)\n",
-        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
     shifter+=shifter;
@@ -3044,7 +3044,7 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: u=%x:%x:%x:%x:%x:%x, ff=%G\n",
-        u.d5.s0, u.d4.s0, u.d3.s0, u.d2.s0, u.d1.s0, u.d0.s0, ff.s0);
+        V(u.d5), V(u.d4), V(u.d3), V(u.d2), V(u.d1), V(u.d0), V(ff));
 #endif
 
   if (bit_max65 > 10)  // need to distiguish how far to shift; the same branch will be taken by all threads
@@ -3083,8 +3083,8 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
   mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:%x:...\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0, tmp180.d5.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp180.db), V(tmp180.da), V(tmp180.d9), V(tmp180.d8), V(tmp180.d7), V(tmp180.d6), V(tmp180.d5));
 #endif
 
   a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
@@ -3098,8 +3098,8 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: a=%x:%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x:%x (tmp)\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp90.d5), V(tmp90.d4), V(tmp90.d3), V(tmp90.d2), V(tmp90.d1), V(tmp90.d0));
 #endif
     // bb.d0-bb.d3 are 0
   a.d0 = (-tmp90.d0) & 0x7FFF;
@@ -3116,7 +3116,7 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (a)\n",
-        bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        bb.d5, bb.d4, bb.d3, bb.d2, bb.d1, bb.d0, V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
 for(;;)
@@ -3125,8 +3125,8 @@ for(;;)
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: exp=%.8x, a=%x:%x:%x:%x:%x:%x ^2 = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x (b)\n",
-        shifter, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        b.db.s0, b.da.s0, b.d9.s0, b.d8.s0, b.d7.s0, b.d6.s0, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0 );
+        shifter, V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(b.db), V(b.da), V(b.d9), V(b.d8), V(b.d7), V(b.d6), V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0) );
 #endif
     if (bit_max65 > 10)  // need to distiguish how far to shift
     {
@@ -3150,8 +3150,8 @@ for(;;)
     mul_90_180_no_low5(&tmp180, a, u); // tmp180 = (b / 2 ^ (bits_in_f - 1)) * (2 ^ (89 + bits_in_f) / f)
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x:%x * u = %x:%x:%x:%x:%x:%x:...\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        tmp180.db.s0, tmp180.da.s0, tmp180.d9.s0, tmp180.d8.s0, tmp180.d7.s0, tmp180.d6.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(tmp180.db), V(tmp180.da), V(tmp180.d9), V(tmp180.d8), V(tmp180.d7), V(tmp180.d6));
 #endif
 
     a.d0 = tmp180.d6;		             	// a = tmp180 / 2^90, which is b / f
@@ -3165,7 +3165,7 @@ for(;;)
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"loop: a=%x:%x:%x:%x:%x:%x * f = %x:%x:%x:%x:%x:%x (tmp)\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp90.d5), V(tmp90.d4), V(tmp90.d3), V(tmp90.d2), V(tmp90.d1), V(tmp90.d0));
 #endif
     tmp90.d0 = (b.d0 - tmp90.d0) & 0x7FFF;
     tmp90.d1 = (b.d1 - tmp90.d1 + AS_UINT_V((tmp90.d0 > b.d0)  ));
@@ -3181,7 +3181,7 @@ for(;;)
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"loop: b=%x:%x:%x:%x:%x:%x - tmp = %x:%x:%x:%x:%x:%x (tmp)\n",
-        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0);
+        V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0), V(tmp90.d5), V(tmp90.d4), V(tmp90.d3), V(tmp90.d2), V(tmp90.d1), V(tmp90.d0));
 #endif
     if (shifter & 0x80000000) shl_90(&tmp90);
     if (shifter == 0x80000000) break;
@@ -3204,8 +3204,8 @@ for(;;)
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"loopend: exp=%x, tmp=%x:%x:%x:%x:%x:%x mod f=%x:%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x (a)\n",
-        shifter, tmp90.d5.s0, tmp90.d4.s0, tmp90.d3.s0, tmp90.d2.s0, tmp90.d1.s0, tmp90.d0.s0,
-        f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0 );
+        shifter, V(tmp90.d5), V(tmp90.d4), V(tmp90.d3), V(tmp90.d2), V(tmp90.d1), V(tmp90.d0),
+        V(f.d5), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0) );
 #endif
   }
 
@@ -3235,7 +3235,7 @@ __kernel void cl_barrett15_82(__private uint exponent, const int75_t k_base, con
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82: tid=%d, f=%x:%x:%x:%x:%x:%x, shift=%d\n",
-        tid, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+        tid, V(f.d5), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), shiftcount);
 #endif
   check_barrett15_82(exponent << (32 - shiftcount), f, tid, b_in, bit_max65, RES
                      MODBASECASE_PAR);
@@ -3254,7 +3254,7 @@ __kernel void cl_barrett15_83(__private uint exponent, const int75_t k_base, con
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83: tid=%d, f=%x:%x:%x:%x:%x:%x, shift=%d\n",
-        tid, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+        tid, V(f.d5), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), shiftcount);
 #endif
   check_barrett15_83(exponent << (32 - shiftcount), f, tid, b_in, bit_max65, RES
                      MODBASECASE_PAR);
@@ -3273,7 +3273,7 @@ __kernel void cl_barrett15_88(__private uint exponent, const int75_t k_base, con
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88: tid=%d, f=%x:%x:%x:%x:%x:%x, shift=%d\n",
-        tid, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+        tid, V(f.d5), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), shiftcount);
 #endif
   check_barrett15_88(exponent << (32 - shiftcount), f, tid, b_in, bit_max65, RES
                      MODBASECASE_PAR);
@@ -3415,7 +3415,7 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x\n",
-        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], V(k_delta), V(k.d4), V(k.d3), V(k.d2), V(k.d1), V(k.d0), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett15_69(initial_shifter_value, f, tid, b_in, bit_max65, RES
@@ -3549,7 +3549,7 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_70_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x\n",
-        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], V(k_delta), V(k.d4), V(k.d3), V(k.d2), V(k.d1), V(k.d0), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett15_70(initial_shifter_value, f, tid, b_in, bit_max65, RES
@@ -3683,7 +3683,7 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_71_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x\n",
-        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], V(k_delta), V(k.d4), V(k.d3), V(k.d2), V(k.d1), V(k.d0), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett15_71(initial_shifter_value, f, tid, b_in, bit_max65, RES
@@ -3817,7 +3817,7 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_73_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x\n",
-        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], V(k_delta), V(k.d4), V(k.d3), V(k.d2), V(k.d1), V(k.d0), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett15_73(initial_shifter_value, f, tid, b_in, bit_max65, RES
@@ -3946,7 +3946,7 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_74_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x\n",
-        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], V(k_delta), V(k.d4), V(k.d3), V(k.d2), V(k.d1), V(k.d0), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett15_74(initial_shifter_value, f, tid, b_in, bit_max65, RES
@@ -4091,7 +4091,7 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
     f.d4 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_82_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x\n",
-        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], V(k_delta), V(k.d4), V(k.d3), V(k.d2), V(k.d1), V(k.d0), V(f.d5), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett15_82(initial_shifter_value, f, tid, b_in, bit_max65, RES
@@ -4229,7 +4229,7 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
     f.d4 &= 0x7FFF;
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_83_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x\n",
-        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], V(k_delta), V(k.d4), V(k.d3), V(k.d2), V(k.d1), V(k.d0), V(f.d5), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett15_83(initial_shifter_value, f, tid, b_in, bit_max65, RES
@@ -4367,7 +4367,7 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
     f.d4 &= 0x7FFF;
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_88_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x:%x:%x:%x, f=%x:%x:%x:%x:%x:%x\n",
-        i, smem[i], k_delta.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0, f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0);
+        i, smem[i], V(k_delta), V(k.d4), V(k.d3), V(k.d2), V(k.d1), V(k.d0), V(f.d5), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett15_88(initial_shifter_value, f, tid, b_in, bit_max65, RES

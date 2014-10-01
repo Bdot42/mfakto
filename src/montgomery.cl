@@ -189,7 +189,7 @@ bit_max64 is bit_max - 64!
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_mg62: k_tab[%d]=%x, f=%#llx, shift=%d\n",
-        tid, t.s0, f.s0, shiftcount);
+        tid, V(t), V(f), shiftcount);
 #endif
 
   f_inv = neginvmod2pow64(f);
@@ -249,13 +249,8 @@ bit_max64 is bit_max - 64!
   if( a==1 )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-#if (VECTOR_SIZE > 1)
-    printf((__constant char *)"cl_mg62: tid=%ld found factor: q=%#llx, k=%x:%x:%x\n", tid, f.s0, k.d2.s0, k.d1.s0, k.d0.s0);
-#else
-    printf((__constant char *)"cl_mg62: tid=%ld found factor: q=%#llx, k=%x:%x:%x\n", tid, f, k.d2, k.d1, k.d0);
+    printf((__constant char *)"cl_mg62: tid=%ld found factor: q=%#llx, k=%x:%x:%x\n", tid, V(f), V(k.d2), V(k.d1), V(k.d0));
 #endif
-#endif
-/* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     tid=ATOMIC_INC(RES[0]);
     if(tid<10)				/* limit to 10 factors per class */
     {
@@ -449,8 +444,8 @@ a = (a + r * m) / 2^15
 
 #if (TRACE_KERNEL > 2)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90: x=%x:%x:%x:%x:%x:%x, x*x=a=%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x, m=%x:%x:%x:%x:%x:%x, t=%x\n",
-        x.d5.s0, x.d4.s0, x.d3.s0, x.d2.s0, x.d1.s0, x.d0.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0,
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, m.d5.s0, m.d4.s0, m.d3.s0, m.d2.s0, m.d1.s0, m.d0.s0, t.s0);
+        V(x.d5), V(x.d4), V(x.d3), V(x.d2), V(x.d1), V(x.d0), V(a.db), V(a.da), V(a.d9), V(a.d8), V(a.d7), V(a.d6),
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(m.d5), V(m.d4), V(m.d3), V(m.d2), V(m.d1), V(m.d0), V(t));
 #endif
 
   // loop unrolled 6 times
@@ -471,7 +466,7 @@ a = (a + r * m) / 2^15
 
 #if (TRACE_KERNEL > 3)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90#1: r=%x, a=%x:%x:%x:%x:%x:%x!%x:%x:%x:%x:%x:%x, tmp=%x\n",
-        r.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+        V(r), V(a.db), V(a.da), V(a.d9), V(a.d8), V(a.d7), V(a.d6), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp));
 #endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
@@ -491,7 +486,7 @@ a = (a + r * m) / 2^15
 
 #if (TRACE_KERNEL > 3)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90#2: r=%x, a=%x:%x:%x:%x:%x:%x!%x:%x:%x:%x:%x:%x, tmp=%x\n",
-        r.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+        V(r), V(a.db), V(a.da), V(a.d9), V(a.d8), V(a.d7), V(a.d6), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp));
 #endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
@@ -511,7 +506,7 @@ a = (a + r * m) / 2^15
 
 #if (TRACE_KERNEL > 3)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90#3: r=%x, a=%x:%x:%x:%x:%x:%x!%x:%x:%x:%x:%x:%x, tmp=%x\n",
-        r.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+        V(r), V(a.db), V(a.da), V(a.d9), V(a.d8), V(a.d7), V(a.d6), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp));
 #endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
@@ -531,7 +526,7 @@ a = (a + r * m) / 2^15
 
 #if (TRACE_KERNEL > 3)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90#4: r=%x, a=%x:%x:%x:%x:%x:%x!%x:%x:%x:%x:%x:%x, tmp=%x\n",
-        r.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+        V(r), V(a.db), V(a.da), V(a.d9), V(a.d8), V(a.d7), V(a.d6), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp));
 #endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
@@ -551,7 +546,7 @@ a = (a + r * m) / 2^15
 
 #if (TRACE_KERNEL > 3)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90#5: r=%x, a=%x:%x:%x:%x:%x:%x!%x:%x:%x:%x:%x:%x, tmp=%x\n",
-        r.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+        V(r), V(a.db), V(a.da), V(a.d9), V(a.d8), V(a.d7), V(a.d6), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp));
 #endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
@@ -572,7 +567,7 @@ a = (a + r * m) / 2^15
 
 #if (TRACE_KERNEL > 3)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"squaremod_REDC90#6: r=%x, a=%x:%x:%x:%x:%x:%x!%x:%x:%x:%x:%x:%x, tmp=%x\n",
-        r.s0, a.db.s0, a.da.s0, a.d9.s0, a.d8.s0, a.d7.s0, a.d6.s0, a.d5.s0, ret.d4.s0, ret.d3.s0, ret.d2.s0, ret.d1.s0, ret.d0.s0, tmp.s0);
+        V(r), V(a.db), V(a.da), V(a.d9), V(a.d8), V(a.d7), V(a.d6), V(a.d5), V(ret.d4), V(ret.d3), V(ret.d2), V(ret.d1), V(ret.d0), V(tmp));
 #endif
 
   return sub_if_gte_90(ret, m);
@@ -585,7 +580,7 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
   // loop unrolled 6 times
 #if (TRACE_KERNEL > 2)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90: a=%x:%x:%x:%x:%x:%x, m=%x:%x:%x:%x:%x:%x, t=%x\n",
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, m.d5.s0, m.d4.s0, m.d3.s0, m.d2.s0, m.d1.s0, m.d0.s0, t.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(m.d5), V(m.d4), V(m.d3), V(m.d2), V(m.d1), V(m.d0), V(t));
 #endif
   r = mul24(a.d0, t) & 0x7FFF;
 
@@ -604,7 +599,7 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
 
 #if (TRACE_KERNEL > 3)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90#1: r=%x, a=%x:%x:%x:%x:%x:%x, tmp=%x\n",
-        r.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+        V(r), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp));
 #endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
@@ -624,7 +619,7 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
 
 #if (TRACE_KERNEL > 3)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90#2: r=%x, a=%x:%x:%x:%x:%x:%x, tmp=%x\n",
-        r.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+        V(r), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp));
 #endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
@@ -644,7 +639,7 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
 
 #if (TRACE_KERNEL > 3)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90#3: r=%x, a=%x:%x:%x:%x:%x:%x, tmp=%x\n",
-        r.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+        V(r), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp));
 #endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
@@ -664,7 +659,7 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
 
 #if (TRACE_KERNEL > 3)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90#4: r=%x, a=%x:%x:%x:%x:%x:%x, tmp=%x\n",
-        r.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+        V(r), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp));
 #endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
@@ -684,7 +679,7 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
 
 #if (TRACE_KERNEL > 3)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90#5: r=%x, a=%x:%x:%x:%x:%x:%x, tmp=%x\n",
-        r.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+        V(r), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp));
 #endif
 
   r = mul24(a.d0, t)  & 0x7FFF;
@@ -704,7 +699,7 @@ int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t)
 
 #if (TRACE_KERNEL > 3)
   if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_REDC90#6: r=%x, a=%x:%x:%x:%x:%x:%x, tmp=%x\n",
-        r.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0, tmp.s0);
+        V(r), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp));
 #endif
 
   return sub_if_gte_90(a, m);
@@ -746,7 +741,7 @@ bit_max64 is bit_max - 64!
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: f=%x:%x:%x:%x:%x:%x, shift=%d\n",
-        f.d5.s0, f.d4.s0, f.d3.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount);
+        V(f.d5), V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), shiftcount);
 #endif
 
   f_inv = neginvmod2pow15(f.d0);
@@ -784,12 +779,12 @@ bit_max64 is bit_max - 64!
   // As is now the montgomery-representation of 1
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: exp=%#x, As=%x:%x:%x:%x:%x:%x, f_inv=%x\n",
-        exponent, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, f_inv.s0);
+        exponent, V(As.d5), V(As.d4), V(As.d3), V(As.d2), V(As.d1), V(As.d0), V(f_inv));
 #endif
 #if (TRACE_KERNEL > 3)
      a = mod_REDC90 (As, f, f_inv);
      if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-beforeshift: exp=0x%x, As=%x:%x:%x:%x:%x:%x (a=%x:%x:%x:%x:%x:%x)\n",
-        exponent, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        exponent, V(As.d5), V(As.d4), V(As.d3), V(As.d2), V(As.d1), V(As.d0), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
    // A=1 => A*A=1 => As*As=As => skip the first mulmod
@@ -799,7 +794,7 @@ bit_max64 is bit_max - 64!
 #if (TRACE_KERNEL > 3)
      a = mod_REDC90 (As, f, f_inv);
      if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-beforeloop: exp=0x%x, As=%x:%x:%x:%x:%x:%x (a=%x:%x:%x:%x:%x:%x)\n",
-        exponent, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        exponent, V(As.d5), V(As.d4), V(As.d3), V(As.d2), V(As.d1), V(As.d0), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
    while(exponent)
    {
@@ -808,7 +803,7 @@ bit_max64 is bit_max - 64!
 #if (TRACE_KERNEL > 3)
      a = mod_REDC90 (As, f, f_inv);
      if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-loop: exp=0x%x, As=%x:%x:%x:%x:%x:%x (a=%x:%x:%x:%x:%x:%x)\n",
-        exponent, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        exponent, V(As.d5), V(As.d4), V(As.d3), V(As.d2), V(As.d1), V(As.d0), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
      exponent<<=1;
    }
@@ -816,7 +811,7 @@ bit_max64 is bit_max - 64!
    a = mod_REDC90 (As, f, f_inv);
 #if (TRACE_KERNEL > 1)
    if (tid==TRACE_TID) printf((__constant char *)"cl_mg88-end: exp=0x%x, As=%x:%x:%x:%x:%x:%x, a=%x:%x:%x:%x:%x:%x\n",
-        exponent, As.d5.s0, As.d4.s0, As.d3.s0, As.d2.s0, As.d1.s0, As.d0.s0, a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+        exponent, V(As.d5), V(As.d4), V(As.d3), V(As.d2), V(As.d1), V(As.d0), V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0));
 #endif
 
 /* finally check if we found a factor and write the factor to RES[] */

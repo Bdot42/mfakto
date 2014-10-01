@@ -2369,11 +2369,7 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_76_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_76_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
-    if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_76_gs: tid=%d, kdelta x: %d, y: %d\n",
-      lid, k_delta.x, k_delta.y);
+        i, smem[i], V(k_delta), V(my_k_base.d1), V(my_k_base.d0), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     // Compute f = 2 * k * exp + 1
@@ -2383,8 +2379,8 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID)
-       printf((__constant char *)"cl_barrett32_76_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+       printf((__constant char *)"cl_barrett32_76_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, k_delta=%u, f=%x:%x:%x\n",
+        lid, tid, get_group_id(0), i, smem[i], V(k_delta), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett32_76(initial_shifter_value, f, tid, bb, RES
@@ -2516,11 +2512,7 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_77_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
-    if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_77_gs: tid=%d, kdelta x: %d, y: %d\n",
-      lid, k_delta.x, k_delta.y);
+        i, smem[i], V(k_delta), V(my_k_base.d1), V(my_k_base.d0), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     // Compute f = 2 * k * exp + 1
@@ -2530,8 +2522,8 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID)
-       printf((__constant char *)"cl_barrett32_77_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+       printf((__constant char *)"cl_barrett32_77_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, k_delta=%u, f=%x:%x:%x\n",
+        lid, tid, get_group_id(0), i, smem[i], V(k_delta), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett32_77(initial_shifter_value, f, tid, bb, RES
@@ -2663,11 +2655,7 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_79_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
-    if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_79_gs: tid=%d, kdelta x: %d, y: %d\n",
-      lid, k_delta.x, k_delta.y);
+        i, smem[i], V(k_delta), V(my_k_base.d1), V(my_k_base.d0), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     // Compute f = 2 * k * exp + 1
@@ -2677,8 +2665,8 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID)
-       printf((__constant char *)"cl_barrett32_79_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+       printf((__constant char *)"cl_barrett32_79_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, k_delta=%u, f=%x:%x:%x\n",
+        lid, tid, get_group_id(0), i, smem[i], V(k_delta), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett32_79(initial_shifter_value, f, tid, bb, RES
@@ -2810,11 +2798,7 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_87_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
-    if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_87_gs: tid=%d, kdelta x: %d, y: %d\n",
-      lid, k_delta.x, k_delta.y);
+        i, smem[i], V(k_delta), V(my_k_base.d1), V(my_k_base.d0), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     // Compute f = 2 * k * exp + 1
@@ -2824,8 +2808,8 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID)
-       printf((__constant char *)"cl_barrett32_87_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+       printf((__constant char *)"cl_barrett32_87_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, k_delta=%u, f=%x:%x:%x\n",
+        lid, tid, get_group_id(0), i, smem[i], V(k_delta), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett32_87(initial_shifter_value, f, tid, bb, bit_max65, RES
@@ -2957,11 +2941,7 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_88_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
-    if (get_group_id(0) == 4703) printf((__constant char *)"cl_barrett32_88_gs: tid=%d, kdelta x: %d, y: %d\n",
-      lid, k_delta.x, k_delta.y);
+        i, smem[i], V(k_delta), V(my_k_base.d1), V(my_k_base.d0), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     // Compute f = 2 * k * exp + 1
@@ -2971,8 +2951,8 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 0)
     if (tid==TRACE_TID)
-       printf((__constant char *)"cl_barrett32_88_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+       printf((__constant char *)"cl_barrett32_88_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, k_delta=%u, f=%x:%x:%x\n",
+        lid, tid, get_group_id(0), i, smem[i], V(k_delta), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett32_88(initial_shifter_value, f, tid, bb, bit_max65, RES
@@ -3104,9 +3084,7 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92_gs: x: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i, smem[i], k_delta.s0, my_k_base.d1.s0, my_k_base.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0);
-    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett32_92_gs: y: smem[%d]=%d, k_delta=%d, k=%x:%x, k*p=%x:%x:%x\n",
-        i+1, smem[i+1], k_delta.s1, my_k_base.d1.s1, my_k_base.d0.s1, f.d2.s1, f.d1.s1, f.d0.s1);
+        i, smem[i], V(k_delta), V(my_k_base.d1), V(my_k_base.d0), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     // Compute f = 2 * k * exp + 1
@@ -3116,8 +3094,8 @@ a is precomputed on host ONCE.
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID)
-       printf((__constant char *)"cl_barrett32_92_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, smem[%u]=%u, k_delta=%u, %u: f=%x:%x:%x, %x:%x:%x\n",
-        lid, tid, get_group_id(0), i, smem[i], i+1, smem[i+1], k_delta.s0, k_delta.s1, f.d2.s0, f.d1.s0, f.d0.s0, f.d2.s1, f.d1.s1, f.d0.s1);
+       printf((__constant char *)"cl_barrett32_92_gs: lid=%u, tid=%u, gid=%u, smem[%u]=%u, k_delta=%u, f=%x:%x:%x\n",
+        lid, tid, get_group_id(0), i, smem[i], V(k_delta), V(f.d2), V(f.d1), V(f.d0));
 #endif
 
     check_barrett32_92(initial_shifter_value, f, tid, bb, bit_max65, RES

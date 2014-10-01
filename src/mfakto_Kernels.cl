@@ -71,9 +71,9 @@ Version 0.15
 #define MODBASECASE_PAR
 #endif
 
-#if VECTOR_SIZE == 1 && TRACE_KERNEL > 2
-# error "Kernel tracing > 2 works only for VectorSize > 1"
-#endif
+//#if VECTOR_SIZE == 1 && TRACE_KERNEL > 2
+//# error "Kernel tracing > 2 works only for VectorSize > 1"
+//#endif
 
 #include "datatypes.h"
 #include "common.cl"

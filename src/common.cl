@@ -320,7 +320,7 @@ void calculate_FC32(const uint exponent, const uint tid, const __global uint * r
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
-        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+        tid, V(t), V(k.d2), V(k.d1), V(k.d0));
 #endif
 
   f->d0  = k.d0 * exp96.d0 + 1;
@@ -403,7 +403,7 @@ void calculate_FC32_mad(const uint exponent, const uint tid, const __global uint
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"calculate_FC32_mad: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
-        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+        tid, V(t), V(k.d2), V(k.d1), V(k.d0));
 #endif
 
   f->d0  = k.d0 * exp96.d0 + 1;
@@ -470,14 +470,8 @@ are "out of range".
   }
 #endif
 #if (TRACE_KERNEL > 2)
-#if (VECTOR_SIZE == 1)
   if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, n=%x:%x:%x, qi=%x, tid=%u\n",
-        q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, qi, tid);
-#else
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, %x:%x:%x, n=%x:%x:%x, %x:%x:%x, qi=%x,%x, tid=%u\n",
-        q.d2.s0, q.d1.s0, q.d0.s0, q.d2.s1, q.d1.s1, q.d0.s1, n.d2.s0, n.d1.s0, n.d0.s0, n.d2.s1, n.d1.s1, n.d0.s1,
-        qi.s0, qi.s1, tid);
-#endif
+        V(q.d2), V(q.d1), V(q.d0), V(n.d2), V(n.d1), V(n.d0), V(qi), tid);
 #endif
 
   nn.d0  = n.d0 * qi;
@@ -489,7 +483,7 @@ are "out of range".
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char*)"mod_simple_96: nn=%x:%x:%x\n",
-        nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   carry= AS_UINT_V(nn.d0 > q.d0);
@@ -768,7 +762,7 @@ are "out of range".
 #endif
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -794,7 +788,7 @@ are "out of range".
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#2: nn=%x:%x:%x:%x:%x, res=%x:%x:%x:%x:%x\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+        V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0), V(res->d4), V(res->d3), V(res->d2), V(res->d1), V(res->d0));
 #endif
 
 }
@@ -848,7 +842,7 @@ are "out of range".
 #endif
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -874,7 +868,7 @@ are "out of range".
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#2: nn=%x:%x:%x:%x:%x, res=%x:%x:%x:%x:%x\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+        V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0), V(res->d4), V(res->d3), V(res->d2), V(res->d1), V(res->d0));
 #endif
 
 }
@@ -919,13 +913,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   nn.d0 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
 	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
-#else
-	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
-        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
-#endif
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -936,13 +925,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
 	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
-#else
-	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
-        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
-#endif
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -961,14 +945,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     tmp |= q.d4 - nn.d4;
 
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
-//    if (any( tmp == 0))
      printf((__constant char *)"mod_simple_e_75_a#3: tid=%u, tmp=%u, q=%x:%x:%x:%x:%x, nn=%x:%x:%x:%x:%x\n",
-        get_global_id(0), tmp.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#else
-     printf((__constant char *)"mod_simple_e_75_a#3: tid=%u, tmp=%u, q=%x:%x:%x:%x:%x, nn=%x:%x:%x:%x:%x\n",
-        get_global_id(0), tmp, q.d4, q.d3, q.d2, q.d1, q.d0, nn.d4, nn.d3, nn.d2, nn.d1, nn.d0);
-#endif
+        get_global_id(0), V(tmp), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 #if (VECTOR_SIZE == 1)
     if(tmp == 0)
@@ -1064,13 +1042,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   nn.d0 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
 	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
-#else
-	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
-        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
-#endif
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1081,13 +1054,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
 	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
-#else
-	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
-        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
-#endif
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -1106,14 +1074,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     tmp |= q.d4 - nn.d4;
 
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
-//    if (any( tmp == 0))
      printf((__constant char *)"mod_simple_e_75_a#3: tid=%u, tmp=%u, q=%x:%x:%x:%x:%x, nn=%x:%x:%x:%x:%x\n",
-        get_global_id(0), tmp.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#else
-     printf((__constant char *)"mod_simple_e_75_a#3: tid=%u, tmp=%u, q=%x:%x:%x:%x:%x, nn=%x:%x:%x:%x:%x\n",
-        get_global_id(0), tmp, q.d4, q.d3, q.d2, q.d1, q.d0, nn.d4, nn.d3, nn.d2, nn.d1, nn.d0);
-#endif
+        get_global_id(0), V(tmp), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 #if (VECTOR_SIZE == 1)
     if(tmp == 0)
@@ -1216,13 +1178,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
 	  printf((__constant char *)"mod_simple_75_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
-#else
-	  printf((__constant char *)"mod_simple_75_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
-        q.d4, q.d3, q.d2, q.d1, q.d0, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
-#endif
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -1242,7 +1199,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 3)
     if (any( tmp == 0)) printf((__constant char *)"mod_simple_75_a: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x\n",
-        get_global_id(1), tmp.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        get_global_id(1), V(tmp), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1371,7 +1328,7 @@ void calculate_FC75(const uint exponent, const uint tid, const __global uint * r
         
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"calculate_FC75: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+        tid, V(t), V(k.d4), V(k.d3), V(k.d2), V(k.d1), V(k.d0));
 #endif
 		// f = 2 * k * exp + 1
   f->d0 = mad24(k.d0, exp75.d0, 1u);
@@ -1448,7 +1405,7 @@ are "out of range".
 #endif
 #if (TRACE_KERNEL > 2)
   if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d5), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -1478,7 +1435,7 @@ are "out of range".
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90#2: nn=%x:%x:%x:%x:%x:%x, res=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0), V(res->d5), V(res->d4), V(res->d3), V(res->d2), V(res->d1), V(res->d0));
 #endif
 }
 
@@ -1521,13 +1478,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   nn.d1  = nn.d0 >> 15;
   nn.d0 &= 0x7FFF;
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
 	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_90_a#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
-#else
-	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_90_a#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d5, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
-#endif
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d5), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1538,13 +1490,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
 	  printf((__constant char *)"mod_simple_e_90_a#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
-#else
-	  printf((__constant char *)"mod_simple_e_90_a#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d5, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
-#endif
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d5), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -1566,13 +1513,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     tmp |= q.d5 - nn.d5;
 
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
     if (any( tmp == 0)) printf((__constant char *)"mod_simple_e_90_a#3: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x:%x\n",
-        get_global_id(0), tmp.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#else
-    if (any( tmp == 0)) printf((__constant char *)"mod_simple_e_90_a#3: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x:%x\n",
-        get_global_id(0), tmp, nn.d5, nn.d4, nn.d3, nn.d2, nn.d1, nn.d0);
-#endif
+        get_global_id(0), V(tmp), V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1669,13 +1611,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   nn.d0 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
 	  if(get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
-#else
-	  if(get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d5, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
-#endif
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d5), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 #if (VECTOR_SIZE == 1)
   if(q.d0 == nn.d0)
@@ -1685,13 +1622,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-#if (VECTOR_SIZE > 1)
 	  printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
-#else
-	  printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
-        q.d5, q.d4, q.d3, q.d2, q.d1, q.d0, n.d5, n.d4, n.d3, n.d2, n.d1, n.d0, qi);
-#endif
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d5), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -1714,7 +1646,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 3)
     if (any( tmp == 0)) printf((__constant char *)"mod_simple_90_a: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x:%x\n",
-        get_global_id(1), tmp.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        get_global_id(1), V(tmp), V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1842,7 +1774,7 @@ void calculate_FC90(const uint exponent, const uint tid, const __global uint * r
         
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"calculate_FC90: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+        tid, V(t), V(k.d4), V(k.d3), V(k.d2), V(k.d1), V(k.d0));
 #endif
 		// f = 2 * k * exp + 1
   f->d0 = mad24(k.d0, exp90.d0, 1u);

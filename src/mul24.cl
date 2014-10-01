@@ -236,12 +236,12 @@ void mod_144_72
   MODBASECASE_QI_ERROR(1<<22, 1, qi, 0);
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_%d%d_%d#1: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_%d%d_%d#1: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, V(qf), V(nf), V(qf)*V(nf), V(qi));
 #endif
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 //  nn.d0=0;
@@ -253,7 +253,7 @@ void mod_144_72
   nn.d2  = (tmp << 3) & 0xFFFFFF;
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#1.1: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   tmp    =  mul24(n.d1, qi);
@@ -263,7 +263,7 @@ void mod_144_72
   nn.d3  =  mad24((tmp & 0x1FFFFF), 8u, nn.d3);
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#1.2: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   tmp    =  mul24(n.d2, qi);
@@ -273,7 +273,7 @@ void mod_144_72
   nn.d4  =  mad24((tmp & 0x1FFFFF), 8u, nn.d4);
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#1.3: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 
@@ -285,7 +285,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#1: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 /*  q = q - nn */
@@ -319,12 +319,12 @@ void mod_144_72
   MODBASECASE_QI_ERROR(1<<22, 2, qi, 2);
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_%d%d_%d#2: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_%d%d_%d#2: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, V(qf), V(nf), V(qf)*V(nf), V(qi));
 #endif
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 //  nn.d0=0;
@@ -332,7 +332,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#2.0: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   tmp    =  mul24(n.d0, qi);
@@ -342,7 +342,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   tmp    =  mul24(n.d1, qi);
@@ -353,7 +353,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#2.1: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   tmp    =  mul24(n.d2, qi);
@@ -367,7 +367,7 @@ void mod_144_72
  
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#2.2: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 /* do carry */
@@ -379,7 +379,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#2: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 /* q = q - nn */
@@ -424,13 +424,13 @@ void mod_144_72
   MODBASECASE_QI_ERROR(1<<22, 3, qi, 4);
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_%d%d_%d#3: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_%d%d_%d#3: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, V(qf), V(nf), V(qf)*V(nf), V(qi));
     // if (tid==TRACE_TID) printf((__constant char *)"mod_144_72: qf=%#G, nf=%#G, qi=%d\n", -1.0e10f, 3.2e8f, qi);
 #endif
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 //nn = n * qi, shiftleft is done later
@@ -441,7 +441,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3.0: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   tmp   = mul24(n.d0, qi);
@@ -451,7 +451,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3.1: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   tmp   = mul24(n.d1, qi);
@@ -461,7 +461,7 @@ void mod_144_72
  
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3.2: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   tmp   = mul24(n.d2, qi);
@@ -471,7 +471,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3.3: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   /* do carry */
@@ -480,7 +480,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3: before shl(11): nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 // shiftleft 11 bits
 #ifdef CHECKS_MODBASECASE
@@ -495,7 +495,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 /*  q = q - nn */
@@ -540,13 +540,13 @@ void mod_144_72
   MODBASECASE_QI_ERROR(1<<22, 4, qi, 7);
 
 #if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_%d%d_%d#4: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, qf.s0, nf.s0, qf.s0*nf.s0, qi.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_%d%d_%d#4: qf=%#G, nf=%#G, *=%#G, qi=%d\n", 1, 44, 72, V(qf), V(nf), V(qf)*V(nf), V(qi));
     //if (tid==TRACE_TID) printf((__constant char *)"mod_144_72: qf=%#G, nf=%#G, qi=%d\n", qf, nf, qi);
 #endif
 
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
   /* nn.d0 =                                  mul24(n.d0, qi)               & 0xFFFFFF;
@@ -560,7 +560,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#4.0: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   tmp   = mul24(n.d0, qi);
@@ -569,7 +569,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#4.1: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   tmp   = mul24(n.d1, qi);
@@ -578,7 +578,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#4.2: nn=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 #ifndef CHECKS_MODBASECASE  
@@ -595,7 +595,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#4.3: nn=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 /* q = q - nn */
@@ -624,7 +624,7 @@ void mod_144_72
 
 #if (TRACE_KERNEL > 1)
     if (tid==TRACE_TID) printf((__constant char *)"mod_144_72#4: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, res->d2.s0, res->d1.s0, res->d0.s0, n.d2.s0, n.d1.s0, n.d0.s0, qi.s0);
+        V(q.d5), V(q.d4), V(q.d3), V(res->d2), V(res->d1), V(res->d0), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 }
@@ -734,7 +734,7 @@ Precalculated here since it is the same for all steps in the following loop */
  
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_71: tid=%d: p=%x, *2 =%x:%x, k=%x:%x:%x, f=%x:%x:%x, shift=%d, b=%x:%x:%x:%x:%x:%x\n",
-                              tid, exp, exp72.d1, exp72.d0, k.d2.s0, k.d1.s0, k.d0.s0, f.d2.s0, f.d1.s0, f.d0.s0, shiftcount, b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0);
+                              tid, exp, exp72.d1, exp72.d0, V(k.d2), V(k.d1), V(k.d0), V(f.d2), V(f.d1), V(f.d0), shiftcount, V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0));
 #endif
 
 #ifdef _63BIT_MUL24_K
@@ -757,7 +757,7 @@ Precalculated here since it is the same for all steps in the following loop */
     else              square_72_144(&b,a);	// b = a^2
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_71: exp=%x,  %x:%x:%x ^2 (shl:%d) = %x:%x:%x:%x:%x:%x\n",
-                              exp, a.d2.s0, a.d1.s0, a.d0.s0, (exp&0x80000000?1:0), b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0);
+                              exp, V(a.d2), V(a.d1), V(a.d0), (exp&0x80000000?1:0), V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0));
 #endif
 
 #ifdef _63BIT_MUL24_K
@@ -778,7 +778,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #if (TRACE_KERNEL > 0)
 #if (VECTOR_SIZE > 1)
   if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_71 result: f=%x:%x:%x, a=%x:%x:%x\n",
-                              f.d2.s0, f.d1.s0, f.d0.s0, a.d2.s0, a.d1.s0, a.d0.s0);
+                              V(f.d2), V(f.d1), V(f.d0), V(a.d2), V(a.d1), V(a.d0));
 #else
   if (tid==TRACE_TID) printf((__constant char *)"mfakto_cl_71 result: f=%x:%x:%x, a=%x:%x:%x\n",
                               f.d2, f.d1, f.d0, a.d2, a.d1, a.d0);
