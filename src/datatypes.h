@@ -226,13 +226,13 @@ typedef struct _int180_v
 // SUB_COND returns val-1 if cond is true, otherwise val
 #if defined VLIW4 || defined VLIW5
 // VLIW4/5 native instructions already return -1 on vector "true": use it directly
-#define ADD_COND(val, cond) ((val) - AS_UINT_V(cond))
-#define SUB_COND(val, cond) ((val) + AS_UINT_V(cond))
+#define ADD_COND(val, cond) (val - AS_UINT_V(cond))
+#define SUB_COND(val, cond) (val + AS_UINT_V(cond))
 #else
 // GCN (and others) don't really know vectors and return 1 for "true" in their native instructions
 // use this define to allow the optimizer to circumvent the OpenCL convention to return -1
-#define ADD_COND(val, cond) ((val) + AS_UINT_V((cond) ? 1 : 0))
-#define SUB_COND(val, cond) ((val) - AS_UINT_V((cond) ? 1 : 0))
+#define ADD_COND(val, cond) (val + AS_UINT_V((cond) ? 1 : 0))
+#define SUB_COND(val, cond) (val - AS_UINT_V((cond) ? 1 : 0))
 #endif
 
 #define CONVERT_FLOAT convert_float

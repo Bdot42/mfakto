@@ -56,6 +56,8 @@ extern int run_gs_kernel32(cl_kernel kernel, cl_uint numblocks, cl_uint shared_m
 extern int run_kernel15(cl_kernel l_kernel, cl_uint exp, int75 k_base, int stream, cl_uint8 b_in, cl_mem res, cl_int shiftcount, cl_int bin_max);
 extern int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int144 b_preinit, cl_mem res, cl_int shiftcount, cl_int bin_min63);
 extern int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, cl_ulong4 b_preinit, cl_mem res, cl_int bin_min63);
+extern "C" int class_needed(unsigned int expo, unsigned long long int k_min, int c);
+extern "C" unsigned long long int calculate_k(unsigned int exp, int bits);
 
 #define EXP 66362159
 
@@ -76,7 +78,11 @@ int init_perftest(int devicenumber)
   init_CL(mystuff.num_streams, &devicenumber);
   set_gpu_type();
   load_kernels(&devicenumber);
-
+#ifdef SIEVE_SIZE_LIMIT
+  sieve_init();
+#else
+  sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max);
+#endif
 //  i = (cl_uint)deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
   i = 2048;
   while( (i * 2) <= mystuff.threads_per_grid_max) i = i * 2;
@@ -842,6 +848,70 @@ int test_gpu_sieve(cl_uint par)
   return 0;
 }
 
+int test_gpu_tf_kernels(cl_uint par)
+{
+  struct timeval timer;
+  double time1;
+  cl_uint i, use_class=0;
+  mystuff.bit_min = 68;
+  mystuff.bit_max_assignment = 69;
+  mystuff.bit_max_stage = 69;
+  cl_ulong k = calculate_k(mystuff.exponent,mystuff.bit_min);
+  cl_ulong num_fcs = 2048;
+  cl_ulong use_kernel;
+  double ghzd = primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_max_stage);
+  double ghz;
+
+  mystuff.threads_per_grid = 256;
+  if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
+  {
+    printf("ERROR: device only supports %u threads per grid. A minimum of 256 is required for GPU sieving.\n", (unsigned int) deviceinfo.maxThreadsPerGrid);
+    return ERR_MEM;
+  }
+
+  mystuff.exponent = 0;
+  run_calc_bit_to_clear(0, 0, NULL, 0); // reset the internal static so it will copy the exponent to the device again.
+  mystuff.exponent = EXP;
+  gpusieve_init_exponent(&mystuff);
+  while(!class_needed(mystuff.exponent, k, use_class)) use_class++;
+  gpusieve_init_class(&mystuff, k+use_class);
+
+  // calibrate to the device so we have ~ 2..4 seconds per kernel
+  do
+  {
+    timer_init(&timer);
+    tf_class_opencl (k+use_class, k+use_class+num_fcs*mystuff.num_classes, &mystuff, BARRETT79_MUL32_GS);
+    time1 = (double)timer_diff(&timer);
+    num_fcs <<=1;
+  } while (time1 < 200000.0*par);
+
+  printf("\n5. GPU tf kernels, %lld FCs each\n", num_fcs);
+  for (use_kernel = BARRETT79_MUL32_GS; use_kernel < UNKNOWN_GS_KERNEL; use_kernel++)
+  {
+    timer_init(&timer);
+    tf_class_opencl (k+use_class, k+use_class+num_fcs*mystuff.num_classes, &mystuff, (GPUKernels)use_kernel);
+    time1 = (double)timer_diff(&timer);
+    ghz = (double)num_fcs/(double)k * 86400000000.0 / time1 * ghzd;
+    printf("  %.20s: %8.2f ms ==> %8.2fM FCs/s ==> %7.2f GHz-days/day\n", kernel_info[use_kernel].kernelname, time1/1000.0, num_fcs/time1, ghz);
+  }
+  return 0;
+}
+
+int test_tf_kernels(cl_uint par)
+{
+  mystuff.threads_per_grid = mystuff.threads_per_grid_max;
+  if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
+  {
+    mystuff.threads_per_grid = (cl_uint)deviceinfo.maxThreadsPerGrid;
+  }
+  // threads_per_grid is the number of FC's per kernel invocation. It must be divisible by the vectorsize
+  // as only threads_per_grid / vectorsize threads will actually be started.
+  mystuff.threads_per_grid -= mystuff.threads_per_grid % (mystuff.vectorsize * deviceinfo.maxThreadsPerBlock);
+  mystuff.sieve_primes_upper_limit = mystuff.sieve_primes_max;
+
+  return 0;
+}
+
 int init_gpu_test(int devicenumber)
 {
   cleanup_CL();
@@ -878,19 +948,7 @@ int perftest(int par, int devicenumber)
 
   if (par == 0) par=10;
 
-  printf("Generate list of the first 1000000 primes: ");
-
-  timer_init(&timer);
-#ifdef SIEVE_SIZE_LIMIT
-  sieve_init();
-#else
-  sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max);
-#endif
-  time1 = (double)timer_diff(&timer);
-  printf("%.2f ms\n\n", time1/1000.0);
-  if (mystuff.quit) exit(1);
-
-  printf("Generate list of the first %u primes for GPU sieving: ", GPU_SIEVE_PRIMES_MAX);
+  printf("Generate list of the first %u primes: ", GPU_SIEVE_PRIMES_MAX);
   cl_uint *p = (cl_uint *)malloc(sizeof(cl_uint)* GPU_SIEVE_PRIMES_MAX );
   timer_init(&timer);
 
@@ -919,11 +977,38 @@ int perftest(int par, int devicenumber)
   // 4. kernels
   test_gpu_sieve((cl_uint)par);
 
-  printf("5. mfakto_cl_71 kernel\n  soon\n");
+  printf("\n5. TF kernels, %d iterations each\n", par);
 
-  printf("6. barrett_79 kernel\n  soon\n");
+  cleanup_CL(); // reinit from scratch
 
-  printf("7. barrett_92 kernel\n  soon\n");
+  // use the configured settings
+  mystuff.verbosity = 0; // don't show the loading
+  read_config(&mystuff);
+  if(init_CL(mystuff.num_streams, &devicenumber)!=CL_SUCCESS)
+  {
+    printf("ERROR: init_CL(%d, %d) failed\n", mystuff.num_streams, devicenumber);
+    return ERR_INIT;
+  }
+  set_gpu_type();
+  if (load_kernels(&devicenumber)!=CL_SUCCESS)
+  {
+    printf("ERROR: load_kernels(%d) failed\n", devicenumber);
+    return ERR_INIT;
+  }
+  if (init_CLstreams(0))
+  {
+    printf("ERROR: init_CLstreams (malloc buffers?) failed\n");
+    return ERR_MEM;
+  }
+
+  if (mystuff.gpu_sieving == 1)
+  {
+    test_gpu_tf_kernels((cl_uint) par);
+  }
+  else
+  {
+    test_tf_kernels((cl_uint) par);
+  }
 
   cleanup_CL();
   sieve_free();

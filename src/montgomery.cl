@@ -130,8 +130,7 @@ bit_max64 is bit_max - 64!
   __private uint tid;
   __private uint_v t;
 
-	//tid = (get_global_id(0)+get_global_size(0)*get_global_id(1)) * VECTOR_SIZE;
-	tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_mg62: exp=%d, k_base=%x:%x:%x\n",
@@ -729,7 +728,7 @@ bit_max64 is bit_max - 64!
   __private uint_v f_inv;
   __private float_v ff;
 
-  tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
 #if (TRACE_KERNEL > 1)
   if (tid==TRACE_TID) printf((__constant char *)"cl_mg88: exp=%u=%x, k_base=%x:%x:%x:%x\n",

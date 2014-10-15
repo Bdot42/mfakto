@@ -654,7 +654,7 @@ a is precomputed on host ONCE. */
   __private int72_v  a;       // result of the modulo
   __private int144_v b;       // result of the squaring;
   __private int72_v  f;       // the factor(s) to be tested
-  __private int      tid = mad24((uint)get_global_id(1), (uint)get_global_size(0), (uint)get_global_id(0)) * VECTOR_SIZE;
+  __private int      tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
   __private float_v  ff;
   __private uint_v   t;
 

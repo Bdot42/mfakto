@@ -1309,6 +1309,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
   if (last_exponent != mystuff.exponent) // only copy the exponent if it changed
   {
     last_exponent = mystuff.exponent;
+    if (last_exponent == 0) return 1; // only for resetting the last_exponent
     status = clSetKernelArg(kernel_info[CL_CALC_BIT_TO_CLEAR].kernel,
                     0,
                     sizeof(cl_uint),

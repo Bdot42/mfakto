@@ -106,7 +106,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   int180_v resv;
   int90_v a, b, r;
   tid = get_global_id(0);
-#ifdef cl_khr_fp64
+#if defined cl_khr_fp64 && ! defined GCN
   double_v ff = 1.0;
 #else
   float_v ff = 1.0f;
@@ -259,7 +259,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 
   i=mad24(resv.db.s0, 32768u, resv.da.s0)>>2;
   f=(mad24(resv.db.s0, 32768u, resv.da.s0)<<30) + mad24(resv.d9.s0, 32768u, resv.d8.s0);
-#ifdef cl_khr_fp64
+#if defined cl_khr_fp64 && ! defined GCN
   div_180_90_d(&r, i, a, ff
 #else
   div_180_90(&r, i, a, ff
@@ -278,7 +278,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
         r.d5.s0, r.d4.s0, r.d3.s0, r.d2.s0, r.d1.s0, r.d0.s0);
 #endif
 
-#ifdef cl_khr_fp64
+#if defined cl_khr_fp64 && ! defined GCN
   ff= CONVERT_DOUBLE_RTP_V(mad24(b.d5, 32768u, b.d4));
   ff= ff * 32768.0 * 32768.0+ CONVERT_DOUBLE_RTP_V(mad24(b.d3, 32768u, b.d2));   // f.d1 needed?
   ff= as_double(0x3feffffffffffffdL) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
@@ -291,7 +291,7 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   i=mad24(resv.db.s0, 32768u, resv.da.s0)>>2;
   f=(mad24(resv.db.s0, 32768u, resv.da.s0)<<30) + mad24(resv.d9.s0, 32768u, resv.d8.s0);
 
-#ifdef cl_khr_fp64
+#if defined cl_khr_fp64 && ! defined GCN
   div_180_90_d(&r, i, b, ff
 #else
   div_180_90(&r, i, b, ff

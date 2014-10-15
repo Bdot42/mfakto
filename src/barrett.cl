@@ -2078,7 +2078,7 @@ __kernel void cl_barrett32_76(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -2107,7 +2107,7 @@ __kernel void cl_barrett32_77(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -2136,7 +2136,7 @@ __kernel void cl_barrett32_79(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -2165,7 +2165,7 @@ __kernel void cl_barrett32_87(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-  tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -2194,7 +2194,7 @@ __kernel void cl_barrett32_88(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-  tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -2223,7 +2223,7 @@ __kernel void cl_barrett32_92(__private uint exponent, const int96_t k_base, con
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 #endif
 
-	tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC32(exponent, tid, k_tab, k_base, &f);
 
@@ -2265,7 +2265,7 @@ a is precomputed on host ONCE.
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int96_v  my_k_base, f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private uint_v   tmp_v;
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
@@ -2274,6 +2274,8 @@ a is precomputed on host ONCE.
   // WA for another bug
   uint num_c;
 #endif
+
+tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_76_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -2408,7 +2410,7 @@ a is precomputed on host ONCE.
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int96_v  my_k_base, f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private uint_v   tmp_v;
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
@@ -2417,6 +2419,8 @@ a is precomputed on host ONCE.
   // WA for another bug
   uint num_c;
 #endif
+
+tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_77_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -2551,7 +2555,7 @@ a is precomputed on host ONCE.
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int96_v  my_k_base, f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private uint_v   tmp_v;
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
@@ -2560,6 +2564,8 @@ a is precomputed on host ONCE.
   // WA for another bug
   uint num_c;
 #endif
+
+tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_79_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -2694,7 +2700,7 @@ a is precomputed on host ONCE.
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int96_v  my_k_base, f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private uint_v   tmp_v;
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
@@ -2703,6 +2709,8 @@ a is precomputed on host ONCE.
   // WA for another bug
   uint num_c;
 #endif
+
+tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_87_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -2837,7 +2845,7 @@ a is precomputed on host ONCE.
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int96_v  my_k_base, f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private uint_v   tmp_v;
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
@@ -2846,6 +2854,8 @@ a is precomputed on host ONCE.
   // WA for another bug
   uint num_c;
 #endif
+
+tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_88_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -2980,7 +2990,7 @@ a is precomputed on host ONCE.
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int96_v  my_k_base, f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private uint_v   tmp_v;
 #ifdef WA_FOR_CATALYST11_10_BUG
   __private int192_t bb={b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
@@ -2989,6 +2999,8 @@ a is precomputed on host ONCE.
   // WA for another bug
   uint num_c;
 #endif
+
+tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett32_92_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",

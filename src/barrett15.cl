@@ -479,12 +479,12 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 
 //  q.d0-q.d8 are all zero
   q.d4 = -nn.d0;
-  q.d5 = -nn.d1 + AS_UINT_V((q.d4 > 0x7FFF));
-  q.d6 = -nn.d2 + AS_UINT_V((q.d5 > 0x7FFF));
-  q.d7 = -nn.d3 + AS_UINT_V((q.d6 > 0x7FFF));
-  q.d8 = -nn.d4 + AS_UINT_V((q.d7 > 0x7FFF));
+  q.d5 = SUB_COND(-nn.d1, q.d4 > 0x7FFF);
+  q.d6 = SUB_COND(-nn.d2, q.d5 > 0x7FFF);
+  q.d7 = SUB_COND(-nn.d3, q.d6 > 0x7FFF);
+  q.d8 = SUB_COND(-nn.d4, q.d7 > 0x7FFF);
 #ifdef CHECKS_MODBASECASE
-  q.d9 = qhi - nn.d5 + AS_UINT_V((q.d8 > 0x7FFF)); // PERF: not needed: should be zero anyway
+  q.d9 = SUB_COND(qhi - nn.d5, q.d8 > 0x7FFF); // PERF: not needed: should be zero anyway
 #endif
   q.d4 &= 0x7FFF;
   q.d5 &= 0x7FFF;
@@ -577,13 +577,13 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 
 //  q = q - nn
   q.d2 = -nn.d0;
-  q.d3 = -nn.d1 + AS_UINT_V((q.d2 > 0x7FFF));
-  q.d4 = q.d4 - nn.d2 + AS_UINT_V((q.d3 > 0x7FFF));
-  q.d5 = q.d5 - nn.d3 + AS_UINT_V((q.d4 > 0x7FFF));
-  q.d6 = q.d6 - nn.d4 + AS_UINT_V((q.d5 > 0x7FFF));
-  q.d7 = q.d7 - nn.d5 + AS_UINT_V((q.d6 > 0x7FFF));
+  q.d3 = SUB_COND(-nn.d1, q.d2 > 0x7FFF);
+  q.d4 = SUB_COND(q.d4 - nn.d2, q.d3 > 0x7FFF);
+  q.d5 = SUB_COND(q.d5 - nn.d3, q.d4 > 0x7FFF);
+  q.d6 = SUB_COND(q.d6 - nn.d4, q.d5 > 0x7FFF);
+  q.d7 = SUB_COND(q.d7 - nn.d5, q.d6 > 0x7FFF);
 #ifdef CHECKS_MODBASECASE
-  q.d8 = q.d8 - nn.d6 + AS_UINT_V((q.d7 > 0x7FFF)); // PERF: not needed: should be zero anyway
+  q.d8 = SUB_COND(q.d8 - nn.d6, q.d7 > 0x7FFF); // PERF: not needed: should be zero anyway
 #endif
   q.d2 &= 0x7FFF;
   q.d3 &= 0x7FFF;
@@ -669,13 +669,13 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 
 //  q = q - nn
   q.d1 = -nn.d0;
-  q.d2 = q.d2 - nn.d1 + AS_UINT_V((q.d1 > 0x7FFF));
-  q.d3 = q.d3 - nn.d2 + AS_UINT_V((q.d2 > 0x7FFF));
-  q.d4 = q.d4 - nn.d3 + AS_UINT_V((q.d3 > 0x7FFF));
-  q.d5 = q.d5 - nn.d4 + AS_UINT_V((q.d4 > 0x7FFF));
-  q.d6 = q.d6 - nn.d5 + AS_UINT_V((q.d5 > 0x7FFF));
+  q.d2 = SUB_COND(q.d2 - nn.d1, q.d1 > 0x7FFF);
+  q.d3 = SUB_COND(q.d3 - nn.d2, q.d2 > 0x7FFF);
+  q.d4 = SUB_COND(q.d4 - nn.d3, q.d3 > 0x7FFF);
+  q.d5 = SUB_COND(q.d5 - nn.d4, q.d4 > 0x7FFF);
+  q.d6 = SUB_COND(q.d6 - nn.d5, q.d5 > 0x7FFF);
 #ifdef CHECKS_MODBASECASE
-  q.d7 = q.d7 - nn.d6 + AS_UINT_V((q.d6 > 0x7FFF)); // PERF: not needed: should be zero anyway
+  q.d7 = SUB_COND(q.d7 - nn.d6, q.d6 > 0x7FFF); // PERF: not needed: should be zero anyway
   q.d7 &= 0x7FFF;
 #endif
   q.d1 &= 0x7FFF;
@@ -791,10 +791,10 @@ Precalculated here since it is the same for all steps in the following loop */
 #endif
     // bb.d0-bb.d3 are 0 due to preprocessing on the host, thus always require a borrow
   a.d0 = (-tmp75.d0) & 0x7FFF;
-  a.d1 = (-tmp75.d1 + AS_UINT_V((a.d0 > 0)  ));
-  a.d2 = (-tmp75.d2 + AS_UINT_V((a.d1 > 0x7FFF)  ));
-  a.d3 = (-tmp75.d3 + AS_UINT_V((a.d2 > 0x7FFF)  ));
-  a.d4 = (bb.d4-tmp75.d4 + AS_UINT_V((a.d3 > 0x7FFF)  )) & 0x7FFF;
+  a.d1 = SUB_COND(-tmp75.d1, a.d0 > 0);
+  a.d2 = SUB_COND(-tmp75.d2, a.d1 > 0x7FFF);
+  a.d3 = SUB_COND(-tmp75.d3, a.d2 > 0x7FFF);
+  a.d4 = SUB_COND(bb.d4-tmp75.d4, a.d3 > 0x7FFF) & 0x7FFF;
   a.d1 &= 0x7FFF;
   a.d2 &= 0x7FFF;
   a.d3 &= 0x7FFF;
@@ -1236,10 +1236,10 @@ ff = 1/f as float, needed in div_192_96().
 #endif
     // all those bb's are 0 due to preprocessing on the host, thus always require a borrow
   a.d0 = (-tmp75.d0) & 0x7FFF;
-  a.d1 = (-tmp75.d1 + AS_UINT_V((a.d0 > 0)  ));
-  a.d2 = (-tmp75.d2 + AS_UINT_V((a.d1 > 0x7FFF)  ));
-  a.d3 = (-tmp75.d3 + AS_UINT_V((a.d2 > 0x7FFF)  ));
-  a.d4 = (bb.d4-tmp75.d4 + AS_UINT_V((a.d3 > 0x7FFF)  )) & 0x7FFF;
+  a.d1 = SUB_COND(-tmp75.d1, a.d0 > 0);
+  a.d2 = SUB_COND(-tmp75.d2, a.d1 > 0x7FFF);
+  a.d3 = SUB_COND(-tmp75.d3, a.d2 > 0x7FFF);
+  a.d4 = SUB_COND(bb.d4 - tmp75.d4, a.d3 > 0x7FFF) & 0x7FFF;
   a.d1 &= 0x7FFF;
   a.d2 &= 0x7FFF;
   a.d3 &= 0x7FFF;
@@ -1296,10 +1296,10 @@ ff = 1/f as float, needed in div_192_96().
         V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     tmp75.d0 = (b.d0 - tmp75.d0) & 0x7FFF;
-    tmp75.d1 = (b.d1 - tmp75.d1 + AS_UINT_V((tmp75.d0 > b.d0)  ));
-    tmp75.d2 = (b.d2 - tmp75.d2 + AS_UINT_V((tmp75.d1 > 0x7FFF)  ));
-    tmp75.d3 = (b.d3 - tmp75.d3 + AS_UINT_V((tmp75.d2 > 0x7FFF)  ));
-    tmp75.d4 = (b.d4 - tmp75.d4 + AS_UINT_V((tmp75.d3 > 0x7FFF)  ));
+    tmp75.d1 = SUB_COND(b.d1 - tmp75.d1, tmp75.d0 > b.d0);
+    tmp75.d2 = SUB_COND(b.d2 - tmp75.d2, tmp75.d1 > 0x7FFF);
+    tmp75.d3 = SUB_COND(b.d3 - tmp75.d3, tmp75.d2 > 0x7FFF);
+    tmp75.d4 = SUB_COND(b.d4 - tmp75.d4, tmp75.d3 > 0x7FFF);
     tmp75.d1 &= 0x7FFF;
     tmp75.d2 &= 0x7FFF;
     tmp75.d3 &= 0x7FFF;
@@ -1358,7 +1358,7 @@ void check_barrett15_74(uint shifter, const int75_v f, const uint tid, const uin
   __private int150_v b, tmp150;
   __private int75_v tmp75;
   __private float_v ff;
-  __private uint bit_max_75=10-bit_max65, bit_max_60=bit_max65+5; //bit_max is 61 .. 70
+  __private uint bit_max_75=11-bit_max65, bit_max_60=bit_max65+4; //bit_max is 61 .. 70
   __private uint tmp, bit_max75_mult = 1 << bit_max_75; /* used for bit shifting... */
   __private int150_t bb={0, 0, 0, 0, b_in.s0, b_in.s1, b_in.s2, b_in.s3, b_in.s4, b_in.s5};
 
@@ -1424,10 +1424,10 @@ ff = 1/f as float, needed in div_192_96().
 #endif
     // all those bb's are 0 due to preprocessing on the host, thus always require a borrow
   a.d0 = (-tmp75.d0) & 0x7FFF;
-  a.d1 = (-tmp75.d1 + AS_UINT_V((a.d0 > 0)  ));
-  a.d2 = (-tmp75.d2 + AS_UINT_V((a.d1 > 0x7FFF)  ));
-  a.d3 = (-tmp75.d3 + AS_UINT_V((a.d2 > 0x7FFF)  ));
-  a.d4 = (mad24(bb.d5, 32768u, bb.d4) - tmp75.d4 + AS_UINT_V((a.d3 > 0x7FFF)  )) & 0xFFFF;
+  a.d1 = SUB_COND(-tmp75.d1, a.d0 > 0);
+  a.d2 = SUB_COND(-tmp75.d2, a.d1 > 0x7FFF);
+  a.d3 = SUB_COND(-tmp75.d3, a.d2 > 0x7FFF);
+  a.d4 = SUB_COND(mad24(bb.d5, 32768u, bb.d4) - tmp75.d4, a.d3 > 0x7FFF) & 0xFFFF;  // keep one extra bit
   a.d1 &= 0x7FFF;
   a.d2 &= 0x7FFF;
   a.d3 &= 0x7FFF;
@@ -1484,10 +1484,10 @@ ff = 1/f as float, needed in div_192_96().
         V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0), V(tmp75.d4), V(tmp75.d3), V(tmp75.d2), V(tmp75.d1), V(tmp75.d0));
 #endif
     tmp75.d0 = (b.d0 - tmp75.d0) & 0x7FFF;
-    tmp75.d1 = (b.d1 - tmp75.d1 + AS_UINT_V((tmp75.d0 > b.d0)  ));
-    tmp75.d2 = (b.d2 - tmp75.d2 + AS_UINT_V((tmp75.d1 > 0x7FFF)  ));
-    tmp75.d3 = (b.d3 - tmp75.d3 + AS_UINT_V((tmp75.d2 > 0x7FFF)  ));
-    tmp75.d4 = (mad24(b.d5, 32768u, b.d4) - tmp75.d4 + AS_UINT_V((tmp75.d3 > 0x7FFF)  ));
+    tmp75.d1 = SUB_COND(b.d1 - tmp75.d1, tmp75.d0 > b.d0);
+    tmp75.d2 = SUB_COND(b.d2 - tmp75.d2, tmp75.d1 > 0x7FFF);
+    tmp75.d3 = SUB_COND(b.d3 - tmp75.d3, tmp75.d2 > 0x7FFF);
+    tmp75.d4 = SUB_COND(mad24(b.d5, 32768u, b.d4) - tmp75.d4, tmp75.d3 > 0x7FFF);
     tmp75.d1 &= 0x7FFF;
     tmp75.d2 &= 0x7FFF;
     tmp75.d3 &= 0x7FFF;
@@ -1546,7 +1546,7 @@ __kernel void cl_barrett15_69(__private uint exponent, const int75_t k_base, con
   __private int75_v f;
   __private uint tid;
 
-	tid = get_global_id(0) * VECTOR_SIZE;
+	tid = 	mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC75(exponent, tid, k_tab, k_base, &f);
 
@@ -1567,7 +1567,7 @@ __kernel void cl_barrett15_70(__private uint exponent, const int75_t k_base, con
   __private int75_v f;
   __private uint tid;
 
-	tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC75(exponent, tid, k_tab, k_base, &f);
 
@@ -1588,7 +1588,7 @@ __kernel void cl_barrett15_71(__private uint exponent, const int75_t k_base, con
   __private int75_v f;
   __private uint tid;
 
-	tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC75(exponent, tid, k_tab, k_base, &f);
 
@@ -1609,7 +1609,7 @@ __kernel void cl_barrett15_73(__private uint exponent, const int75_t k_base, con
   __private int75_v f;
   __private uint tid;
 
-	tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC75(exponent, tid, k_tab, k_base, &f);
 
@@ -1629,7 +1629,7 @@ __kernel void cl_barrett15_74(__private uint exponent, const int75_t k_base, con
   __private int75_v f;
   __private uint tid;
 
-	tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC75(exponent, tid, k_tab, k_base, &f);
 
@@ -2017,8 +2017,8 @@ void shl_180(int180_v * const a)
   a->d0 = (a->d0 << 1u) & 0x7FFF;
 }
 
-#ifdef cl_khr_fp64
-// we have support for doubles
+#if defined cl_khr_fp64 && ! defined GCN
+// we have support for doubles, but on GCN doubles are terribly slow: better not use them
 void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const double_v nf
 #if (TRACE_KERNEL > 1)
                   , const uint tid
@@ -2045,7 +2045,7 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
 //  qf_1 = convert_float(qhi) * 4294967296.0f; // no vector yet, saving a few conversions!
 //  qf_1 = qf_1 * 32768.0f * 64.0f;
 //  qf_1 = convert_float(qhi) * 9007199254740992.0f; // no vector yet, saving a few conversions! 9007199254740992=4294967296*32768*64, which the compiler does not combine automatically
-  qf_1 = convert_double(qhi) * 40564819207303340847894502572032.0; // no vector yet, saving a few conversions! 35184372088832=4294967296*32768*32768*32768*32768*8192, which the compiler does not combine automatically
+  qf_1 = convert_double(qhi) * 40564819207303340847894502572032.0;
 
   qi=CONVERT_ULONG_V(qf_1*nf);  // vectorize just here
 
@@ -2567,7 +2567,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
   __private int180_v b, tmp180;
   __private int90_v tmp90;
   __private float_v ff;
-#ifdef cl_khr_fp64
+#if defined cl_khr_fp64 && ! defined GCN
   __private double_v ffd;
 #endif
   __private uint tmp, bit_max_bot, bit_max_mult;
@@ -2585,7 +2585,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
 
   tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
 
-#ifdef cl_khr_fp64
+#if defined cl_khr_fp64 && ! defined GCN
   // ffd = f as double, needed in div_180_90_d).
   ffd= CONVERT_DOUBLE_RTP_V(mad24(f.d5, 32768u, f.d4));
   ffd= ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d3, 32768u, f.d2));
@@ -2783,7 +2783,7 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
   __private int180_v b, tmp180;
   __private int90_v tmp90;
   __private float_v ff;
-#ifdef cl_khr_fp64
+#if defined cl_khr_fp64 && ! defined GCN
   __private double_v ffd;
 #endif
   __private uint tmp, bit_max_bot, bit_max_mult;
@@ -2801,7 +2801,7 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
 
   tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
 
-#ifdef cl_khr_fp64
+#if defined cl_khr_fp64 && ! defined GCN
   // ffd = f as double, needed in div_180_90_d).
   ffd= CONVERT_DOUBLE_RTP_V(mad24(f.d5, 32768u, f.d4));
   ffd= ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d3, 32768u, f.d2));
@@ -2999,7 +2999,7 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
   __private int180_v b, tmp180;
   __private int90_v tmp90;
   __private float_v ff;
-#ifdef cl_khr_fp64
+#if defined cl_khr_fp64 && ! defined GCN
   __private double_v ffd;
 #endif
   __private uint tmp, bit_max_bot, bit_max_mult;
@@ -3017,7 +3017,7 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
 
   tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
 
-#ifdef cl_khr_fp64
+#if defined cl_khr_fp64 && ! defined GCN
   // ffd = f as double, needed in div_180_90_d).
   ffd= CONVERT_DOUBLE_RTP_V(mad24(f.d5, 32768u, f.d4));
   ffd= ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d3, 32768u, f.d2));
@@ -3229,7 +3229,7 @@ __kernel void cl_barrett15_82(__private uint exponent, const int75_t k_base, con
   __private int90_v f;
   __private uint tid;
 
-  tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC90(exponent, tid, k_tab, k_base, &f);
 
@@ -3248,7 +3248,7 @@ __kernel void cl_barrett15_83(__private uint exponent, const int75_t k_base, con
   __private int90_v f;
   __private uint tid;
 
-  tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC90(exponent, tid, k_tab, k_base, &f);
 
@@ -3267,7 +3267,7 @@ __kernel void cl_barrett15_88(__private uint exponent, const int75_t k_base, con
   __private int90_v f;
   __private uint tid;
 
-  tid = get_global_id(0) * VECTOR_SIZE;
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), (uint)get_local_id(0)) * VECTOR_SIZE;
 
   calculate_FC90(exponent, tid, k_tab, k_base, &f);
 
@@ -3301,8 +3301,10 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int75_v  k, f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private int75_t exp75;
+
+	tid = mad24((uint)get_group_id(0), (uint)get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_69_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -3435,8 +3437,10 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int75_v  k, f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private int75_t exp75;
+
+	tid = mad24(get_group_id(0), get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_70_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -3569,8 +3573,10 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int75_v  k, f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private int75_t exp75;
+
+	tid = mad24(get_group_id(0), get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_71_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -3703,8 +3709,10 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int75_v  k, f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private int75_t exp75;
+
+	tid = mad24(get_group_id(0), get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_73_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -3837,8 +3845,10 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __private uint     i, initial_shifter_value, total_bit_count;
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int75_v  k, f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private int75_t exp75;
+
+	tid = mad24(get_group_id(0), get_local_size(0), lid);
 
   // extract the bits set in bit_array into smem and get the total count (call to gpusieve.cl)
   total_bit_count = extract_bits(bits_to_process, tid, lid, bitcount, smem, bit_array);
@@ -3975,8 +3985,10 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int75_v  k;
   __private int90_v  f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private int75_t  exp75;
+
+  tid = mad24(get_group_id(0), get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (tid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_82_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -4112,8 +4124,10 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int75_v  k;
   __private int90_v  f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private int75_t  exp75;
+
+	tid = mad24(get_group_id(0), get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_83_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",
@@ -4250,8 +4264,10 @@ __kernel void __attribute__((reqd_work_group_size(256, 1, 1)))
   __local   ushort   bitcount[256];	// Each thread of our block puts bit-counts here
   __private int75_v  k;
   __private int90_v  f;
-  __private uint     tid=get_global_id(0), lid=get_local_id(0);
+  __private uint     tid, lid=get_local_id(0);
   __private int75_t  exp75;
+
+	tid = mad24(get_group_id(0), get_local_size(0), lid);
 
 #if (TRACE_SIEVE_KERNEL > 0)
     if (lid==TRACE_SIEVE_TID) printf((__constant char *)"cl_barrett15_88_gs: exp=%d=%#x, k=%x:%x:%x, bits=%d, shift=%d, bit_max65=%d, b_in=%x:%x:%x:%x:%x:%x:%x:%x, base addr=%#x\n",

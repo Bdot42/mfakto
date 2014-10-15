@@ -202,7 +202,7 @@ void print_status_line(mystuff_t *mystuff)
   int time_read = 0;
   double val;
 
-  if(mystuff->mode == MODE_SELFTEST_SHORT) return; /* no output during short selftest */
+  if(mystuff->mode == MODE_SELFTEST_SHORT || mystuff->mode == MODE_PERFTEST) return; /* no output during short selftest */
 
   if (mystuff->more_classes)  max_class_number = 960;
   else                        max_class_number = 96;
