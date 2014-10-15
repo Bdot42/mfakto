@@ -138,16 +138,6 @@ typedef struct _int180_v
   uint d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,da,db;
 }int180_v;
 
-typedef struct _int80_v
-{
-  uint d0,d1,d2,d3,d4;
-}int80_v;
-
-typedef struct _int160_v
-{
-  uint d0,d1,d2,d3,d4,d5,d6,d7,d8,d9;
-}int160_v;
-
 #define int_v int
 #define uint_v uint
 #define ulong_v ulong
@@ -165,6 +155,8 @@ typedef struct _int160_v
 #define AS_LONG_V(x) as_long((x)?-1:0)
 #define AS_UINT_V(x) as_uint((x)?-1:0)
 #define AS_ULONG_V(x) as_ulong((x)?-1:0)
+// to unify printf's:
+#define V(x) x
 #else
 typedef struct _int72_v
 {
@@ -206,16 +198,6 @@ typedef struct _int180_v
   CONC(uint,VECTOR_SIZE) d0,d1,d2,d3,d4,d5,d6,d7,d8,d9,da,db;
 }int180_v;
 
-typedef struct _int80_v
-{
-  CONC(uint,VECTOR_SIZE) d0,d1,d2,d3,d4;
-}int80_v;
-
-typedef struct _int160_v
-{
-  CONC(uint,VECTOR_SIZE) d0,d1,d2,d3,d4,d5,d6,d7,d8,d9;
-}int160_v;
-
 #define int_v CONC(int,VECTOR_SIZE)
 #define uint_v CONC(uint,VECTOR_SIZE)
 #define ulong_v CONC(ulong,VECTOR_SIZE)
@@ -235,6 +217,26 @@ typedef struct _int160_v
 #define AS_LONG_V CONC(as_long,VECTOR_SIZE)
 #define AS_UINT_V CONC(as_uint,VECTOR_SIZE)
 #define AS_ULONG_V CONC(as_ulong,VECTOR_SIZE)
+// to unify printf's:
+#define V(x) x.s0
 #endif
 
+// define to efficiently handle carry/borrow
+// ADD_COND returns val+1 if cond is true, otherwise val
+// SUB_COND returns val-1 if cond is true, otherwise val
+#if defined VLIW4 || defined VLIW5
+// VLIW4/5 native instructions already return -1 on vector "true": use it directly
+#define ADD_COND(val, cond) (val - AS_UINT_V(cond))
+#define SUB_COND(val, cond) (val + AS_UINT_V(cond))
+#else
+// GCN (and others) don't really know vectors and return 1 for "true" in their native instructions
+// use this define to allow the optimizer to circumvent the OpenCL convention to return -1
+#define ADD_COND(val, cond) (val + AS_UINT_V((cond) ? 1 : 0))
+#define SUB_COND(val, cond) (val - AS_UINT_V((cond) ? 1 : 0))
+#endif
+
+#define CONVERT_FLOAT convert_float
+#define CONVERT_FLOAT_RTP convert_float
+#define CONVERT_DOUBLE convert_double
+#define CONVERT_DOUBLE_RTP convert_double
 

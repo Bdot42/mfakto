@@ -192,39 +192,6 @@ uint popcount(uint x)
       } \
   }
 
-/****************************************
- ****************************************
- * 16-bit-stuff for the 80-bit-barrett-kernel
- * included by main kernel file
- ****************************************
- ****************************************/
-
-// 80-bit
-#define EVAL_RES_80(comp) \
-  if(amd_max3(a.d4.comp, a.d3.comp, a.d2.comp|a.d1.comp)==0 && a.d0.comp==1) \
-  { \
-      tid=ATOMIC_INC(RES[0]); \
-      if(tid<10) \
-      { \
-        RES[tid*3 + 1]=f.d4.comp;  \
-        RES[tid*3 + 2]=mad24(f.d3.comp,0x10000u, f.d2.comp); \
-        RES[tid*3 + 3]=mad24(f.d1.comp,0x10000u, f.d0.comp); \
-      } \
-  }
-
-#define EVAL_RES_tmp80(comp) \
-  if((tmp.comp)==0) \
-  { \
-      int index = ATOMIC_INC(RES[0]); \
-      if (index < 10) \
-      { \
-        RES[index*3 + 1]=n.d4.comp;  \
-        RES[index*3 + 2]=mad24(n.d3.comp,0x10000u, n.d2.comp); \
-        RES[index*3 + 3]=mad24(n.d1.comp,0x10000u, n.d0.comp); \
-      } \
-  }
-
-
 void check_big_factor96(const int96_v f, const int96_v a, __global uint * const RES)
 /* Similar to check_factor96() but without checking f != 1. This is a little
 bit faster. The barrett based kernels have a lower limit of 2^64 so this function is used
@@ -235,7 +202,7 @@ now used everywhere. */
   if( ((a.d2|a.d1)==0 && a.d0==1) )
   {
 #if (TRACE_KERNEL > 0)  // trace this for any thread
-    printf((__constant char *)"tid=%ld found factor: q=%x:%x:%x\n", get_local_id(0), f.d2.s0, f.d1.s0, f.d0.s0);
+    printf((__constant char *)"tid=%ld found factor: q=%x:%x:%x\n", get_local_id(0), f.d2, f.d1, f.d0);
 #endif
 /* in contrast to the other kernels the two barrett based kernels are only allowed for factors above 2^64 so there is no need to check for f != 1 */
     int index=ATOMIC_INC(RES[0]);
@@ -353,7 +320,7 @@ void calculate_FC32(const uint exponent, const uint tid, const __global uint * r
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"calculate_FC32: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
-        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+        tid, V(t), V(k.d2), V(k.d1), V(k.d0));
 #endif
 
   f->d0  = k.d0 * exp96.d0 + 1;
@@ -436,7 +403,7 @@ void calculate_FC32_mad(const uint exponent, const uint tid, const __global uint
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"calculate_FC32_mad: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x\n",
-        tid, t.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+        tid, V(t), V(k.d2), V(k.d1), V(k.d0));
 #endif
 
   f->d0  = k.d0 * exp96.d0 + 1;
@@ -503,14 +470,8 @@ are "out of range".
   }
 #endif
 #if (TRACE_KERNEL > 2)
-#if (VECTOR_SIZE == 1)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, n=%x:%x:%x, nf=%G, qf=%G, qi=%x, tid=%u\n",
-        q.d2, q.d1, q.d0, n.d2, n.d1, n.d0, nf, qf, qi, get_global_id(0));
-#else
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, %x:%x:%x, n=%x:%x:%x, %x:%x:%x, nf=%G,%G, qf=%G,%G, qi=%x,%x, tid=%u\n",
-        q.d2.s0, q.d1.s0, q.d0.s0, q.d2.s1, q.d1.s1, q.d0.s1, n.d2.s0, n.d1.s0, n.d0.s0, n.d2.s1, n.d1.s1, n.d0.s1,
-        nf.s0, nf.s1, qf.s0, qf.s1, qi.s0, qi.s1, get_global_id(0));
-#endif
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_96: q=%x:%x:%x, n=%x:%x:%x, qi=%x, tid=%u\n",
+        V(q.d2), V(q.d1), V(q.d0), V(n.d2), V(n.d1), V(n.d0), V(qi), tid);
 #endif
 
   nn.d0  = n.d0 * qi;
@@ -522,7 +483,7 @@ are "out of range".
 
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char*)"mod_simple_96: nn=%x:%x:%x\n",
-        nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
   carry= AS_UINT_V(nn.d0 > q.d0);
@@ -800,8 +761,8 @@ are "out of range".
   }
 #endif
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -827,7 +788,7 @@ are "out of range".
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#2: nn=%x:%x:%x:%x:%x, res=%x:%x:%x:%x:%x\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+        V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0), V(res->d4), V(res->d3), V(res->d2), V(res->d1), V(res->d0));
 #endif
 
 }
@@ -880,8 +841,8 @@ are "out of range".
   }
 #endif
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -907,7 +868,7 @@ are "out of range".
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_simple_75#2: nn=%x:%x:%x:%x:%x, res=%x:%x:%x:%x:%x\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+        V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0), V(res->d4), V(res->d3), V(res->d2), V(res->d1), V(res->d0));
 #endif
 
 }
@@ -952,8 +913,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   nn.d0 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 1)
-	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -964,8 +925,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -984,9 +945,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     tmp |= q.d4 - nn.d4;
 
 #if (TRACE_KERNEL > 1)
-//    if (any( tmp == 0))
      printf((__constant char *)"mod_simple_e_75_a#3: tid=%u, tmp=%u, q=%x:%x:%x:%x:%x, nn=%x:%x:%x:%x:%x\n",
-        get_global_id(0), tmp.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        get_global_id(0), V(tmp), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 #if (VECTOR_SIZE == 1)
     if(tmp == 0)
@@ -1082,8 +1042,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   nn.d0 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 1)
-	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_75_a#1: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1094,8 +1054,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  printf((__constant char *)"mod_simple_e_75_a#2: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -1114,9 +1074,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
     tmp |= q.d4 - nn.d4;
 
 #if (TRACE_KERNEL > 1)
-//    if (any( tmp == 0))
      printf((__constant char *)"mod_simple_e_75_a#3: tid=%u, tmp=%u, q=%x:%x:%x:%x:%x, nn=%x:%x:%x:%x:%x\n",
-        get_global_id(0), tmp.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        get_global_id(0), V(tmp), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 #if (VECTOR_SIZE == 1)
     if(tmp == 0)
@@ -1219,8 +1178,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-	  printf((__constant char *)"mod_simple_75_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  printf((__constant char *)"mod_simple_75_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, qi=%x\n",
+        V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -1240,7 +1199,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 3)
     if (any( tmp == 0)) printf((__constant char *)"mod_simple_75_a: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x\n",
-        get_global_id(1), tmp.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        get_global_id(1), V(tmp), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1369,7 +1328,7 @@ void calculate_FC75(const uint exponent, const uint tid, const __global uint * r
         
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"calculate_FC75: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+        tid, V(t), V(k.d4), V(k.d3), V(k.d2), V(k.d1), V(k.d0));
 #endif
 		// f = 2 * k * exp + 1
   f->d0 = mad24(k.d0, exp75.d0, 1u);
@@ -1445,8 +1404,8 @@ are "out of range".
   }
 #endif
 #if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d5), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -1476,7 +1435,7 @@ are "out of range".
 
 #if (TRACE_KERNEL > 4)
   if (tid==TRACE_TID) printf((__constant char *)"mod_simple_90#2: nn=%x:%x:%x:%x:%x:%x, res=%x:%x:%x:%x:%x:%x\n",
-        nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0, res->d5.s0, res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0), V(res->d5), V(res->d4), V(res->d3), V(res->d2), V(res->d1), V(res->d0));
 #endif
 }
 
@@ -1519,8 +1478,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   nn.d1  = nn.d0 >> 15;
   nn.d0 &= 0x7FFF;
 #if (TRACE_KERNEL > 1)
-	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_90_a#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.8G, qf=%#G, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  if (get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_e_90_a#1: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d5), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1531,8 +1490,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-	  printf((__constant char *)"mod_simple_e_90_a#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.8G, qf=%#G, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  printf((__constant char *)"mod_simple_e_90_a#2: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d5), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -1555,7 +1514,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 1)
     if (any( tmp == 0)) printf((__constant char *)"mod_simple_e_90_a#3: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x:%x\n",
-        get_global_id(0), tmp.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        get_global_id(0), V(tmp), V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1652,8 +1611,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   nn.d0 &= 0x7FFF;
 
 #if (TRACE_KERNEL > 1)
-	  if(get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  if(get_global_id(0)==TRACE_TID) printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d5), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 #if (VECTOR_SIZE == 1)
   if(q.d0 == nn.d0)
@@ -1663,8 +1622,8 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
   { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
 
 #if (TRACE_KERNEL > 1)
-	  printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d5.s0, q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d5.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
+	  printf((__constant char *)"mod_simple_90_a: q=%x:%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x:%x, qi=%x\n",
+        V(q.d5), V(q.d4), V(q.d3), V(q.d2), V(q.d1), V(q.d0), V(n.d5), V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(qi));
 #endif
 
 // nn = n * qi
@@ -1687,7 +1646,7 @@ so we compare the LSB of qi and q.d0, if they are the same (both even or both od
 
 #if (TRACE_KERNEL > 3)
     if (any( tmp == 0)) printf((__constant char *)"mod_simple_90_a: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x:%x\n",
-        get_global_id(1), tmp.s0, nn.d5.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
+        get_global_id(1), V(tmp), V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
 #endif
 
 #if (VECTOR_SIZE == 1)
@@ -1815,7 +1774,7 @@ void calculate_FC90(const uint exponent, const uint tid, const __global uint * r
         
 #if (TRACE_KERNEL > 3)
     if (tid==TRACE_TID) printf((__constant char *)"calculate_FC90: k_tab[%d]=%x, k_base+k*4620=%x:%x:%x:%x:%x\n",
-        tid, t.s0, k.d4.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
+        tid, V(t), V(k.d4), V(k.d3), V(k.d2), V(k.d1), V(k.d0));
 #endif
 		// f = 2 * k * exp + 1
   f->d0 = mad24(k.d0, exp90.d0, 1u);
@@ -1845,497 +1804,3 @@ void calculate_FC90(const uint exponent, const uint tid, const __global uint * r
   f->d5 = mad24(k.d3, exp90.d2, f->d5);
   f->d4 &= 0x7FFF;
 }
-
-//// 5x16-bit
-
-void mod_simple_80(int80_v * const res, const int80_v q, const int80_v n, const float_v nf
-#if (TRACE_KERNEL > 1)
-                  , const uint tid
-#endif
-#ifdef CHECKS_MODBASECASE
-                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
-#endif
-)
-/*
-res = q mod n
-used for refinement in barrett modular multiplication
-works up to q < (1<<15) * n
-*/
-{
-  __private float_v qf;
-  __private uint_v qi;
-  __private int80_v nn;
-  // q.d4 needs to be < 0x10000
-  qf = CONVERT_FLOAT_V(mad24(q.d4, 0x10000, q.d3));
-  qf = qf * 65536.0f;
-  
-  qi = CONVERT_UINT_V(qf*nf);
-
-#ifdef CHECKS_MODBASECASE
-  if(n.d4 != 0 && n.d4 < (1 << bit_max64)) // out-of-range, errors here are OK
-  {
-    if (limit > 0x7FFF) limit = 0x7FFF; // mul24 below cannot handle more
-    MODBASECASE_QI_ERROR(limit, 115, qi, 20);
-  }
-  MODBASECASE_QI_ERROR(0x10000, 119, q.d4, 24); //otherwise the above mad24 masks out the upper bits
-#endif
-#if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_80: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
-#endif
-
-// nn = n * qi
-  nn.d0  = mul24(n.d0, qi); // qi is max 15 bit: carry fits in
-  nn.d1  = mad24(n.d1, qi, nn.d0 >> 16);
-  nn.d2  = mad24(n.d2, qi, nn.d1 >> 16);
-  nn.d3  = mad24(n.d3, qi, nn.d2 >> 16);
-  nn.d4  = mad24(n.d4, qi, nn.d3 >> 16);
-  nn.d3 &= 0xFFFF;
-  nn.d2 &= 0xFFFF;
-  nn.d1 &= 0xFFFF;
-  nn.d0 &= 0xFFFF;
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_80#5: nn=%x:%x:%x:%x:%x\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-
-  res->d0 = q.d0 - nn.d0;
-  res->d1 = q.d1 - nn.d1 + AS_UINT_V(res->d0 > 0xFFFF);
-  res->d2 = q.d2 - nn.d2 + AS_UINT_V(res->d1 > 0xFFFF);
-  res->d3 = q.d3 - nn.d3 + AS_UINT_V(res->d2 > 0xFFFF);
-  res->d4 = q.d4 - nn.d4 + AS_UINT_V(res->d3 > 0xFFFF);
-  res->d0 &= 0xFFFF;
-  res->d1 &= 0xFFFF;
-  res->d2 &= 0xFFFF;
-  res->d3 &= 0xFFFF;
-
-#if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_80#6: res=%x:%x:%x:%x:%x\n",
-        res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
-#endif
-}
-
-
-void mod_simple_80_big(int80_v * const res, const int80_v q, const int80_v n, const float_v nf
-#if (TRACE_KERNEL > 1)
-                  , const uint tid
-#endif
-#ifdef CHECKS_MODBASECASE
-                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
-#endif
-)
-/*
-res = q mod n
-used for refinement in barrett modular multiplication
-works up to q < (1<<15) * n
-*/
-{
-  __private float_v qf;
-  __private uint_v qi;
-  __private int80_v nn;
-  // big version: allow q.d4 > 0x10000
-  qf = CONVERT_FLOAT_V(q.d4) * 65536.0f + CONVERT_FLOAT_V(q.d3);
-  qf = qf * 65536.0f;
-  
-  qi = CONVERT_UINT_V(qf*nf);
-
-#ifdef CHECKS_MODBASECASE
-  if(n.d4 != 0 && n.d4 < (1 << bit_max64)) // out-of-range, errors here are OK
-  {
-    if (limit > 0x7FFF) limit = 0x7FFF; // mul24 below cannot handle more
-    MODBASECASE_QI_ERROR(limit, 115, qi, 20);
-  }
-#endif
-#if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_80_b: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
-#endif
-
-// nn = n * qi
-  nn.d0  = mul24(n.d0, qi); // qi is max 15 bit: carry fits in
-  nn.d1  = mad24(n.d1, qi, nn.d0 >> 16);
-  nn.d2  = mad24(n.d2, qi, nn.d1 >> 16);
-  nn.d3  = mad24(n.d3, qi, nn.d2 >> 16);
-  nn.d4  = mad24(n.d4, qi, nn.d3 >> 16);
-  nn.d3 &= 0xFFFF;
-  nn.d2 &= 0xFFFF;
-  nn.d1 &= 0xFFFF;
-  nn.d0 &= 0xFFFF;
-#if (TRACE_KERNEL > 3)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_80_b#5: nn=%x:%x:%x:%x:%x\n",
-        nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-
-  res->d0 = q.d0 - nn.d0;
-  res->d1 = q.d1 - nn.d1 + AS_UINT_V(res->d0 > 0xFFFF);
-  res->d2 = q.d2 - nn.d2 + AS_UINT_V(res->d1 > 0xFFFF);
-  res->d3 = q.d3 - nn.d3 + AS_UINT_V(res->d2 > 0xFFFF);
-  res->d4 = q.d4 - nn.d4 + AS_UINT_V(res->d3 > 0xFFFF);
-  res->d0 &= 0xFFFF;
-  res->d1 &= 0xFFFF;
-  res->d2 &= 0xFFFF;
-  res->d3 &= 0xFFFF;
-
-#if (TRACE_KERNEL > 2)
-  if (tid==TRACE_TID) printf((__constant char *)"mod_simple_80_b#6: res=%x:%x:%x:%x:%x\n",
-        res->d4.s0, res->d3.s0, res->d2.s0, res->d1.s0, res->d0.s0);
-#endif
-}
-
-void mod_simple_even_80_and_check_big_factor80(const int80_v q, const int80_v n, const float_v nf, __global uint * const RES
-#ifdef CHECKS_MODBASECASE
-                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
-#endif
-)
-/*
-This function is a combination of mod_simple_96(), check_big_factor96() and an additional correction step.
-If q mod n == 1 then n is a factor and written into the RES array.
-works up to q < (1<<15) * n
-*/
-{
-  __private float_v qf;
-  __private uint_v qi, tmp;
-  __private int80_v nn;
-
-  qf = CONVERT_FLOAT_V(mad24(q.d4, 0x10000, q.d3)); // q.d4 must be < 0x10000
-//  qf = CONVERT_FLOAT_V(q.d4) * 65536.0f + CONVERT_FLOAT_V(q.d3);
-  qf = qf * 65336.0f;
-  
-  qi = CONVERT_UINT_V(qf*nf);
-
-#ifdef CHECKS_MODBASECASE
-  if(n.d4 != 0 && n.d4 < (1 << bit_max64))
-  {
-    MODBASECASE_QI_ERROR(10, 116, qi, 21);
-  }
-#endif
-/* at this point the quotient still is sometimes to small (the error is 1 in this case)
---> final res odd and qi correct: n might be a factor
-    final res odd and qi too small: n can't be a factor (because the correct res is even)
-    final res even and qi correct: n can't be a factor (because the res is even)
-    final res even and qi too small: n might be a factor
-so we compare the LSB of qi and q.d0, if they are the same (both even or both odd) the res (without correction) would be even. In this case increment qi by one.*/
-
-  qi |= 1;
- 
-  nn.d0  = mad24(n.d0, qi, 1u);
-  nn.d1  = nn.d0 >> 16;
-  nn.d0 &= 0xFFFF;
-
-#if (VECTOR_SIZE == 1)
-  if(q.d0 == nn.d0)
-#else
-  if(any(q.d0 == nn.d0)) /* the lowest word of the final result would be 1 for at least one of the vector components (only in this case n might be a factor) */
-#endif
-  { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
-
-#if (TRACE_KERNEL > 1)
-	  printf((__constant char *)"mod_simple_e_80_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
-#endif
-
-// nn = n * qi
-    nn.d1  = mad24(n.d1, qi, nn.d1);
-    nn.d2  = mad24(n.d2, qi, nn.d1 >> 16);
-    nn.d3  = mad24(n.d3, qi, nn.d2 >> 16);
-    nn.d4  = mad24(n.d4, qi, nn.d3 >> 16);
-    nn.d1 &= 0xFFFF;
-    nn.d2 &= 0xFFFF;
-    nn.d3 &= 0xFFFF;
-
-// for the subtraction we don't need to evaluate any borrow: if any component is >0, then we won't have a factor anyway
-    tmp  = q.d1 - nn.d1;
-    tmp |= q.d2 - nn.d2;
-    tmp |= q.d3 - nn.d3;
-    tmp |= q.d4 - nn.d4;
-
-#if (TRACE_KERNEL > 3)
-    if (any( tmp == 0)) printf((__constant char *)"mod_simple_e_80_a: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x\n",
-        get_global_id(1), tmp.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-#if (VECTOR_SIZE == 1)
-    if(tmp == 0)
-    {
-      int index;
-      index =ATOMIC_INC(RES[0]);
-      if(index < 10)                              /* limit to 10 factors per class */
-      {
-        RES[index*3 + 1]=n.d4;
-        RES[index*3 + 2]=mad24(n.d3,0x10000u, n.d2);
-        RES[index*3 + 3]=mad24(n.d1,0x10000u, n.d0);
-      }
-    }
-#elif (VECTOR_SIZE == 2)
-    EVAL_RES_tmp80(x)
-    EVAL_RES_tmp80(y)
-#elif (VECTOR_SIZE == 3)
-    EVAL_RES_tmp80(x)
-    EVAL_RES_tmp80(y)
-    EVAL_RES_tmp80(z)
-#elif (VECTOR_SIZE == 4)
-    EVAL_RES_tmp80(x)
-    EVAL_RES_tmp80(y)
-    EVAL_RES_tmp80(z)
-    EVAL_RES_tmp80(w)
-#elif (VECTOR_SIZE == 8)
-    EVAL_RES_tmp80(s0)
-    EVAL_RES_tmp80(s1)
-    EVAL_RES_tmp80(s2)
-    EVAL_RES_tmp80(s3)
-    EVAL_RES_tmp80(s4)
-    EVAL_RES_tmp80(s5)
-    EVAL_RES_tmp80(s6)
-    EVAL_RES_tmp80(s7)
-#elif (VECTOR_SIZE == 16)
-    EVAL_RES_tmp80(s0)
-    EVAL_RES_tmp80(s1)
-    EVAL_RES_tmp80(s2)
-    EVAL_RES_tmp80(s3)
-    EVAL_RES_tmp80(s4)
-    EVAL_RES_tmp80(s5)
-    EVAL_RES_tmp80(s6)
-    EVAL_RES_tmp80(s7)
-    EVAL_RES_tmp80(s8)
-    EVAL_RES_tmp80(s9)
-    EVAL_RES_tmp80(sa)
-    EVAL_RES_tmp80(sb)
-    EVAL_RES_tmp80(sc)
-    EVAL_RES_tmp80(sd)
-    EVAL_RES_tmp80(se)
-    EVAL_RES_tmp80(sf)
-#endif
-  }
-}
-
-void mod_simple_80_and_check_big_factor80(const int80_v q, const int80_v n, const float_v nf, __global uint * const RES
-#ifdef CHECKS_MODBASECASE
-                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
-#endif
-)
-/*
-This function is a combination of mod_simple_96(), check_big_factor96() and an additional correction step.
-If q mod n == 1 then n is a factor and written into the RES array.
-q must be less than 100n!
-*/
-{
-  __private float_v qf;
-  __private uint_v qi, tmp;
-  __private int80_v nn;
-
-  qf = CONVERT_FLOAT_V(mad24(q.d4, 0x10000, q.d3));
-  qf = qf * 65536.0f;
-  
-  qi = CONVERT_UINT_V(qf*nf);
-
-#ifdef CHECKS_MODBASECASE
-  if(n.d4 != 0 && n.d4 < (1 << bit_max64))
-  {
-    MODBASECASE_QI_ERROR(10, 117, qi, 22);
-  }
-#endif
-/* at this point the quotient still is sometimes to small (the error is 1 in this case)
---> final res odd and qi correct: n might be a factor
-    final res odd and qi too small: n can't be a factor (because the correct res is even)
-    final res even and qi correct: n can't be a factor (because the res is even)
-    final res even and qi too small: n might be a factor
-so we compare the LSB of qi and q.d0, if they are the same (both even or both odd) the res (without correction) would be even. In this case increment qi by one.*/
-
-  qi += ((~qi) ^ q.d0) & 1;
- 
-  nn.d0  = mad24(n.d0, qi, 1u);
-  nn.d1  = nn.d0 >> 16;
-  nn.d0 &= 0xFFFF;
-
-#if (VECTOR_SIZE == 1)
-  if(q.d0 == nn.d0)
-#else
-  if(any(q.d0 == nn.d0)) /* the lowest word of the final result would be 1 for at least one of the vector components (only in this case n might be a factor) */
-#endif
-  { // it would be sufficient to calculate the one component that made the above "any" return true. But it would require a bigger EVAL macro ...
-
-#if (TRACE_KERNEL > 1)
-	  printf((__constant char *)"mod_simple_80_a: q=%x:%x:%x:%x:%x, n=%x:%x:%x:%x:%x, nf=%.7G, qf=%#G, qi=%x\n",
-        q.d4.s0, q.d3.s0, q.d2.s0, q.d1.s0, q.d0.s0, n.d4.s0, n.d3.s0, n.d2.s0, n.d1.s0, n.d0.s0, nf.s0, qf.s0, qi.s0);
-#endif
-
-// nn = n * qi
-    nn.d1  = mad24(n.d1, qi, nn.d1);
-    nn.d2  = mad24(n.d2, qi, nn.d1 >> 16);
-    nn.d3  = mad24(n.d3, qi, nn.d2 >> 16);
-    nn.d4  = mad24(n.d4, qi, nn.d3 >> 16);
-    nn.d1 &= 0xFFFF;
-    nn.d2 &= 0xFFFF;
-    nn.d3 &= 0xFFFF;
-
-// for the subtraction we don't need to evaluate any borrow: if any component is >0, then we won't have a factor anyway
-    tmp  = q.d1 - nn.d1;
-    tmp |= q.d2 - nn.d2;
-    tmp |= q.d3 - nn.d3;
-    tmp |= q.d4 - nn.d4;
-
-#if (TRACE_KERNEL > 3)
-    if (any( tmp == 0)) printf((__constant char *)"mod_simple_80_a: tid=%u, tmp=%u, nn=%x:%x:%x:%x:%x\n",
-        get_global_id(1), tmp.s0, nn.d4.s0, nn.d3.s0, nn.d2.s0, nn.d1.s0, nn.d0.s0);
-#endif
-
-#if (VECTOR_SIZE == 1)
-    if(tmp == 0)
-    {
-      int index;
-      index =ATOMIC_INC(RES[0]);
-      if(index < 10)                              /* limit to 10 factors per class */
-      {
-        RES[index*3 + 1]=n.d4;
-        RES[index*3 + 2]=mad24(n.d3,0x10000u, n.d2);
-        RES[index*3 + 3]=mad24(n.d1,0x10000u, n.d0);
-      }
-    }
-#elif (VECTOR_SIZE == 2)
-    EVAL_RES_tmp80(x)
-    EVAL_RES_tmp80(y)
-#elif (VECTOR_SIZE == 3)
-    EVAL_RES_tmp80(x)
-    EVAL_RES_tmp80(y)
-    EVAL_RES_tmp80(z)
-#elif (VECTOR_SIZE == 4)
-    EVAL_RES_tmp80(x)
-    EVAL_RES_tmp80(y)
-    EVAL_RES_tmp80(z)
-    EVAL_RES_tmp80(w)
-#elif (VECTOR_SIZE == 8)
-    EVAL_RES_tmp80(s0)
-    EVAL_RES_tmp80(s1)
-    EVAL_RES_tmp80(s2)
-    EVAL_RES_tmp80(s3)
-    EVAL_RES_tmp80(s4)
-    EVAL_RES_tmp80(s5)
-    EVAL_RES_tmp80(s6)
-    EVAL_RES_tmp80(s7)
-#elif (VECTOR_SIZE == 16)
-    EVAL_RES_tmp80(s0)
-    EVAL_RES_tmp80(s1)
-    EVAL_RES_tmp80(s2)
-    EVAL_RES_tmp80(s3)
-    EVAL_RES_tmp80(s4)
-    EVAL_RES_tmp80(s5)
-    EVAL_RES_tmp80(s6)
-    EVAL_RES_tmp80(s7)
-    EVAL_RES_tmp80(s8)
-    EVAL_RES_tmp80(s9)
-    EVAL_RES_tmp80(sa)
-    EVAL_RES_tmp80(sb)
-    EVAL_RES_tmp80(sc)
-    EVAL_RES_tmp80(sd)
-    EVAL_RES_tmp80(se)
-    EVAL_RES_tmp80(sf)
-#endif
-  }
-}
-
-
-void calculate_FC80(const uint exponent, const uint tid, const __global uint * restrict k_tab, const int80_t k_base, __private int80_v * restrict const f)
-{
-  __private int80_t exp80;
-  __private uint_v t, t1, t2;
-  __private int80_v k;
-
-
-  // exp80.d4=0;exp80.d3=0;  // not used, PERF: we can skip d2 as well, if we limit exponent to 2^29
-  exp80.d2=exponent>>31;exp80.d1=(exponent>>15)&0xFFFF;exp80.d0=(exponent<<1)&0xFFFF;	// exp80 = 2 * exponent
-
-#if (TRACE_KERNEL > 0)
-  if (tid==TRACE_TID) printf((__constant char *)"calculate_FC80: exp=%d, x2=%x:%x:%x, k_base=%x:%x:%x:%x:%x\n",
-        exponent, exp80.d2, exp80.d1, exp80.d0, k_base.d4, k_base.d3, k_base.d2, k_base.d1, k_base.d0);
-#endif
-
-#if (VECTOR_SIZE == 1)
-  t    = k_tab[tid];
-#elif (VECTOR_SIZE == 2)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-#elif (VECTOR_SIZE == 3)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-#elif (VECTOR_SIZE == 4)
-  t.x  = k_tab[tid];
-  t.y  = k_tab[tid+1];
-  t.z  = k_tab[tid+2];
-  t.w  = k_tab[tid+3];
-#elif (VECTOR_SIZE == 8)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-#elif (VECTOR_SIZE == 16)
-  t.s0 = k_tab[tid];
-  t.s1 = k_tab[tid+1];
-  t.s2 = k_tab[tid+2];
-  t.s3 = k_tab[tid+3];
-  t.s4 = k_tab[tid+4];
-  t.s5 = k_tab[tid+5];
-  t.s6 = k_tab[tid+6];
-  t.s7 = k_tab[tid+7];
-  t.s8 = k_tab[tid+8];
-  t.s9 = k_tab[tid+9];
-  t.sa = k_tab[tid+10];
-  t.sb = k_tab[tid+11];
-  t.sc = k_tab[tid+12];
-  t.sd = k_tab[tid+13];
-  t.se = k_tab[tid+14];
-  t.sf = k_tab[tid+15];
-#endif
-  t1 = t >> 16;  // t is 24 bits at most
-  t  = t & 0xFFFF;
-
-  k.d0  = mad24(t , 4620u, k_base.d0);
-  k.d1  = mad24(t1, 4620u, k_base.d1) + (k.d0 >> 16);
-  k.d0 &= 0xFFFF;
-  k.d2  = (k.d1 >> 16) + k_base.d2;
-  k.d1 &= 0xFFFF;
-  k.d3  = (k.d2 >> 16) + k_base.d3;
-  k.d2 &= 0xFFFF;
-  // k.d4 = 0, as k < 2^64
-        
-#if (TRACE_KERNEL > 3)
-    if (tid==TRACE_TID) printf((__constant char *)"calculate_FC80: k_tab[%d]=%x:%x, k_base+k*4620=%x:%x:%x:%x\n",
-        tid, t1.s0, t.s0, k.d3.s0, k.d2.s0, k.d1.s0, k.d0.s0);
-#endif
-		// f = 2 * k * exp + 1
-    // PERF: easier(faster) to use 32*32 bit here?
-    // PERF: exp.d2 is 0 or 1: skip mul24? Use mad24 to save one addition?
-    // PERF: 0xFFFF * 0xFFFF = 0xFFFE0001: max result has room for two carries of 16 bits
-  f->d0 = mad24(k.d0, exp80.d0, 1u);
-
-  t     = mul24(k.d1, exp80.d0);
-  t1    = mul24(k.d0, exp80.d1);
-  f->d1 = (f->d0 >> 16) + (t & 0xFFFF) + (t1 & 0xFFFF);
-  f->d2 = (f->d1 >> 16) + (t >> 16)    + (t1 >> 16);
-  f->d0 &= 0xFFFF;
-  f->d1 &= 0xFFFF;
-
-  t     = mul24(k.d2, exp80.d0);
-  t1    = mul24(k.d1, exp80.d1);
-  t2    = mul24(k.d0, exp80.d2);
-  f->d2 = (t & 0xFFFF) + (t1 & 0xFFFF) + (t2 & 0xFFFF) + f->d2;
-  f->d3 = (t >> 16)    + (t1 >> 16)    + (t2 >> 16)    + (f->d2 >> 16);
-  f->d2 &= 0xFFFF;
-
-  t     = mul24(k.d3, exp80.d0);
-  t1    = mul24(k.d2, exp80.d1);
-  t2    = mul24(k.d1, exp80.d2);
-  f->d3 = (t & 0xFFFF) + (t1 & 0xFFFF) + (t2 & 0xFFFF) + f->d3;
-  f->d4 = (t >> 16)    + (t1 >> 16)    + (t2 >> 16)    + (f->d3 >> 16);
-  f->d3 &= 0xFFFF;
-
-  f->d4 = mad24(k.d3, exp80.d1, f->d4);
-  f->d4 = mad24(k.d2, exp80.d2, f->d4);
-  f->d3 &= 0xFFFF;
-}
-

@@ -177,7 +177,7 @@ int read_config(mystuff_t *mystuff)
 
   if (mystuff->gpu_sieving == 0)
   {
-    printf("  MoreClasses               yes (due to CPU-sieving)\n");
+    if(mystuff->verbosity >= 1) printf("  MoreClasses               yes (due to CPU-sieving)\n");
     mystuff->more_classes = 1;
     mystuff->num_classes  = 4620;
 
