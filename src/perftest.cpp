@@ -74,6 +74,7 @@ int init_perftest(int devicenumber)
   mystuff.num_classes  = 4620;
   mystuff.sieve_size = (36<<13) - (36<<13) % (13*17*19*23);
   mystuff.num_streams = 10;
+  mystuff.force_rebuild = 1; // always rebuild from scratch while doing this test
 
   init_CL(mystuff.num_streams, &devicenumber);
   set_gpu_type();
@@ -852,7 +853,7 @@ int test_gpu_tf_kernels(cl_uint par)
 {
   struct timeval timer;
   double time1;
-  cl_uint i, use_class=0;
+  cl_uint use_class=0;
   mystuff.bit_min = 68;
   mystuff.bit_max_assignment = 69;
   mystuff.bit_max_stage = 69;

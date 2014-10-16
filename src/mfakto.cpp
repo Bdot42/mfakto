@@ -732,6 +732,8 @@ int load_kernels(cl_int *devnumber)
 
   if (mystuff.binfile[0])
   {
+    if (mystuff.force_rebuild == 1) remove(mystuff.binfile);
+
     // check if binfile exists
     if (file_exists(mystuff.binfile))
     {

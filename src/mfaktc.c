@@ -731,8 +731,8 @@ k_max and k_min are used as 64bit temporary integers here...
 int selftest(mystuff_t *mystuff, enum MODES type)
 /*
 type = 1: small selftest (this is executed EACH time mfakto is started)
-type = 2: half selftest
-type = 3: full selftest
+type = 2: quick, full selftest: find each factor using the kernel that would normally be used (the fastest kernels for the bitlevel)
+type = 3: full selftest: find each factor using each kernel capable of running this bitlevel
 
 return value
 0 selftest passed
@@ -742,29 +742,25 @@ RET_ERROR we might have a serios problem
 {
 #include "selftest-data.h"
 
-  int i, j, tf_res, st_success=0, st_nofactor=0, st_wrongfactor=0, st_unknown=0;
+  int j, tf_res, st_success=0, st_nofactor=0, st_wrongfactor=0, st_unknown=0;
 
   unsigned int num_selftests=0, total_selftests=sizeof(st_data) / sizeof(st_data[0]);
-  int f_class, selftests_to_run;
-  int retval=1, ind;
+  int f_class;
+  unsigned int retval=1, i, ind;
   enum GPUKernels kernels[UNKNOWN_KERNEL], kernel_index;
   // this index is 1 less than what -st/-st2 report
-  unsigned int index[] = {   183, 164, 30,   25,   39,   57,   // some factors below 2^71 (test the 71/75 bit kernel depending on compute capability)
-                             70,   72,   73,   82,  88,   // some factors below 2^75 (test 75 bit kernel)
-                            106,  355,  358,  666,   // some very small factors
+  unsigned int index[] = {  1, 12, 33, 50, 72, 73, 82, 88, 99,  // ~ one from each bitlevel
+                            106, 117, 129, 140, 154, 158, 164,
+                            175, 177, 183, 190, 194, 198, 199,
+                            204, 207, 210, 355,  358,  666,   // some very small factors
                            1547    // some factors below 2^95 (test 95 bit kernel)
-                         };                          // mfakto special case (25-bit factor)
+                         };
   // save the SievePrimes ini value as the selftest may lower it to fit small test-exponents
   unsigned int sieve_primes_save = mystuff->sieve_primes;
 
-  if (type == MODE_SELFTEST_FULL)
-    selftests_to_run = total_selftests;
-  else
-    selftests_to_run = 1559;
-
   register_signal_handler(mystuff);
 
-  for(i=0; i<selftests_to_run; ++i)
+  for(i=0; i<total_selftests; ++i)
   {
     if(type == MODE_SELFTEST_SHORT)
     {
@@ -781,7 +777,7 @@ RET_ERROR we might have a serios problem
     {
       ind = i;
       printf("######### testcase %d/%d (M%u[%d-%d]) #########\n",
-        i+1, selftests_to_run, st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
+        i+1, total_selftests, st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
     }
     f_class = (int)(st_data[ind].k % mystuff->num_classes);
     mystuff->exponent           = st_data[ind].exp;
@@ -792,30 +788,37 @@ RET_ERROR we might have a serios problem
 /* create a list which kernels can handle this testcase */
     j = 0;
 
-    if (mystuff->gpu_sieving == 0)
+    if (type == MODE_SELFTEST_FULL)
     {
-//      for (kernel_index = _71BIT_MUL24; kernel_index < BARRETT88_MUL15; ++kernel_index) // test-only: skip 6x15-bit kernels
-//      for (kernel_index = BARRETT79_MUL32; kernel_index <= BARRETT87_MUL32; ++kernel_index) // test-only: only use 32-bit kernels
-//      for (kernel_index = MG62; kernel_index <= MG88; ++kernel_index) // Specific montgomery test
-//      for (kernel_index = BARRETT74_MUL15; kernel_index <= BARRETT74_MUL15; ++kernel_index) // test only the 74-bit kernel
-      for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index) // this is the real one !!
+      if (mystuff->gpu_sieving == 0)
       {
-        if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
+  //      for (kernel_index = _71BIT_MUL24; kernel_index < BARRETT88_MUL15; ++kernel_index) // test-only: skip 6x15-bit kernels
+  //      for (kernel_index = BARRETT79_MUL32; kernel_index <= BARRETT87_MUL32; ++kernel_index) // test-only: only use 32-bit kernels
+  //      for (kernel_index = MG62; kernel_index <= MG88; ++kernel_index) // Specific montgomery test
+  //      for (kernel_index = BARRETT74_MUL15; kernel_index <= BARRETT74_MUL15; ++kernel_index) // test only the 74-bit kernel
+        for (kernel_index = _63BIT_MUL24; kernel_index < UNKNOWN_KERNEL; ++kernel_index) // this is the real one !!
+        {
+          if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
+        }
+        // careful to not sieve out small test candidates
+        mystuff->sieve_primes_upper_limit = sieve_sieve_primes_max(mystuff->exponent, mystuff->sieve_primes_max);
+        if (mystuff->sieve_primes > mystuff->sieve_primes_upper_limit)
+          mystuff->sieve_primes = mystuff->sieve_primes_upper_limit;
       }
-      // careful to not sieve out small test candidates
-      mystuff->sieve_primes_upper_limit = sieve_sieve_primes_max(mystuff->exponent, mystuff->sieve_primes_max);
-      if (mystuff->sieve_primes > mystuff->sieve_primes_upper_limit)
-        mystuff->sieve_primes = mystuff->sieve_primes_upper_limit;
+      else
+      {
+  //      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT73_MUL15_GS; ++kernel_index) // test-only: skip small 15-bit kernels
+  //      for (kernel_index = BARRETT74_MUL15_GS; kernel_index <= BARRETT74_MUL15_GS; ++kernel_index) // test only the 74-bit kernel
+  //      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT79_MUL32_GS; ++kernel_index) // test only 32-79
+        for (kernel_index = BARRETT79_MUL32_GS; kernel_index < UNKNOWN_GS_KERNEL; ++kernel_index) // this is the real one !!
+        {
+          if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
+        }
+      }
     }
     else
     {
-//      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT73_MUL15_GS; ++kernel_index) // test-only: skip small 15-bit kernels
-//      for (kernel_index = BARRETT74_MUL15_GS; kernel_index <= BARRETT74_MUL15_GS; ++kernel_index) // test only the 74-bit kernel
-//      for (kernel_index = BARRETT79_MUL32_GS; kernel_index <= BARRETT79_MUL32_GS; ++kernel_index) // test only 32-79
-      for (kernel_index = BARRETT79_MUL32_GS; kernel_index < UNKNOWN_GS_KERNEL; ++kernel_index) // this is the real one !!
-      {
-        if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
-      }
+      if ((kernels[0]=find_fastest_kernel(mystuff)) != AUTOSELECT_KERNEL) j=1;
     }
 
     while(j>0)
@@ -881,6 +884,7 @@ int main(int argc, char **argv)
   mystuff.gpu_sieve_primes = GPU_SIEVE_PRIMES_DEFAULT;				/* Default to sieving primes below about 1.05M */
   mystuff.gpu_sieve_processing_size = GPU_SIEVE_PROCESS_SIZE_DEFAULT * 1024;	/* Default to 16K bits processed by each block in a Barrett kernel. */
   strcpy(mystuff.inifile, "mfakto.ini");
+  mystuff.force_rebuild = 0;
 
   while(i<argc)
   {
@@ -973,7 +977,7 @@ int main(int argc, char **argv)
     }
     else if(!strcmp((char*)"-st", argv[i]))
     {
-      mystuff.mode = MODE_SELFTEST_HALF;
+      mystuff.mode = MODE_SELFTEST_QUICK;
     }
     else if(!strcmp((char*)"-st2", argv[i]))
     {
@@ -1021,6 +1025,10 @@ int main(int argc, char **argv)
       read_config(&mystuff);
       init_CL(mystuff.num_streams, &devicenumber);
       return ERR_OK;
+    }
+    else if((!strcmp((char*)"-r", argv[i])) || (!strcmp((char*)"--rebuild", argv[i])))
+    {
+      mystuff.force_rebuild = 1;
     }
     else
     {
