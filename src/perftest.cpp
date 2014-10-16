@@ -64,25 +64,29 @@ extern "C" unsigned long long int calculate_k(unsigned int exp, int bits);
 int init_perftest(int devicenumber)
 {
   cl_uint i;
+  read_config(&mystuff); // to read VECTOR_SIZE and all defaults
   mystuff.mode = MODE_PERFTEST;
   mystuff.gpu_sieving = 0;  // inintialize CPU-sieving
-  mystuff.binfile[0] = '\0'; // disable binary caching
   mystuff.sieve_primes_min = 254;
   mystuff.sieve_primes = 5000;
   mystuff.sieve_primes_max = 1000000;
   mystuff.more_classes = 1;
   mystuff.num_classes  = 4620;
+#ifdef SIEVE_SIZE_LIMIT
+  mystuff.sieve_size = SIEVE_SIZE;
+  sieve_init();
+#else
   mystuff.sieve_size = (36<<13) - (36<<13) % (13*17*19*23);
+  sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max);
+#endif
   mystuff.num_streams = 10;
+  mystuff.threads_per_grid_max = 2097152;
+  mystuff.sieve_primes_adjust = 0;
+  mystuff.force_rebuild = 1; // always rebuild from scratch while doing this test
 
   init_CL(mystuff.num_streams, &devicenumber);
   set_gpu_type();
   load_kernels(&devicenumber);
-#ifdef SIEVE_SIZE_LIMIT
-  sieve_init();
-#else
-  sieve_init(mystuff.sieve_size, mystuff.sieve_primes_max);
-#endif
 //  i = (cl_uint)deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
   i = 2048;
   while( (i * 2) <= mystuff.threads_per_grid_max) i = i * 2;
@@ -852,15 +856,16 @@ int test_gpu_tf_kernels(cl_uint par)
 {
   struct timeval timer;
   double time1;
-  cl_uint i, use_class=0;
+  cl_uint use_class=0;
   mystuff.bit_min = 68;
   mystuff.bit_max_assignment = 69;
   mystuff.bit_max_stage = 69;
-  cl_ulong k = calculate_k(mystuff.exponent,mystuff.bit_min);
-  cl_ulong num_fcs = 2048;
+  mystuff.exponent = EXP;
+  cl_ulong k = calculate_k(EXP,mystuff.bit_min);
+  cl_ulong num_fcs = mystuff.gpu_sieve_size - 1; //start with one full sieve block
   cl_ulong use_kernel;
-  double ghzd = primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_max_stage);
-  double ghz;
+  double ghzd = primenet_ghzdays(EXP, mystuff.bit_min, mystuff.bit_min + 1);
+  double ghz, ghzdt;
 
   mystuff.threads_per_grid = 256;
   if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
@@ -876,22 +881,27 @@ int test_gpu_tf_kernels(cl_uint par)
   while(!class_needed(mystuff.exponent, k, use_class)) use_class++;
   gpusieve_init_class(&mystuff, k+use_class);
 
-  // calibrate to the device so we have ~ 2..4 seconds per kernel
+  printf("\n5. GPU tf kernels, calibrating\r");
+  // calibrate to the device so we have ~ 2..4 seconds per kernel (at default with par = 10)
   do
   {
     timer_init(&timer);
     tf_class_opencl (k+use_class, k+use_class+num_fcs*mystuff.num_classes, &mystuff, BARRETT79_MUL32_GS);
     time1 = (double)timer_diff(&timer);
+//  printf("%llu FCs, %f ms\n", num_fcs, time1/1000.0);
     num_fcs <<=1;
-  } while (time1 < 200000.0*par);
+  } while (time1 < 100000.0*par);
 
-  printf("\n5. GPU tf kernels, %lld FCs each\n", num_fcs);
+  printf("5. GPU tf kernels, %lld FCs each\n", num_fcs);
+  // this single test is worth so many GHz-days
+  ghzdt = (double) num_fcs / k * 4620 / 960 * ghzd;
+  printf("k=%llu, %f GHz-days (assignment), %f GHz-days (per test)\n", k, ghzd, ghzdt);
   for (use_kernel = BARRETT79_MUL32_GS; use_kernel < UNKNOWN_GS_KERNEL; use_kernel++)
   {
     timer_init(&timer);
     tf_class_opencl (k+use_class, k+use_class+num_fcs*mystuff.num_classes, &mystuff, (GPUKernels)use_kernel);
     time1 = (double)timer_diff(&timer);
-    ghz = (double)num_fcs/(double)k * 86400000000.0 / time1 * ghzd;
+    ghz = ghzdt * 86400000000.0 / time1;
     printf("  %.20s: %8.2f ms ==> %8.2fM FCs/s ==> %7.2f GHz-days/day\n", kernel_info[use_kernel].kernelname, time1/1000.0, num_fcs/time1, ghz);
   }
   return 0;
@@ -924,7 +934,7 @@ int init_gpu_test(int devicenumber)
   mystuff.bit_min = 71;
   mystuff.bit_max_stage = mystuff.bit_max_assignment = 72;
   mystuff.gpu_sieving = 1;
-
+  mystuff.flush = 0;
 
   printf("\nReinitializing with gpu_sieving enabled.\n");
   init_CL(mystuff.num_streams, &devicenumber);
@@ -977,11 +987,11 @@ int perftest(int par, int devicenumber)
   // 4. kernels
   test_gpu_sieve((cl_uint)par);
 
-  printf("\n5. TF kernels, %d iterations each\n", par);
 
+  // 5. TF kernels
   cleanup_CL(); // reinit from scratch
 
-  // use the configured settings
+  // use the configured settings incl. gpu_sieving
   mystuff.verbosity = 0; // don't show the loading
   read_config(&mystuff);
   if(init_CL(mystuff.num_streams, &devicenumber)!=CL_SUCCESS)

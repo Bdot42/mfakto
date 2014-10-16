@@ -95,7 +95,7 @@ enum MODES
   MODE_PERFTEST,
   MODE_NORMAL,
   MODE_SELFTEST_SHORT,
-  MODE_SELFTEST_HALF,
+  MODE_SELFTEST_QUICK,
   MODE_SELFTEST_FULL
 };
 
@@ -281,6 +281,7 @@ typedef struct _mystuff_t
   cl_ulong cpu_mask;         /* CPU affinity mask for the siever thread */
   cl_int   verbosity;        /* -1 = uninitialized, 0 = reduced number of screen printfs, 1= default, >= 2 = some additional printfs */
   cl_uint  selftestsize;
+  cl_uint  force_rebuild;    /* 1: delete the previous binfile */
 
   stats_t  stats;            /* stats for the status line */
 
