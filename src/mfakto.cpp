@@ -1232,7 +1232,7 @@ cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_ev
                  run_event);
   if(status != CL_SUCCESS)
   {
-    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)" << "\n";
+    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel) " << kernel_info[CL_CALC_MOD_INV].kernelname << "\n";
     return 1;
   }
 #ifdef CL_PERFORMANCE_INFO
@@ -1347,7 +1347,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
                  run_event);
   if(status != CL_SUCCESS)
   {
-    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)\n";
+    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel) " << kernel_info[CL_CALC_BIT_TO_CLEAR].kernelname << "\n";
     return 1;
   }
 
@@ -1472,7 +1472,7 @@ cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event,
                  run_event);
   if(status != CL_SUCCESS)
   {
-    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel(clEnqueueNDRangeKernel)\n";
+    std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Enqueuing kernel (clEnqueueNDRangeKernel) " << kernel_info[CL_SIEVE].kernelname << "\n";
     return 1;
   }
 
@@ -2618,7 +2618,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 
         // the sieving
 
-        gpusieve (mystuff, k_max-k_min);
+        gpusieve (mystuff, k_remaining);
 
 #ifdef DETAILED_INFO
   // as a first test, copy the sieve bits into the usual sieve array - later, the kernels will do that.

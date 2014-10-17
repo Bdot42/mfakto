@@ -858,9 +858,9 @@ int test_gpu_tf_kernels(cl_uint par)
   mystuff.bit_max_assignment = 69;
   mystuff.bit_max_stage = 69;
   cl_ulong k = calculate_k(mystuff.exponent,mystuff.bit_min);
-  cl_ulong num_fcs = 2048;
+  cl_ulong num_fcs = 2097151;
   cl_ulong use_kernel;
-  double ghzd = primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_max_stage);
+  double ghzd = primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_min + 1);
   double ghz;
 
   mystuff.threads_per_grid = 256;
@@ -877,16 +877,18 @@ int test_gpu_tf_kernels(cl_uint par)
   while(!class_needed(mystuff.exponent, k, use_class)) use_class++;
   gpusieve_init_class(&mystuff, k+use_class);
 
-  // calibrate to the device so we have ~ 2..4 seconds per kernel
+  // calibrate to the device so we have ~ 2..4 seconds per kernel (at default par = 10)
   do
   {
     timer_init(&timer);
     tf_class_opencl (k+use_class, k+use_class+num_fcs*mystuff.num_classes, &mystuff, BARRETT79_MUL32_GS);
     time1 = (double)timer_diff(&timer);
+  printf("%llu FCs, %f ms\n", num_fcs, time1/1000.0);
     num_fcs <<=1;
-  } while (time1 < 200000.0*par);
+  } while (time1 < 100000.0*par);
 
   printf("\n5. GPU tf kernels, %lld FCs each\n", num_fcs);
+  printf("k=%llu, %f GHz-days %d %d\n", k, ghzd, sizeof(cl_ulong), sizeof(long unsigned int));
   for (use_kernel = BARRETT79_MUL32_GS; use_kernel < UNKNOWN_GS_KERNEL; use_kernel++)
   {
     timer_init(&timer);
