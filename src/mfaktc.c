@@ -996,7 +996,6 @@ int main(int argc, char **argv)
     }
     else if(!strcmp((char*)"--perftest", argv[i]))
     {
-      read_config(&mystuff);
       if ((i+1)<argc)
         tmp = (int)strtol(argv[i+1],&ptr,10);
       else

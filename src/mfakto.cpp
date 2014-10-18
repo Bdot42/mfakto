@@ -703,7 +703,7 @@ int load_kernels(cl_int *devnumber)
   char program_options[150];
 
   // so far use the same vector size for all kernels ...
-  if (mystuff.CompileOptions[0])  // if mfakto.ini defined compile options, override the default with them
+  if (mystuff.CompileOptions[0] && mystuff.CompileOptions[0] != '+')  // if mfakto.ini defined compile options, override the default with them
   {
     strcpy(program_options, mystuff.CompileOptions);
   }
@@ -728,6 +728,9 @@ int load_kernels(cl_int *devnumber)
 
     if (mystuff.small_exp == 1)
       strcat(program_options, " -DSMALL_EXP");
+
+    if (mystuff.CompileOptions[0] == '+')
+      strcat(program_options, mystuff.CompileOptions+1);
   }
 
   if (mystuff.binfile[0])
