@@ -260,29 +260,6 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
-/*  GPU_CPU, i7 620M @ 3.06GHz */
-      MG62,             // "cl_mg_62"        (9.60 M/s)
-      BARRETT77_MUL32,  // "cl_barrett32_77" (5.54 M/s)
-      BARRETT76_MUL32,  // "cl_barrett32_76" (5.16 M/s)
-      BARRETT88_MUL32,  // "cl_barrett32_88" (4.35 M/s)
-      BARRETT79_MUL32,  // "cl_barrett32_79" (4.22 M/s)
-      BARRETT87_MUL32,  // "cl_barrett32_87" (4.16 M/s)
-      BARRETT69_MUL15,  // "cl_barrett15_69" (3.60 M/s)
-      BARRETT70_MUL15,  // "cl_barrett15_70" (3.60 M/s)
-      BARRETT92_MUL32,  // "cl_barrett32_92" (3.56 M/s)
-      BARRETT71_MUL15,  // "cl_barrett15_71" (3.43 M/s)
-//      BARRETT70_MUL24,  // "cl_barrett24_70" (3.40 M/s)
-      BARRETT73_MUL15,  // "cl_barrett15_73" (3.07 M/s)
-      BARRETT74_MUL15,  // "cl_barrett15_74"
-      BARRETT82_MUL15,  // "cl_barrett15_82" (2.72 M/s)
-      BARRETT83_MUL15,  // "cl_barrett15_83" (2.65 M/s)
-      _63BIT_MUL24,     // "mfakto_cl_63"    (2.59 M/s)
-      BARRETT88_MUL15,  // "cl_barrett15_88" (2.43 M/s)
-      UNKNOWN_KERNEL,   //
-      UNKNOWN_KERNEL,
-      UNKNOWN_KERNEL,
-      UNKNOWN_KERNEL },
-    {
 /*  GPU_APU,  (BeaverCreek=???, v=4)  */
       BARRETT70_MUL15,  // "cl_barrett15_70" (79.66 M/s)
       BARRETT69_MUL15,  // "cl_barrett15_69" (78.40 M/s)
@@ -301,6 +278,29 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       BARRETT88_MUL15,  // "cl_barrett15_88" (47.64 M/s)
       BARRETT92_MUL32,  // "cl_barrett32_92" (44.43 M/s)
       _63BIT_MUL24,     // "mfakto_cl_63"    (42.09 M/s)
+      UNKNOWN_KERNEL,   //
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+    {
+/*  GPU_CPU, i7 620M @ 3.06GHz */
+      MG62,             // "cl_mg_62"        (9.60 M/s)
+      BARRETT77_MUL32,  // "cl_barrett32_77" (5.54 M/s)
+      BARRETT76_MUL32,  // "cl_barrett32_76" (5.16 M/s)
+      BARRETT88_MUL32,  // "cl_barrett32_88" (4.35 M/s)
+      BARRETT79_MUL32,  // "cl_barrett32_79" (4.22 M/s)
+      BARRETT87_MUL32,  // "cl_barrett32_87" (4.16 M/s)
+      BARRETT69_MUL15,  // "cl_barrett15_69" (3.60 M/s)
+      BARRETT70_MUL15,  // "cl_barrett15_70" (3.60 M/s)
+      BARRETT92_MUL32,  // "cl_barrett32_92" (3.56 M/s)
+      BARRETT71_MUL15,  // "cl_barrett15_71" (3.43 M/s)
+//      BARRETT70_MUL24,  // "cl_barrett24_70" (3.40 M/s)
+      BARRETT73_MUL15,  // "cl_barrett15_73" (3.07 M/s)
+      BARRETT74_MUL15,  // "cl_barrett15_74"
+      BARRETT82_MUL15,  // "cl_barrett15_82" (2.72 M/s)
+      BARRETT83_MUL15,  // "cl_barrett15_83" (2.65 M/s)
+      _63BIT_MUL24,     // "mfakto_cl_63"    (2.59 M/s)
+      BARRETT88_MUL15,  // "cl_barrett15_88" (2.43 M/s)
       UNKNOWN_KERNEL,   //
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL,
