@@ -42,6 +42,7 @@ cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_ev
 cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *run_event, cl_ulong k_min);
 cl_int run_cl_sieve(cl_uint numblocks, size_t localThreads, cl_event *run_event, cl_uint maxp);
 int run_gs_kernel(cl_kernel kernel, cl_uint numblocks, cl_uint shared_mem_required, cl_uint shiftcount);
+int kernel_possible(int kernel, mystuff_t *mystuff);
 
 #ifdef __cplusplus
 }

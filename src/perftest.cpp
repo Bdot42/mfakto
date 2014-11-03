@@ -87,13 +87,13 @@ int init_perftest(int devicenumber)
   mystuff.force_rebuild = 1; // always rebuild from scratch while doing this test
 
   init_CL(mystuff.num_streams, &devicenumber);
-  set_gpu_type();
-  load_kernels(&devicenumber);
 //  i = (cl_uint)deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
   i = 2048;
   while( (i * 2) <= mystuff.threads_per_grid_max) i = i * 2;
   mystuff.threads_per_grid = min(i, (cl_uint)deviceinfo.maxThreadsPerGrid);
 
+  set_gpu_type();
+  load_kernels(&devicenumber);
   init_CLstreams(0);  // alloc buffers
 
   register_signal_handler(&mystuff);
@@ -854,11 +854,32 @@ int test_gpu_sieve(cl_uint par)
   return 0;
 }
 
+void insert_time(double time1, double time2[], cl_uint num, cl_uint kernel_idxs[], cl_uint used_size)
+// arrays have to be one larger than used_size
+{
+  cl_uint i, j;
+
+  for (i=0; i<used_size; ++i)
+  {
+    if (time2[i] >= time1) break;
+  }
+
+  for (j=used_size; j>i; --j)
+  {
+    time2[j] = time2[j-1];
+    kernel_idxs[j] = kernel_idxs[j-1];
+  }
+
+  time2[i] = time1;
+  kernel_idxs[i] = num;
+}
+
 int test_cpu_tf_kernels(cl_uint par)
 {
+  static cl_uint num_test=0; // use this counter to cycle through the FC blocks to avoid successive runs blocking each other
   timeval timer;
-  double time1, ghzdt, ghz;
-  cl_uint num_fcs, num_loops, i;
+  double time1, time2[UNKNOWN_KERNEL-_71BIT_MUL24], ghzdt, ghz;
+  cl_uint num_fcs, num_loops, i, idxs[UNKNOWN_KERNEL-_71BIT_MUL24];
   cl_ulong use_kernel;
   double ghzd = primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_min + 1);
   int72  k_base;
@@ -874,13 +895,13 @@ int test_cpu_tf_kernels(cl_uint par)
   memset(mystuff.h_RES,0,32 * sizeof(int));
   status = clEnqueueWriteBuffer(QUEUE,
                 mystuff.d_RES,
-                CL_TRUE,          // Wait for completion; it's fast to copy 128 bytes ;-)
+                CL_TRUE,          // Wait for completion
                 0,
                 32 * sizeof(int),
                 mystuff.h_RES,
                 0,
                 NULL,
-                &mystuff.copy_events[0]);
+                NULL);
   if(status != CL_SUCCESS)
   {
     std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_RES(clEnqueueWriteBuffer)\n";
@@ -948,7 +969,7 @@ int test_cpu_tf_kernels(cl_uint par)
   // combine for more efficient passing of parameters
   cl_ulong4 b_preinit4 = {{b_preinit_lo, b_preinit_mid, b_preinit_hi, (cl_ulong)shiftcount-1}};
 
-  printf("\n 5. TF kernels (w/ CPU sieve), exponent=%u ... calibrating\r", mystuff.exponent); fflush(stdout);
+  printf("\nexponent=%u ... calibrating\r", mystuff.exponent); fflush(stdout);
   // calibrate to the device so we have ~ 2..4 seconds per kernel (at default with par = 10)
   use_kernel = BARRETT79_MUL32;
 
@@ -958,7 +979,7 @@ int test_cpu_tf_kernels(cl_uint par)
     k_base.d0 =  k & 0xFFFFFF;
     k_base.d1 = (k >> 24) & 0xFFFFFF;
     k_base.d2 =  k >> 48;
-    status = run_kernel24(kernel_info[use_kernel].kernel, mystuff.exponent, k_base, 0, b_preinit, mystuff.d_RES, shiftcount, mystuff.bit_min-63);
+    status = run_kernel24(kernel_info[use_kernel].kernel, mystuff.exponent, k_base, num_test++ % mystuff.num_streams, b_preinit, mystuff.d_RES, shiftcount, mystuff.bit_min-63);
   }
   else if (((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT74_MUL15)) || (use_kernel == MG88))
   {
@@ -968,7 +989,7 @@ int test_cpu_tf_kernels(cl_uint par)
     k_base.d2 = (k >> 30) & 0x7FFF;
     k_base.d3 = (k >> 45) & 0x7FFF;
     k_base.d4 =  k >> 60;
-    status = run_kernel15(kernel_info[use_kernel].kernel, mystuff.exponent, k_base, 0, b_in, mystuff.d_RES, shiftcount, mystuff.bit_max_stage-65);
+    status = run_kernel15(kernel_info[use_kernel].kernel, mystuff.exponent, k_base, num_test++ % mystuff.num_streams, b_in, mystuff.d_RES, shiftcount, mystuff.bit_max_stage-65);
   }
   else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == MG62))
   {
@@ -976,11 +997,11 @@ int test_cpu_tf_kernels(cl_uint par)
     k_base.d0 = (cl_uint) k;
     k_base.d1 = k >> 32;
     k_base.d2 = 0;
-    status = run_barrett_kernel32(kernel_info[use_kernel].kernel, mystuff.exponent, k_base, 0, b_192, mystuff.d_RES, shiftcount, mystuff.bit_max_stage-65);
+    status = run_barrett_kernel32(kernel_info[use_kernel].kernel, mystuff.exponent, k_base, num_test++ % mystuff.num_streams, b_192, mystuff.d_RES, shiftcount, mystuff.bit_max_stage-65);
   }
   else
   {
-    status = run_kernel64(kernel_info[use_kernel].kernel, mystuff.exponent, k, 0, b_preinit4, mystuff.d_RES, mystuff.bit_min-63);
+    status = run_kernel64(kernel_info[use_kernel].kernel, mystuff.exponent, k, num_test++ % mystuff.num_streams, b_preinit4, mystuff.d_RES, mystuff.bit_min-63);
   }
   if(status != CL_SUCCESS)
   {
@@ -990,13 +1011,13 @@ int test_cpu_tf_kernels(cl_uint par)
   clFinish(QUEUE);
   time1 = (double)timer_diff(&timer);
 //  printf("%llu FCs, %f ms\n", num_fcs, time1/1000.0);
-  num_loops = 1 + (cl_uint)(200000.0*par/time1);
+  num_loops = 1 + (cl_uint)(200000.0*par/time1); // run for about 2 seconds when par==10
   num_fcs = num_loops*mystuff.h_ktab[0][mystuff.threads_per_grid-1];
-  printf("5. TF kernels (w/ CPU sieve), exponent=%u, %lldM FCs (sieved: %lldM FCs) each\n",
+  printf("exponent=%u, %lldM FCs (sieved: %lldM FCs) each, ",
     mystuff.exponent, num_fcs >> 20, (num_loops*mystuff.threads_per_grid)>>20);
   // this single test is worth so many GHz-days
   ghzdt = (double) num_fcs / k * 4620 / 960 * ghzd;
-  printf("k=%llu, %f GHz-days (assignment), %f GHz-days (per test)\n", k, ghzd, ghzdt);
+  printf("k=%llu, %f GHz-days (assignment), %f GHz-days (per test): ", k, ghzd, ghzdt); fflush(stdout);
   for (use_kernel = _71BIT_MUL24; use_kernel < UNKNOWN_KERNEL; use_kernel++)
   {
     new_class=1; // tell run_kernel to re-submit the one-time kernel arguments
@@ -1008,7 +1029,7 @@ int test_cpu_tf_kernels(cl_uint par)
         k_base.d0 =  k & 0xFFFFFF;
         k_base.d1 = (k >> 24) & 0xFFFFFF;
         k_base.d2 =  k >> 48;
-        status = run_kernel24(kernel_info[use_kernel].kernel, mystuff.exponent, k_base, 0, b_preinit, mystuff.d_RES, shiftcount, mystuff.bit_min-63);
+        status = run_kernel24(kernel_info[use_kernel].kernel, mystuff.exponent, k_base, num_test++ % mystuff.num_streams, b_preinit, mystuff.d_RES, shiftcount, mystuff.bit_min-63);
       }
       else if (((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT74_MUL15)) || (use_kernel == MG88))
       {
@@ -1018,7 +1039,7 @@ int test_cpu_tf_kernels(cl_uint par)
         k_base.d2 = (k >> 30) & 0x7FFF;
         k_base.d3 = (k >> 45) & 0x7FFF;
         k_base.d4 =  k >> 60;
-        status = run_kernel15(kernel_info[use_kernel].kernel, mystuff.exponent, k_base, 0, b_in, mystuff.d_RES, shiftcount, mystuff.bit_max_stage-65);
+        status = run_kernel15(kernel_info[use_kernel].kernel, mystuff.exponent, k_base, num_test++ % mystuff.num_streams, b_in, mystuff.d_RES, shiftcount, mystuff.bit_max_stage-65);
       }
       else if (((use_kernel >= BARRETT79_MUL32) && (use_kernel <= BARRETT87_MUL32)) || (use_kernel == MG62))
       {
@@ -1026,11 +1047,11 @@ int test_cpu_tf_kernels(cl_uint par)
         k_base.d0 = (cl_uint) k;
         k_base.d1 = k >> 32;
         k_base.d2 = 0;
-        status = run_barrett_kernel32(kernel_info[use_kernel].kernel, mystuff.exponent, k_base, 0, b_192, mystuff.d_RES, shiftcount, mystuff.bit_max_stage-65);
+        status = run_barrett_kernel32(kernel_info[use_kernel].kernel, mystuff.exponent, k_base, num_test++ % mystuff.num_streams, b_192, mystuff.d_RES, shiftcount, mystuff.bit_max_stage-65);
       }
       else
       {
-        status = run_kernel64(kernel_info[use_kernel].kernel, mystuff.exponent, k, 0, b_preinit4, mystuff.d_RES, mystuff.bit_min-63);
+        status = run_kernel64(kernel_info[use_kernel].kernel, mystuff.exponent, k, num_test++ % mystuff.num_streams, b_preinit4, mystuff.d_RES, mystuff.bit_min-63);
       }
       if(status != CL_SUCCESS)
       {
@@ -1039,11 +1060,49 @@ int test_cpu_tf_kernels(cl_uint par)
     }
     clFinish(QUEUE);
     time1 = (double)timer_diff(&timer);
-    ghz = ghzdt * 86400000000.0 / time1;
-    printf("%17s [%u-%u]: %8.2f ms ==> %8.2fM (%8.2fM) FCs/s ==> %7.2f GHz-days/day\n",
-      kernel_info[use_kernel].kernelname, kernel_info[use_kernel].bit_min, kernel_info[use_kernel].bit_max,
-      time1/1000.0, num_fcs/time1, (num_loops*mystuff.threads_per_grid)/time1, ghz);
+    putchar('.'); fflush(stdout);
+    insert_time(time1, time2, use_kernel, idxs, use_kernel - _71BIT_MUL24);
     if (mystuff.quit) break;
+  }
+
+  for (i=0; i < use_kernel - _71BIT_MUL24; ++i)
+  {
+    ghz = ghzdt * 86400000000.0 / time2[i];
+    printf("\n%17s [%u-%u]: %8.2f ms ==> %8.2fM (%8.2fM) FCs/s ==> %7.2f GHz-days/day",
+        kernel_info[idxs[i]].kernelname, kernel_info[idxs[i]].bit_min, kernel_info[idxs[i]].bit_max,
+        time2[i]/1000.0, num_fcs/time2[i], (num_loops*mystuff.threads_per_grid)/time2[i], ghz);
+  }
+
+  printf("\n\nResulting speed for M%u:\nbit_min - bit_max  GHz-days/day  kernelname\n", mystuff.exponent);
+  cl_uint bitlevels[100];
+
+  cl_uint last_kernel = UNKNOWN_KERNEL;
+  double last_ghz;
+  cl_uint bitlevel;
+  for (bitlevel=10; bitlevel<100; ++bitlevel)
+  {
+    bitlevels[bitlevel] = UNKNOWN_KERNEL;
+    for (i=0; i < use_kernel - _71BIT_MUL24; ++i)
+    {
+      mystuff.bit_min = bitlevel;
+      mystuff.bit_max_stage = bitlevel + 1;
+      if (kernel_possible(idxs[i], &mystuff))
+      {
+        last_ghz = ghz;
+        ghz = ghzdt * 86400000000.0 / time2[i];
+        bitlevels[bitlevel] = idxs[i];
+        break;
+      }
+    }
+
+    if (bitlevels[bitlevel] != last_kernel)
+    {
+      if (last_kernel != UNKNOWN_KERNEL)
+        printf("%7u  %12.3f  %-20s\n", bitlevel, last_ghz, kernel_info[last_kernel].kernelname);
+      last_kernel = bitlevels[bitlevel];
+      if (last_kernel != UNKNOWN_KERNEL)
+        printf("%7u - ", bitlevel);
+    }
   }
   return 0;
 }
@@ -1051,13 +1110,13 @@ int test_cpu_tf_kernels(cl_uint par)
 int test_gpu_tf_kernels(cl_uint par)
 {
   struct timeval timer;
-  double time1;
+  double time1, time2[UNKNOWN_GS_KERNEL-BARRETT79_MUL32_GS], ghzdt, ghz;
+  cl_uint i, idxs[UNKNOWN_GS_KERNEL-BARRETT79_MUL32_GS];
   cl_uint use_class=0;
   cl_ulong k = calculate_k(mystuff.exponent,mystuff.bit_min);
   cl_ulong num_fcs = mystuff.gpu_sieve_size - 1; //start with one full sieve block
   cl_ulong use_kernel;
   double ghzd = primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_min + 1);
-  double ghz, ghzdt;
 
   mystuff.threads_per_grid = 256;
 
@@ -1069,7 +1128,7 @@ int test_gpu_tf_kernels(cl_uint par)
   while(!class_needed(mystuff.exponent, k, use_class)) use_class++;
   gpusieve_init_class(&mystuff, k+use_class);
 
-  printf("\n 5. GPU tf kernels, exponent=%u ... calibrating\r", mystuff.exponent); fflush(stdout);
+  printf("\n exponent=%u ... calibrating\r", mystuff.exponent); fflush(stdout);
   // calibrate to the device so we have ~ 2..4 seconds per kernel (at default with par = 10)
   do
   {
@@ -1080,19 +1139,58 @@ int test_gpu_tf_kernels(cl_uint par)
     num_fcs <<=1;
   } while (time1 < 100000.0*par);
 
-  printf("5. GPU tf kernels, exponent=%u, %lldM FCs each\n", mystuff.exponent, num_fcs>>20);
+  printf("exponent=%u, %lldM FCs each, ", mystuff.exponent, num_fcs>>20);
   // this single test is worth so many GHz-days
   ghzdt = (double) num_fcs / k * 4620 / 960 * ghzd;
-  printf("k=%llu, %f GHz-days (assignment), %f GHz-days (per test)\n", k, ghzd, ghzdt);
+  printf("k=%llu, %f GHz-days (assignment), %f GHz-days (per test): ", k, ghzd, ghzdt); fflush(stdout);
   for (use_kernel = BARRETT79_MUL32_GS; use_kernel < UNKNOWN_GS_KERNEL; use_kernel++)
   {
     timer_init(&timer);
     tf_class_opencl (k+use_class, k+use_class+num_fcs*mystuff.num_classes, &mystuff, (GPUKernels)use_kernel);
     time1 = (double)timer_diff(&timer);
-    ghz = ghzdt * 86400000000.0 / time1;
-    printf("%20s [%u-%u]: %8.2f ms ==> %8.2fM FCs/s ==> %7.2f GHz-days/day\n",
-      kernel_info[use_kernel].kernelname, kernel_info[use_kernel].bit_min, kernel_info[use_kernel].bit_max, time1/1000.0, num_fcs/time1, ghz);
+    putchar('.'); fflush(stdout);
+    insert_time(time1, time2, use_kernel, idxs, use_kernel - BARRETT79_MUL32_GS);
     if (mystuff.quit) break;
+  }
+
+  for (i=0; i < use_kernel - BARRETT79_MUL32_GS; ++i)
+  {
+    ghz = ghzdt * 86400000000.0 / time2[i];
+    printf("\n%20s [%u-%u]: %8.2f ms ==> %8.2fM FCs/s ==> %7.2f GHz-days/day",
+        kernel_info[idxs[i]].kernelname, kernel_info[idxs[i]].bit_min, kernel_info[idxs[i]].bit_max,
+        time2[i]/1000.0, num_fcs/time2[i], ghz);
+  }
+
+  printf("\n\nResulting speed for M%u:\nbit_min - bit_max  GHz-days/day  kernelname\n", mystuff.exponent);
+  cl_uint bitlevels[100];
+
+  cl_uint last_kernel = UNKNOWN_KERNEL;
+  double last_ghz;
+  cl_uint bitlevel;
+  for (bitlevel=10; bitlevel<100; ++bitlevel)
+  {
+    bitlevels[bitlevel] = UNKNOWN_KERNEL;
+    for (i=0; i < use_kernel - BARRETT79_MUL32_GS; ++i)
+    {
+      mystuff.bit_min = bitlevel;
+      mystuff.bit_max_stage = bitlevel + 1;
+      if (kernel_possible(idxs[i], &mystuff))
+      {
+        last_ghz = ghz;
+        ghz = ghzdt * 86400000000.0 / time2[i];
+        bitlevels[bitlevel] = idxs[i];
+        break;
+      }
+    }
+
+    if (bitlevels[bitlevel] != last_kernel)
+    {
+      if (last_kernel != UNKNOWN_KERNEL)
+        printf("%7u  %12.3f  %-20s\n", bitlevel, last_ghz, kernel_info[last_kernel].kernelname);
+      last_kernel = bitlevels[bitlevel];
+      if (last_kernel != UNKNOWN_KERNEL)
+        printf("%7u - ", bitlevel);
+    }
   }
   return 0;
 }
@@ -1132,19 +1230,22 @@ int test_tf_kernels(cl_uint par, int devicenumber)
     return ERR_MEM;
   }
 
-  mystuff.bit_min = 68;
-  mystuff.bit_max_assignment = 69;
-  mystuff.bit_max_stage = 69;
   if (mystuff.gpu_sieving == 1)
   {
+    printf("\n 5. GPU tf kernels\n");
     for (i=0; i<nexp; ++i)
     {
+      mystuff.bit_min = 68;
+      mystuff.bit_max_assignment = 69;
+      mystuff.bit_max_stage = 69;
       mystuff.exponent=exps[i];
       test_gpu_tf_kernels((cl_uint) par);
+      if (mystuff.quit) break;
     }
   }
   else
   {
+    printf("5. TF kernels (w/ CPU sieve)\n");
     cl_ulong k = calculate_k(mystuff.exponent,mystuff.bit_min);
     int status;
 
@@ -1167,24 +1268,30 @@ int test_tf_kernels(cl_uint par, int devicenumber)
     // use one sieved block for the whole test
     mystuff.threads_per_grid -= mystuff.threads_per_grid % (mystuff.vectorsize * deviceinfo.maxThreadsPerBlock);
     mystuff.sieve_primes_upper_limit = mystuff.sieve_primes_max;
-    sieve_candidates(mystuff.threads_per_grid, mystuff.h_ktab[0], mystuff.sieve_primes); // we'll use this block for all tests
-    status = clEnqueueWriteBuffer(QUEUE,
-              mystuff.d_ktab[0],
-              CL_FALSE,
-              0,
-              size,
-              mystuff.h_ktab[0],
-              0,
-              NULL,
-              NULL); // don't wait here, test_cpu_tf_kernels copies RES in wait mode
-
-    if(status != CL_SUCCESS)
+    for (i=0; i<mystuff.num_streams; i++)
     {
-        std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_ktab(clEnqueueWriteBuffer)\n";
+      sieve_candidates(mystuff.threads_per_grid, mystuff.h_ktab[i], mystuff.sieve_primes); // use all blocks alternatingly, but always with the same content
+      status = clEnqueueWriteBuffer(QUEUE,
+                mystuff.d_ktab[i],
+                CL_FALSE,  // don't wait here, test_cpu_tf_kernels copies RES in wait mode
+                0,
+                size,
+                mystuff.h_ktab[i],
+                0,
+                NULL,
+                &mystuff.copy_events[i]);
+
+      if(status != CL_SUCCESS)
+      {
+          std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_ktab[" << i << "] (clEnqueueWriteBuffer)\n";
+      }
     }
 
     for (i=0; i<nexp; ++i)
     {
+      mystuff.bit_min = 68;
+      mystuff.bit_max_assignment = 69;
+      mystuff.bit_max_stage = 69;
       mystuff.exponent=exps[i];
       test_cpu_tf_kernels((cl_uint) par);
       if (mystuff.quit) break;

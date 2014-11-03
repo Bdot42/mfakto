@@ -55,6 +55,7 @@ GPU_type gpu_types[]={
   {GPU_VLIW5,   80,  "VLIW5"},
   {GPU_GCN,     64,  "GCN"},
   {GPU_GCN2,    64,  "GCN2"},
+  {GPU_GCN3,    64,  "GCN3"},
   {GPU_APU,     80,  "APU"},
   {GPU_CPU,      1,  "CPU"},
   {GPU_NVIDIA,   8,  "NVIDIA"},
@@ -239,6 +240,28 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       UNKNOWN_KERNEL },
     {
 /*  GPU_GCN2  (7870XT@1180MHz (Tahiti) / 7950@1100MHz  */
+      BARRETT69_MUL15,  // "cl_barrett15_69" 653.21  / 709.49
+      BARRETT70_MUL15,  // "cl_barrett15_70" 653.18  / 708.46
+      BARRETT71_MUL15,  // "cl_barrett15_71" 606.71  / 660.93
+      BARRETT73_MUL15,  // "cl_barrett15_73" 536.63  / 586.60
+      BARRETT74_MUL15,  // "cl_barrett15_74"         / 570.94
+      BARRETT82_MUL15,  // "cl_barrett15_82" 475.97  / 528.38
+      BARRETT76_MUL32,  // "cl_barrett32_76" 460.40  / 498.64
+      BARRETT77_MUL32,  // "cl_barrett32_77" 446.44  / 484.64
+      BARRETT83_MUL15,  // "cl_barrett15_83" 445.01  / 495.23
+      BARRETT87_MUL32,  // "cl_barrett32_87" 403.05  / 436.60
+      BARRETT79_MUL32,  // "cl_barrett32_79" 391.52  / 424.12
+      BARRETT88_MUL15,  // "cl_barrett15_88" 399.98  / 445.67
+      BARRETT88_MUL32,  // "cl_barrett32_88" 389.25  / 422.84
+      BARRETT92_MUL32,  // "cl_barrett32_92" 349.29  / 378.50
+      _63BIT_MUL24,     // "mfakto_cl_63"    344.40  / 362.55
+      MG62,             // "cl_mg_62"        367.04  / 323.39
+      MG88,             // "cl_mg88"                 / 305.38
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+{
+/*  GPU_GCN3  (R290x) */
       BARRETT69_MUL15,  // "cl_barrett15_69" 653.21  / 709.49
       BARRETT70_MUL15,  // "cl_barrett15_70" 653.18  / 708.46
       BARRETT71_MUL15,  // "cl_barrett15_71" 606.71  / 660.93
@@ -886,6 +909,8 @@ int main(int argc, char **argv)
   strcpy(mystuff.inifile, "mfakto.ini");
   mystuff.force_rebuild = 0;
 
+  printf("%s (%dbit build)\n\n", MFAKTO_VERSION, (int)(sizeof(void*)*8));
+
   while(i<argc)
   {
     if((!strcmp((char*)"-h", argv[i])) || (!strcmp((char*)"--help", argv[i])))
@@ -1037,8 +1062,6 @@ int main(int argc, char **argv)
     i++;
   }
 
-  printf("%s (%dbit build)\n\n", MFAKTO_VERSION, (int)(sizeof(void*)*8));
-
   read_config(&mystuff);
 
 /* print current configuration */
@@ -1116,22 +1139,6 @@ int main(int argc, char **argv)
       printf("ERROR: device only supports %u threads per grid. A minimum of 256 is required for GPU sieving.\n", (unsigned int) deviceinfo.maxThreadsPerGrid);
       return ERR_MEM;
     }
-  }
-
-  if(mystuff.verbosity >= 1)
-  {
-    printf("\nOpenCL device info\n");
-    printf("  name                      %s (%s)\n", deviceinfo.d_name, deviceinfo.v_name);
-    printf("  device (driver) version   %s (%s)\n", deviceinfo.d_ver, deviceinfo.dr_version);
-    printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
-    printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
-    printf("  number of multiprocessors %d (%d compute elements)\n", deviceinfo.units, deviceinfo.units * gpu_types[mystuff.gpu_type].CE_per_multiprocessor);
-    printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
-
-    printf("\nAutomatic parameters\n");
-
-    printf("  threads per grid          %d\n", mystuff.threads_per_grid);
-    printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
   }
 
   if (load_kernels(&devicenumber)!=CL_SUCCESS)

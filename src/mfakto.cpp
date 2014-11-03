@@ -586,7 +586,6 @@ void set_gpu_type()
   {
     // try to auto-detect the type of GPU
     if (strstr(deviceinfo.d_name, "Capeverde")  ||    // 7730, 7750, 7770, 8760, 8740, R7 250X
-        strstr(deviceinfo.d_name, "Bonaire")    ||    // 7790, R7 260, R7 260X
         strstr(deviceinfo.d_name, "Pitcairn")   ||    // 7850, 7870, 8870
         strstr(deviceinfo.d_name, "Oland")      ||    // 8670, 8570, R9 240, R9 250
         strstr(deviceinfo.d_name, "Sun")        ||    // 85x0M
@@ -594,12 +593,7 @@ void set_gpu_type()
         strstr(deviceinfo.d_name, "Venus")      ||    // 88x0M
         strstr(deviceinfo.d_name, "Saturn")     ||    // 8930M, 8950M
         strstr(deviceinfo.d_name, "Neptune")    ||    // 8970M, 8990M
-        strstr(deviceinfo.d_name, "Vesuvius")   ||    // 295X2
         strstr(deviceinfo.d_name, "Curacao")    ||    // R9 265, R9 270, R9 270X
-        strstr(deviceinfo.d_name, "Tonga")      ||    // R9 285
-        strstr(deviceinfo.d_name, "Hawaii")     ||    // R9 290, R9 290X
-                // Hawaii is both desktop graphics (1:8) and workstation graphics (1:2) in W8100, W9100, S9150
-                // 1:8 is just below the sweet spot for using DP. FirePro cards run faster as GCN2
         strstr(deviceinfo.d_name, "Kalindi")          // GCN APU, Kabini, R7 ???
         )
     {
@@ -610,6 +604,16 @@ void set_gpu_type()
              )
     {
       mystuff.gpu_type = GPU_GCN2;   // these cards have faster DP performance, allowing to use it for the division algorithms
+    }
+    else if (strstr(deviceinfo.d_name, "Hawaii")     ||    // R9 290, R9 290X
+                // Hawaii is both desktop graphics (1:8) and workstation graphics (1:2) in W8100, W9100, S9150
+                // 1:8 is just below the sweet spot for using DP. FirePro cards would run faster using DP
+             strstr(deviceinfo.d_name, "Bonaire")    ||    // 7790, R7 260, R7 260X
+             strstr(deviceinfo.d_name, "Tonga")      ||    // R9 285
+             strstr(deviceinfo.d_name, "Vesuvius")         // 295X2
+            )
+    {
+      mystuff.gpu_type = GPU_GCN3;   // these cards have improved int32 performance over the previous GCNs, making for a changed kernel selection
     }
     else if (strstr(deviceinfo.d_name, "Cayman")      ||  // 6950, 6970
              strstr(deviceinfo.d_name, "Devastator")  ||  // 7xx0D (iGPUs of A4/6/8/10)
@@ -679,12 +683,27 @@ void set_gpu_type()
            "See http://devgurus.amd.com/thread/167571 for latest news about this issue.");
   }
 
-  if (((mystuff.gpu_type == GPU_GCN) || (mystuff.gpu_type == GPU_GCN2)) && (mystuff.vectorsize > 3))
+  if (((mystuff.gpu_type >= GPU_GCN) && (mystuff.gpu_type <= GPU_GCN3)) && (mystuff.vectorsize > 3))
   {
     printf("\nWARNING: Your GPU was detected as GCN (Graphics Core Next). "
       "These chips perform very slow with vector sizes of 4 or higher. "
       "Please change to VectorSize=2 in %s and restart mfakto for optimal performance.\n\n",
       mystuff.inifile);
+  }
+  if(mystuff.verbosity >= 1)
+  {
+    printf("\nOpenCL device info\n");
+    printf("  name                      %s (%s)\n", deviceinfo.d_name, deviceinfo.v_name);
+    printf("  device (driver) version   %s (%s)\n", deviceinfo.d_ver, deviceinfo.dr_version);
+    printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
+    printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
+    printf("  number of multiprocessors %d (%d compute elements)\n", deviceinfo.units, deviceinfo.units * gpu_types[mystuff.gpu_type].CE_per_multiprocessor);
+    printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
+
+    printf("\nAutomatic parameters\n");
+
+    printf("  threads per grid          %d\n", mystuff.threads_per_grid);
+    printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
   }
 }
   
