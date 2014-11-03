@@ -262,24 +262,24 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
       UNKNOWN_KERNEL },
 {
 /*  GPU_GCN3  (R290x) */
-      BARRETT69_MUL15,  // "cl_barrett15_69" 653.21  / 709.49
-      BARRETT70_MUL15,  // "cl_barrett15_70" 653.18  / 708.46
-      BARRETT71_MUL15,  // "cl_barrett15_71" 606.71  / 660.93
-      BARRETT73_MUL15,  // "cl_barrett15_73" 536.63  / 586.60
-      BARRETT74_MUL15,  // "cl_barrett15_74"         / 570.94
-      BARRETT82_MUL15,  // "cl_barrett15_82" 475.97  / 528.38
-      BARRETT76_MUL32,  // "cl_barrett32_76" 460.40  / 498.64
-      BARRETT77_MUL32,  // "cl_barrett32_77" 446.44  / 484.64
-      BARRETT83_MUL15,  // "cl_barrett15_83" 445.01  / 495.23
-      BARRETT87_MUL32,  // "cl_barrett32_87" 403.05  / 436.60
-      BARRETT79_MUL32,  // "cl_barrett32_79" 391.52  / 424.12
-      BARRETT88_MUL15,  // "cl_barrett15_88" 399.98  / 445.67
-      BARRETT88_MUL32,  // "cl_barrett32_88" 389.25  / 422.84
-      BARRETT92_MUL32,  // "cl_barrett32_92" 349.29  / 378.50
-      _63BIT_MUL24,     // "mfakto_cl_63"    344.40  / 362.55
-      MG62,             // "cl_mg_62"        367.04  / 323.39
-      MG88,             // "cl_mg88"                 / 305.38
-      UNKNOWN_KERNEL,
+      BARRETT76_MUL32,  // "cl_barrett32_76" 1019.68
+      BARRETT69_MUL15,  // "cl_barrett15_69" 1001.40
+      BARRETT70_MUL15,  // "cl_barrett15_70" 1000.44
+      BARRETT77_MUL32,  // "cl_barrett32_77"  973.98
+      BARRETT71_MUL15,  // "cl_barrett15_71"  930.06
+      BARRETT79_MUL32,  // "cl_barrett32_79"  862.52
+      BARRETT87_MUL32,  // "cl_barrett32_87"  861.47
+      BARRETT73_MUL15,  // "cl_barrett15_73"  827.98
+      BARRETT88_MUL32,  // "cl_barrett32_88"  818.85
+      BARRETT74_MUL15,  // "cl_barrett15_74"  804.04
+      BARRETT92_MUL32,  // "cl_barrett32_92"  746.62
+      BARRETT82_MUL15,  // "cl_barrett15_82"  733.58
+      BARRETT83_MUL15,  // "cl_barrett15_83"  684.38
+      MG62,             // "cl_mg_62"         679.08
+      BARRETT88_MUL15,  // "cl_barrett15_88"  620.27
+      _63BIT_MUL24,     // "mfakto_cl_63"     586.10
+      _71BIT_MUL24,     // "mfakto_cl_71"     571.66
+      MG88,             // "cl_mg88"          428.96
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {

@@ -260,7 +260,7 @@ void shl_192(int192_v * const a)
 
 #undef DIV_160_96
 
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
 void div_192_96_d(int96_v * const res, __private uint qd5, const int96_v n, const double_v nf   MODBASECASE_PAR_DEF)
 /* res = q / n (integer division) */
 {
@@ -686,7 +686,7 @@ void div_192_96(int96_v * const res, __private uint qd5, const int96_v n, const 
 
 
 #define DIV_160_96
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
 void div_160_96_d(int96_v * const res, __private uint qd5, const int96_v n, const double_v nf   MODBASECASE_PAR_DEF)
 /* res = q / n (integer division) */
 /* the code of div_160_96() is an EXACT COPY of div_192_96(), the only
@@ -1130,7 +1130,7 @@ void check_barrett32_76(uint shifter, const int96_v f, const uint tid, const int
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   __private double_v  ffd;
 #endif
   __private float_v  ff;
@@ -1144,7 +1144,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffc) / ff;		// just a little bit below 1.0f so we allways underestimate the quotient
 
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   // use double when available, but not for the low and mid level GCN cards as they have 1:16 DP rate which is too slow
   ffd= CONVERT_DOUBLE_RTP_V(f.d2);
   ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d1);
@@ -1285,7 +1285,7 @@ void check_barrett32_77(uint shifter, const int96_v f, const uint tid, const int
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   __private double_v  ffd;
 #endif
   __private float_v  ff;
@@ -1304,7 +1304,7 @@ Precalculated here since it is the same for all steps in the following loop */
           V(f.d2), V(f.d1), V(f.d0), V(ff));
 #endif
 
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   // use double when available, but not for the low and mid level GCN cards as they have 1:16 DP rate which is too slow
   ffd= CONVERT_DOUBLE_RTP_V(f.d2);
   ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d1);
@@ -1430,7 +1430,7 @@ void check_barrett32_79(uint shifter, const int96_v f, const uint tid, const int
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   __private double_v  ffd;
 #endif
   __private float_v  ff;
@@ -1444,7 +1444,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   // use double when available, but not for the low and mid level GCN cards as they have 1:16 DP rate which is too slow
   ffd= CONVERT_DOUBLE_RTP_V(f.d2);
   ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d1);
@@ -1596,7 +1596,7 @@ void check_barrett32_87(uint shifter, const int96_v f, const uint tid, const int
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   __private double_v  ffd;
 #endif
   __private float_v  ff;
@@ -1611,7 +1611,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   // use double when available, but not for the low and mid level GCN cards as they have 1:16 DP rate which is too slow
   ffd= CONVERT_DOUBLE_RTP_V(f.d2);
   ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d1);
@@ -1745,7 +1745,7 @@ void check_barrett32_88(uint shifter, const int96_v f, const uint tid, const int
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   __private double_v  ffd;
 #endif
   __private float_v  ff;
@@ -1760,7 +1760,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   // use double when available, but not for the low and mid level GCN cards as they have 1:16 DP rate which is too slow
   ffd= CONVERT_DOUBLE_RTP_V(f.d2);
   ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d1);
@@ -1888,7 +1888,7 @@ void check_barrett32_92(uint shifter, const int96_v f, const uint tid, const int
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   __private double_v  ffd;
 #endif
   __private float_v  ff;
@@ -1903,7 +1903,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
   ff= as_float(0x3f7ffffc) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   // use double when available, but not for the low and mid level GCN cards as they have 1:16 DP rate which is too slow
   ffd= CONVERT_DOUBLE_RTP_V(f.d2);
   ffd= ffd * 4294967296.0 + CONVERT_DOUBLE_RTP_V(f.d1);

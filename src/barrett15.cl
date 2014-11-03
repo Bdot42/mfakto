@@ -2017,7 +2017,7 @@ void shl_180(int180_v * const a)
   a->d0 = (a->d0 << 1u) & 0x7FFF;
 }
 
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
 // we have support for doubles, but on GCN doubles are terribly slow: better not use them
 void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const double_v nf
 #if (TRACE_KERNEL > 1)
@@ -2567,7 +2567,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
   __private int180_v b, tmp180;
   __private int90_v tmp90;
   __private float_v ff;
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   __private double_v ffd;
 #endif
   __private uint tmp, bit_max_bot, bit_max_mult;
@@ -2585,7 +2585,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
 
   tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
 
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   // ffd = f as double, needed in div_180_90_d).
   ffd= CONVERT_DOUBLE_RTP_V(mad24(f.d5, 32768u, f.d4));
   ffd= ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d3, 32768u, f.d2));
@@ -2783,7 +2783,7 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
   __private int180_v b, tmp180;
   __private int90_v tmp90;
   __private float_v ff;
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   __private double_v ffd;
 #endif
   __private uint tmp, bit_max_bot, bit_max_mult;
@@ -2801,7 +2801,7 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
 
   tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
 
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   // ffd = f as double, needed in div_180_90_d).
   ffd= CONVERT_DOUBLE_RTP_V(mad24(f.d5, 32768u, f.d4));
   ffd= ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d3, 32768u, f.d2));
@@ -2999,7 +2999,7 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
   __private int180_v b, tmp180;
   __private int90_v tmp90;
   __private float_v ff;
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   __private double_v ffd;
 #endif
   __private uint tmp, bit_max_bot, bit_max_mult;
@@ -3017,7 +3017,7 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
 
   tmp = 1 << (bit_max65+4);	// tmp180 = 2^(89 + bits in f)
 
-#if defined cl_khr_fp64 && ! defined GCN
+#if defined USE_DP
   // ffd = f as double, needed in div_180_90_d).
   ffd= CONVERT_DOUBLE_RTP_V(mad24(f.d5, 32768u, f.d4));
   ffd= ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d3, 32768u, f.d2));

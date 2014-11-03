@@ -52,12 +52,13 @@ uint popcount(uint x)
   return x;
 }
 #endif
-#ifdef cl_khr_fp64
+#endif // OCL < 1.2
+#if defined USE_DP || defined cl_khr_fp64 && ! defined GCN
 #pragma  OPENCL EXTENSION cl_khr_fp64 : enable
+#define USE_DP
 #else
 #pragma "No double precision available"
 #endif
-#endif // OCL < 1.2
 
 // HD4xxx does not have atomics, but mfakto will work on these GPUs as well.
 // Without atomics, the factors found may be scrambled when more than one

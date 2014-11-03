@@ -877,19 +877,18 @@ void insert_time(double time1, double time2[], cl_uint num, cl_uint kernel_idxs[
 int test_cpu_tf_kernels(cl_uint par)
 {
   static cl_uint num_test=0; // use this counter to cycle through the FC blocks to avoid successive runs blocking each other
-  timeval timer;
-  double time1, time2[UNKNOWN_KERNEL-_71BIT_MUL24], ghzdt, ghz;
-  cl_uint num_fcs, num_loops, i, idxs[UNKNOWN_KERNEL-_71BIT_MUL24];
-  cl_ulong use_kernel;
-  double ghzd = primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_min + 1);
-  int72  k_base;
-  int144 b_preinit = {0};
-  int192 b_192 = {0};
+  timeval  timer;
+  double   time1, time2[UNKNOWN_KERNEL-_71BIT_MUL24], ghzdt, ghz;
+  cl_uint  use_kernel, num_loops, i, idxs[UNKNOWN_KERNEL-_71BIT_MUL24];
+  double   ghzd = primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_min + 1);
+  int72    k_base;
+  int144   b_preinit = {0};
+  int192   b_192 = {0};
   cl_uint8 b_in = {{0}};
   cl_uint  shiftcount, ln2b, status;
-  cl_ulong b_preinit_lo, b_preinit_mid, b_preinit_hi;
-
+  cl_ulong num_fcs, b_preinit_lo, b_preinit_mid, b_preinit_hi;
   cl_ulong k = calculate_k(mystuff.exponent,mystuff.bit_min);
+
   new_class=1; // tell run_kernel to re-submit the one-time kernel arguments
   /* set result array to 0 */
   memset(mystuff.h_RES,0,32 * sizeof(int));
@@ -1012,9 +1011,9 @@ int test_cpu_tf_kernels(cl_uint par)
   time1 = (double)timer_diff(&timer);
 //  printf("%llu FCs, %f ms\n", num_fcs, time1/1000.0);
   num_loops = 1 + (cl_uint)(200000.0*par/time1); // run for about 2 seconds when par==10
-  num_fcs = num_loops*mystuff.h_ktab[0][mystuff.threads_per_grid-1];
+  num_fcs = (cl_ulong)num_loops*mystuff.h_ktab[0][mystuff.threads_per_grid-1];
   printf("exponent=%u, %lldM FCs (sieved: %lldM FCs) each, ",
-    mystuff.exponent, num_fcs >> 20, (num_loops*mystuff.threads_per_grid)>>20);
+    mystuff.exponent, num_fcs >> 20, ((cl_ulong)num_loops*mystuff.threads_per_grid)>>20);
   // this single test is worth so many GHz-days
   ghzdt = (double) num_fcs / k * 4620 / 960 * ghzd;
   printf("k=%llu, %f GHz-days (assignment), %f GHz-days (per test): ", k, ghzd, ghzdt); fflush(stdout);
@@ -1115,7 +1114,7 @@ int test_gpu_tf_kernels(cl_uint par)
   cl_uint use_class=0;
   cl_ulong k = calculate_k(mystuff.exponent,mystuff.bit_min);
   cl_ulong num_fcs = mystuff.gpu_sieve_size - 1; //start with one full sieve block
-  cl_ulong use_kernel;
+  cl_uint use_kernel;
   double ghzd = primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_min + 1);
 
   mystuff.threads_per_grid = 256;

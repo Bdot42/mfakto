@@ -1,3 +1,23 @@
+Preface for the mfakto-0.15pre5 testing version
+
+This version is tested to provide correct results. But it is preliminary as it
+contains test code that results in slightly lower performance. This version is
+intended to provide information to better optimize the final version.
+
+To run this test and help improve mfakto, extract the depot and run on an idle machine
+
+perftestmfakto.cmd
+
+This test will take between one and two hours, during which you should not use the
+computer - at least nothing that would put measurable load on CPU or GPU.
+
+When the script finished, zip the testresults subfolder that it created and send it
+to me (bertramf@gmx.net).
+
+Thanks for your help,
+Bdot
+
+
 #################
 # mfakto README #
 #################
