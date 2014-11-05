@@ -587,6 +587,7 @@ void set_gpu_type()
     // try to auto-detect the type of GPU
     if (strstr(deviceinfo.d_name, "Capeverde")  ||    // 7730, 7750, 7770, 8760, 8740, R7 250X
         strstr(deviceinfo.d_name, "Pitcairn")   ||    // 7850, 7870, 8870
+        strstr(deviceinfo.d_name, "Bonaire")    ||    // 7790, R7 260, R7 260X
         strstr(deviceinfo.d_name, "Oland")      ||    // 8670, 8570, R9 240, R9 250
         strstr(deviceinfo.d_name, "Sun")        ||    // 85x0M
         strstr(deviceinfo.d_name, "Mars")       ||    // 86x0M, 87x0M
@@ -608,7 +609,6 @@ void set_gpu_type()
     else if (strstr(deviceinfo.d_name, "Hawaii")     ||    // R9 290, R9 290X
                 // Hawaii is both desktop graphics (1:8) and workstation graphics (1:2) in W8100, W9100, S9150
                 // 1:8 is just below the sweet spot for using DP. FirePro cards would run faster using DP
-             strstr(deviceinfo.d_name, "Bonaire")    ||    // 7790, R7 260, R7 260X
              strstr(deviceinfo.d_name, "Tonga")      ||    // R9 285
              strstr(deviceinfo.d_name, "Vesuvius")         // 295X2
             )
