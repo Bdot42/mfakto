@@ -595,6 +595,7 @@ void set_gpu_type()
         strstr(deviceinfo.d_name, "Saturn")     ||    // 8930M, 8950M
         strstr(deviceinfo.d_name, "Neptune")    ||    // 8970M, 8990M
         strstr(deviceinfo.d_name, "Curacao")    ||    // R9 265, R9 270, R9 270X
+        strstr(deviceinfo.d_name, "Tonga")      ||    // R9 285
         strstr(deviceinfo.d_name, "Kalindi")          // GCN APU, Kabini, R7 ???
         )
     {
@@ -609,7 +610,6 @@ void set_gpu_type()
     else if (strstr(deviceinfo.d_name, "Hawaii")     ||    // R9 290, R9 290X
                 // Hawaii is both desktop graphics (1:8) and workstation graphics (1:2) in W8100, W9100, S9150
                 // 1:8 is just below the sweet spot for using DP. FirePro cards would run faster using DP
-             strstr(deviceinfo.d_name, "Tonga")      ||    // R9 285
              strstr(deviceinfo.d_name, "Vesuvius")         // 295X2
             )
     {
@@ -3050,9 +3050,31 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   factorsfound = mystuff->h_RES[0];
   for(i=0; (i<factorsfound) && (i<10); i++)
   {
-    factor.d2  = mystuff->h_RES[i*3 + 1];
-    factor.d1  = mystuff->h_RES[i*3 + 2];
-    factor.d0  = mystuff->h_RES[i*3 + 3];
+    if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24))
+    {
+      factor.d2  = mystuff->h_RES[i*3 + 1];
+      factor.d1  = mystuff->h_RES[i*3 + 2];
+      factor.d0  = mystuff->h_RES[i*3 + 3];
+      factor.d0  = (factor.d1 << 24) +  factor.d0;
+      factor.d1  = (factor.d2 << 16) + (factor.d1 >>  8);
+      factor.d2  =                      factor.d2 >> 16;
+    }
+    else if (((use_kernel >= BARRETT73_MUL15_GS) && (use_kernel <= BARRETT74_MUL15_GS)) ||((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT74_MUL15)) || (use_kernel == MG88))
+    {
+      factor.d2  = mystuff->h_RES[i*3 + 1];
+      factor.d1  = mystuff->h_RES[i*3 + 2];
+      factor.d0  = mystuff->h_RES[i*3 + 3];
+      factor.d0 = (factor.d1 << 30) +  factor.d0;
+      factor.d1 = (factor.d2 << 28) + (factor.d1 >> 2);
+      factor.d2 =                      factor.d2 >> 4;
+    }
+    else
+    {
+      factor.d2  = mystuff->h_RES[i*3 + 1];
+      factor.d1  = mystuff->h_RES[i*3 + 2];
+      factor.d0  = mystuff->h_RES[i*3 + 3];
+    }
+    print_dez96(factor, string);
     // the GPU sieve may report the same factor multiple times.
     // also, exclude the trivial "factor" 1 here (though not a duplicate)
     if ((factor.d2 == prev_factor.d2 && factor.d1 == prev_factor.d1 && factor.d0 == prev_factor.d0) ||
@@ -3060,7 +3082,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     {
       if (mystuff->verbosity > 2)
       {
-        printf("Skipping duplicate factor i=%d: %x:%x:%x\n", i, factor.d2, factor.d1, factor.d0);
+        printf("Skipping trivial or duplicate factor #%d: %s (%x:%x:%x)\n", i, string, factor.d2, factor.d1, factor.d0);
       }
       if (factorsfound > i) memmove(&mystuff->h_RES[i*3 + 1], &mystuff->h_RES[i*3 + 4], 3*sizeof(int)*(factorsfound-i));
       mystuff->h_RES[0] = --factorsfound;
@@ -3068,24 +3090,31 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
       continue;
     }
 
-    if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24))
+    cl_ulong f_tmp;
+    double bits;
+    // estimate the primenet credit for the factor
+    if (factor.d2 > 0)
     {
-      print_dez72(factor, string);
+      f_tmp = ((cl_ulong)factor.d2 << 32) + factor.d1;
+      bits  = log ((double)f_tmp)/log(2) + 32;
     }
-    else if (((use_kernel >= BARRETT73_MUL15_GS) && (use_kernel <= BARRETT74_MUL15_GS)) ||((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT74_MUL15)) || (use_kernel == MG88))
+    else if (factor.d1 > 0)
     {
-      print_dez90(factor, string);
+      f_tmp = ((cl_ulong)factor.d1 << 32) + factor.d0;
+      bits  = log ((double)f_tmp)/log(2);
     }
-    else
+    else if (factor.d0 > 0)
     {
-      print_dez96(factor, string);
+      bits  = log ((double)factor.d0)/log(2);
     }
-    print_factor(mystuff, i, string);
+    mystuff->stats.ghzdays = mystuff->stats.ghzdays * (bits - floor(bits));
+
+    print_factor(mystuff, i, string, bits);
     prev_factor = factor;
   }
   if(factorsfound>=10)
   {
-    print_factor(mystuff, factorsfound, NULL);
+    print_factor(mystuff, factorsfound, NULL, 0.0);
   }
 
   return factorsfound;

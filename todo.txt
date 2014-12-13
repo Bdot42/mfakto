@@ -119,27 +119,28 @@ TODO
 +DONE+ - migrate to newer VS version (to VS12 - +2% CPU sieving speed)
 +NO+ - AllowSleep + not needed due to GPU sieving +
 +DONE+ - _kbhit + getchar to allow config changes at runtime
-- add James' PM1-F-vs-TF-NF list to selftest
-- perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
-- serialize memory access for vector kernels
-- div/mul-modulo for 96 bits
-- kernel trace more specific (bitmask)
-- error handling: RES[0] -= 100; save up to 3 ints in RES; only in single-vec
-- MODBASECASE_NN_BIG_ERROR in mod_144_72
-- clGetKernelWorkGroupInfo in load kernels: preferred size, local mem
-- make/allow for small exps/bit-levels
-- repunit
-- SDK 2.6: __attribute__((always_inline)), set environment variable GPU_ASYNC_MEM_COPY=2, Profiler
-- dummy kernel for performance testing of sieve and transfer
-- __kernel __attribute__((vec_type_hint(uintn)))
-- test different local workgroup sizes, also in combination with the __attribute__((reqd_work_group_size(X, Y, Z))) qualifier
-- test speed without event sync (just in-order-queue)
-- cleanup: separate GPU- and CPU-sieve based kernels, compile and load only one set of them
-- allow for kernel reload (e.g. different vector size, or -DSMALL_EXP)
-- Performance: vectorize GPU-sieve / reading from sieve
-- Auto-adjust VectorSize per kernel
-- auto-optimizer: parameterize possible uses of mad_hi, amd_bitalign and others,
-  let a test mode find out about the best config
-- Try and build an assembler kernel for GCN (find possible optimizations like carry, mul24_hi, scalar unit etc)
-- Split device detection from kernel compilation to make use of device's capabilities
-- Complete instuctions on building on Windows(VS and MinGW)
++DONE+ perftest modes for sieving (SIEVE_SIZE), data copy and kernel speed.
++DONE+ allow for kernel reload (e.g. different vector size, or -DSMALL_EXP)
++DONE+ Split device detection from kernel compilation to make use of device's capabilities
++DONE+ correct GHzDays prediction for factors found
+1 find out why 0.13/0.14 were faster for some kernels
+2 build test kernels to auto-detect DP vs. SP and mul24 vs. mul32 performance
+2 MODBASECASE errors in 6x15bit-kernels
+2 Try and build an assembler kernel for GCN (find possible optimizations like carry, mul24_hi, scalar unit etc)
+2 Auto-adjust VectorSize per kernel
+3 add James' PM1-F-vs-TF-NF list to selftest
+3 serialize memory access for vector kernels
+3 make/allow for small exps/bit-levels
+3 SDK 2.6: __attribute__((always_inline)), set environment variable GPU_ASYNC_MEM_COPY=2, Profiler, __kernel __attribute__((vec_type_hint(uintn)))
+3 test different local workgroup sizes, also in combination with the __attribute__((reqd_work_group_size(X, Y, Z))) qualifier
+3 test speed without event sync (just in-order-queue)
+3 Performance: vectorize GPU-sieve / reading from sieve
+3 auto-optimizer: parameterize possible uses of mad_hi, amd_bitalign and others, let a test mode find out about the best config
+4 dummy kernel for performance testing of sieve and transfer
+4 kernel trace more specific (bitmask)
+4 error handling: RES[0] -= 100; save up to 3 ints in RES; only in single-vec
+4 clGetKernelWorkGroupInfo in load kernels: preferred size, local mem
+4 Complete instuctions on building on Windows(VS and MinGW)
+5 div/mul-modulo for 96 bits
+5 cleanup: separate GPU- and CPU-sieve based kernels, compile and load only one set of them
+5 repunit

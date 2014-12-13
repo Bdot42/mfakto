@@ -74,18 +74,54 @@ Enough space is
 
 void print_dez72(int96 a, char *buf)
 {
-  int192 tmp;
+  int96 tmp;
 
-  tmp.d5 = 0;
-  tmp.d4 = 0;
-  tmp.d3 = 0;
   tmp.d2 =                 a.d2 >> 16;
   tmp.d1 = (a.d2 << 16) + (a.d1 >>  8);
   tmp.d0 = (a.d1 << 24) +  a.d0;
 
-  print_dez192(tmp, buf);
+  print_dez96(tmp, buf);
 }
 
+
+void print_dez90(int96 a, char *buf)
+{
+  int96 tmp;
+
+  tmp.d2 =                 a.d2 >> 4;
+  tmp.d1 = (a.d2 << 28) + (a.d1 >> 2);
+  tmp.d0 = (a.d1 << 30) +  a.d0;
+
+  print_dez96(tmp, buf);
+}
+
+
+void print_dez96(int96 a, char *buf)
+{
+  char digit[58];
+  int digits=0,carry,i=0;
+  cl_ulong tmp;
+
+  while((a.d0!=0 || a.d1!=0 || a.d2!=0) && digits<58)
+  {
+                                              carry = a.d2%10; a.d2 /= 10;
+    tmp = a.d1; tmp += (cl_ulong)carry << 32; carry = tmp%10;  a.d1 = (cl_uint) (tmp/10);
+    tmp = a.d0; tmp += (cl_ulong)carry << 32; carry = tmp%10;  a.d0 = (cl_uint) (tmp/10);
+    digit[digits++] = carry;
+  }
+  if(digits == 0)sprintf(buf, "0");
+  else
+  {
+    digits--;
+    while(digits >= 0)
+    {
+      buf[i++] = '0' + digit[digits--];
+    }
+    buf[i] = 0;
+  }
+}
+
+/* unused 
 
 void print_dez144(int144 a, char *buf)
 {
@@ -97,21 +133,6 @@ void print_dez144(int144 a, char *buf)
   tmp.d2 = (a.d3 <<  8) + (a.d2 >> 16);
   tmp.d1 = (a.d2 << 16) + (a.d1 >>  8);
   tmp.d0 = (a.d1 << 24) +  a.d0;
-
-  print_dez192(tmp, buf);
-}
-
-
-void print_dez96(int96 a, char *buf)
-{
-  int192 tmp;
-
-  tmp.d5 = 0;
-  tmp.d4 = 0;
-  tmp.d3 = 0;
-  tmp.d2 = a.d2;
-  tmp.d1 = a.d1;
-  tmp.d0 = a.d0;
 
   print_dez192(tmp, buf);
 }
@@ -143,37 +164,7 @@ void print_dez192(int192 a, char *buf)
     }
   }
 }
-
-
-void print_dez90(int96 a, char *buf)
-/*
-assumes 30 bits per component
-writes "a" into "buf" in decimal
-"buf" must be at least 30 bytes
 */
-{
-  char digit[29];
-  int  digits=0,carry,i=0;
-  long long int tmp;
-
-  while((a.d0!=0 || a.d1!=0 || a.d2!=0) && digits<29)
-  {
-                                                   carry=a.d2%10; a.d2/=10;
-    tmp = a.d1; tmp += (long long int)carry << 30; carry=tmp%10;  a.d1 =(cl_uint) (tmp/10);
-    tmp = a.d0; tmp += (long long int)carry << 30; carry=tmp%10;  a.d0 =(cl_uint) (tmp/10);
-    digit[digits++]=carry;
-  }
-  if(digits==0)sprintf(buf,"0");
-  else
-  {
-    digits--;
-    while(digits >= 0)
-    {
-      sprintf(&(buf[i++]),"%1d",digit[digits--]);
-    }
-  }
-}
-
 
 void print_timestamp(FILE *outfile)
 {
@@ -433,7 +424,7 @@ void print_result_line(mystuff_t *mystuff, int factorsfound)
 }
 
 
-void print_factor(mystuff_t *mystuff, int factor_number, char *factor)
+void print_factor(mystuff_t *mystuff, int factor_number, char *factor, double bits)
 {
   char UID[110]; /* 50 (V5UserID) + 50 (ComputerID) + 8 + spare */
   FILE *resultfile = NULL;
@@ -458,7 +449,7 @@ void print_factor(mystuff_t *mystuff, int factor_number, char *factor)
     if(mystuff->mode != MODE_SELFTEST_SHORT)
     {
       if(mystuff->printmode == 1 && factor_number == 0)printf("\n");
-      printf("M%u has a factor: %s\n", mystuff->exponent, factor);
+      printf("M%u has a factor: %s (%f bits, %f GHz-d)\n", mystuff->exponent, factor, bits, mystuff->stats.ghzdays);
     }
     if(mystuff->mode == MODE_NORMAL)
     {
