@@ -3050,30 +3050,22 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   factorsfound = mystuff->h_RES[0];
   for(i=0; (i<factorsfound) && (i<10); i++)
   {
+    factor.d2  = mystuff->h_RES[i*3 + 1];
+    factor.d1  = mystuff->h_RES[i*3 + 2];
+    factor.d0  = mystuff->h_RES[i*3 + 3];
     if ((use_kernel == _71BIT_MUL24) || (use_kernel == _63BIT_MUL24))
     {
-      factor.d2  = mystuff->h_RES[i*3 + 1];
-      factor.d1  = mystuff->h_RES[i*3 + 2];
-      factor.d0  = mystuff->h_RES[i*3 + 3];
       factor.d0  = (factor.d1 << 24) +  factor.d0;
       factor.d1  = (factor.d2 << 16) + (factor.d1 >>  8);
       factor.d2  =                      factor.d2 >> 16;
     }
     else if (((use_kernel >= BARRETT73_MUL15_GS) && (use_kernel <= BARRETT74_MUL15_GS)) ||((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT74_MUL15)) || (use_kernel == MG88))
     {
-      factor.d2  = mystuff->h_RES[i*3 + 1];
-      factor.d1  = mystuff->h_RES[i*3 + 2];
-      factor.d0  = mystuff->h_RES[i*3 + 3];
       factor.d0 = (factor.d1 << 30) +  factor.d0;
       factor.d1 = (factor.d2 << 28) + (factor.d1 >> 2);
       factor.d2 =                      factor.d2 >> 4;
     }
-    else
-    {
-      factor.d2  = mystuff->h_RES[i*3 + 1];
-      factor.d1  = mystuff->h_RES[i*3 + 2];
-      factor.d0  = mystuff->h_RES[i*3 + 3];
-    }
+
     print_dez96(factor, string);
     // the GPU sieve may report the same factor multiple times.
     // also, exclude the trivial "factor" 1 here (though not a duplicate)
