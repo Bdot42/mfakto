@@ -41,6 +41,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #define time _time64
 #define localtime _localtime64
 #endif
+#include <math.h>
 
 // valgrind tests complain a lot about the blocks being uninitialized
 #define malloc(x) calloc(x,1)
