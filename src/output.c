@@ -40,23 +40,23 @@ void print_help(char *string)
   printf("under certain conditions; see COPYING for details.\n\n\n");
 
   printf("Usage: %s [options]\n", string);
-  printf("  -h|--help              display this help and exit\n");
+  printf("  -h|--help              display this help\n");
   printf("  -d <xy>                specify to use OpenCL platform number x and\n");
   printf("                         device number y in this program\n");
   printf("  -d c                   force using all CPUs\n");
   printf("  -d g                   force using the first GPU\n");
   printf("  -v <n>                 verbosity level: 0=terse, 1=normal, 2=verbose, 3=debug\n");
-  printf("  -tf <exp> <min> <max>  trial factor M<exp> from 2^<min> to 2^<max> and exit\n");
+  printf("  -tf <exp> <min> <max>  trial factor M<exp> from 2^<min> to 2^<max>\n");
   printf("                         instead of parsing the worktodo file\n");
   printf("  -i|--inifile <file>    load <file> as inifile (default: mfakto.ini)\n");
-  printf("  -st                    run builtin selftest (1500 testcases) and exit\n");
-  printf("  -st2                   run builtin selftest (33000 testcases) and exit\n");
+  printf("  -st                    selftest using the optimal kernel per testcase\n");
+  printf("  -st2                   selftest using all possible kernels\n");
   printf("\n");
   printf("options for debugging purposes\n");
-  printf("  --timertest            run test of timer functions and exit\n");
-  printf("  --sleeptest            run test of sleep functions and exit\n");
-  printf("  --perftest             run performance test of the sieve and other parts, then exit\n");
-  printf("  --CLtest               run test of some OpenCL functions and exit\n");
+  printf("  --timertest            test of timer functions\n");
+  printf("  --sleeptest            test of sleep functions\n");
+  printf("  --perftest [<n>]       performance tests, repeat each test <n> times (def: 10)\n");
+  printf("  --CLtest               test of some OpenCL functions\n");
   printf("                         specify -d before --CLtest to test the specified device\n");
 }
 
