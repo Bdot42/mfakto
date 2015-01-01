@@ -102,9 +102,6 @@
     <ClInclude Include="src\menu.h">
       <Filter>header files</Filter>
     </ClInclude>
-    <ClInclude Include="src\kbhit.h">
-      <Filter>header files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="todo.txt" />

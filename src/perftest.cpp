@@ -1253,7 +1253,7 @@ int test_tf_kernels(cl_uint par, int devicenumber)
     sieve_init();
     sieve_init_class(exps[0], k+=1000000, mystuff.sieve_primes);
 #else
-    cl_uint tmp=m*ssizes[j];
+    cl_uint tmp=3*13*17*19*23;
     sieve_init(tmp, 1000000);
     sieve_init_class(exps[0], k+=1000000, mystuff.sieve_primes);
 #endif
