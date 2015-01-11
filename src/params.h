@@ -90,7 +90,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
    the factor to be found the first candidate during the selftest, so that
    debugging/tracing thread 0 of the first block should yield a factor found result
    (this works only for the CPU sieve as the GPU sieve reverts the order) */
-//#define DEBUG_FACTOR_FIRST
+#define DEBUG_FACTOR_FIRST
 
 
 /******************************************************************************
