@@ -874,7 +874,7 @@ void insert_time(double time1, double time2[], cl_uint num, cl_uint kernel_idxs[
   kernel_idxs[i] = num;
 }
 
-int test_cpu_tf_kernels(cl_uint par)
+GPUKernels test_cpu_tf_kernels(cl_uint par)
 {
   static cl_uint num_test=0; // use this counter to cycle through the FC blocks to avoid successive runs blocking each other
   timeval  timer;
@@ -888,6 +888,7 @@ int test_cpu_tf_kernels(cl_uint par)
   cl_uint  shiftcount, ln2b, status;
   cl_ulong num_fcs, b_preinit_lo, b_preinit_mid, b_preinit_hi;
   cl_ulong k = calculate_k(mystuff.exponent,mystuff.bit_min);
+  GPUKernels fastest_kernel = UNKNOWN_KERNEL;
 
   new_class=1; // tell run_kernel to re-submit the one-time kernel arguments
   /* set result array to 0 */
@@ -904,7 +905,7 @@ int test_cpu_tf_kernels(cl_uint par)
   if(status != CL_SUCCESS)
   {
     std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_RES(clEnqueueWriteBuffer)\n";
-    return RET_ERROR; // # factors found ;-)
+    return UNKNOWN_KERNEL; // # factors found ;-)
   }
   shiftcount=10;  // no exp below 2^10 ;-)
   while((1ULL<<shiftcount) < (unsigned long long int)mystuff.exponent)shiftcount++;
@@ -929,7 +930,7 @@ int test_cpu_tf_kernels(cl_uint par)
   b_preinit_hi=0;b_preinit_mid=0;b_preinit_lo=0;
 // set the pre-initriables in all sizes for all possible kernels
   {
-    if     (ln2b<24 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
+    if     (ln2b<24 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return UNKNOWN_KERNEL;}      // should not happen
     else if(ln2b<48 )b_preinit.d1=1<<(ln2b-24);   // should not happen
     else if(ln2b<72 )b_preinit.d2=1<<(ln2b-48);
     else if(ln2b<96 )b_preinit.d3=1<<(ln2b-72);
@@ -938,7 +939,7 @@ int test_cpu_tf_kernels(cl_uint par)
   }
 
   { // skip the "lowest" 4 levels, so that uint8 is sufficient for 12 components of int180
-    if     (ln2b<60 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return RET_ERROR;}      // should not happen
+    if     (ln2b<60 ){fprintf(stderr, "Pre-init (%u) too small\n", ln2b); return UNKNOWN_KERNEL;}      // should not happen
     else if(ln2b<75 )b_in.s[0]=1<<(ln2b-60);
     else if(ln2b<90 )b_in.s[1]=1<<(ln2b-75);
     else if(ln2b<105)b_in.s[2]=1<<(ln2b-90);
@@ -1005,7 +1006,7 @@ int test_cpu_tf_kernels(cl_uint par)
   if(status != CL_SUCCESS)
   {
     std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Starting kernel " << kernel_info[use_kernel].kernelname << ". (run_kernel)\n";
-    return RET_ERROR;
+    return UNKNOWN_KERNEL;
   }
   clFinish(QUEUE);
   time1 = (double)timer_diff(&timer);
@@ -1078,6 +1079,9 @@ int test_cpu_tf_kernels(cl_uint par)
   cl_uint last_kernel = UNKNOWN_KERNEL;
   double last_ghz;
   cl_uint bitlevel;
+  cl_uint bit_min = mystuff.bit_min;
+  cl_uint bit_max_stage = mystuff.bit_max_stage;
+
   for (bitlevel=10; bitlevel<100; ++bitlevel)
   {
     bitlevels[bitlevel] = UNKNOWN_KERNEL;
@@ -1093,6 +1097,8 @@ int test_cpu_tf_kernels(cl_uint par)
         break;
       }
     }
+    if (bitlevel >= bit_min && bitlevel < bit_max_stage)
+      fastest_kernel = (GPUKernels) bitlevels[bitlevel]; // remember the last one that fits the stage
 
     if (bitlevels[bitlevel] != last_kernel)
     {
@@ -1103,10 +1109,12 @@ int test_cpu_tf_kernels(cl_uint par)
         printf("%7u - ", bitlevel);
     }
   }
-  return 0;
+  mystuff.bit_min = bit_min;
+  mystuff.bit_max_stage = bit_max_stage;
+  return fastest_kernel;
 }
 
-int test_gpu_tf_kernels(cl_uint par)
+GPUKernels test_gpu_tf_kernels(cl_uint par)
 {
   struct timeval timer;
   double time1, time2[UNKNOWN_GS_KERNEL-BARRETT79_MUL32_GS], ghzdt, ghz;
@@ -1116,6 +1124,9 @@ int test_gpu_tf_kernels(cl_uint par)
   cl_ulong num_fcs = mystuff.gpu_sieve_size - 1; //start with one full sieve block
   cl_uint use_kernel;
   double ghzd = primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_min + 1);
+  GPUKernels fastest_kernel;
+  cl_uint bit_min = mystuff.bit_min;
+  cl_uint bit_max_stage = mystuff.bit_max_stage;
 
   mystuff.threads_per_grid = 256;
 
@@ -1181,6 +1192,8 @@ int test_gpu_tf_kernels(cl_uint par)
         break;
       }
     }
+    if (bitlevel >= bit_min && bitlevel <= bit_max_stage)
+      fastest_kernel = (GPUKernels) bitlevels[bitlevel]; // remember the last one that fits the stage
 
     if (bitlevels[bitlevel] != last_kernel)
     {
@@ -1191,7 +1204,9 @@ int test_gpu_tf_kernels(cl_uint par)
         printf("%7u - ", bitlevel);
     }
   }
-  return 0;
+  mystuff.bit_min = bit_min;
+  mystuff.bit_max_stage = bit_max_stage;
+  return fastest_kernel;
 }
 
 int test_tf_kernels(cl_uint par, int devicenumber)
@@ -1372,6 +1387,59 @@ int perftest(int par, int devicenumber)
   return 0;
 }
 
+GPUKernels test_fastest_kernel()
+{
+  if (mystuff.gpu_sieving == 1)
+  {
+    return test_gpu_tf_kernels(10);
+  }
+  else
+  {
+    cl_uint i;
+    cl_ulong k = calculate_k(mystuff.exponent,mystuff.bit_min);
+    int status;
+
+    sieve_free();
+#ifdef SIEVE_SIZE_LIMIT
+    sieve_init();
+    sieve_init_class(mystuff.exponent, k+=1000000, mystuff.sieve_primes);
+#else
+    cl_uint tmp=3*13*17*19*23;
+    sieve_init(tmp, 1000000);
+    sieve_init_class(mystuff.exponent, k+=1000000, mystuff.sieve_primes);
+#endif
+    mystuff.threads_per_grid = mystuff.threads_per_grid_max;
+    if(mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
+    {
+      mystuff.threads_per_grid = (cl_uint)deviceinfo.maxThreadsPerGrid;
+    }
+    size_t size = mystuff.threads_per_grid * sizeof(int);
+
+    // use one sieved block for the whole test
+    mystuff.threads_per_grid -= mystuff.threads_per_grid % (mystuff.vectorsize * deviceinfo.maxThreadsPerBlock);
+    mystuff.sieve_primes_upper_limit = mystuff.sieve_primes_max;
+    for (i=0; i<mystuff.num_streams; i++)
+    {
+      sieve_candidates(mystuff.threads_per_grid, mystuff.h_ktab[i], mystuff.sieve_primes); // use all blocks alternatingly, but always with the same content
+      status = clEnqueueWriteBuffer(QUEUE,
+                mystuff.d_ktab[i],
+                CL_FALSE,  // don't wait here, test_cpu_tf_kernels copies RES in wait mode
+                0,
+                size,
+                mystuff.h_ktab[i],
+                0,
+                NULL,
+                &mystuff.copy_events[i]);
+
+      if(status != CL_SUCCESS)
+      {
+          std::cout<<"Error " << status << " (" << ClErrorString(status) << "): Copying h_ktab[" << i << "] (clEnqueueWriteBuffer)\n";
+      }
+    }
+    return test_cpu_tf_kernels(10);
+  }
+  return UNKNOWN_KERNEL;
+}
 
 /* copy of the init and test functions for troubleshooting and playing around */
 
@@ -1790,8 +1858,8 @@ if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
 
   // Now, quickly test one kernel ...
   // (10 * 2^64+25) mod 3 * 2^23
-  long long unsigned int hi=10;
-  long long unsigned int lo=25;
+  long long unsigned int hi=(1<<31)-1;
+  long long unsigned int lo=(1<<30)-1;
   long long unsigned int q=3<<23;
   cl_float qr=0.9998f/(cl_float)q;
 

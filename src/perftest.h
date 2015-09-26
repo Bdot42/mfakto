@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 int perftest(int par, int devicenumber);
+GPUKernels test_fastest_kernel();
 
 #ifdef __cplusplus
 }

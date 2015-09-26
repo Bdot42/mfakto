@@ -123,6 +123,7 @@ TODO
 +DONE+ allow for kernel reload (e.g. different vector size, or -DSMALL_EXP)
 +DONE+ Split device detection from kernel compilation to make use of device's capabilities
 +DONE+ correct GHzDays prediction for factors found
+1 copy small exp handling from mfaktc
 1 find out why 0.13/0.14 were faster for some kernels
 2 build test kernels to auto-detect DP vs. SP and mul24 vs. mul32 performance
 2 MODBASECASE errors in 6x15bit-kernels
