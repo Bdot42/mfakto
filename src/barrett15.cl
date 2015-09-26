@@ -633,6 +633,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 #if (TRACE_KERNEL > 2)
     if (tid==TRACE_TID) printf((__constant char *)"div_150_75#1: qf=%#G, nf=%#G, *=%#G, qi=%d=0x%x, res=%x:..:..:..:..\n",
                                  qf_1, V(nf), qf_1*V(nf), V(qi), V(qi), V(res->d4));
+  q.d9=0; // for correct printing later
 #endif
 
   /*******************************************************/
@@ -675,6 +676,10 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
 #ifdef CHECKS_MODBASECASE
   nn.d5  = nn.d4 >> 15;  // PERF: not needed as it will be gone anyway after sub
   nn.d4 &= 0x7FFF;
+#if (TRACE_KERNEL > 3)
+  if (tid==TRACE_TID) printf((__constant char *)"div_150_75#1.6: nn=%x:%x:%x:%x:%x:%x:...\n",
+        V(nn.d5), V(nn.d4), V(nn.d3), V(nn.d2), V(nn.d1), V(nn.d0));
+#endif
 #endif
 
 //  q.d0-q.d8 are all zero
@@ -685,6 +690,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   q.d8 = SUB_COND(-nn.d4, q.d7 > 0x7FFF);
 #ifdef CHECKS_MODBASECASE
   q.d9 = SUB_COND(qhi - nn.d5, q.d8 > 0x7FFF); // PERF: not needed: should be zero anyway
+  // compiler errors: qhi=8, nn.d5=7, q.d8 > 0x7fff ==> q.d9 = 2 : skip this check
 #endif
   q.d4 &= 0x7FFF;
   q.d5 &= 0x7FFF;
@@ -695,7 +701,7 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
   if (tid==TRACE_TID) printf((__constant char *)"div_150_75#1.7: q=%x!%x:%x:%x:%x:%x:..:..:..:..\n",
         V(q.d9), V(q.d8), V(q.d7), V(q.d6), V(q.d5), V(q.d4));
 #endif
-  MODBASECASE_NONZERO_ERROR(q.d9, 1, 9, 1);
+  // MODBASECASE_NONZERO_ERROR(q.d9, 1, 9, 1); // gives false positives
 
   /********** Step 2, Offset 2^40 (2*15 + 10) **********/
 
@@ -984,6 +990,13 @@ Precalculated here since it is the same for all steps in the following loop */
     if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: u=%x:%x:%x:%x:%x, ff=%G\n",
         V(u.d4), V(u.d3), V(u.d2), V(u.d1), V(u.d0), V(ff));
 #endif
+#endif
+
+#if (TRACE_KERNEL > 11)
+      mul_75_150(&tmp150, f, u);					// verify division: tmp150 should be  1
+    if (tid==TRACE_TID) printf((__constant char *)"cl_barrett15_69: f=%x:%x:%x:%x:%x * u=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x\n",
+        V(f.d4), V(f.d3), V(f.d2), V(f.d1), V(f.d0), V(u.d4), V(u.d3), V(u.d2), V(u.d1), V(u.d0),
+        V(tmp150.d9), V(tmp150.d8), V(tmp150.d7), V(tmp150.d6), V(tmp150.d5), V(tmp150.d4), V(tmp150.d3), V(tmp150.d2), V(tmp150.d1), V(tmp150.d0));
 #endif
 
   a.d0 = mad24(bb.d5, bit_max75_mult, (bb.d4 >> bit_max_60))&0x7FFF;			// a = b / (2^bit_max)

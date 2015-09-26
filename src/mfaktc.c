@@ -142,7 +142,7 @@ k_min *MUST* be aligned in that way that k_min is in class 0!
 
 typedef GPUKernels kernel_precedence[UNKNOWN_KERNEL];
 
-GPUKernels find_fastest_kernel(mystuff_t *mystuff)
+GPUKernels find_fastest_kernel(mystuff_t *mystuff, boolean do_test)
 {
   /* searches the kernel precedence list of the GPU for the first one that is capable of running the assignment */
   static kernel_precedence kernel_precedences [] = {
@@ -401,22 +401,34 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff)
   };
 
   kernel_precedence *k = &kernel_precedences[mystuff->gpu_type]; // select the row for the GPU we're running on / we're configured for
-  GPUKernels         use_kernel = AUTOSELECT_KERNEL;
+  GPUKernels         use_kernel = AUTOSELECT_KERNEL, test_use_kernel;
   cl_uint            i;
   cl_uint            gpusieve_offset = 0;
 
-  if (mystuff->gpu_sieving == 1)
+  if (do_test)
   {
-    gpusieve_offset = BARRETT79_MUL32_GS - BARRETT79_MUL32;
+    test_use_kernel = test_fastest_kernel();
   }
-
-  for (i = 0; i < UNKNOWN_KERNEL && (*k)[i] < UNKNOWN_KERNEL; i++)
+ // else
   {
-    if (kernel_possible((*k)[i], mystuff)) // if needed, this also checks that we have a _gs kernel
+    if (mystuff->gpu_sieving == 1)
     {
-      use_kernel = (GPUKernels)(gpusieve_offset + (*k)[i]);
-      break;
+      gpusieve_offset = BARRETT79_MUL32_GS - BARRETT79_MUL32;
     }
+
+    for (i = 0; i < UNKNOWN_KERNEL && (*k)[i] < UNKNOWN_KERNEL; i++)
+    {
+      if (kernel_possible((*k)[i], mystuff)) // if needed, this also checks that we have a _gs kernel
+      {
+        use_kernel = (GPUKernels)(gpusieve_offset + (*k)[i]);
+        break;
+      }
+    }
+  }
+  if (do_test && use_kernel != test_use_kernel)
+  {
+    printf("Fastest kernel: Overriding predefined:  %s with tested: %s\n", kernel_info[use_kernel].kernelname, kernel_info[test_use_kernel].kernelname);
+    if (test_use_kernel != UNKNOWN_KERNEL) use_kernel = test_use_kernel;
   }
   return use_kernel;
 }
@@ -503,9 +515,9 @@ other return value
 
   if(use_kernel == AUTOSELECT_KERNEL)
   {
-    use_kernel = find_fastest_kernel(mystuff);
+    use_kernel = find_fastest_kernel(mystuff, 1);
 
-    if(use_kernel == AUTOSELECT_KERNEL)
+    if(use_kernel == AUTOSELECT_KERNEL || use_kernel == UNKNOWN_KERNEL)
     {
       printf("ERROR: No suitable kernel found for bit_min=%d, bit_max=%d.\n",
                  mystuff->bit_min, mystuff->bit_max_stage);
@@ -772,11 +784,11 @@ RET_ERROR we might have a serios problem
   unsigned int retval=1, i, ind;
   enum GPUKernels kernels[UNKNOWN_KERNEL], kernel_index;
   // this index is 1 less than what -st/-st2 report
-  unsigned int index[] = {  1, 12, 33, 50, 72, 73, 82, 88, 99,  // ~ one from each bitlevel
+  unsigned int index[] = {  1547, 12, 33, 50, 72, 73, 82, 88, 99,  // ~ one from each bitlevel
                             106, 117, 129, 140, 154, 158, 164,
                             175, 177, 183, 190, 194, 198, 199,
                             204, 207, 210, 355,  358,  666,   // some very small factors
-                           1547    // some factors below 2^95 (test 95 bit kernel)
+                           1
                          };
   // save the SievePrimes ini value as the selftest may lower it to fit small test-exponents
   unsigned int sieve_primes_save = mystuff->sieve_primes;
@@ -841,7 +853,7 @@ RET_ERROR we might have a serios problem
     }
     else
     {
-      if ((kernels[0]=find_fastest_kernel(mystuff)) != AUTOSELECT_KERNEL) j=1;
+      if ((kernels[0]=find_fastest_kernel(mystuff, 0)) != AUTOSELECT_KERNEL) j=1;
     }
 
     while(j>0)

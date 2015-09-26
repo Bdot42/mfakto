@@ -249,16 +249,15 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   //ff= as_float(0x3f7ffffb) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
   ff= as_float(0x3f7ffffd) / ff;		// just a little bit below 1.0f so we always underestimate the quotient
   */
-#if (VECTOR_SIZE > 1)
   b.d0=11;
   b.d1=0;
   b.d2=0x0;
   b.d3=0x0;
   b.d4=0x0;
-  b.d5=0x3FFF;
+  b.d5=0x7FFF;
 
-  i=mad24(resv.db.s0, 32768u, resv.da.s0)>>2;
-  f=(mad24(resv.db.s0, 32768u, resv.da.s0)<<30) + mad24(resv.d9.s0, 32768u, resv.d8.s0);
+  i=mad24(V(resv.db), 32768u, V(resv.da))>>2;
+  f=(mad24(V(resv.db), 32768u, V(resv.da))<<30) + mad24(V(resv.d9), 32768u, V(resv.d8));
 #if defined USE_DP
   div_180_90_d(&r, i, a, ff
 #else
@@ -269,13 +268,13 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 #endif
                   );
   // enforce evaluation ... otherwise some calculations are optimized away ;-)
-  res[30] = r.d5.s0 + r.d4.s0 + r.d3.s0 + r.d2.s0 + r.d1.s0 + r.d0.s0;
+  res[30] = V(r.d5) + V(r.d4) + V(r.d3) + V(r.d2) + V(r.d1) + V(r.d0);
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"test: %x:%x:120x0 / a=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x\n",
         i, f, 
-        a.d5.s0, a.d4.s0, a.d3.s0, a.d2.s0, a.d1.s0, a.d0.s0,
-        r.d5.s0, r.d4.s0, r.d3.s0, r.d2.s0, r.d1.s0, r.d0.s0);
+        V(a.d5), V(a.d4), V(a.d3), V(a.d2), V(a.d1), V(a.d0),
+        V(r.d5), V(r.d4), V(r.d3), V(r.d2), V(r.d1), V(r.d0));
 #endif
 
 #if defined USE_DP
@@ -288,8 +287,8 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   ff= as_float(0x3f7ffffd) / ff;		// we rounded ff towards plus infinity, and round all other results towards zero.
 #endif
         
-  i=mad24(resv.db.s0, 32768u, resv.da.s0)>>2;
-  f=(mad24(resv.db.s0, 32768u, resv.da.s0)<<30) + mad24(resv.d9.s0, 32768u, resv.d8.s0);
+  i=mad24(V(resv.db), 32768u, V(resv.da))>>2;
+  f=(mad24(V(resv.db), 32768u, V(resv.da))<<30) + mad24(V(resv.d9), 32768u, V(resv.d8));
 
 #if defined USE_DP
   div_180_90_d(&r, i, b, ff
@@ -301,36 +300,54 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
 #endif
                   );
   // enforce evaluation ... otherwise some calculations are optimized away ;-)
-  res[31] = r.d5.s0 + r.d4.s0 + r.d3.s0 + r.d2.s0 + r.d1.s0 + r.d0.s0;
+  //res[31] = r.d5.s0 + r.d4.s0 + r.d3.s0 + r.d2.s0 + r.d1.s0 + r.d0.s0;
 
 #if (TRACE_KERNEL > 3)
   if (tid==TRACE_TID) printf((__constant char *)"test: %x:%x:120x0 / b=%x:%x:%x:%x:%x:%x  = %x:%x:%x:%x:%x:%x\n",
         i, f, 
-        b.d5.s0, b.d4.s0, b.d3.s0, b.d2.s0, b.d1.s0, b.d0.s0,
-        r.d5.s0, r.d4.s0, r.d3.s0, r.d2.s0, r.d1.s0, r.d0.s0);
+        V(b.d5), V(b.d4), V(b.d3), V(b.d2), V(b.d1), V(b.d0),
+        V(r.d5), V(r.d4), V(r.d3), V(r.d2), V(r.d1), V(r.d0));
 #endif
 
   int75_v a75, b75;
   int150_v r75;
 
-  a75.d0=0x100a;
-  a75.d1=0x100a;
-  a75.d2=0x0001;
-  a75.d3=0x100a;
-  a75.d4=0x10001;
-  b75.d0=0x3000;
-  b75.d1=0x3000;
-  b75.d2=0x3000;
-  b75.d3=0x3000;
-  b75.d4=0x3000;
+  a75.d0=hi & 0x7fff;
+  a75.d1=(hi >> 15) & 0x7fff;
+  a75.d2=0x7fff;
+  a75.d3=0x7fff;
+  a75.d4=0xffff;
+  b75.d0=lo & 0x7fff;
+  b75.d1=(lo >> 15) & 0x7fff;
+  b75.d2=0x7fff;
+  b75.d3=0x7fff;
+  b75.d4=0x7fff;
 
   mul_75_150_no_low5_big(&r75, a75, b75);
 #if (TRACE_KERNEL > 0)
-  printf((__constant char *) "a=%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x:0:0:0:0\n",
-       a75.d4.s0, a75.d3.s0, a75.d2.s0, a75.d1.s0, a75.d0.s0, b75.d4.s0, b75.d3.s0, b75.d2.s0, b75.d1.s0, b75.d0.s0,
-       r75.d9.s0, r75.d8.s0, r75.d7.s0, r75.d6.s0, r75.d5.s0, r75.d4.s0);
+  printf((__constant char *) "no_low5_big: a=%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x:0:0:0:0\n",
+       V(a75.d4), V(a75.d3), V(a75.d2), V(a75.d1), V(a75.d0), V(b75.d4), V(b75.d3), V(b75.d2), V(b75.d1), V(b75.d0),
+       V(r75.d9), V(r75.d8), V(r75.d7), V(r75.d6), V(r75.d5), V(r75.d4));
 #endif
+  mul_75_150_no_low5(&r75, a75, b75);
+#if (TRACE_KERNEL > 0)
+  printf((__constant char *) "no_low5: a=%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x:0:0:0:0\n",
+       V(a75.d4), V(a75.d3), V(a75.d2), V(a75.d1), V(a75.d0), V(b75.d4), V(b75.d3), V(b75.d2), V(b75.d1), V(b75.d0),
+       V(r75.d9), V(r75.d8), V(r75.d7), V(r75.d6), V(r75.d5), V(r75.d4));
 #endif
+  mul_75_150_no_low3(&r75, a75, b75);
+#if (TRACE_KERNEL > 0)
+  printf((__constant char *) "no_low3: a=%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x:%x:%x:0:0\n",
+       V(a75.d4), V(a75.d3), V(a75.d2), V(a75.d1), V(a75.d0), V(b75.d4), V(b75.d3), V(b75.d2), V(b75.d1), V(b75.d0),
+       V(r75.d9), V(r75.d8), V(r75.d7), V(r75.d6), V(r75.d5), V(r75.d4), V(r75.d3), V(r75.d2));
+#endif
+  mul_75_150(&r75, a75, b75);
+#if (TRACE_KERNEL > 0)
+  printf((__constant char *) "exact: a=%x:%x:%x:%x:%x * b=%x:%x:%x:%x:%x = %x:%x:%x:%x:%x:%x:%x:%x:%x:%x\n",
+       V(a75.d4), V(a75.d3), V(a75.d2), V(a75.d1), V(a75.d0), V(b75.d4), V(b75.d3), V(b75.d2), V(b75.d1), V(b75.d0),
+       V(r75.d9), V(r75.d8), V(r75.d7), V(r75.d6), V(r75.d5), V(r75.d4), V(r75.d3), V(r75.d2), V(r75.d1), V(r75.d0));
+#endif
+
 
   f=tid+1; // let the reported results start with 1
   if (1 == 1)
