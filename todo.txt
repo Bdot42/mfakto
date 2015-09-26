@@ -144,3 +144,7 @@ TODO
 5 div/mul-modulo for 96 bits
 5 cleanup: separate GPU- and CPU-sieve based kernels, compile and load only one set of them
 5 repunit
+
+OpenCL 2.0 (per #ifdef): clCreateCommandQueueWithProperties instead of clCreateCommandQueue: use device queue: requires out-of-order queues: need events
+merge mfaktc changes: small exps: should correct failing test
+
