@@ -1289,7 +1289,7 @@ cl_int run_calc_mod_inv(cl_uint numblocks, size_t localThreads, cl_event *run_ev
 
 #ifdef DETAILED_INFO
   // get mystuff.d_calc_bit_to_clear_info and print it
-  cl_uint rowinfo_size = MAX_PRIMES_PER_THREAD*4 * sizeof (cl_uint) + mystuff.gpu_sieve_primes * 8;
+  cl_uint rowinfo_size = MAX_PRIMES_PER_THREAD*4 * sizeof (cl_uint) + mystuff.sieve_primes * 8;
 
   status = clEnqueueReadBuffer(QUEUE,     // only for tracing/verification - not needed later.
                 mystuff.d_calc_bit_to_clear_info,
@@ -1406,7 +1406,7 @@ cl_int run_calc_bit_to_clear(cl_uint numblocks, size_t localThreads, cl_event *r
 
 #ifdef DETAILED_INFO
     // get mystuff.d_calc_bit_to_clear_info and d_sieve_info and print it
-  cl_uint info_size = MAX_PRIMES_PER_THREAD*4 * sizeof (cl_uint) + mystuff.gpu_sieve_primes * 8;
+  cl_uint info_size = MAX_PRIMES_PER_THREAD*4 * sizeof (cl_uint) + mystuff.sieve_primes * 8;
   status = clEnqueueReadBuffer(QUEUE,     // only for tracing/verification - not needed later.
                 mystuff.d_calc_bit_to_clear_info,
                 CL_TRUE,
@@ -2577,15 +2577,15 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 #ifdef RAW_GPU_BENCH
   shared_mem_required = 100;            // no sieving = 100%
 #else
-  if (mystuff->gpu_sieve_primes < 54) shared_mem_required = 100;  // no sieving = 100%
-  else if (mystuff->gpu_sieve_primes < 310) shared_mem_required = 50;  // 54 primes expect 48.30%
-  else if (mystuff->gpu_sieve_primes < 1846) shared_mem_required = 38;  // 310 primes expect 35.50%
-  else if (mystuff->gpu_sieve_primes < 21814) shared_mem_required = 30;  // 1846 primes expect 28.10%
-  else if (mystuff->gpu_sieve_primes < 34101) shared_mem_required = 24;  // 21814 primes expect 21.93%
-  else if (mystuff->gpu_sieve_primes < 63797) shared_mem_required = 23;  // 34101 primes expect 20.94%
-  else if (mystuff->gpu_sieve_primes < 115253) shared_mem_required = 22;    // 63797 primes expect 19.87%
-  else if (mystuff->gpu_sieve_primes < 239157) shared_mem_required = 21;    // 115253 primes expect 18.98%
-  else if (mystuff->gpu_sieve_primes < 550453) shared_mem_required = 20;    // 239257 primes expect 17.99%
+  if (mystuff->sieve_primes < 54) shared_mem_required = 100;  // no sieving = 100%
+  else if (mystuff->sieve_primes < 310) shared_mem_required = 50;  // 54 primes expect 48.30%
+  else if (mystuff->sieve_primes < 1846) shared_mem_required = 38;  // 310 primes expect 35.50%
+  else if (mystuff->sieve_primes < 21814) shared_mem_required = 30;  // 1846 primes expect 28.10%
+  else if (mystuff->sieve_primes < 34101) shared_mem_required = 24;  // 21814 primes expect 21.93%
+  else if (mystuff->sieve_primes < 63797) shared_mem_required = 23;  // 34101 primes expect 20.94%
+  else if (mystuff->sieve_primes < 115253) shared_mem_required = 22;    // 63797 primes expect 19.87%
+  else if (mystuff->sieve_primes < 239157) shared_mem_required = 21;    // 115253 primes expect 18.98%
+  else if (mystuff->sieve_primes < 550453) shared_mem_required = 20;    // 239257 primes expect 17.99%
   else shared_mem_required = 19;          // 550453 primes expect 16.97%
 #endif
   shared_mem_required = mystuff->gpu_sieve_processing_size * sizeof (short) * shared_mem_required / 100;
@@ -2659,7 +2659,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               else
                 ind++;
               // simple verify ...
-/*              for (cl_uint p=13; p<mystuff->gpu_sieve_primes; p+=2)
+/*              for (cl_uint p=13; p<mystuff->sieve_primes; p+=2)
               {
                 cl_ulong rem=k_min%p + ((cl_ulong)pos*mystuff->num_classes)%p;
                 rem=(2*mystuff->exponent*rem +1)%p;
@@ -2680,7 +2680,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
         }
         if (peak < (double) ind * 100.0 / (double) pos) peak=(double) ind * 100.0 / (double) pos;
         printf("bit-extract: %u/%u words (%u bits) processed, %u bits set (%f%% -- max=%f%% @ %u).\n",
-          i, mystuff->gpu_sieve_size/32, pos, ind, (double) ind * 100.0 / (double) pos, peak, mystuff->gpu_sieve_primes);
+          i, mystuff->gpu_sieve_size/32, pos, ind, (double) ind * 100.0 / (double) pos, peak, mystuff->sieve_primes);
 #endif
         // Now let the GPU trial factor the candidates that survived the sieving
 

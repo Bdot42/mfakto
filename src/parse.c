@@ -83,7 +83,7 @@ returns 1 if the assignment is within the supported bounds of mfaktc,
 {
   int ret = 1;
   
-       if(exp < 1000000)      {ret = 0; if(verbosity >= 1)printf("WARNING: exponents < 1000000 are not supported!\n");}
+       if(exp < 100000)       {ret = 0; if(verbosity >= 1)printf("WARNING: exponents < 100000 are not supported!\n");}
   else if(!isprime(exp))      {ret = 0; if(verbosity >= 1)printf("WARNING: exponent is not prime!\n");}
   else if(bit_min < 1 )       {ret = 0; if(verbosity >= 1)printf("WARNING: bit_min < 1 doesn't make sense!\n");}
   else if(bit_min > 94)       {ret = 0; if(verbosity >= 1)printf("WARNING: bit_min > 94 is not supported!\n");}
@@ -469,16 +469,16 @@ int add_file_available(char *filename)
 /* process the add file for the worktodo file <filename> */
 int process_add_file(char *filename)
 {
-	char	add_filename[256];
-	char	*dot;
+  char	add_filename[256];
+  char	*dot;
   FILE  *f_work, *f_add;
   char  line[101];
 
   if (add_file_disabled) return 1;  // there was an error with this add file earlier
 	strncpy (add_filename, filename, 245);  // leave room if ".add.txt" will be appended
   add_filename[245]='\0';
-	dot = strrchr (add_filename, '.');
-	if (dot == NULL)
+  dot = strrchr (add_filename, '.');
+  if (dot == NULL)
   {
     dot = add_filename + strlen(add_filename);  // no dot? just append the extension
   }
@@ -506,7 +506,7 @@ int process_add_file(char *filename)
     {
       fprintf(stderr, "Error %d appending \"%s\" to \"%s\"\n", errno, add_filename, filename);
       add_file_disabled = 1;  // Do not try again in order to avoid duplicating entries
-      break;
+      return 1;
     }
   }
   unlock_and_fclose(f_add);

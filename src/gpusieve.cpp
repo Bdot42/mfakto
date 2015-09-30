@@ -215,23 +215,36 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 #undef pinfo32
 #define pinfo32    ((cl_uint *) pinfo)
 
+  // create the list of primes first so we can check if it's too large for the exponent
+  mystuff->sieve_primes_upper_limit = min(GPU_SIEVE_PRIMES_MAX, mystuff->sieve_primes + 8192);
+
+  // find seed primes
+  primes = (cl_uint *) malloc (mystuff->sieve_primes_upper_limit * sizeof (cl_uint));
+  if (primes == NULL) {
+    printf ("error in malloc primes\n");
+    exit (1);
+  }
+  tiny_soe (mystuff->sieve_primes_upper_limit, primes);
+
   // Round up SIEVE_PRIMES so that all threads stay busy in the last sieving loop
   // The first several primes are handled with special code.  After that, they
   // are processed in chunks of threadsPerBlock (256).
 
-  mystuff->gpu_sieve_primes = ((mystuff->gpu_sieve_primes - primesNotSieved - primesHandledWithSpecialCode) / threadsPerBlock) * threadsPerBlock
+  mystuff->sieve_primes = ((mystuff->sieve_primes - primesNotSieved - primesHandledWithSpecialCode) / threadsPerBlock) * threadsPerBlock
             + primesNotSieved + primesHandledWithSpecialCode;
 
   // Loop finding a suitable SIEVE_PRIMES value.  Initial value sieves primes below around 1.05M.
 
 #ifdef DETAILED_INFO
-  printf("gpusieve_init: adjusting gpu_sieve_primes: %d, ", mystuff->gpu_sieve_primes);
+  printf("gpusieve_init: adjusting sieve_primes: %d, ", mystuff->sieve_primes);
 #endif
 
-  for ( ; ; mystuff->gpu_sieve_primes += threadsPerBlock) {
+  cl_uint back_step = 2; // if we need to go backwards because the primes are getting too big
+
+  for ( ; ; mystuff->sieve_primes += threadsPerBlock) {
 
     // compute how many "rows" of the primes info array each thread will be responsible for
-    primes_per_thread = (mystuff->gpu_sieve_primes - primesNotSieved - primesHandledWithSpecialCode) / threadsPerBlock;
+    primes_per_thread = (mystuff->sieve_primes - primesNotSieved - primesHandledWithSpecialCode) / threadsPerBlock;
 
     // Make sure there are 0 mod 3 rows in the under 64K section!
     if (primes_per_thread > 1) {
@@ -261,34 +274,57 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
       if ((loop_count % 4) != 1) continue;
     }
 
+    // now check if it is suitable for the exponent we have (if any)
+
+    if (mystuff->sieve_primes > mystuff->sieve_primes_upper_limit)
+    {
+      // need to enlarge the primes array
+      mystuff->sieve_primes_upper_limit = mystuff->sieve_primes;
+      primes = (cl_uint *) realloc (primes, mystuff->sieve_primes_upper_limit * sizeof (cl_uint));
+      if (primes == NULL)
+      {
+        printf ("error in realloc primes\n");
+        exit (1);
+      }
+      tiny_soe (mystuff->sieve_primes_upper_limit, primes);
+    }
+
+    if (mystuff->exponent > 0 && mystuff->exponent <= primes[mystuff->sieve_primes-1])
+    {
+      //sieve_primes too big for the exponent
+      do
+        mystuff->sieve_primes -= 1;
+      while (mystuff->exponent <= primes[mystuff->sieve_primes-1]);
+      // the loop will add threadsPerBlock - go below
+      mystuff->sieve_primes -= threadsPerBlock * back_step++;
+      continue;
+    }
+
     // We've found the SIEVE_PRIMES value to use
     break;
   }
-#ifdef DETAILED_INFO
-  printf("using gpu_sieve_primes=%d\n", mystuff->gpu_sieve_primes);
-#endif
 
-  // find seed primes
-  primes = (cl_uint *) malloc (mystuff->gpu_sieve_primes * sizeof (cl_uint));
-  if (primes == NULL) {
-    printf ("error in malloc primes\n");
-    exit (1);
+  mystuff->gpu_sieve_min_exp = primes[mystuff->sieve_primes - 1] + 1;
+  if(mystuff->verbosity >= 1)
+  {
+    printf("  GPUSievePrimes (adjusted) %d\n", mystuff->sieve_primes);
+    printf("  GPUsieve minimum exponent %u\n", mystuff->gpu_sieve_min_exp);
   }
-  tiny_soe (mystuff->gpu_sieve_primes, primes);
 
   // allocate memory for compressed prime info -- assumes prime data can be stored in 12 bytes
-  pinfo = (cl_uchar *) malloc (mystuff->gpu_sieve_primes * 12);
-  if (pinfo == NULL) {
+  pinfo = (cl_uchar *) malloc (mystuff->sieve_primes * 12);
+  if (pinfo == NULL)
+  {
     printf ("error in malloc pinfo\n");
     exit (1);
   }
 
 #ifdef DETAILED_INFO
-  printf("gpusieve_init: h_sieve_info (%d bytes) allocated\n", mystuff->gpu_sieve_primes * 12);
+  printf("gpusieve_init: h_sieve_info (%d bytes) allocated\n", mystuff->sieve_primes * 12);
 #endif
 
   // allocate memory for info that describes each row of 256 primes AND has the primes and modular inverses
-  rowinfo_size = MAX_PRIMES_PER_THREAD*4 * sizeof (cl_uint) + mystuff->gpu_sieve_primes * 8;
+  rowinfo_size = MAX_PRIMES_PER_THREAD*4 * sizeof (cl_uint) + mystuff->sieve_primes * 8;
   rowinfo = (cl_uint *) malloc (rowinfo_size);
   if (rowinfo == NULL) {
     printf ("error in malloc rowinfo\n");
@@ -499,13 +535,11 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
   pinfo = saveptr;
 
   // Finally, also copy the primes to rowinfo to be used in later calculating bit-to-clear values
-  for (i = primesNotSieved; i < (cl_uint) mystuff->gpu_sieve_primes; i++) {
+  for (i = primesNotSieved; i < (cl_uint) mystuff->sieve_primes; i++) {
     rowinfo[MAX_PRIMES_PER_THREAD*4 + 2 * i] = primes[i];
   }
 
   // Allocate and copy the device compressed prime sieving info
-  // checkCudaErrors (cudaMalloc ((void**) &mystuff->d_sieve_info, pinfo_size));
-  // checkCudaErrors (cudaMemcpy (mystuff->d_sieve_info, pinfo, pinfo_size, cudaMemcpyHostToDevice));
   mystuff->h_sieve_info = (cl_uint *) realloc(pinfo, pinfo_size);
   mystuff->d_sieve_info = clCreateBuffer(context,
                         CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,

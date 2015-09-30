@@ -40,7 +40,7 @@ static void print_menu(mystuff_t *mystuff)
 {
   puts("\nSettings menu\n\nNum  Setting     Current value  (shortcut outside of the menu for de-/increasing this setting)\n");
 
-  printf("  1  SievePrimes       = %-8u  (-/+)\n", mystuff->gpu_sieving ? mystuff->gpu_sieve_primes : mystuff->sieve_primes);
+  printf("  1  SievePrimes       = %-8u  (-/+)\n", mystuff->sieve_primes);
   printf("  2  SieveSize         = %-8u  (s/S)\n", mystuff->gpu_sieving ? mystuff->gpu_sieve_size/1024/1024 : mystuff->sieve_size/8192);
   printf("  3  SieveProcessSize  = %-8u  (p/P)\n", mystuff->gpu_sieving ? mystuff->gpu_sieve_processing_size/1024 : mystuff->sieve_size/8192);
   printf("  4  SievePrimesAdjust = %-8u  (a/A)\n", mystuff->gpu_sieving ? 0 : mystuff->sieve_primes_adjust);
@@ -57,8 +57,8 @@ static void validate_settings(mystuff_t *mystuff)
 {
   if (mystuff->gpu_sieving)
   {
-    if (mystuff->gpu_sieve_primes < GPU_SIEVE_PRIMES_MIN) mystuff->gpu_sieve_primes = GPU_SIEVE_PRIMES_MIN;
-    if (mystuff->gpu_sieve_primes > GPU_SIEVE_PRIMES_MAX) mystuff->gpu_sieve_primes = GPU_SIEVE_PRIMES_MAX;
+    if (mystuff->sieve_primes < GPU_SIEVE_PRIMES_MIN) mystuff->sieve_primes = GPU_SIEVE_PRIMES_MIN;
+    if (mystuff->sieve_primes > GPU_SIEVE_PRIMES_MAX) mystuff->sieve_primes = GPU_SIEVE_PRIMES_MAX;
 
     mystuff->gpu_sieve_processing_size = ((mystuff->gpu_sieve_processing_size + 4096) / 8192) * 8192;
     if (mystuff->gpu_sieve_processing_size < GPU_SIEVE_PROCESS_SIZE_MIN*1024) mystuff->gpu_sieve_processing_size = GPU_SIEVE_PROCESS_SIZE_MIN*1024;
@@ -89,40 +89,19 @@ static void validate_settings(mystuff_t *mystuff)
 
 static void set_sieve_primes(mystuff_t *mystuff, int new_value)
 {
-  if (mystuff->gpu_sieving)
-  {
-    mystuff->gpu_sieve_primes = new_value;
-  }
-  else
-  {
-    mystuff->sieve_primes = new_value;
-  }
+  mystuff->sieve_primes = new_value;
   validate_settings(mystuff);
 }
 
 static void lower_sieve_primes(mystuff_t *mystuff)
 {
-  if (mystuff->gpu_sieving)
-  {
-    mystuff->gpu_sieve_primes = mystuff->gpu_sieve_primes * 7 / 8;
-  }
-  else
-  {
-    mystuff->sieve_primes = mystuff->sieve_primes * 7 / 8;
-  }
+  mystuff->sieve_primes = mystuff->sieve_primes * 7 / 8;
   validate_settings(mystuff);
 }
 
 static void increase_sieve_primes(mystuff_t *mystuff)
 {
-  if (mystuff->gpu_sieving)
-  {
-    mystuff->gpu_sieve_primes = mystuff->gpu_sieve_primes * 9 / 8;
-  }
-  else
-  {
-    mystuff->sieve_primes = mystuff->sieve_primes * 9 / 8;
-  }
+  mystuff->sieve_primes = mystuff->sieve_primes * 9 / 8;
   validate_settings(mystuff);
 }
 
@@ -266,7 +245,7 @@ void check_and_do_reinit(mystuff_t *saved_mystuff, mystuff_t *mystuff)
 {
   if (mystuff->gpu_sieving)
   {
-    if (mystuff->gpu_sieve_primes != saved_mystuff->gpu_sieve_primes ||
+    if (mystuff->sieve_primes != saved_mystuff->sieve_primes ||
         mystuff->gpu_sieve_processing_size != saved_mystuff->gpu_sieve_processing_size ||
         mystuff->gpu_sieve_size != saved_mystuff->gpu_sieve_size)
     {
@@ -310,13 +289,11 @@ int handle_kb_input(mystuff_t *mystuff)
       break;
     case '-': lower_sieve_primes(mystuff);
               if (mystuff->verbosity > 0)
-                printf("\nDecrease %sSievePrimes to %u\n", mystuff->gpu_sieving?"GPU":"",
-                   mystuff->gpu_sieving?mystuff->gpu_sieve_primes:mystuff->sieve_primes);
+                printf("\nDecrease SievePrimes to %u\n", mystuff->sieve_primes);
       break;
     case '+': increase_sieve_primes(mystuff);
               if (mystuff->verbosity > 0)
-                printf("\nIncrease %sSievePrimes to %u\n", mystuff->gpu_sieving?"GPU":"",
-                   mystuff->gpu_sieving?mystuff->gpu_sieve_primes:mystuff->sieve_primes);
+                printf("\nIncrease SievePrimes to %u\n", mystuff->sieve_primes);
       break;
     case 's': lower_sieve_size(mystuff);
               if (mystuff->verbosity > 0)

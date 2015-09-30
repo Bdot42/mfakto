@@ -423,7 +423,7 @@ int read_config(mystuff_t *mystuff)
       }
     }
     if(mystuff->verbosity >= 1)printf("  GPUSievePrimes            %d\n",i);
-    mystuff->gpu_sieve_primes = i;
+    mystuff->sieve_primes = i;
 
 /*****************************************************************************/
 

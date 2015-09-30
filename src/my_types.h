@@ -258,8 +258,8 @@ typedef struct _mystuff_t
 
   cl_uint  gpu_sieving;			             /* TRUE if we're letting the GPU do the sieving */
   cl_uint  gpu_sieve_size;			         /* Size (in bits) of the GPU sieve.  4..128M bits. */
-  cl_uint  gpu_sieve_primes;             /* the actual number of primes using for sieving */
   cl_uint  gpu_sieve_processing_size;	   /* The number of GPU sieve bits each thread in a kernel will process.  8,16,24,32K bits. */
+  cl_uint  gpu_sieve_min_exp;			       /* minimum exponent for the sieve_primes we have */
 
   cl_uint  flush;                        /* GPU sieving only: flush the queue after # kernels, 0=off */
   cl_uint  num_streams;

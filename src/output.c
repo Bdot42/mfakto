@@ -278,10 +278,7 @@ void print_status_line(mystuff_t *mystuff)
       }
       else if(mystuff->stats.progressformat[i+1] == 's') // (GPU-)SievePrimes
       {
-        if (mystuff->gpu_sieving == 1)
-          index += sprintf(buffer + index, "%7d", mystuff->gpu_sieve_primes-1);  // Output number of odd primes sieved
-        else						// CPU sieving
-          index += sprintf(buffer + index, "%7d", mystuff->sieve_primes);
+        index += sprintf(buffer + index, "%7d", mystuff->sieve_primes);
       }
       else if(mystuff->stats.progressformat[i+1] == 'w') // CPU wait time
       {

@@ -597,6 +597,7 @@ int test_gpu_sieve(cl_uint par)
   double time1;
   cl_uint i;
   cl_ulong k = 9876543210;
+  mystuff.exponent = EXP;
 
   // 50 is a reasonable number that does not usually crash the driver
   //par = 50;
@@ -651,15 +652,15 @@ int test_gpu_sieve(cl_uint par)
   // now also quickly test a GPU kernel ...
 
   cl_uint   shared_mem_required = 100;            // no sieving = 100%
-  if (mystuff.gpu_sieve_primes < 54) shared_mem_required = 100;  // no sieving = 100%
-  else if (mystuff.gpu_sieve_primes < 310) shared_mem_required = 50;  // 54 primes expect 48.30%
-  else if (mystuff.gpu_sieve_primes < 1846) shared_mem_required = 38;  // 310 primes expect 35.50%
-  else if (mystuff.gpu_sieve_primes < 21814) shared_mem_required = 30;  // 1846 primes expect 28.10%
-  else if (mystuff.gpu_sieve_primes < 34101) shared_mem_required = 24;  // 21814 primes expect 21.93%
-  else if (mystuff.gpu_sieve_primes < 63797) shared_mem_required = 23;  // 34101 primes expect 20.94%
-  else if (mystuff.gpu_sieve_primes < 115253) shared_mem_required = 22;    // 63797 primes expect 19.87%
-  else if (mystuff.gpu_sieve_primes < 239157) shared_mem_required = 21;    // 115253 primes expect 18.98%
-  else if (mystuff.gpu_sieve_primes < 550453) shared_mem_required = 20;    // 239257 primes expect 17.99%
+  if (mystuff.sieve_primes < 54) shared_mem_required = 100;  // no sieving = 100%
+  else if (mystuff.sieve_primes < 310) shared_mem_required = 50;  // 54 primes expect 48.30%
+  else if (mystuff.sieve_primes < 1846) shared_mem_required = 38;  // 310 primes expect 35.50%
+  else if (mystuff.sieve_primes < 21814) shared_mem_required = 30;  // 1846 primes expect 28.10%
+  else if (mystuff.sieve_primes < 34101) shared_mem_required = 24;  // 21814 primes expect 21.93%
+  else if (mystuff.sieve_primes < 63797) shared_mem_required = 23;  // 34101 primes expect 20.94%
+  else if (mystuff.sieve_primes < 115253) shared_mem_required = 22;    // 63797 primes expect 19.87%
+  else if (mystuff.sieve_primes < 239157) shared_mem_required = 21;    // 115253 primes expect 18.98%
+  else if (mystuff.sieve_primes < 550453) shared_mem_required = 20;    // 239257 primes expect 17.99%
   else shared_mem_required = 19;          // 550453 primes expect 16.97%
   shared_mem_required = mystuff.gpu_sieve_processing_size * sizeof (short) * shared_mem_required / 100;
 
@@ -750,10 +751,10 @@ int test_gpu_sieve(cl_uint par)
     {
       gpusieve_free(&mystuff);
 
-      mystuff.gpu_sieve_primes=sprimes[ii];
+      mystuff.sieve_primes=sprimes[ii];
       init_CLstreams(1);  // runs gpusieve_init(&mystuff, context);
       gpusieve_init_exponent(&mystuff);
-      sprimes[ii]=mystuff.gpu_sieve_primes;
+      sprimes[ii]=mystuff.sieve_primes;
 
       timer_init(&timer);
       for (i=0; i<(cl_uint)(par*(nsp-ii)); i++, k+= (cl_ulong) mystuff.gpu_sieve_size * mystuff.num_classes)
@@ -1238,6 +1239,7 @@ int test_tf_kernels(cl_uint par, int devicenumber)
     printf("ERROR: load_kernels(%d) failed\n", devicenumber);
     return ERR_INIT;
   }
+  mystuff.exponent=EXP;
   if (init_CLstreams(0))
   {
     printf("ERROR: init_CLstreams (malloc buffers?) failed\n");
@@ -1322,7 +1324,7 @@ int init_gpu_test(int devicenumber)
 
   // fill some meaningful test values into mystuff
   mystuff.exponent = EXP;
-  mystuff.gpu_sieve_primes = 52765;
+  mystuff.sieve_primes = 52765;
   mystuff.gpu_sieve_processing_size = 24 * 1024;
   mystuff.gpu_sieve_size = 126 * 1024 * 1024;
   mystuff.bit_min = 71;
@@ -1858,7 +1860,7 @@ if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
 
   // Now, quickly test one kernel ...
   // (10 * 2^64+25) mod 3 * 2^23
-  long long unsigned int hi=(1<<31)-1;
+  long long unsigned int hi=(1U<<31)-1;
   long long unsigned int lo=(1<<30)-1;
   long long unsigned int q=3<<23;
   cl_float qr=0.9998f/(cl_float)q;

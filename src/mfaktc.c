@@ -515,7 +515,7 @@ other return value
 
   if(use_kernel == AUTOSELECT_KERNEL)
   {
-    use_kernel = find_fastest_kernel(mystuff, 1);
+    use_kernel = find_fastest_kernel(mystuff, 0);
 
     if(use_kernel == AUTOSELECT_KERNEL || use_kernel == UNKNOWN_KERNEL)
     {
@@ -792,6 +792,8 @@ RET_ERROR we might have a serios problem
                          };
   // save the SievePrimes ini value as the selftest may lower it to fit small test-exponents
   unsigned int sieve_primes_save = mystuff->sieve_primes;
+  unsigned int verbosity_save = mystuff->verbosity;
+  mystuff->verbosity = 0;
 
   register_signal_handler(mystuff);
 
@@ -819,7 +821,22 @@ RET_ERROR we might have a serios problem
     mystuff->bit_min            = st_data[ind].bit_min;
     mystuff->bit_max_assignment = st_data[ind].bit_min + 1;
     mystuff->bit_max_stage      = mystuff->bit_max_assignment;
-
+    if (mystuff->gpu_sieving == 0)
+    {
+      // careful to not sieve out small test candidates
+      mystuff->sieve_primes_upper_limit = sieve_sieve_primes_max(mystuff->exponent, mystuff->sieve_primes_max);
+      if (mystuff->sieve_primes > mystuff->sieve_primes_upper_limit)
+        mystuff->sieve_primes = mystuff->sieve_primes_upper_limit;
+    }
+    else
+    {
+      if (mystuff->exponent < mystuff->gpu_sieve_min_exp ||  sieve_primes_save != mystuff->sieve_primes)
+      {
+        mystuff->sieve_primes = sieve_primes_save;
+        gpusieve_free(mystuff);
+        init_CLstreams(1);
+      }
+    }
 /* create a list which kernels can handle this testcase */
     j = 0;
 
@@ -835,10 +852,6 @@ RET_ERROR we might have a serios problem
         {
           if(kernel_possible(kernel_index, mystuff)) kernels[j++] = kernel_index;
         }
-        // careful to not sieve out small test candidates
-        mystuff->sieve_primes_upper_limit = sieve_sieve_primes_max(mystuff->exponent, mystuff->sieve_primes_max);
-        if (mystuff->sieve_primes > mystuff->sieve_primes_upper_limit)
-          mystuff->sieve_primes = mystuff->sieve_primes_upper_limit;
       }
       else
       {
@@ -893,7 +906,7 @@ RET_ERROR we might have a serios problem
   {
     printf("selftest FAILED!\n\n");
   }
-
+  mystuff->verbosity = verbosity_save;
   return retval;
 }
 
@@ -916,7 +929,6 @@ int main(int argc, char **argv)
   mystuff.bit_max_stage = -1;
   mystuff.gpu_sieving = 0;
   mystuff.gpu_sieve_size = GPU_SIEVE_SIZE_DEFAULT * 1024 * 1024;		/* Size (in bits) of the GPU sieve.  Default is 64M bits. */
-  mystuff.gpu_sieve_primes = GPU_SIEVE_PRIMES_DEFAULT;				/* Default to sieving primes below about 1.05M */
   mystuff.gpu_sieve_processing_size = GPU_SIEVE_PROCESS_SIZE_DEFAULT * 1024;	/* Default to 16K bits processed by each block in a Barrett kernel. */
   strcpy(mystuff.inifile, "mfakto.ini");
   mystuff.force_rebuild = 0;
@@ -1223,6 +1235,17 @@ int main(int argc, char **argv)
             printf("WARNING: SievePrimes is too big for the current assignment, lowering to %u\n", mystuff.sieve_primes_upper_limit);
             printf("         It is not allowed to sieve primes which are equal or bigger than the \n");
             printf("         exponent itself!\n");
+          }
+        }
+        else
+        {
+          if (mystuff.exponent < mystuff.gpu_sieve_min_exp)
+          {
+            printf("WARNING: SievePrimes is too big for the current assignment, adjusting\n");
+            printf("         It is not allowed to sieve primes which are equal or bigger than the \n");
+            printf("         exponent itself.\n");
+            gpusieve_free(&mystuff);
+            init_CLstreams(1);
           }
         }
         if(mystuff.stages == 1)
