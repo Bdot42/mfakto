@@ -142,7 +142,7 @@ k_min *MUST* be aligned in that way that k_min is in class 0!
 
 typedef GPUKernels kernel_precedence[UNKNOWN_KERNEL];
 
-GPUKernels find_fastest_kernel(mystuff_t *mystuff, boolean do_test)
+GPUKernels find_fastest_kernel(mystuff_t *mystuff, cl_uint do_test)
 {
   /* searches the kernel precedence list of the GPU for the first one that is capable of running the assignment */
   static kernel_precedence kernel_precedences [] = {
