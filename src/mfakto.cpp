@@ -80,9 +80,9 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT69_MUL15,     "cl_barrett15_69",      60,     69,         0,      NULL},
      {   BARRETT70_MUL15,     "cl_barrett15_70",      60,     69,         0,      NULL},
      {   BARRETT71_MUL15,     "cl_barrett15_71",      60,     70,         0,      NULL},
-     {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     88,         0,      NULL},
-     {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     83,         0,      NULL},
-     {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     82,         0,      NULL},
+     {   BARRETT88_MUL15,     "cl_barrett15_88",      60,     87,         0,      NULL},
+     {   BARRETT83_MUL15,     "cl_barrett15_83",      60,     82,         0,      NULL},
+     {   BARRETT82_MUL15,     "cl_barrett15_82",      60,     81,         0,      NULL},
      {   BARRETT74_MUL15,     "cl_barrett15_74",      60,     74,         0,      NULL},
      {   MG62,                "cl_mg62",              58,     62,         1,      NULL},
      {   MG88,                "cl_mg88",              73,     88,         1,      NULL},
@@ -102,9 +102,9 @@ kernel_info_t       kernel_info[] = {
      {   BARRETT69_MUL15_GS,  "cl_barrett15_69_gs",   60,     69,         0,      NULL},
      {   BARRETT70_MUL15_GS,  "cl_barrett15_70_gs",   60,     69,         0,      NULL},
      {   BARRETT71_MUL15_GS,  "cl_barrett15_71_gs",   60,     70,         0,      NULL},
-     {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     88,         0,      NULL},
-     {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     83,         0,      NULL},
-     {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     82,         0,      NULL},
+     {   BARRETT88_MUL15_GS,  "cl_barrett15_88_gs",   60,     87,         0,      NULL},
+     {   BARRETT83_MUL15_GS,  "cl_barrett15_83_gs",   60,     82,         0,      NULL},
+     {   BARRETT82_MUL15_GS,  "cl_barrett15_82_gs",   60,     81,         0,      NULL},
      {   BARRETT74_MUL15_GS,  "cl_barrett15_74_gs",   60,     74,         0,      NULL},
      {   UNKNOWN_GS_KERNEL,   "UNKNOWN GS kernel",     0,      0,         0,      NULL}, // delimiter
 };
@@ -132,7 +132,7 @@ int init_CLstreams(int gs_reinit_only)
         return 1;
       }
       mystuff.d_ktab[i] = clCreateBuffer(context,
-                        CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+                        CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                         mystuff.threads_per_grid * sizeof(cl_uint),
                         mystuff.h_ktab[i],
                         &status);
@@ -148,7 +148,7 @@ int init_CLstreams(int gs_reinit_only)
       return 1;
     }
     mystuff.d_RES = clCreateBuffer(context,
-                      CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                      CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                       32 * sizeof(cl_uint),
                       mystuff.h_RES,
                       &status);
@@ -164,7 +164,7 @@ int init_CLstreams(int gs_reinit_only)
       return 1;
     }
     mystuff.d_modbasecase_debug = clCreateBuffer(context,
-                      CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                      CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                       32 * sizeof(cl_uint),
                       mystuff.h_modbasecase_debug,
                       &status);
@@ -597,6 +597,7 @@ void set_gpu_type()
         strstr(deviceinfo.d_name, "Neptune")    ||    // 8970M, 8990M
         strstr(deviceinfo.d_name, "Curacao")    ||    // R9 265, R9 270, R9 270X
         strstr(deviceinfo.d_name, "Tonga")      ||    // R9 285
+        strstr(deviceinfo.d_name, "Hainan")      ||    // R9 285
         strstr(deviceinfo.d_name, "Kalindi")          // GCN APU, Kabini, R7 ???
         )
     {

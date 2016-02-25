@@ -177,7 +177,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
     return 1;
   }
   mystuff->d_bitarray = clCreateBuffer(context,
-                         CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                         CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                          mystuff->gpu_sieve_size / 8,
                          mystuff->h_bitarray,
                         &status);
@@ -542,7 +542,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
   // Allocate and copy the device compressed prime sieving info
   mystuff->h_sieve_info = (cl_uint *) realloc(pinfo, pinfo_size);
   mystuff->d_sieve_info = clCreateBuffer(context,
-                        CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                        CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                         pinfo_size,
                         mystuff->h_sieve_info,
                         &status);
@@ -577,7 +577,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 
   mystuff->h_calc_bit_to_clear_info = (cl_uint *) rowinfo;
   mystuff->d_calc_bit_to_clear_info = clCreateBuffer(context,
-                          CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                          CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                           rowinfo_size,
                           rowinfo,
                           &status);

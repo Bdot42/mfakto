@@ -1834,7 +1834,7 @@ if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
       printf("ERROR: malloc(h_ktab[%d]) failed\n", i);
     }
     mystuff.d_ktab[i] = clCreateBuffer(context,
-                      CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR,
+                      CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                       mystuff.threads_per_grid * sizeof(cl_uint),
                       mystuff.h_ktab[i],
                       &status);
@@ -1848,7 +1848,7 @@ if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
     printf("ERROR: malloc(h_RES) failed\n");
   }
   mystuff.d_RES = clCreateBuffer(context,
-                    CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                    CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                     32 * sizeof(cl_uint),
                     mystuff.h_RES,
                     &status);
