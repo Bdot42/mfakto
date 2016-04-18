@@ -253,7 +253,7 @@ typedef struct _mystuff_t
   cl_uint  sieve_primes;                    /* the actual number of odd primes using for sieving */
   cl_uint  sieve_primes_adjust;             /* allow automated adjustment of sieve_primes? */
   cl_uint  sieve_primes_upper_limit;        /* the upper limit of sieve_primes for the current exponent */
-  cl_uint  sieve_primes_min, sieve_primes_max; /* user configureable sieve_primes min/max */
+  cl_uint  sieve_primes_min, sieve_primes_max; /* user configurable sieve_primes min/max */
   cl_uint  sieve_size;
 
   cl_uint  gpu_sieving;			             /* TRUE if we're letting the GPU do the sieving */
