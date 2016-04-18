@@ -114,7 +114,7 @@ than an equal SIEVE_SIZE_LIMIT #define.
 /*
 If MORE_CLASSES is defined then the TF process is split into 4620
 (4 * 3*5*7*11) classes. Otherwise it will be split into 420 (4 * 3*5*7)
-classes. With 4620 the siever runs a bit more efficent at the cost of 10 times
+classes. With 4620 the siever runs a bit more efficient at the cost of 10 times
 more sieve initializations. This will allow to increase SIEVE_PRIMES a little
 bit further. This starts to become useful on my system for e.g. TF M66xxxxxx
 from 2^66 to 2^67. The OpenCL version, mfakto, requires MORE_CLASSES be defined.
