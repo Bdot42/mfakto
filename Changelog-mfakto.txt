@@ -35,7 +35,7 @@ version 0.13 (2013-05-19)
   o new kernels (thanks for the ideas and CUDA examples to George Woltman and Oliver Weihe)
   o big set of kernels based on 15-bit-math (speedup for Cayman and GCN)
 - closer alignment with mfaktc
-  o -v switch (also avaliable as a Verbosity config variable)
+  o -v switch (also available as a Verbosity config variable)
   o output adjustments
   o internal file and function structure
 - better diagnostics through improved tracing and error number decoding

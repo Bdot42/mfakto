@@ -569,7 +569,7 @@ other return value
       mystuff->stats.class_number = cur_class;
       if(mystuff->quit)
       {
-/* check if quit is requested. Because this is at the begining of the class
+/* check if quit is requested. Because this is at the beginning of the class
    we can be sure that if RET_QUIT is returned the last class hasn't
    finished. The signal handler which sets mystuff->quit not active during
    selftests so we need to check for RET_QUIT only when doing real work. */
@@ -959,7 +959,7 @@ int main(int argc, char **argv)
 
       if(tmp < 0)
       {
-        printf("WARNING: minumum verbosity level is 0\n");
+        printf("WARNING: minimum verbosity level is 0\n");
         tmp = 0;
       }
 

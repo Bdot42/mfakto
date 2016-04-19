@@ -1786,7 +1786,7 @@ __kernel void barrett15_73(__private uint exp, const int75_t k_base, const __glo
 #endif
 
   }
-  // now the params that change everytime
+  // now the params that change every time
   status = clSetKernelArg(l_kernel,
                     1,
                     sizeof(int75),
@@ -1886,7 +1886,7 @@ int run_kernel24(cl_kernel l_kernel, cl_uint exp, int72 k_base, int stream, int1
 #endif
 
   }
-  // now the params that change everytime
+  // now the params that change every time
   status = clSetKernelArg(l_kernel,
                     1,
                     sizeof(int72),
@@ -1938,7 +1938,7 @@ int run_kernel64(cl_kernel l_kernel, cl_uint exp, cl_ulong k_base, int stream, c
         (long long unsigned int)b_preinit.s[2], (long long unsigned int)b_preinit.s[1], (long long unsigned int)b_preinit.s[0], (unsigned int)b_preinit.s[3]);
 #endif
   }
-  // now the params that change everytime
+  // now the params that change every time
   status = clSetKernelArg(l_kernel,
                     1,
                     sizeof(cl_ulong),
@@ -2019,7 +2019,7 @@ int run_barrett_kernel32(cl_kernel l_kernel, cl_uint exp, int96 k_base, int stre
         b_preinit.d3, b_preinit.d2, b_preinit.d1, b_preinit.d0, shiftcount);
 #endif
   }
-  // now the params that change everytime
+  // now the params that change every time
   status = clSetKernelArg(l_kernel,
                     1,
                     sizeof(int96),
@@ -2134,7 +2134,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
       b_in.s[7], b_in.s[6], b_in.s[5], b_in.s[4], b_in.s[3], b_in.s[2], b_in.s[1], b_in.s[0], shiftcount);
 #endif
 
-  // now the params that change everytime
+  // now the params that change every time
   status = clSetKernelArg(kernel,
                     1,
                     sizeof(int75),
@@ -2190,7 +2190,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
       b_preinit.d5, b_preinit.d4, b_preinit.d3, b_preinit.d2, b_preinit.d1, b_preinit.d0, shiftcount);
 #endif
 
-  // now the params that change everytime
+  // now the params that change every time
   status = clSetKernelArg(kernel,
                     1,
                     sizeof(int96),
