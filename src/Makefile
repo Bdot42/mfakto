@@ -45,7 +45,7 @@ endif
 # where is the AMD_APP Toolkit installed?
 AMD_APP_DIR = /opt/AMDAPP
 AMD_APP_INCLUDE = -I$(AMD_APP_DIR)/include
-AMD_APP_LIB = -L$(AMD_APP_DIR)/lib/$(BITS)
+AMD_APP_LIB = -L$(AMD_APP_DIR)/lib/$(BITS) -L/opt/rocm/opencl/lib/x86_64
 
 # optimize or debug
 #OPTIMIZE_FLAG = -O3

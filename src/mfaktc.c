@@ -746,7 +746,7 @@ k_max and k_min are used as 64bit temporary integers here...
     if(time_run > 86400000ULL)printf("%" PRIu64 "d ",   time_run / 86400000ULL);
     if(time_run > 3600000ULL) printf("%2" PRIu64 "h ", (time_run /  3600000ULL) % 24ULL);
     if(time_run > 60000ULL)   printf("%2" PRIu64 "m ", (time_run /    60000ULL) % 60ULL);
-                              printf("%2" PRIu64 ".%03" PRIu64 "s", (time_run / 1000ULL) % 60ULL, time_run % 1000ULL);
+    printf("%2" PRIu64 ".%03" PRIu64 "s", (time_run / 1000ULL) % 60ULL, time_run % 1000ULL);
     if(restart != 0)
     {
       time_est = (time_run * mystuff->stats.class_counter ) / (cl_ulong)(mystuff->stats.class_counter-restart);
@@ -754,7 +754,7 @@ k_max and k_min are used as 64bit temporary integers here...
       if(time_est > 86400000ULL)printf("%" PRIu64 "d ",   time_est / 86400000ULL);
       if(time_est > 3600000ULL) printf("%2" PRIu64 "h ", (time_est /  3600000ULL) % 24ULL);
       if(time_est > 60000ULL)   printf("%2" PRIu64 "m ", (time_est /    60000ULL) % 60ULL);
-                                printf("%2" PRIu64 ".%03" PRIu64 "s", (time_est / 1000ULL) % 60ULL, time_est % 1000ULL);
+      printf("%2" PRIu64 ".%03" PRIu64 "s", (time_est / 1000ULL) % 60ULL, time_est % 1000ULL);
     }
     if(mystuff->mode == MODE_NORMAL) printf(" (%.2f GHz-days / day)", mystuff->stats.ghzdays * 86400000.0 / (double) time_est);
     printf("\n\n");
