@@ -47,6 +47,6 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #ifdef __cplusplus
-#define max(a,b)    (((a) > (b)) ? (a) : (b))
-#define min(a,b)    (((a) < (b)) ? (a) : (b))
+#define MAX(a,b)    (((a) > (b)) ? (a) : (b))
+#define MIN(a,b)    (((a) < (b)) ? (a) : (b))
 #endif

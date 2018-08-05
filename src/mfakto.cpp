@@ -852,7 +852,7 @@ int load_kernels(cl_int *devnumber)
     }
     else
     {
-      std::cerr << "\nKernel file \""KERNEL_FILE"\" not found, it needs to be in the same directory as the executable.\n";
+      std::cerr << "\nKernel file \"" KERNEL_FILE "\" not found, it needs to be in the same directory as the executable.\n";
       return 1;
     }
 
@@ -2225,7 +2225,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
   static cl_event run_event = NULL;
 #ifndef CL_PERFORMANCE_INFO
   static cl_uint flush_counter=1;
-  static cl_uint event_step = max(1, mystuff.flush / 2); // When to set the event for waiting
+  static cl_uint event_step = MAX(1, mystuff.flush / 2); // When to set the event for waiting
   cl_event  *p_event = NULL;
 #endif
 
