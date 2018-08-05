@@ -216,7 +216,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 #define pinfo32    ((cl_uint *) pinfo)
 
   // create the list of primes first so we can check if it's too large for the exponent
-  mystuff->sieve_primes_upper_limit = min(GPU_SIEVE_PRIMES_MAX, mystuff->sieve_primes + 8192);
+  mystuff->sieve_primes_upper_limit = MIN(GPU_SIEVE_PRIMES_MAX, mystuff->sieve_primes + 8192);
 
   // find seed primes
   primes = (cl_uint *) malloc (mystuff->sieve_primes_upper_limit * sizeof (cl_uint));
@@ -248,7 +248,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 
     // Make sure there are 0 mod 3 rows in the under 64K section!
     if (primes_per_thread > 1) {
-      loop_count = min (primes_per_thread, sieving64KCrossover) - 1;
+      loop_count = MIN(primes_per_thread, sieving64KCrossover) - 1;
       if ((loop_count % 3) != 0) continue;
     }
 
@@ -257,13 +257,13 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 
     // Make sure there are 1 mod 3 rows in 64K to 128K section!
     if (primes_per_thread > sieving64KCrossover + 1) {
-      loop_count = min (primes_per_thread, sieving128KCrossover + 1) - (sieving64KCrossover + 1);
+      loop_count = MIN (primes_per_thread, sieving128KCrossover + 1) - (sieving64KCrossover + 1);
       if ((loop_count % 3) != 1) continue;
     }
 
     // Make sure there are 1 mod 4 rows in 128K to 1M section!
     if (primes_per_thread > sieving128KCrossover + 1) {
-      loop_count = min (primes_per_thread, sieving1MCrossover) - (sieving128KCrossover + 1);
+      loop_count = MIN (primes_per_thread, sieving1MCrossover) - (sieving128KCrossover + 1);
       if ((loop_count % 4) != 1) continue;
     }
 
@@ -342,7 +342,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 
   // In this section (primes below 64K) we store p in 16 bits, bit-to-clr in 16 bits, and pinv in 32 bits.
   row = rowinfo;
-  loop_end = min (primes_per_thread, sieving64KCrossover);
+  loop_end = MIN (primes_per_thread, sieving64KCrossover);
   for ( ; i < primesNotSieved + primesHandledWithSpecialCode + loop_end * threadsPerBlock; i += threadsPerBlock, pinfo += threadsPerBlock * 8) {
     row[0] = (cl_uint)(pinfo - saveptr);      // Offset to first pinfo byte in the row
     row[MAX_PRIMES_PER_THREAD] = i;      // First pinfo entry is for the i-th prime number
@@ -356,7 +356,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
   }
 
   // In this section (primes both below and above 64K) we store bit-to-clr in 32 bits, pinv in 32 bits, and p in 32 bits.
-  loop_end = min (primes_per_thread, sieving64KCrossover + 1);
+  loop_end = MIN (primes_per_thread, sieving64KCrossover + 1);
   for ( ; i < primesNotSieved + primesHandledWithSpecialCode + loop_end * threadsPerBlock; i += threadsPerBlock, pinfo += threadsPerBlock * 12) {
     row[0] = (cl_uint)(pinfo - saveptr);      // Offset to first pinfo byte in the row
     row[MAX_PRIMES_PER_THREAD] = i;      // First pinfo entry is for the i-th prime number
@@ -372,7 +372,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 
   // In this section (transitioning to dense primes storage) we store bit-to-clr 32 bits, pinv in 32 bits, and p in 32 bits.
   if (primes_per_thread > sieving64KCrossover + 1) {
-    loop_count = min (primes_per_thread, sieving128KCrossover + 1) - (sieving64KCrossover + 1);
+    loop_count = MIN (primes_per_thread, sieving128KCrossover + 1) - (sieving64KCrossover + 1);
     row[0] = (cl_uint)(pinfo - saveptr);      // Offset to first pinfo byte in the row
     row[MAX_PRIMES_PER_THREAD] = i;      // First pinfo entry is for the i-th prime number
     row[MAX_PRIMES_PER_THREAD*2] = loop_count;  // Pinfo entries skip loop_count prime numbers
@@ -422,7 +422,7 @@ int gpusieve_init (mystuff_t *mystuff, cl_context context)
 
   // In this section (first complete row of primes above 128K) we store bit-to-clr 32 bits, pinv in 32 bits, and p in 32-bits.
   if (primes_per_thread > sieving128KCrossover + 1) {
-    loop_count = min (primes_per_thread, sieving1MCrossover) - (sieving128KCrossover + 1);
+    loop_count = MIN (primes_per_thread, sieving1MCrossover) - (sieving128KCrossover + 1);
     row[0] = (cl_uint)(pinfo - saveptr);      // Offset to first pinfo byte in the row
     row[MAX_PRIMES_PER_THREAD] = i;      // First pinfo entry is for the i-th prime number
     row[MAX_PRIMES_PER_THREAD*2] = loop_count;  // Pinfo entries skip loop_count prime numbers
