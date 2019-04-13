@@ -28,10 +28,12 @@ Contents
 1   Compilation
 1.1 Compilation (Linux)
 1.2 Compilation (Windows)
+1.3 Compilation (macOS)
 2   Running mfakto
 2.1 Supported GPUs
 2.2 Running mfakto (Linux)
 2.3 Running mfakto (Windows)
+2.4 Running mfakto (macOS)
 3   Howto get work and report results from/to the primenet server
 4   Known issues
 4.1 Stuff that looks like an issue but actually isn't an issue
@@ -79,6 +81,14 @@ mfakto is a GPU program, utilizing mostly GPU resources, but it can use the CPU 
 - Use the VS2010 solution to build the 32-bit or 64-bit binary, or
 - use the Makefile to build using MinGW and gcc
 
+
+###########################
+# 1.3 Compilation (macOS) #
+###########################
+
+- cd src
+- make -f Makefile.macOS
+- mfakto should build without errors
 
 ####################
 # 2 Running mfakto #
@@ -146,6 +156,12 @@ prime95 or mfakto -d c).
   language, e.g.
   http://www.microsoft.com/downloads/details.aspx?familyid=BD512D9E-43C8-4655-81BF-9350143D5867&displaylang=de
 - 64-bit and 32-bit binaries are available.
+
+##############################
+# 2.4 Running mfakto (macOS) #
+##############################
+
+- mfakto should run out of the box as macOS contains a native OpenCL implementation
 
 ####################################################################
 # 3 How to get work and report results from/to the primenet server #
