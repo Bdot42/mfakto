@@ -19,7 +19,11 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #ifndef __MY_TYPES_H
 #define __MY_TYPES_H
 #include "params.h"
-#include "CL/cl.h"
+#if defined(__APPLE__) || defined(__MACOSX)
+  #include "OpenCL/cl.h"
+#else
+  #include "CL/cl.h"
+#endif
 
 /* 60bit (4x 15bit) integer
 D=d0 + d1*(2^15) + d2*(2^30) ... */

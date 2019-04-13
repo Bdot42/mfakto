@@ -29,7 +29,11 @@ See (http://www.mersenneforum.org/showthread.php?t=11900) for Ben's initial work
 */
 
 #include <cstdlib>
-#include "CL/cl.h"
+#if defined(__APPLE__) || defined(__MACOSX)
+  #include "OpenCL/cl.h"
+#else
+  #include "CL/cl.h"
+#endif
 #include <iostream>
 #include <string.h>
 #include <stdio.h>

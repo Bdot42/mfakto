@@ -22,7 +22,11 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <fstream>
 #include "string.h"
-#include "CL/cl.h"
+#if defined(__APPLE__) || defined(__MACOSX)
+  #include "OpenCL/cl.h"
+#else
+  #include "CL/cl.h"
+#endif
 #include "params.h"
 #include "my_types.h"
 #include "compatibility.h"

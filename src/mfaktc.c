@@ -1183,11 +1183,13 @@ int main(int argc, char **argv)
     // no need to do this if we're sieving on the GPU
     if (mystuff.cpu_mask)
     {
-#if defined _MSC_VER || __MINGW32__ || __CYGWIN__ // might be best just doing as _WIN32
-      SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
-#else
+#if !defined __APPLE__
+  #if defined _MSC_VER || __MINGW32__ || __CYGWIN__ || // might be best just doing as _WIN32
+        SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
+  #else
 
-      sched_setaffinity(0, sizeof(mystuff.cpu_mask), (cpu_set_t *)&(mystuff.cpu_mask));
+        sched_setaffinity(0, sizeof(mystuff.cpu_mask), (cpu_set_t *)&(mystuff.cpu_mask));
+  #endif
 #endif
     }
 #ifdef SIEVE_SIZE_LIMIT
