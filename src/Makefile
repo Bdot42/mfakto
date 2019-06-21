@@ -43,7 +43,11 @@ endif
 
 
 # where is the AMD_APP Toolkit installed?
-AMD_APP_DIR = /opt/AMDAPP
+
+# Change needed for compilation with amdgpu-pro
+# AMD_APP_DIR = /opt/amdgpu-pro/opencl
+
+AMD_APP_DIR = /opt/rocm/opencl
 AMD_APP_INCLUDE = -I$(AMD_APP_DIR)/include
 AMD_APP_LIB = -L$(AMD_APP_DIR)/lib/$(BITS)
 

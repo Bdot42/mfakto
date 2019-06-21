@@ -22,7 +22,11 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <fstream>
 #include "string.h"
-#include "CL/cl.h"
+#if defined(__APPLE__) || defined(__MACOSX)
+  #include "OpenCL/cl.h"
+#else
+  #include "CL/cl.h"
+#endif
 #include "params.h"
 #include "my_types.h"
 #include "compatibility.h"
@@ -90,7 +94,7 @@ int init_perftest(int devicenumber)
 //  i = (cl_uint)deviceinfo.maxThreadsPerBlock * deviceinfo.units * mystuff.vectorsize;
   i = 2048;
   while( (i * 2) <= mystuff.threads_per_grid_max) i = i * 2;
-  mystuff.threads_per_grid = min(i, (cl_uint)deviceinfo.maxThreadsPerGrid);
+  mystuff.threads_per_grid = MIN(i, (cl_uint)deviceinfo.maxThreadsPerGrid);
 
   set_gpu_type();
   load_kernels(&devicenumber);
@@ -309,8 +313,8 @@ Sieved out:   63.63%  65.94%  67.95%  69.73%  71.31%  72.72%  74.00%  75.16%  76
   printf("SievePrimes:");
   for(ii=0; ii<nsp; ii++)
   {
-    sprimes[ii] = min(sprimes[ii], 1000000);
-    sprimes[ii] = max(sprimes[ii], 254);
+    sprimes[ii] = MIN(sprimes[ii], 1000000);
+    sprimes[ii] = MAX(sprimes[ii], 254);
     printf(" %7u", sprimes[ii]);
   }
   printf("\nSieveSizeLimit");
@@ -531,7 +535,7 @@ int test_copy(cl_uint par)
 
 //      printf("     %lld ns (%lld - %lld)\n", endTime-startTime, endTime, startTime);
       time2 += (double)(endTime-startTime);
-      best = min(best, endTime-startTime);
+      best = MIN(best, endTime-startTime);
     }
   }
   printf("\n  Standard copy, profiled queue:\n%8d MB in %6.1f ms (%6.1f MB/s) (real)\n",
@@ -735,8 +739,8 @@ int test_gpu_sieve(cl_uint par)
   printf("GPU sieve raw rate (input rate M/s)\nSievePrimes: ");
   for(ii=0; ii<nsp; ii++)
   {
-    sprimes[ii] = min(sprimes[ii], GPU_SIEVE_PRIMES_MAX);
-    sprimes[ii] = max(sprimes[ii], 54);
+    sprimes[ii] = MIN(sprimes[ii], GPU_SIEVE_PRIMES_MAX);
+    sprimes[ii] = MAX(sprimes[ii], 54);
     printf(" %7u", sprimes[ii]);
   }
   printf("\nGPUSieveSize  ");
