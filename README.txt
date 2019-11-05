@@ -24,22 +24,23 @@ Bdot
 
 Contents
 
-0   What is mfakto?
-1   Compilation
-1.1 Compilation (Linux)
-1.2 Compilation (Windows)
-1.3 Compilation (macOS)
-2   Running mfakto
-2.1 Supported GPUs
-2.2 Running mfakto (Linux)
-2.3 Running mfakto (Windows)
-2.4 Running mfakto (macOS)
-3   Howto get work and report results from/to the primenet server
-4   Known issues
-4.1 Stuff that looks like an issue but actually isn't an issue
-5   Tuning
-6   FAQ
-7   Plans
+0      What is mfakto?
+1      Compilation
+1.1    Compilation (Linux)
+1.2.1  Compilation (Windows/MSVC)
+1.2.2  Compilation (Windows/MSYS2)
+1.3    Compilation (macOS)
+2      Running mfakto
+2.1    Supported GPUs
+2.2    Running mfakto (Linux)
+2.3    Running mfakto (Windows)
+2.4    Running mfakto (macOS)
+3      Howto get work and report results from/to the primenet server
+4      Known issues
+4.1    Stuff that looks like an issue but actually isn't an issue
+5      Tuning
+6      FAQ
+7      Plans
 
 
 
@@ -67,20 +68,33 @@ mfakto is a GPU program, utilizing mostly GPU resources, but it can use the CPU 
 # 1.1 Compilation (Linux) #
 ###########################
 
+- NOTE: As of date AMD APP SDK is not available for download atleast for linux - it is reccomended to use ROCm when compiling
+
 - Install AMD APP SDK >= 2.5
 - cd src
 - Set AMD_APP_DIR in Makefile to the SDK's location if not installed in the default location.
 - make
 - mfakto should be compiled assuming no errors, in the root folder of mfakto.
 
-#############################
-# 1.2 Compilation (Windows) #
-#############################
+####################################
+# 1.2.1 Compilation (Windows/MSVC) #
+####################################
 
-- Install AMD APP SDK >= 2.5
+- Install AMD APP SDK >= 2.5 located here: https://community.amd.com/thread/227948
 - Use the VS2010 solution to build the 32-bit or 64-bit binary, or
-- use the Makefile to build using MinGW and gcc
 
+#####################################
+# 1.2.2 Compilation (Windows/MSYS2) #
+#####################################
+
+- Download the AMD APP SDK located here: https://community.amd.com/thread/227948
+- Copy the contents of C:\Program Files (x86)\AMD APP SDK\3.0 to C:\MSYS2\opt\AMDAPP
+- Install MSYS2 and follow instructions on homepage to update
+- Install required packages by running: pacman -S mingw-w64-x86_64-gcc make
+- Extract the source code to /home/(your username) (C:\msys62\home\Main\mfakto as an example)
+- Change "AMD_APP_DIR = /opt/rocm/opencl" in the Makefile under the src folder to "AMD_APP_DIR = /opt/AMDAPP"
+- Launch the MINGW (64/32bit) shell and cd to the src directory
+- Run make and cross your fingers
 
 ###########################
 # 1.3 Compilation (macOS) #
