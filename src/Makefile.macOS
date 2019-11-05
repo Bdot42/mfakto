@@ -26,6 +26,8 @@
 #
 # export SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
 
+BITFLAG := -m64
+
 # Compiler settings for .c files (CPU)
 CC = gcc
 CPP = $(CC)
@@ -36,7 +38,7 @@ OPENCLC=/System/Library/Frameworks/OpenCL.framework/Libraries/openclc
 
 # Linker
 LD = g++
-LDFLAGS = $(BITFLAG) $(STATIC)
+LDFLAGS = $(BITFLAG)
 
 ##############################################################################
 
