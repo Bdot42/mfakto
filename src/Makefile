@@ -18,8 +18,8 @@
 # Version 0.15
 #
 #
-# Example: "make -j [n] bitness=32 static=yes" to compile for 32 bits and link
-# statically using n threads
+# Example: "make bitness=32 static=yes" to compile for 32 bits and link
+#          statically
 
 # Check if bitness requested, set x86_64(64bit) as default
 BITS := x86_64

@@ -18,35 +18,13 @@
 # Version 0.15
 #
 #
-# Example: "make -j [n] -f Makefile.macOS bitness=32 static=yes" to compile
-# for 32 bits and link statically using n threads
+# Run "make -f Makefile.macOS" to compile mfakto for macOS
 
 # Users may see an "out of sync" warning when compiling mfakto. Although
 # harmless, the warning can be resolved by running the following command prior
 # to compilation:
 #
 # export SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-
-# Check if bitness requested, set x86_64(64bit) as default
-BITS := x86_64
-BITFLAG := -m64
-ifdef bitness
-  ifeq ($(bitness), 32)
-    BITFLAG := -m32
-    BITS := x86
-  endif
-  ifeq ($(bitness), 64)
-    BITFLAG := -m64
-    BITS := x86_64
-  endif
-endif
-
-# Check if building statically was requested
-ifdef static
-  ifeq ($(static), yes)
-    STATIC := -static
-  endif
-endif
 
 # Compiler settings for .c files (CPU)
 CC = gcc
