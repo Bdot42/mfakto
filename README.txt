@@ -26,22 +26,21 @@ Contents
 
 0      What is mfakto?
 1      Compilation
-1.1    Compilation (Linux)
-1.2.1  Compilation (Windows/MSVC)
-1.2.2  Compilation (Windows/MSYS2)
-1.3    Compilation (macOS)
+1.1    Linux
+1.2.1  Windows: MSVC
+1.2.2  Windows: MinGW
+1.3    macOS
 2      Running mfakto
 2.1    Supported GPUs
-2.2    Running mfakto (Linux)
-2.3    Running mfakto (Windows)
-2.4    Running mfakto (macOS)
+2.2    Linux
+2.3    Windows
+2.4    macOS
 3      Howto get work and report results from/to the primenet server
 4      Known issues
 4.1    Stuff that looks like an issue but actually isn't an issue
 5      Tuning
 6      FAQ
 7      Plans
-
 
 
 #####################
@@ -59,58 +58,107 @@ mfakto is a GPU program, utilizing mostly GPU resources, but it can use the CPU 
 # 1 Compilation #
 #################
 
-  Requires:
-- AMD APP SDK 2.5 or above is required.
-- A C and C++ compiler, MSVC, GCC, etc depending on your system.
+General requirements:
+- C and C++ development tools
+- an OpenCL SDK
 
+Please note: the AMD APP SDK has been discontinued. If you still decide to use
+it to compile mfakto, make sure you have version 2.5 or later. You can download
+the AMD APP SDK here: https://community.amd.com/thread/227948
 
-###########################
-# 1.1 Compilation (Linux) #
-###########################
+#############
+# 1.1 Linux #
+#############
 
-- NOTE: As of date AMD APP SDK is not available for download atleast for linux - it is reccomended to use ROCm when compiling
+Requires:
+- ROCm
 
-- Install AMD APP SDK >= 2.5
+Steps:
+- install ROCm
+- navigate to the mfakto folder
 - cd src
-- Set AMD_APP_DIR in Makefile to the SDK's location if not installed in the default location.
+- verify that the AMD_APP_DIR variable in the makefile points to the SDK
+  installation directory
 - make
-- mfakto should be compiled assuming no errors, in the root folder of mfakto.
+- mfakto should compile without errors in its root folder
 
-####################################
-# 1.2.1 Compilation (Windows/MSVC) #
-####################################
+#######################
+# 1.2.1 Windows: MSVC #
+#######################
 
-- Install AMD APP SDK >= 2.5 located here: https://community.amd.com/thread/227948
-- Use the VS2010 solution to build the 32-bit or 64-bit binary, or
+Requires:
+- Microsoft Visual Studio 2012
+- GPUOpen OpenCL SDK
 
-#####################################
-# 1.2.2 Compilation (Windows/MSYS2) #
-#####################################
+Steps:
+- install the GPUOpen OpenCL SDK
+- open mfaktoVS12.sln in Visual Studio. For later versions, you will need to
+  retarget the solution by right-clicking it and selecting Retarget Projects.
+- right-click the project and select Properties
+- go to C/C++ > General > Additional Include Directories and add the path to
+  the OpenCL headers:
 
-- Download the AMD APP SDK located here: https://community.amd.com/thread/227948
-- Copy the contents of C:\Program Files (x86)\AMD APP SDK\3.0 to C:\MSYS2\opt\AMDAPP
-- Install MSYS2 and follow instructions on homepage to update
-- Install required packages by running: pacman -S mingw-w64-x86_64-gcc make
-- Extract the source code to /home/(your username) (C:\msys62\home\Main\mfakto as an example)
-- Change "AMD_APP_DIR = /opt/rocm/opencl" in the Makefile under the src folder to "AMD_APP_DIR = /opt/AMDAPP"
-- Launch the MINGW (64/32bit) shell and cd to the src directory
-- Run make and cross your fingers
+      %OCL_ROOT%\include
 
-###########################
-# 1.3 Compilation (macOS) #
-###########################
+- then go to Linker > General > Additional Library Directories and add the path
+  to the appropriate library folder:
+
+      32-bit -> %OCL_ROOT%\lib\x86
+      64-bit -> %OCL_ROOT%\lib\x86_64
+
+- select Build > Build Solution to compile mfakto
+
+########################
+# 1.2.2 Windows: MinGW #
+########################
+
+Requires:
+- MinGW
+- GPUOpen OpenCL SDK
+- optional: MSYS2
+
+Steps:
+- install the GPUOpen OpenCL SDK
+- add the "bin" folder in the MinGW directory to your system Path variable
+- verify that the AMD_APP_DIR variable in the makefile points to the SDK
+  installation directory - see note
+
+Using only MinGW:
+- navigate to the mfakto folder
+- cd src
+- mingw32-make
+
+Using MSYS2:
+- install MSYS2 using the instructions at the home page: https://www.msys2.org
+- launch the MSYS2 shell and install the required packages:
+
+      pacman -S mingw-w64-x86_64-gcc make
+
+- launch the 32-bit or 64-bit MinGW shell and navigate to the mfakto folder
+- cd src
+- make (cross your fingers)
+
+Important note: make does not support spaces in file names. If your OpenCl SDK
+installation directory contains spaces, then you will need to either create a
+symbolic link or copy the files to another folder.
+
+#############
+# 1.3 macOS #
+#############
 
 - cd src
 - make -f Makefile.macOS
-- mfakto should build without errors
+- mfakto should compile out of the box as macOS contains a native OpenCL
+  implementation
 
 ####################
 # 2 Running mfakto #
 ####################
 
-  Requirements:
-- AMD Catalyst driver, version >= 11.4
-- AMD APP SDK version >= 2.5 (not required for Catalyst 11.10 or above)
+General requirements:
+- AMD Catalyst 11.4 or higher
+- AMD APP SDK 2.5 unless Catalyst 11.10 is installed. It is recommended to
+  update Catalyst as the AMD APP SDK has been discontinued.
 
 Open a command shell and run 'mfakto -h' in the mfakto folder for parameters it accepts.
 You may also want to check mfakto.ini for changing and tweaking mfakto.
@@ -122,7 +170,7 @@ Please run the built-in selftest (mfakto -st) each time you've:
 - Changed the graphics driver
 - Changed your hardware
 
-worktodo.txt example: 
+worktodo.txt example:
 -- cut here --
 Factor=bla,66362159,64,68
 Factor=bla,3321932839,50,61
@@ -144,38 +192,44 @@ M3321932839 from 2^50 to 2^61.
 - not supported: (kernel compilation fails): HD2xxx, HD3xxx, FireStream 91xx
 
 * without atomics, reporting multiple factors found in the same block/grid
-will not work. Tests showed that only one of the factors will be reported, 
+will not work. Tests showed that only one of the factors will be reported,
 but theoretically it could happen that even the reported factor is incorrect
 (due to consisting of a mix of bytes of multiple factors). In cases when
 mfakto reports a factor but the factor is incorrect (rejected by primenet),
 please rerun the test of the exponent and the bitlevel on the CPU (e.g.
 prime95 or mfakto -d c).
 
-##############################
-# 2.2 Running mfakto (Linux) #
-##############################
+#############
+# 2.2 Linux #
+#############
 
-- AMD APP SDK 2.5 or higher and Catalyst 11.4 or higher is required
 - run mfakto
 - precompiled version is currently only available for 64-bit (built on SuSE 11.4)
 
-################################
-# 2.3 Running mfakto (Windows) #
-################################
+###############
+# 2.3 Windows #
+###############
 
 - AMD Catalyst 11.4 or higher is required
-- if driver < 11.10, install AMD APP SDK 2.5 and make sure
-  %AMD_APP_DIR%/lib/x86_64 is in the path.
+- AMD APP SDK 2.5 is also required unless Catalyst 11.10 is installed. It is
+  recommended to update Catalyst as the AMD APP SDK has been discontinued.
+- users with an older version should make sure the path to the appropriate
+  library folder is included in the system Path variable:
+
+      32-bit -> %AMD_APP_DIR%/lib/x86
+      64-bit -> %AMD_APP_DIR%/lib/x86_64
+
 - Microsoft Visual C++ 2010 Redistributable Package for your platform and
   language, e.g.
   http://www.microsoft.com/downloads/details.aspx?familyid=BD512D9E-43C8-4655-81BF-9350143D5867&displaylang=de
 - 64-bit and 32-bit binaries are available.
 
-##############################
-# 2.4 Running mfakto (macOS) #
-##############################
+#############
+# 2.4 macOS #
+#############
 
-- mfakto should run out of the box as macOS contains a native OpenCL implementation
+- build mfakto using the above instructions
+- mfakto should run without any additional software
 
 ####################################################################
 # 3 How to get work and report results from/to the primenet server #
@@ -240,8 +294,8 @@ Advanced usage (extend the upper limit):
   is not accessible. It happens on Windows when not connected to the primay
   display (e.g. being connected through terminal services). So please try to
   run mfakto locally on the main X-display. If that fails as well or is not the case,
-  then the graphics driver may be too old. Also, check the output of clinfo (part of AMD APP SDK)
-  for your GPU. If the drivers and AMD APP SDK are up to date, then maybe
+  then the graphics driver may be too old. Also, check the output of clinfo
+  for your GPU. If the drivers are up to date, then maybe
   your AMD GPU is not the first GPU. Try the -d switch to specify a different
   device number.
 
@@ -288,7 +342,7 @@ Q Can I run multiple instances of mfakto on the same computer?
 A Yes, and in most cases this is necessary to make full use of the GPU(s) if sieving with CPU.
   If the sieve is running on the GPU(default), one instance should fully utilize
   a single GPU.
-  
+
 Q Which tasks should I assign to mfakto?
 A Currently, the 73-bit-barrett kernel is the fastest one, working for factors
   from 60 bits to 73 bits. Selecting tasks for this kernel will give best

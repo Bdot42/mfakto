@@ -1316,7 +1316,7 @@ int test_tf_kernels(cl_uint par, int devicenumber)
       test_cpu_tf_kernels((cl_uint) par);
       if (mystuff.quit) break;
     }
-    printf("\nNote, the calculated GHz-days/day assume sufficiently fast CPU sieve with SievePrimes=%u.\n", mystuff.sieve_primes);  
+    printf("\nNote, the calculated GHz-days/day assume sufficiently fast CPU sieve with SievePrimes=%u.\n", mystuff.sieve_primes);
   }
 
   return 0;
@@ -1738,7 +1738,7 @@ void CL_test(cl_int devnumber)
   }
   else
   {
-    std::cerr << "\nKernel file \""KERNEL_FILE"\" not found, it needs to be in the same directory as the executable.\n";
+    std::cerr << "\nKernel file \"" KERNEL_FILE "\" not found, it needs to be in the same directory as the executable.\n";
   }
 
   program = clCreateProgramWithSource(context, 1, (const char **)&source, &size, &status);
@@ -2064,4 +2064,3 @@ if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
 #ifdef __cplusplus
 }
 #endif
-
