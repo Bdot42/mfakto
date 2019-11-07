@@ -20,7 +20,8 @@ version 0.14 (2014-04-17)
 - slight performance improvement for the montgomery kernels
 - improved English wording in program output, ini file etc. (thanks to kracker)
 - recognition of new GPUs (8xxx, R9, new APUs) (thanks to kracker)
-- added a warning when using VectorSize=1 (AMD driver issue (?), http://devgurus.amd.com/thread/167571)
+- added a warning when using VectorSize=1 (possible AMD driver issue, see
+  https://community.amd.com/thread/167571)
 - fix for a small memory leak (~0.5kB per assignment)
 - compatible with windows 8.1
 
@@ -76,8 +77,7 @@ version 0.11 (2012-05-21)
 - new SievePrimesMin ini-file variable to replace the so-far fix
   value of 5000
 - new V5UserID and ComputerID ini-file variables that let you configure
-  these ID's for the results file output (so far only useful for
-	mersenne-aries.sili.net)
+  these ID's for the results file output (so far only useful for mersenne.ca)
 - new TimeStampInResults ini-file variable allows to configure that each
   output line in the results file should be preceded by a time stamp
 - new ProgressHeader and PrintFormat ini-file variables to adapt the

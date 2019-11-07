@@ -682,7 +682,7 @@ void set_gpu_type()
   {
     printf("WARNING: VectorSize=1 is known to fail on AMD GPUs and drivers. "
            "If the selftest fails, please increase VectorSize to 2 at least. "
-           "See http://devgurus.amd.com/thread/167571 for latest news about this issue.");
+           "See http://community.amd.com/thread/167571 for latest news about this issue.");
   }
 
   if (((mystuff.gpu_type >= GPU_GCN) && (mystuff.gpu_type <= GPU_GCN3)) && (mystuff.vectorsize > 3))
@@ -708,7 +708,7 @@ void set_gpu_type()
     printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
   }
 }
-  
+
 /*
  * load_kernels
  * compile cl files or load the precompiled binary, and load all kernels
