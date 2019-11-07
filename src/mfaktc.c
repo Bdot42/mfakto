@@ -924,6 +924,7 @@ int main(int argc, char **argv)
   mystuff.mode = MODE_NORMAL;
   mystuff.quit = 0;
   mystuff.verbosity = 1;
+  mystuff.override_v = 0;
   mystuff.bit_min = -1;
   mystuff.bit_max_assignment = -1;
   mystuff.bit_max_stage = -1;
@@ -966,6 +967,7 @@ int main(int argc, char **argv)
       }
 
       mystuff.verbosity = tmp;
+      mystuff.override_v = 1;
     }
     else if(!strcmp((char*)"-d", argv[i]))
     {
