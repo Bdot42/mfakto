@@ -1,4 +1,5 @@
 version 0.15 (...)
+- fixed an issue where verbosity was not passed to valid_assignment()
 - removed dependency on AMD APP SDK as it has been discontinued
 - updated Windows build instructions and fixed some errors
 - mfakto now compiles and runs on macOS
