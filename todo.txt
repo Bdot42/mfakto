@@ -5,7 +5,7 @@ Test-DONE
 - __local tmps instead of res->... intermediates?  - no effect -
 - inline small functions (automatically done)
 - divergent branches (bad, bad, bad)
-- select vs. "... ? ... : ..." 
+- select vs. "... ? ... : ..."
 + 3x24-bit kernel
 - ((x<<8)>>8) instead of (x&0xFFFFFF)   (found in the forum) : no difference at all!
 + loop-unroll: OK, 64-loop in mod: unrolled 10% faster on GPU, no (big) change on CPU
@@ -123,6 +123,7 @@ TODO
 +DONE+ allow for kernel reload (e.g. different vector size, or -DSMALL_EXP)
 +DONE+ Split device detection from kernel compilation to make use of device's capabilities
 +DONE+ correct GHzDays prediction for factors found
++DONE+ Complete instructions on building on Windows (VS and MinGW)
 1 copy small exp handling from mfaktc
 1 find out why 0.13/0.14 were faster for some kernels
 2 build test kernels to auto-detect DP vs. SP and mul24 vs. mul32 performance
@@ -141,11 +142,9 @@ TODO
 4 kernel trace more specific (bitmask)
 4 error handling: RES[0] -= 100; save up to 3 ints in RES; only in single-vec
 4 clGetKernelWorkGroupInfo in load kernels: preferred size, local mem
-4 Complete instuctions on building on Windows(VS and MinGW)
 5 div/mul-modulo for 96 bits
 5 cleanup: separate GPU- and CPU-sieve based kernels, compile and load only one set of them
 5 repunit
 
 OpenCL 2.0 (per #ifdef): clCreateCommandQueueWithProperties instead of clCreateCommandQueue: use device queue: requires out-of-order queues: need events
 merge mfaktc changes: small exps: should correct failing test
-
