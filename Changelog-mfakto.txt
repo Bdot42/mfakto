@@ -1,4 +1,5 @@
 version 0.15 (...)
+- added detection for more devices
 - fixed an issue where verbosity was not passed to valid_assignment()
 - removed dependency on AMD APP SDK as it has been discontinued
 - updated Windows build instructions and fixed some errors
@@ -21,7 +22,7 @@ version 0.14 (2014-04-17)
 - improved English wording in program output, ini file etc. (thanks to kracker)
 - recognition of new GPUs (8xxx, R9, new APUs) (thanks to kracker)
 - added a warning when using VectorSize=1 (possible AMD driver issue, see
-  https://community.amd.com/thread/167571)
+  https://community.amd.com/thread/167571 for details)
 - fix for a small memory leak (~0.5kB per assignment)
 - compatible with windows 8.1
 
