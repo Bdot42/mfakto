@@ -92,9 +92,11 @@ Requires:
 
 Steps:
 - install the GPUOpen OpenCL SDK
-- open mfaktoVS12.sln in Visual Studio. For later versions, you will need to
-  retarget the solution by right-clicking it and selecting Retarget Projects.
-- right-click the project and select Properties
+- launch Visual Studio and open the mfaktoVS12.sln file. You can use a later
+  version as Visual Studio will automatically convert your projects. If the
+  option does not appear, then right-click the solution and select "Retarget
+  solution" from the menu.
+- open the project properties and select the configuration and platform
 - go to C/C++ > General > Additional Include Directories and add the path to
   the OpenCL headers:
 
@@ -117,18 +119,18 @@ Requires:
 - GPUOpen OpenCL SDK
 - optional: MSYS2
 
-Steps:
+Initial steps:
 - install the GPUOpen OpenCL SDK
 - add the "bin" folder in the MinGW directory to your system Path variable
 - verify that the AMD_APP_DIR variable in the makefile points to the SDK
-  installation directory - see note
+  installation directory (see note)
 
-Using only MinGW:
+MinGW can be used with or without MSYS to compile mfakto. In the former case:
 - navigate to the mfakto folder
 - cd src
 - mingw32-make
 
-Using MSYS2:
+Otherwise:
 - install MSYS2 using the instructions at the home page: https://www.msys2.org
 - launch the MSYS2 shell and install the required packages:
 
@@ -138,7 +140,7 @@ Using MSYS2:
 - cd src
 - make (cross your fingers)
 
-Important note: make does not support spaces in file names. If your OpenCl SDK
+Important note: make does not support spaces in file names. If your OpenCL SDK
 installation directory contains spaces, then you will need to either create a
 symbolic link or copy the files to another folder.
 
@@ -146,6 +148,10 @@ symbolic link or copy the files to another folder.
 # 1.3 macOS #
 #############
 
+Requires:
+- Command Line Tools
+
+Steps:
 - cd src
 - make -f Makefile.macOS
 - mfakto should compile out of the box as macOS contains a native OpenCL
@@ -156,9 +162,9 @@ symbolic link or copy the files to another folder.
 ####################
 
 General requirements:
-- AMD Catalyst 11.4 or higher
-- AMD APP SDK 2.5 unless Catalyst 11.10 is installed. It is recommended to
-  update Catalyst as the AMD APP SDK has been discontinued.
+- AMD Catalyst 11.4 or higher. It is recommended to use 11.10 or above as the
+  AMD APP SDK has been discontinued.
+- AMD APP SDK 2.5 or higher (not needed for Catalyst 11.10 or above)
 
 Open a command shell and run 'mfakto -h' in the mfakto folder for parameters it accepts.
 You may also want to check mfakto.ini for changing and tweaking mfakto.
@@ -210,14 +216,14 @@ prime95 or mfakto -d c).
 # 2.3 Windows #
 ###############
 
-- AMD Catalyst 11.4 or higher is required
-- AMD APP SDK 2.5 is also required unless Catalyst 11.10 is installed. It is
-  recommended to update Catalyst as the AMD APP SDK has been discontinued.
+- AMD Catalyst 11.4 is the minimum required version. It is recommended to use
+  11.10 or above as the AMD APP SDK has been discontinued.
+- AMD APP SDK 2.5 or higher (not needed for Catalyst 11.10 or above)
 - users with an older version should make sure the path to the appropriate
   library folder is included in the system Path variable:
 
-      32-bit -> %AMD_APP_DIR%/lib/x86
-      64-bit -> %AMD_APP_DIR%/lib/x86_64
+      32-bit -> %AMDAPPSDKROOT%\lib\x86
+      64-bit -> %AMDAPPSDKROOT%\lib\x86_64
 
 - Microsoft Visual C++ 2010 Redistributable Package for your platform and
   language, e.g.
@@ -266,7 +272,6 @@ Advanced usage (extend the upper limit):
     When you increase the upper limit of your assignments it is important to
     report the results once you've finished up to the desired level. (Do not
     report partially results before!)
-
 
 
 ##################
@@ -326,7 +331,6 @@ Advanced usage (extend the upper limit):
 ############
 
 Read mfakto.ini and think before editing. ;)
-
 
 
 #########

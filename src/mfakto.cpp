@@ -597,8 +597,11 @@ void set_gpu_type()
         strstr(deviceinfo.d_name, "Neptune")    ||    // 8970M, 8990M
         strstr(deviceinfo.d_name, "Curacao")    ||    // R9 265, R9 270, R9 270X
         strstr(deviceinfo.d_name, "Tonga")      ||    // R9 285
-        strstr(deviceinfo.d_name, "Hainan")      ||    // R9 285
-        strstr(deviceinfo.d_name, "Kalindi")          // GCN APU, Kabini, R7 ???
+        strstr(deviceinfo.d_name, "Hainan")     ||    // R9 285
+        strstr(deviceinfo.d_name, "Kalindi")    ||    // GCN APU, Kabini, R7 ???
+        strstr(deviceinfo.d_name, "D300")       ||    // FirePro D-series
+        strstr(deviceinfo.d_name, "D500")       ||
+        strstr(deviceinfo.d_name, "D700")
         )
     {
       mystuff.gpu_type = GPU_GCN;
@@ -682,7 +685,7 @@ void set_gpu_type()
   {
     printf("WARNING: VectorSize=1 is known to fail on AMD GPUs and drivers. "
            "If the selftest fails, please increase VectorSize to 2 at least. "
-           "See http://devgurus.amd.com/thread/167571 for latest news about this issue.");
+           "See http://community.amd.com/thread/167571 for latest news about this issue.");
   }
 
   if (((mystuff.gpu_type >= GPU_GCN) && (mystuff.gpu_type <= GPU_GCN3)) && (mystuff.vectorsize > 3))
@@ -708,7 +711,7 @@ void set_gpu_type()
     printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
   }
 }
-  
+
 /*
  * load_kernels
  * compile cl files or load the precompiled binary, and load all kernels

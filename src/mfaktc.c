@@ -923,13 +923,16 @@ int main(int argc, char **argv)
 
   mystuff.mode = MODE_NORMAL;
   mystuff.quit = 0;
-  mystuff.verbosity = -1;
+  mystuff.verbosity = 1;
+  mystuff.override_v = 0;
   mystuff.bit_min = -1;
   mystuff.bit_max_assignment = -1;
   mystuff.bit_max_stage = -1;
   mystuff.gpu_sieving = 0;
-  mystuff.gpu_sieve_size = GPU_SIEVE_SIZE_DEFAULT * 1024 * 1024;		/* Size (in bits) of the GPU sieve.  Default is 64M bits. */
-  mystuff.gpu_sieve_processing_size = GPU_SIEVE_PROCESS_SIZE_DEFAULT * 1024;	/* Default to 16K bits processed by each block in a Barrett kernel. */
+  /* GPU sieve size in bits. Default is 64 Mib. */
+  mystuff.gpu_sieve_size = GPU_SIEVE_SIZE_DEFAULT * 1024 * 1024;
+  /* Default to 16 Kib processed by each block in a Barrett kernel. */
+  mystuff.gpu_sieve_processing_size = GPU_SIEVE_PROCESS_SIZE_DEFAULT * 1024;
   strcpy(mystuff.inifile, "mfakto.ini");
   mystuff.force_rebuild = 0;
 
@@ -964,6 +967,7 @@ int main(int argc, char **argv)
       }
 
       mystuff.verbosity = tmp;
+      mystuff.override_v = 1;
     }
     else if(!strcmp((char*)"-d", argv[i]))
     {
@@ -1014,10 +1018,6 @@ int main(int argc, char **argv)
       if(*ptr || errno || (long)bit_max != strtol(argv[i+3],&ptr,10) )
       {
         printf("ERROR: can't parse parameter <max> for option \"-tf\"\n");
-        return ERR_PARAM;
-      }
-      if(!valid_assignment(exponent, bit_min, bit_max, mystuff.verbosity))
-      {
         return ERR_PARAM;
       }
       use_worktodo = 0;
@@ -1084,6 +1084,15 @@ int main(int argc, char **argv)
       return ERR_PARAM;
     }
     i++;
+  }
+
+  /* hack to allow setting the verbosity level */
+  if (!use_worktodo)
+  {
+    if(!valid_assignment(exponent, bit_min, bit_max, mystuff.verbosity))
+    {
+      return ERR_PARAM;
+    }
   }
 
   read_config(&mystuff);
