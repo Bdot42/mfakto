@@ -225,9 +225,12 @@ prime95 or mfakto -d c).
       32-bit -> %AMDAPPSDKROOT%\lib\x86
       64-bit -> %AMDAPPSDKROOT%\lib\x86_64
 
-- Microsoft Visual C++ 2010 Redistributable Package for your platform and
-  language, e.g.
-  http://www.microsoft.com/downloads/details.aspx?familyid=BD512D9E-43C8-4655-81BF-9350143D5867&displaylang=de
+- you may need the Microsoft Visual C++ 2010 Redistributable Package for your
+  platform and language:
+
+      32-bit -> https://microsoft.com/en-us/download/details.aspx?id=5555
+      64-bit -> https://microsoft.com/en-us/download/details.aspx?id=14632
+      
 - 64-bit and 32-bit binaries are available.
 
 #############
