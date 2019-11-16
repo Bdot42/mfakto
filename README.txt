@@ -51,11 +51,12 @@ Primality tests are computationally intensive, but we can save time by finding
 small factors. GPUs are very efficient at this task due to their parallel
 nature. Only one factor is needed to prove a number composite.
 
-Using a modified Sieve of Eratosthenes, mfakto first generates a list of
-possible factors. It then checks whether any divide a given Mersenne number.
-Although this step is only done on the GPU in practice, mfakto can perform both
-steps on either the CPU or GPU. You can read more about the algorithm at the
-GIMPS website: https://mersenne.org/various/math.php#trial_factoring
+Using a modified Sieve of Eratosthenes, mfakto generates a list of possible
+factors for a given Mersenne number. It then uses modular exponentiation to
+test these factors. Although this step is only done on the GPU in practice,
+mfakto can perform both steps on either the CPU or GPU. You can find more
+details at the GIMPS website:
+https://mersenne.org/various/math.php#trial_factoring
 
 * portmanteau of the English word "factorisation" and the German word
 "Faktorisierung"
@@ -132,7 +133,7 @@ Initial steps:
 - verify that the AMD_APP_DIR variable in the makefile points to the SDK
   installation directory (see note)
 
-MinGW can be used with or without MSYS to compile mfakto. In the former case:
+MinGW can be used with or without MSYS to compile mfakto. In the latter case:
 - navigate to the mfakto folder
 - cd src
 - mingw32-make
@@ -169,9 +170,9 @@ Steps:
 ####################
 
 General requirements:
-- AMD Catalyst 11.4 or higher. It is recommended to use 11.10 or above as the
-  AMD APP SDK has been discontinued.
-- AMD APP SDK 2.5 or higher (not needed for Catalyst 11.10 or above)
+- Linux and Windows: AMD Catalyst 11.4 or higher. It is recommended to use
+  11.10 or above as the AMD APP SDK has been discontinued.
+- otherwise: AMD APP SDK 2.5 or higher
 
 Open a command shell and run 'mfakto -h' in the mfakto folder for parameters it accepts.
 You may also want to check mfakto.ini for changing and tweaking mfakto.
@@ -216,8 +217,8 @@ prime95 or mfakto -d c).
 # 2.2 Linux #
 #############
 
+- build mfakto using the above instructions
 - run mfakto
-- precompiled version is currently only available for 64-bit (built on SuSE 11.4)
 
 ###############
 # 2.3 Windows #
@@ -225,9 +226,8 @@ prime95 or mfakto -d c).
 
 - AMD Catalyst 11.4 is the minimum required version. It is recommended to use
   11.10 or above as the AMD APP SDK has been discontinued.
-- AMD APP SDK 2.5 or higher (not needed for Catalyst 11.10 or above)
-- users with an older version should make sure the path to the appropriate
-  library folder is included in the system Path variable:
+- otherwise: AMD APP SDK 2.5 or higher. In this case, make sure the path to the
+  appropriate library folder is in the system Path variable:
 
       32-bit -> %AMDAPPSDKROOT%\lib\x86
       64-bit -> %AMDAPPSDKROOT%\lib\x86_64
@@ -238,7 +238,7 @@ prime95 or mfakto -d c).
       32-bit -> https://microsoft.com/en-us/download/details.aspx?id=5555
       64-bit -> https://microsoft.com/en-us/download/details.aspx?id=14632
 
-- 64-bit and 32-bit binaries are available.
+- only the 64-bit binary is currently available.
 
 #############
 # 2.4 macOS #
@@ -340,7 +340,8 @@ Advanced usage (extend the upper limit):
 # 5 Tuning #
 ############
 
-Read mfakto.ini and think before editing. ;)
+You can find additional settings in the mfakto.ini file. Read it carefully
+before making changes. ;-)
 
 
 #########
