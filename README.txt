@@ -1,22 +1,17 @@
-Preface for the mfakto-0.15pre5 testing version
+** Preface for mfakto 0.15pre6 **
 
-This version is tested to provide correct results. But it is preliminary as it
-contains test code that results in slightly lower performance. This version is
-intended to provide information to better optimize the final version.
+This is a developmental version of mfakto. It has been verified to produce
+correct results. However, performance has not been optimized and there may be
+bugs and incomplete features. Please help improve mfakto by doing tests,
+providing feedback and reporting issues. Of course, code contributions are
+always welcome too.
 
-To run this test and help improve mfakto, extract the depot and run on an idle machine
+You can get support via the following means:
 
-perftestmfakto.cmd
-
-This test will take between one and two hours, during which you should not use the
-computer - at least nothing that would put measurable load on CPU or GPU.
-
-When the script finished, zip the testresults subfolder that it created and send it
-to me (bertramf@gmx.net).
-
-Thanks for your help,
-Bdot
-
+- the official thread at the GIMPS forum:
+  https://mersenneforum.org/showthread.php?t=15646
+- opening a ticket on GitHub: https://github.com/Bdot42/mfakto/issues
+- contacting Bertram Franz at bertramf@gmx.net
 
 #################
 # mfakto README #
@@ -47,11 +42,23 @@ Contents
 # 0 What is mfakto? #
 #####################
 
-mfakto is the OpenCL-port of mfaktc. It aims to have the same features and functions as mfaktc.
-mfaktc is a program that trial factors Mersenne numbers and which
-stands for "Mersenne FAKTorisation with CUDA". Faktorisation is a mixture of the
-English word "factorisation" and the German word "Faktorisierung".
-mfakto is a GPU program, utilizing mostly GPU resources, but it can use the CPU for sieving.
+mfakto is an OpenCL port of mfaktc that aims to have the same features and
+functions. mfaktc is a program that trial factors Mersenne numbers. It stands
+for "Mersenne faktorisation* with CUDA" and was written for Nvidia GPUs. mfakto
+is used primarily in the Great Internet Mersenne Prime Search.
+
+Primality tests are computationally intensive, but we can save time by finding
+small factors. GPUs are very efficient at this task due to their parallel
+nature. Only one factor is needed to prove a number composite.
+
+Using a modified Sieve of Eratosthenes, mfakto first generates a list of
+possible factors. It then checks whether any divide a given Mersenne number.
+Although this step is only done on the GPU in practice, mfakto can perform both
+steps on either the CPU or GPU. You can read more about the algorithm at the
+GIMPS website: https://mersenne.org/various/math.php#trial_factoring
+
+* portmanteau of the English word "factorisation" and the German word
+"Faktorisierung"
 
 
 #################
@@ -230,7 +237,7 @@ prime95 or mfakto -d c).
 
       32-bit -> https://microsoft.com/en-us/download/details.aspx?id=5555
       64-bit -> https://microsoft.com/en-us/download/details.aspx?id=14632
-      
+
 - 64-bit and 32-bit binaries are available.
 
 #############
