@@ -182,18 +182,18 @@ obtain assignments and report results.
 A typical worktodo.txt file looks like this:
   -- begin example --
   Factor=[...],66362159,64,68
-  Factor=[...],3321932839,50,61
+  Factor=[...],3321932899,76,77
   -- end example --
 
 You can launch mfakto after getting assignments. It should trial factor
-M66362159 from 64 to 68 bits, followed by M3321932839 from 50 to 61 bits.
+M66362159 from 64 to 68 bits, followed by M3321932899 from 76 to 77 bits.
 
 mfakto has a built-in self-test that automatically optimizes parameters. Please
-run 'mfakto -st' each time you've:
-- Recompiled the code
-- Downloaded a new binary from somewhere
-- Changed the graphics driver
-- Changed your hardware
+run 'mfakto -st' each time you:
+- Recompile the code
+- Download a new binary from somewhere
+- Change the graphics driver
+- Change your hardware
 
 ######################
 # 2.1 Supported GPUs #
@@ -366,11 +366,7 @@ Submitting results:
   run mfakto with an upper limit smaller than 2^64. It is designed for trial
   factoring above 2^64 up to 2^92 (factor sizes). ==> mfakto needs
   "long runs"!
-- mfakto can find factors outside the given range.
-  E.g. './mfakto.exe -tf 66362159 40 41' has a high change to report
-  124246422648815633 as a factor. Actually this is a factor of M66362159 but
-  it's size is between 2^56 and 2^57! Of course
-  './mfakto.exe -tf 66362159 56 57' will find this factor, too. The reason
+- mfakto can find factors outside the given range. The reason
   for this behaviour is that mfakto works on huge factor blocks. This is
   controlled by GridSize in mfakto.ini. The default value is 3 which means
   that mfakto runs up to 1048576 factor candidates at once (per class). So
