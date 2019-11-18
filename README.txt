@@ -30,7 +30,7 @@ Contents
 2.2    Linux
 2.3    Windows
 2.4    macOS
-3      Howto get work and report results from/to the primenet server
+3      Getting work and reporting results
 4      Known issues
 4.1    Stuff that looks like an issue but actually isn't an issue
 5      Tuning
@@ -174,25 +174,26 @@ General requirements:
   11.10 or above as the AMD APP SDK has been discontinued.
 - otherwise: AMD APP SDK 2.5 or higher
 
-Open a command shell and run 'mfakto -h' in the mfakto folder for parameters it accepts.
-You may also want to check mfakto.ini for changing and tweaking mfakto.
-Typically you will want to get work from a worktodo file which can be specified in mfakto.ini.
+Open a terminal window and run 'mfakto -h' for possible parameters. You may
+also want to check mfakto.ini for additional settings. mfakto typically fetches
+work from worktodo.txt as specified in the INI file. See section 3 on how to
+obtain assignments and report results.
 
-Please run the built-in selftest (mfakto -st) each time you've:
+A typical worktodo.txt file looks like this:
+  -- begin example --
+  Factor=[...],66362159,64,68
+  Factor=[...],3321932839,50,61
+  -- end example --
+
+You can launch mfakto after getting assignments. It should trial factor
+M66362159 from 64 to 68 bits, followed by M3321932839 from 50 to 61 bits.
+
+mfakto has a built-in self-test that automatically optimizes parameters. Please
+run 'mfakto -st' each time you've:
 - Recompiled the code
 - Downloaded a new binary from somewhere
 - Changed the graphics driver
 - Changed your hardware
-
-worktodo.txt example:
--- cut here --
-Factor=bla,66362159,64,68
-Factor=bla,3321932839,50,61
--- cut here --
-
-Then run 'mfakto'. If everything is working as expected this should trial
-factor M66362159 from 2^64 to 2^68 and after that trial factor
-M3321932839 from 2^50 to 2^61.
 
 ######################
 # 2.1 Supported GPUs #
@@ -247,41 +248,84 @@ prime95 or mfakto -d c).
 - build mfakto using the above instructions
 - mfakto should run without any additional software
 
-####################################################################
-# 3 How to get work and report results from/to the primenet server #
-####################################################################
+########################################
+# 3 Getting work and reporting results #
+########################################
 
-Getting work:
-    Step 1) go to http://www.mersenne.org/ and login with your username and
-            password
-    Step 2) on the menu on the left click "Manual Testing" and than
-            "Assignments"
-    Step 3) choose the number of assignments by choosing
-            "Number of CPUs (cores) you need assignments for (maximum 12)"
-            and "Number of assignments you want for each core"
-    Step 4) Change "Preferred work type" to "Trial factoring"
-    Step 5) click the button "Get Assignments"
-    Step 6) copy&paste the "Factor=..." lines directly into the worktodo.txt
-            in your mfakto directory
+You must have a PrimeNet account to participate. Simply visit the GIMPS website
+at https://mersenne.org to create one. Once you've signed up, you can get
+assignments in several ways.
 
-Start mfakto and stress your GPU! ;)
+From the GIMPS website:
+    Step 1) log in to the GIMPS website with your username and password
+    Step 2) on the menu bar, select Manual Testing > Assignments
+    Step 3) change the preferred work type to trial factoring
+    Step 4) enter the number of cores and assignments per core
+    Step 5) click "Get Assignments"
 
-Advanced usage (extend the upper limit):
-    Since mfakto works best on long running jobs you may want to extend the
-    upper TF limit of your assignments a little bit. Take a look how much TF
-    is usually done here: http://www.mersenne.org/various/math.php
-    Lets assume that you've received an assignment like this:
-        Factor=<some hex key>,78467119,65,66
-    This means that primenet server assigned you to TF M78467119 from 2^65
-    to 2^66. Take a look at the site noted above, those exponent should be
-    TFed up to 2^71. Primenet will do this in multiple assignments (step by
-    step) but since mfakto runs very fast on modern GPUs you might want to
-    TF up to 2^71 or even 2^72 directly. Just replace the 66 at the end of
-    the line with e.g. 72 before you start mfakto:
-        e.g. Factor=<some hex key>,78467119,65,72
-    When you increase the upper limit of your assignments it is important to
-    report the results once you've finished up to the desired level. (Do not
-    report partially results before!)
+    To get assignments at higher bit levels, use the manual GPU assignment
+    request form.
+
+Using the GPU to 72 tool:
+    GPU to 72 is a website that "subcontracts" assignments from the PrimeNet
+    server. It was previously the only means to obtain work at high bit levels.
+    Although the manual GPU assignment form now serves this purpose, GPU to 72
+    remains the more popular option.
+
+    GPU to 72 website: https://gpu72.com
+
+Using the MISFIT tool:
+    MISFIT is a Windows tool that automatically requests assignments and
+    submits results. You can get it here: https://mersenneforum.org/misfit
+
+From mersenne.ca:
+    James Heinrich's website mersenne.ca offers assignments for exponents up
+    to 32 bits. You can get such work here: https://mersenne.ca/tf1G
+
+    However, be aware that mfakto currently does not work below 60 bits.
+
+Advanced usage:
+    As mfakto works best on long-running jobs, you may want to manually extend
+    your assignments. Let's assume you've received an assignment like this:
+        Factor=[...],78467119,65,66
+
+    This means the PrimeNet server has assigned you to trial factor M78467119
+    from 65 to 66 bits. However, take a look at the factoring limits:
+    http://mersenne.org/various/math.php
+
+    According to the table, the exponent is factored to 71 bits before being
+    tested. Because mfakto runs very fast on modern GPUs, you might want to go
+    directly to 71 or even 72 bits. Simply edit the ending bit level before
+    starting mfakto. For example:
+        Factor=[...],78467119,65,72
+
+    It is important to submit the results once you're done. Do not report
+    partial results as the exponent may be reassigned to someone else in the
+    interim, resulting in duplicate work and wasted cycles.
+
+    Please do not manually extend assignments from GPU to 72 as users are
+    requested not to "trial factor past the level you've pledged."
+
+
+    Once you have your assignments, copy the "Factor=..." lines directly into
+    your worktodo.txt file. Start mfakto, sit back and let it do its job.
+    Running mfakto is also a great way to stress test your GPU. ;-)
+
+Submitting results:
+    mfakto currently cannot communicate with the PrimeNet server, so you must
+    manually submit the results. To prevent abuse, admin approval is required
+    for manual submissions. You can request approval by contacting George
+    Woltman at woltman@alum.mit.edu or posting on the GIMPS forum:
+    https://mersenneforum.org/forumdisplay.php?f=38
+
+    Step 1) log in to the GIMPS website with your username and password
+    Step 2) on the menu bar, select Manual Testing > Results
+    Step 3) upload the results.txt file produced by mfakto. You may archive or
+            delete the file after it has been processed.
+
+    There are several tools that can automate this process. You can find a
+    complete list here:
+    https://mersenneforum.org/showpost.php?p=465293&postcount=24
 
 
 ##################
