@@ -32,7 +32,7 @@ Contents
 2.4    macOS
 3      Getting work and reporting results
 4      Known issues
-4.1    Stuff that looks like an issue but actually isn't an issue
+4.1    Non-issues
 5      Tuning
 6      FAQ
 7      Plans
@@ -350,7 +350,7 @@ Submitting results:
   SievePrimesAdjust to 0.
 - GPU is not found, fallback to CPU
   This happens on Linux when there is no X-server running, or the X-server
-  is not accessible. It happens on Windows when not connected to the primay
+  is not accessible. It happens on Windows when not connected to the primary
   display (e.g. being connected through terminal services). So please try to
   run mfakto locally on the main X-display. If that fails as well or is not the case,
   then the graphics driver may be too old. Also, check the output of clinfo
@@ -358,22 +358,21 @@ Submitting results:
   your AMD GPU is not the first GPU. Try the -d switch to specify a different
   device number.
 
-##################################################################
-# 4.1 Stuff that looks like an issue but actually isn't an issue #
-##################################################################
+##################
+# 4.1 Non-issues #
+##################
 
 - mfakto runs slower on small ranges. Usually it doesn't make much sense to
-  run mfakto with an upper limit smaller than 2^64. It is designed for trial
-  factoring above 2^64 up to 2^92 (factor sizes). ==> mfakto needs
-  "long runs"!
-- mfakto can find factors outside the given range. The reason
-  for this behaviour is that mfakto works on huge factor blocks. This is
-  controlled by GridSize in mfakto.ini. The default value is 3 which means
-  that mfakto runs up to 1048576 factor candidates at once (per class). So
-  the last block of each class is filled up with factor candidates above the
-  upper limit. While this is a huge overhead for small ranges it's safe to
-  ignore it on bigger ranges. If a class contains 100 blocks the overhead is
-  on average 0.5%. When a class needs 1000 blocks the overhead is 0.05%...
+  run mfakto with an upper limit below 64 bits. mfaktc is designed to find
+  factors between 64 and 92 bits and is best suited for long-running jobs.
+- mfakto can find factors outside the given range.
+  This is because mfakto works on huge factor blocks, controlled by GridSize in
+  the INI file. The default value GridSize=3 means mfakto runs up to 1048576
+  factor candidates at once, per class. So the last block of each class is
+  filled with factor candidates above the upper limit. This is a huge overhead
+  for small ranges but can be safely ignored for larger ranges. For example,
+  the average overhead is 0.5% for a class with 100 blocks but only 0.05% for
+  one with 1000 blocks.
 
 
 ############
@@ -388,27 +387,25 @@ before making changes. ;-)
 # 6 FAQ #
 #########
 
-Q Does mfakto support multiple GPUs?
-A No, but using the commandline option "-d <GPU number>" you should
-  be able to specify which GPU to use for each specific mfakto instance.
-  Please read the next question, too.
+Q: Does mfakto support multiple GPUs?
+A: No, but you can use the -d option to tell an instance to run on a specific
+   device. Please also read the next question.
 
-Q Can I run multiple instances of mfakto on the same computer?
-A Yes, and in most cases this is necessary to make full use of the GPU(s) if sieving with CPU.
-  If the sieve is running on the GPU(default), one instance should fully utilize
-  a single GPU.
+Q: Can I run multiple instances of mfakto on the same computer?
+A: Yes. In most cases, this is necessary to make full use of a GPU when sieving
+   on the CPU. Otherwise, one instance should fully utilize a single GPU.
 
-Q Which tasks should I assign to mfakto?
-A Currently, the 73-bit-barrett kernel is the fastest one, working for factors
-  from 60 bits to 73 bits. Selecting tasks for this kernel will give best
-  results. The 79-bit-barrett kernel is quite fast too.
+Q: What tasks should I assign to mfakto?
+A: The 73-bit Barrett kernel is currently the fastest and works for factors
+   between 60 to 73 bits. Selecting tasks for this kernel will give best
+   results. However, the 79-bit Barrett kernel is quite fast too.
 
-Q I modified something in the kernel files but my changes are not picked up by
-  mfakto. Why not?
-A Since mfakto version 0.14, mfakto tries to load precompiled kernel files.
-  The ini-file parameter UseBinfile (default: mfakto_Kernels.elf) defines the
-  file name of the precompiled kernels. Delete the file and restart mfakto, it
-  will then compile the kernels from the source files.
+Q: I modified something in the kernel files, but my changes are not picked up
+   by mfakto. How come?
+A: mfakto tries to load the pre-compiled kernel files in version 0.14 and
+   later. The INI file parameter UseBinfile defines the name of the file
+   containing the pre-compiled kernels. You can force mfakto to recompile the
+   kernels by deleting the file and restarting mfakto.
 
 
 ###########
