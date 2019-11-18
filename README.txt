@@ -259,12 +259,11 @@ assignments in several ways.
 From the GIMPS website:
     Step 1) log in to the GIMPS website with your username and password
     Step 2) on the menu bar, select Manual Testing > Assignments
-    Step 3) change the preferred work type to trial factoring
-    Step 4) enter the number of cores and assignments per core
+    Step 3) open the link to the manual GPU assignment request form
+    Step 4) enter the number of assignments or GHz-days you want
     Step 5) click "Get Assignments"
 
-    To get assignments at higher bit levels, use the manual GPU assignment
-    request form.
+    Users with older GPUs may want to use the default form for CPUs.
 
 Using the GPU to 72 tool:
     GPU to 72 is a website that "subcontracts" assignments from the PrimeNet
