@@ -991,10 +991,12 @@ int load_kernels(cl_int *devnumber)
       std::cerr << "Failed to allocate host memory.(binaries, " << (sizeof(char *) * numDevices) << " bytes)\n";
       break;
     }
+    int active_device = 0;
     for(i = 0; i < numDevices; i++)
     {
       if(binarySizes[i] != 0)
       {
+        active_device = i;
         binaries[i] = (char *)malloc( sizeof(char) * binarySizes[i]);
         if(!binaries[i])
         {
@@ -1024,11 +1026,11 @@ int load_kernels(cl_int *devnumber)
       std::cout << "Warning: Dumping only the first of " << numDevices <<
         " binary formats - if loading the binary file " << mystuff.binfile <<  " fails, delete it and specify the -d <n> option for mfakto.\n";
     }
-    if(binarySizes[0] != 0)
+    if(binarySizes[active_device] != 0)
     {
         char deviceName[1024];
         status = clGetDeviceInfo(
-                     devices[0],
+                     devices[active_device],
                      CL_DEVICE_NAME,
                      sizeof(deviceName),
                      deviceName,
@@ -1045,7 +1047,7 @@ int load_kernels(cl_int *devnumber)
           char header[180];
           sprintf(header, "Compile options: %s\n", program_options);
           f.write(header, strlen(header));
-          f.write(binaries[0], binarySizes[0]);
+          f.write(binaries[active_device], binarySizes[active_device]);
           f.close();
           if (mystuff.verbosity > 1) printf("Wrote binary kernel for \"%s\" to \"%s\".\n", deviceName, mystuff.binfile);
         }
