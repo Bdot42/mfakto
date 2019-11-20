@@ -335,8 +335,8 @@ Submitting results:
 # 4 Known issues #
 ##################
 
-- On HD77xx, 78xx, 79xx and R series, mfakto may be very slow at
-  99% GPU load. It will warn about the issue during startup.
+- On some devices, mfakto may be very slow at full load. It will warn about the
+  issue during startup.
   This is due to fewer registers being available to the kernels.
   Set VectorSize=2 in mfakto.ini and restart mfakto to resolve this.
 
