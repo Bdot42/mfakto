@@ -1023,8 +1023,9 @@ int load_kernels(cl_int *devnumber)
     /* dump out each binary into its own separate file. */
     if (1 < numDevices)
     {
-      std::cout << "Warning: Dumping only the first of " << numDevices <<
-        " binary formats - if loading the binary file " << mystuff.binfile <<  " fails, delete it and specify the -d <n> option for mfakto.\n";
+        std::cout << "Info: Dumping only 1 of " << numDevices << " binary formats.\n";
+        std::cout << "      If the kernel file " << mystuff.binfile <<  " fails to load, delete it and\n";
+        std::cout << "      restart mfakto with the -d <n> option.\n";
     }
     if(binarySizes[active_device] != 0)
     {
@@ -1053,15 +1054,13 @@ int load_kernels(cl_int *devnumber)
         }
         else
         {
-          std::cerr << "Failed to open binary file " << mystuff.binfile << "to save kernel.\n";
+          std::cerr << "Failed to open binary file " << mystuff.binfile << " to save kernel.\n";
         }
     }
     else
     {
-        printf(
-            "binary kernel(%s) : %s\n",
-            mystuff.binfile,
-            "Skipping as there is no binary data to write.\n");
+        printf("Did not create binary kernel: %s\n", mystuff.binfile);
+        printf("Skipping as there is no binary data to write.\n");
         remove(mystuff.binfile);
     }
     break;
