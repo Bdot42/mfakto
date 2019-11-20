@@ -199,20 +199,24 @@ run 'mfakto -st' each time you:
 # 2.1 Supported GPUs #
 ######################
 
-  AMD:
-- R9 xxx, R7 xxx, R5 xxx
-- HD7xxx, HD8xxx
-- HD5xxx, HD6xxx, including the builtin HD6xxx on AMD APUs
-- HD4xxx, FireStream 92xx (no atomic operations available) *
-- not supported: (kernel compilation fails): HD2xxx, HD3xxx, FireStream 91xx
+mfakto should run on most modern AMD GPUs:
+- supports APUs
+- the Radeon HD 4000 series, FireStream 9250 and FireStream 9270 do not support
+  atomic operations*
+- kernel compilation fails for the Radeon HD 2000 / 3000 series and the
+  FireStream 9170 as these devices do not support OpenCL
 
-* without atomics, reporting multiple factors found in the same block/grid
-will not work. Tests showed that only one of the factors will be reported,
-but theoretically it could happen that even the reported factor is incorrect
-(due to consisting of a mix of bytes of multiple factors). In cases when
-mfakto reports a factor but the factor is incorrect (rejected by primenet),
-please rerun the test of the exponent and the bitlevel on the CPU (e.g.
-prime95 or mfakto -d c).
+Other:
+- Intel HD Graphics 4000 and later. Self-tests currently fail on macOS.
+- can be configured to run on x86 CPUs using 'mfakto -d c'
+- Nvidia devices are currently not supported
+
+* without atomics, multiple factors found in the same block are not processed
+correctly. Tests have shown that mfakto will report only one factor. It may
+even return an incorrect factor due to a mix of bytes from multiple factors.
+PrimeNet will automatically check factors and reject any incorrect ones. In
+this case, please rerun the exponent and bit level on the CPU by using either
+'mfakto -d c' or Prime95 / mprime.
 
 #############
 # 2.2 Linux #
@@ -263,7 +267,7 @@ From the GIMPS website:
     Step 4) enter the number of assignments or GHz-days you want
     Step 5) click "Get Assignments"
 
-    Users with older GPUs may want to use the default form for CPUs.
+    Users with older GPUs may want to use the regular form.
 
 Using the GPU to 72 tool:
     GPU to 72 is a website that "subcontracts" assignments from the PrimeNet
@@ -281,7 +285,7 @@ From mersenne.ca:
     James Heinrich's website mersenne.ca offers assignments for exponents up
     to 32 bits. You can get such work here: https://mersenne.ca/tf1G
 
-    However, be aware that mfakto currently does not work below 60 bits.
+    Be aware that mfakto currently does not work below 60 bits.
 
 Advanced usage:
     As mfakto works best on long-running jobs, you may want to manually extend
@@ -331,31 +335,31 @@ Submitting results:
 # 4 Known issues #
 ##################
 
-- On HD77xx, 78xx, 79xx and R series, mfakto may run very slow at 99% GPU load.
-  mfakto warns about the issue during startup.
-  The reason is because of the lower number of registers available to the kernels.
-  Set VectorSize=2 in mfakto.ini and restart mfakto. It should be better now.
+- On HD77xx, 78xx, 79xx and R series, mfakto may be very slow at
+  99% GPU load. It will warn about the issue during startup.
+  This is due to fewer registers being available to the kernels.
+  Set VectorSize=2 in mfakto.ini and restart mfakto to resolve this.
+
 - The user interface is not hardened against malformed input. There are some
   checks but if you really try you should be able to screw it up.
-- The GUI of your OS may be very laggy while running mfakto. In severe
-  cases, if a single kernel invocation takes too long, Windows may decide
-  the driver is faulty and reboot.
-  Try lowering GridSize in mfakto.ini. Smaller grids should have better
-  responsiveness at a little performance penalty. Performancewise this is not
-  recommended on GPUs which can handle well over 100M/s candidates.
-  If that does not help, try lowering NumStreams to 2 or even 1.
-- SievePrimesAdjust works now, but is not always optimal. Test it out and
-  see what the best SievePrimes is, set it and fix it by setting
-  SievePrimesAdjust to 0.
+
+- Your GUI may lag while running mfakto. In severe cases, Windows may decide
+  the driver is faulty and reboot or even throw a BSoD.
+  Try lowering GridSize or NumStreams in your mfakto.ini file. Smaller grids
+  should have better responsiveness at a slight performance loss. To prevent
+  graphics driver crashes on Windows, another option is to increase the GPU
+  processing time: https://support.microsoft.com/en-us/help/2665946
+
+- SievePrimesAdjust is not always optimal. Test it out to find the best
+  SievePrimes value and set SievePrimesAdjust to 0 in your mfakto.ini file.
+
 - GPU is not found, fallback to CPU
-  This happens on Linux when there is no X-server running, or the X-server
-  is not accessible. It happens on Windows when not connected to the primary
-  display (e.g. being connected through terminal services). So please try to
-  run mfakto locally on the main X-display. If that fails as well or is not the case,
-  then the graphics driver may be too old. Also, check the output of clinfo
-  for your GPU. If the drivers are up to date, then maybe
-  your AMD GPU is not the first GPU. Try the -d switch to specify a different
-  device number.
+  This happens on Linux when there is no X server. It can also happen on
+  Windows when the GPU is not the primary display adapter. Try running mfakto
+  on the main display rather than remotely. If that fails, then your graphics
+  driver may be too old. It's also possible that the first device is not an AMD
+  GPU. In this case, use the -d switch to specify a different device number.
+  You can run clinfo to get a list of devices.
 
 ##################
 # 4.1 Non-issues #
@@ -364,6 +368,7 @@ Submitting results:
 - mfakto runs slower on small ranges. Usually it doesn't make much sense to
   run mfakto with an upper limit below 64 bits. mfaktc is designed to find
   factors between 64 and 92 bits and is best suited for long-running jobs.
+
 - mfakto can find factors outside the given range.
   This is because mfakto works on huge factor blocks, controlled by GridSize in
   the INI file. The default value GridSize=3 means mfakto runs up to 1048576
