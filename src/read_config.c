@@ -451,7 +451,7 @@ int read_config(mystuff_t *mystuff)
         i = GPU_SIEVE_PROCESS_SIZE_MIN;
       }
     }
-    if(mystuff->verbosity >= 1)printf("  GPUSieveProcessSize       %dKi bits\n",i);
+    if(mystuff->verbosity >= 1)printf("  GPUSieveProcessSize       %d Kib\n",i);
     mystuff->gpu_sieve_processing_size = i * 1024;
 
 /*****************************************************************************/
@@ -482,7 +482,7 @@ int read_config(mystuff_t *mystuff)
         printf("adjusting GPUSieveSize to %dM\n", i);
       }
     }
-    if(mystuff->verbosity >= 1)printf("  GPUSieveSize              %dMi bits\n",i);
+    if(mystuff->verbosity >= 1)printf("  GPUSieveSize              %d Mib\n",i);
     mystuff->gpu_sieve_size = i * 1024 * 1024;
 
     /*****************************************************************************/
@@ -565,7 +565,7 @@ int read_config(mystuff_t *mystuff)
       printf("WARNING: Minimum value for CheckpointDelay is 0s\n");
       i = 0;
     }
-    if(mystuff->verbosity >= 1)printf("  CheckpointDelay           %ds\n", i);
+    if(mystuff->verbosity >= 1)printf("  CheckpointDelay           %d s\n", i);
     mystuff->checkpointdelay = i;
   }
 

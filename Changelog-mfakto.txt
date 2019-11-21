@@ -1,4 +1,6 @@
 version 0.15 (...)
+- fixed issue: kernel compilation does not work correctly if a device number
+  greater than 1 is specified
 - added detection for more devices
 - fixed an issue where verbosity was not passed to valid_assignment()
 - removed dependency on AMD APP SDK as it has been discontinued
