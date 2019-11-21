@@ -175,7 +175,8 @@ General requirements:
 - otherwise: AMD APP SDK 2.5 or higher
 - for Intel integrated GPUs: Compute Runtime for OpenCL
 
-macOS users do not need to download any special software.
+macOS users do not need any additional software as OpenCL is already part of
+the system.
 
 Open a terminal window and run 'mfakto -h' for possible parameters. You may
 also want to check mfakto.ini for additional settings. mfakto typically fetches
@@ -248,10 +249,10 @@ Requirements:
       32-bit -> https://microsoft.com/en-us/download/details.aspx?id=5555
       64-bit -> https://microsoft.com/en-us/download/details.aspx?id=14632
 
-- only the 64-bit binary is currently distributed
-
 Steps:
-- simply go to the mfakto folder and launch the executable
+- build mfakto using the above instructions or download a stable version. Only
+  the 64-bit binary is currently distributed.
+- go to the mfakto folder and launch the executable
 - mfakto defaults to the first AMD GPU it finds. To use the Intel integrated
   GPU, you may need to specify it using the -d option.
 
@@ -345,8 +346,8 @@ Submitting results:
 # 4 Known issues #
 ##################
 
-- On some devices, mfakto may be very slow at full GPU load. It will warn about
-  this during startup.
+- On some devices, such as the Radeon HD 7700 - 7900 series, mfakto may be very
+  slow at full GPU load. It will warn about this during startup.
   This is due to fewer registers being available to the kernels.
   Set VectorSize=2 in mfakto.ini and restart mfakto to resolve this.
 
