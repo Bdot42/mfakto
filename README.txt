@@ -199,24 +199,25 @@ run 'mfakto -st' each time you:
 # 2.1 Supported GPUs #
 ######################
 
-mfakto should run on most modern AMD GPUs:
-- supports APUs
-- the Radeon HD 4000 series, FireStream 9250 and FireStream 9270 do not support
-  atomic operations*
-- kernel compilation fails for the Radeon HD 2000 / 3000 series and the
-  FireStream 9170 as these devices do not support OpenCL
+AMD:
+- all devices that support OpenCL 1.1 or later
+- all APUs
+- OpenCL 1.0 devices, such as the FireStream 9250 / 9270 and Radeon HD 4000
+  series, can also run mfakto but do not support atomic operations*
+- not supported: Radeon HD 2000 / 3000 series and FireStream 9170 (as kernel
+  compilation fails)
 
 Other:
 - Intel HD Graphics 4000 and later. Self-tests currently fail on macOS.
-- can be configured to run on x86 CPUs using 'mfakto -d c'
-- Nvidia devices are currently not supported
+- OpenCL-enabled CPUs via the '-d c' option
+- not currently supported: Nvidia devices
 
-* without atomics, multiple factors found in the same block are not processed
-correctly. Tests have shown that mfakto will report only one factor. It may
-even return an incorrect factor due to a mix of bytes from multiple factors.
-PrimeNet will automatically check factors and reject any incorrect ones. In
-this case, please rerun the exponent and bit level on the CPU by using either
-'mfakto -d c' or Prime95 / mprime.
+* without atomics, mfakto does not correctly process multiple factors found in
+the same block / grid. Tests have shown that it will report only one factor. It
+may even return a scrambled factor due to a mix of bytes from multiple factors.
+PrimeNet will automatically reject factors that do not divide a Mersenne
+number. If this happens, rerun the exponent and bit level on the CPU with
+either the '-d c' option or Prime95 / mprime.
 
 #############
 # 2.2 Linux #
@@ -335,16 +336,16 @@ Submitting results:
 # 4 Known issues #
 ##################
 
-- On some devices, mfakto may be very slow at full load. It will warn about the
-  issue during startup.
+- On some devices, mfakto may be very slow at full GPU load. It will warn about
+  this during startup.
   This is due to fewer registers being available to the kernels.
   Set VectorSize=2 in mfakto.ini and restart mfakto to resolve this.
 
-- The user interface is not hardened against malformed input. There are some
-  checks but if you really try you should be able to screw it up.
+- The user interface has not been extensively tested against invalid inputs.
+  Although there are some checks, they are not foolproof by any means.
 
-- Your GUI may lag while running mfakto. In severe cases, Windows may decide
-  the driver is faulty and reboot or even throw a BSoD.
+- Your GUI may lag while running mfakto. In severe cases, Windows may restart
+  the driver or even throw a BSoD.
   Try lowering GridSize or NumStreams in your mfakto.ini file. Smaller grids
   should have better responsiveness at a slight performance loss. To prevent
   graphics driver crashes on Windows, another option is to increase the GPU
@@ -357,8 +358,8 @@ Submitting results:
   This happens on Linux when there is no X server. It can also happen on
   Windows when the GPU is not the primary display adapter. Try running mfakto
   on the main display rather than remotely. If that fails, then your graphics
-  driver may be too old. It's also possible that the first device is not an AMD
-  GPU. In this case, use the -d switch to specify a different device number.
+  driver may be too old. It's also possible that the first GPU is not an AMD
+  one. In this case, use the -d switch to specify a different device number.
   You can run clinfo to get a list of devices.
 
 ##################
