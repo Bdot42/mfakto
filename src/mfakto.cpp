@@ -703,7 +703,7 @@ void set_gpu_type()
     printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
     printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
     printf("  number of multiprocessors %d (%d compute elements)\n", deviceinfo.units, deviceinfo.units * gpu_types[mystuff.gpu_type].CE_per_multiprocessor);
-    printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
+    printf("  clock rate                %d MHz\n", deviceinfo.max_clock);
 
     printf("\nAutomatic parameters\n");
 
