@@ -170,9 +170,13 @@ Steps:
 ####################
 
 General requirements:
-- Linux and Windows: AMD Catalyst 11.4 or higher. It is recommended to use
-  11.10 or above as the AMD APP SDK has been discontinued.
+- AMD Catalyst 11.4 or higher. Consider using 11.10 or above as the AMD APP SDK
+  has been discontinued.
 - otherwise: AMD APP SDK 2.5 or higher
+- for Intel integrated GPUs: Compute Runtime for OpenCL
+
+macOS users do not need any additional software as OpenCL is already part of
+the system.
 
 Open a terminal window and run 'mfakto -h' for possible parameters. You may
 also want to check mfakto.ini for additional settings. mfakto typically fetches
@@ -204,7 +208,7 @@ AMD:
 - all APUs
 - OpenCL 1.0 devices, such as the FireStream 9250 / 9270 and Radeon HD 4000
   series, can also run mfakto but do not support atomic operations*
-- not supported: Radeon HD 2000 / 3000 series and FireStream 9170 (as kernel
+- not supported: FireStream 9170 and Radeon HD 2000 / 3000 series (as kernel
   compilation fails)
 
 Other:
@@ -230,8 +234,9 @@ either the '-d c' option or Prime95 / mprime.
 # 2.3 Windows #
 ###############
 
-- AMD Catalyst 11.4 is the minimum required version. It is recommended to use
-  11.10 or above as the AMD APP SDK has been discontinued.
+Requirements:
+- AMD Catalyst 11.4 is the minimum required version. Consider using 11.10 or
+  above as the AMD APP SDK has been discontinued.
 - otherwise: AMD APP SDK 2.5 or higher. In this case, make sure the path to the
   appropriate library folder is in the system Path variable:
 
@@ -244,7 +249,12 @@ either the '-d c' option or Prime95 / mprime.
       32-bit -> https://microsoft.com/en-us/download/details.aspx?id=5555
       64-bit -> https://microsoft.com/en-us/download/details.aspx?id=14632
 
-- only the 64-bit binary is currently available.
+Steps:
+- build mfakto using the above instructions or download a stable version. Only
+  the 64-bit binary is currently distributed.
+- go to the mfakto folder and launch the executable
+- mfakto defaults to the first AMD GPU it finds. To use the Intel integrated
+  GPU, you may need to specify it using the -d option.
 
 #############
 # 2.4 macOS #
@@ -336,8 +346,8 @@ Submitting results:
 # 4 Known issues #
 ##################
 
-- On some devices, mfakto may be very slow at full GPU load. It will warn about
-  this during startup.
+- On some devices, such as the Radeon HD 7700 - 7900 series, mfakto may be very
+  slow at full GPU load. It will warn about this during startup.
   This is due to fewer registers being available to the kernels.
   Set VectorSize=2 in mfakto.ini and restart mfakto to resolve this.
 
