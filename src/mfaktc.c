@@ -56,6 +56,7 @@ GPU_type gpu_types[]={
   {GPU_GCN,     64,  "GCN"},
   {GPU_GCN2,    64,  "GCN2"},
   {GPU_GCN3,    64,  "GCN3"},
+  {GPU_GCN4,    64,  "GCN4"},
   {GPU_APU,     80,  "APU"},
   {GPU_CPU,      1,  "CPU"},
   {GPU_NVIDIA,   8,  "NVIDIA"},
@@ -280,6 +281,28 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff, cl_uint do_test)
       _63BIT_MUL24,     // "mfakto_cl_63"     586.10
       _71BIT_MUL24,     // "mfakto_cl_71"     571.66
       MG88,             // "cl_mg88"          428.96
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+      {
+/*  GPU_GCN4  (Ellesmere/Lexa/Baffin) */
+      BARRETT69_MUL15,
+      BARRETT70_MUL15,
+      BARRETT71_MUL15,
+      BARRETT73_MUL15,
+      BARRETT74_MUL15,
+      BARRETT76_MUL32,
+      BARRETT82_MUL15,
+      BARRETT77_MUL32,
+      BARRETT87_MUL32,
+      BARRETT83_MUL15,
+      BARRETT79_MUL32,
+      BARRETT88_MUL32, 
+      BARRETT88_MUL15,
+      BARRETT92_MUL32,
+      MG62,   
+      _63BIT_MUL24,
+      _71BIT_MUL24, 
+      MG88,
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {

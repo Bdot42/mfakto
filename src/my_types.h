@@ -168,6 +168,7 @@ enum GPU_types
   GPU_GCN,   // low and mid-level GCN with slow DP 1:16
   GPU_GCN2,  // high-end GCN with faster DP 1:4
   GPU_GCN3,  // newer GCN with improved int32 operations (e.g. R290)
+  GPU_GCN4,
   GPU_APU,
   GPU_CPU,
   GPU_NVIDIA,
