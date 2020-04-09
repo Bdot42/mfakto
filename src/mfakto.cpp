@@ -621,11 +621,17 @@ void set_gpu_type()
       mystuff.gpu_type = GPU_GCN3;   // these cards have improved int32 performance over the previous GCNs, making for a changed kernel selection
     }
     else if (strstr(deviceinfo.d_name, "Ellesmere")  ||    // RX 470/480/570/580/590
-             strstr(deviceinfo.d_name, "Lexa")       ||    // small GCN 4.0
-             strstr(deviceinfo.d_name, "Baffin")           // small GCN 4.0
+             strstr(deviceinfo.d_name, "Lexa")       ||    // small GCN 4.0 - not tested, only assumption
+             strstr(deviceinfo.d_name, "Baffin")           // small GCN 4.0 - not tested, only assumption
             )
     {
       mystuff.gpu_type = GPU_GCN4;
+    }
+     else if (strstr(deviceinfo.d_name, "gfx1010")   || 	// RX 5700(XT)
+              strstr(deviceinfo.d_name, "gfx1012")         // RX 5500XT
+             )
+    {
+      mystuff.gpu_type = GPU_RDNA;
     }
     else if (strstr(deviceinfo.d_name, "Cayman")      ||  // 6950, 6970
              strstr(deviceinfo.d_name, "Devastator")  ||  // 7xx0D (iGPUs of A4/6/8/10)
