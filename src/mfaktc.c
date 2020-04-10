@@ -553,7 +553,7 @@ other return value
   if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->verbosity >= 2)
   {
     #ifdef __MINGW32__
-      printf("  k_min = %llu - k_max = %I64u\n", k_min, k_max);
+      printf("  k_min = %I64u - k_max = %I64u\n", k_min, k_max);
     #else
       printf("  k_min = %llu - k_max = %llu\n", k_min, k_max);
     #endif
