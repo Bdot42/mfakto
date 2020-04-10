@@ -628,7 +628,7 @@ void set_gpu_type()
       mystuff.gpu_type = GPU_GCN4;
     }
      else if (strstr(deviceinfo.d_name, "gfx1010")   || 	// RX 5700(XT)
-              strstr(deviceinfo.d_name, "gfx1012")         // RX 5500XT
+              strstr(deviceinfo.d_name, "gfx1012")          // RX 5500XT
              )
     {
       mystuff.gpu_type = GPU_RDNA;

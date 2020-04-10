@@ -53,7 +53,12 @@ uint popcount(uint x)
 }
 #endif
 #endif // OCL < 1.2
-#if defined USE_DP || defined cl_khr_fp64 && ! defined GCN
+
+#if defined GCN || GCN4
+#define GCN_DP
+#endif
+
+#if defined USE_DP || cl_khr_fp64 && ! defined GCN_DP
 #pragma  OPENCL EXTENSION cl_khr_fp64 : enable
 #define USE_DP
 #else
