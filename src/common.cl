@@ -54,7 +54,7 @@ uint popcount(uint x)
 #endif
 #endif // OCL < 1.2
 
-#if defined GCN || GCN4
+#if defined GCN || GCN4 || GCN5 || RDNA
 #define GCN_DP
 #endif
 
