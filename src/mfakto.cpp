@@ -598,6 +598,7 @@ void set_gpu_type()
         strstr(deviceinfo.d_name, "Curacao")    ||    // R9 265, R9 270, R9 270X
         strstr(deviceinfo.d_name, "Tonga")      ||    // R9 285
         strstr(deviceinfo.d_name, "Hainan")     ||    // R9 285
+        strstr(deviceinfo.d_name, "Antigua")    ||    // R9 380(X)
         strstr(deviceinfo.d_name, "Kalindi")    ||    // GCN APU, Kabini, R7 ???
         strstr(deviceinfo.d_name, "D300")       ||    // FirePro D-series
         strstr(deviceinfo.d_name, "D500")       ||
