@@ -628,7 +628,9 @@ void set_gpu_type()
       mystuff.gpu_type = GPU_GCN4;
     }
      else if (strstr(deviceinfo.d_name, "gfx901")   ||     // Vega 64(?)
-              strstr(deviceinfo.d_name, "gfx900")          // Vega 56
+              strstr(deviceinfo.d_name, "gfx900")   ||     // Vega 56
+              strstr(deviceinfo.d_name, "gfx902")   ||     //  Vega Ryzen 2xxx-3xxx iGPU
+              strstr(deviceinfo.d_name, "gfx903")          //  Vega Ryzen 2xxx-3xxx iGPU
              )
     {
       mystuff.gpu_type = GPU_GCN5;

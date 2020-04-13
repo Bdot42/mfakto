@@ -308,7 +308,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff, cl_uint do_test)
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
     {
-/*  GPU_GCN5  (Vega 56/64) (only barrett tested) */
+/*  GPU_GCN5  (Vega 56/Vega 64/"Vega" Ryzen 2xxx-3xxx iGPU) (only barrett tested) */
       BARRETT69_MUL15,
       BARRETT70_MUL15,
       BARRETT71_MUL15,
