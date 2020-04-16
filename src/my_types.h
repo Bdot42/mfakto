@@ -170,6 +170,7 @@ enum GPU_types
   GPU_GCN3,  // newer GCN with improved int32 operations (e.g. R290)
   GPU_GCN4,
   GPU_GCN5,
+  GPU_GCNF,  // R VII
   GPU_RDNA,
   GPU_APU,
   GPU_CPU,
