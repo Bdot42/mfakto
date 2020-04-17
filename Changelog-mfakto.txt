@@ -1,4 +1,5 @@
 version 0.15 (...)
+- recognition of more, newer GPUs
 - fixed issue: kernel compilation does not work correctly if a device number
   greater than 1 is specified
 - added detection for more devices
