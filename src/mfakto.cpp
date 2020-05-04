@@ -317,7 +317,7 @@ int init_CL(int num_streams, cl_int *devnumber)
     }
     else for(i=0; i < numplatforms; i++) // autoselect: search for AMD
     {
-      char buf[128];
+      char buf[128] = {0};
       status = clGetPlatformInfo(platformlist[i], CL_PLATFORM_VENDOR,
                         sizeof(buf), buf, NULL);
       if(status != CL_SUCCESS)
@@ -1018,7 +1018,7 @@ int load_kernels(cl_int *devnumber)
       std::cerr << "Failed to allocate host memory.(binaries, " << (sizeof(char *) * numDevices) << " bytes)\n";
       break;
     }
-    int active_device = 0;
+    size_t active_device = 0;
     for(i = 0; i < numDevices; i++)
     {
       if(binarySizes[i] != 0)
