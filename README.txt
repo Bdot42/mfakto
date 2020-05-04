@@ -1,4 +1,4 @@
-** Preface for mfakto 0.15pre6 **
+** Preface for mfakto 0.15pre7 **
 
 This is a developmental version of mfakto. It has been verified to produce
 correct results. However, performance has not been optimized and there may be
@@ -44,8 +44,8 @@ Contents
 
 mfakto is an OpenCL port of mfaktc that aims to have the same features and
 functions. mfaktc is a program that trial factors Mersenne numbers. It stands
-for "Mersenne faktorisation* with CUDA" and was written for Nvidia GPUs. mfakto
-is used primarily in the Great Internet Mersenne Prime Search.
+for "Mersenne faktorisation* with CUDA" and was written for Nvidia GPUs. Both
+programs are used primarily in the Great Internet Mersenne Prime Search.
 
 Primality tests are computationally intensive, but we can save time by finding
 small factors. GPUs are very efficient at this task due to their parallel
@@ -57,6 +57,7 @@ test these factors. Although this step is only done on the GPU in practice,
 mfakto can perform both steps on either the CPU or GPU. You can find more
 details at the GIMPS website:
 https://mersenne.org/various/math.php#trial_factoring
+
 
 * portmanteau of the English word "factorisation" and the German word
 "Faktorisierung"
@@ -102,19 +103,20 @@ Steps:
 - install the GPUOpen OpenCL SDK
 - launch Visual Studio and open the mfaktoVS12.sln file. You can use a later
   version as Visual Studio will automatically convert your projects. If the
-  option does not appear, then right-click the solution and select "Retarget
+  option does not appear, right-click the solution and select "Retarget
   solution" from the menu.
 - open the project properties and select the configuration and platform
 - go to C/C++ > General > Additional Include Directories and add the path to
   the OpenCL headers:
 
-      %OCL_ROOT%\include
+      $(OCL_ROOT)\include
 
-- then go to Linker > General > Additional Library Directories and add the path
-  to the appropriate library folder:
+- now go to Linker > General > Additional Library Directories and add the path
+  to the appropriate library folder. You may need to restart your computer for
+  Visual Studio to recognize the OCL_ROOT system variable.
 
-      32-bit -> %OCL_ROOT%\lib\x86
-      64-bit -> %OCL_ROOT%\lib\x86_64
+      32 bits: $(OCL_ROOT)\lib\x86
+      64 bits: $(OCL_ROOT)\lib\x86_64
 
 - select Build > Build Solution to compile mfakto
 
@@ -170,8 +172,8 @@ Steps:
 ####################
 
 General requirements:
-- AMD Catalyst 11.4 or higher. Consider using 11.10 or above as the AMD APP SDK
-  has been discontinued.
+- AMD Catalyst 11.4 or higher. Consider using 11.10 or above as the
+  now-discontinued AMD APP SDK is required for older versions.
 - otherwise: AMD APP SDK 2.5 or higher
 - for Intel integrated GPUs: Compute Runtime for OpenCL
 
@@ -185,12 +187,13 @@ obtain assignments and report results.
 
 A typical worktodo.txt file looks like this:
   -- begin example --
-  Factor=[...],66362159,64,68
-  Factor=[...],3321932899,76,77
+  Factor=[assignment ID],66362159,64,68
+  Factor=[assignment ID],3321932899,76,77
   -- end example --
 
-You can launch mfakto after getting assignments. It should trial factor
-M66362159 from 64 to 68 bits, followed by M3321932899 from 76 to 77 bits.
+You can launch mfakto after getting assignments. In this case, mfakto should
+trial factor M66362159 from 64 to 68 bits, followed by M3321932899 from 76 to
+77 bits.
 
 mfakto has a built-in self-test that automatically optimizes parameters. Please
 run 'mfakto -st' each time you:
@@ -236,18 +239,18 @@ either the '-d c' option or Prime95 / mprime.
 
 Requirements:
 - AMD Catalyst 11.4 is the minimum required version. Consider using 11.10 or
-  above as the AMD APP SDK has been discontinued.
+  above as the now-discontinued AMD APP SDK is required for older versions.
 - otherwise: AMD APP SDK 2.5 or higher. In this case, make sure the path to the
   appropriate library folder is in the system Path variable:
 
-      32-bit -> %AMDAPPSDKROOT%\lib\x86
-      64-bit -> %AMDAPPSDKROOT%\lib\x86_64
+      32 bits: %AMDAPPSDKROOT%\lib\x86
+      64 bits: %AMDAPPSDKROOT%\lib\x86_64
 
 - you may need the Microsoft Visual C++ 2010 Redistributable Package for your
   platform and language:
 
-      32-bit -> https://microsoft.com/en-us/download/details.aspx?id=5555
-      64-bit -> https://microsoft.com/en-us/download/details.aspx?id=14632
+      32 bits: https://microsoft.com/en-us/download/details.aspx?id=5555
+      64 bits: https://microsoft.com/en-us/download/details.aspx?id=14632
 
 Steps:
 - build mfakto using the above instructions or download a stable version. Only
@@ -301,7 +304,7 @@ From mersenne.ca:
 Advanced usage:
     As mfakto works best on long-running jobs, you may want to manually extend
     your assignments. Let's assume you've received an assignment like this:
-        Factor=[...],78467119,65,66
+        Factor=[assignment ID],78467119,65,66
 
     This means the PrimeNet server has assigned you to trial factor M78467119
     from 65 to 66 bits. However, take a look at the factoring limits:
@@ -311,7 +314,7 @@ Advanced usage:
     tested. Because mfakto runs very fast on modern GPUs, you might want to go
     directly to 71 or even 72 bits. Simply edit the ending bit level before
     starting mfakto. For example:
-        Factor=[...],78467119,65,72
+        Factor=[assignment ID],78467119,65,72
 
     It is important to submit the results once you're done. Do not report
     partial results as the exponent may be reassigned to someone else in the
