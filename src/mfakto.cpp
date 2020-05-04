@@ -3119,7 +3119,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 
     cl_ulong f_tmp;
     double bits;
-    // estimate the primenet credit for the factor
+    // estimate the PrimeNet credit for the factor
     if (factor.d2 > 0)
     {
       f_tmp = ((cl_ulong)factor.d2 << 32) + factor.d1;
@@ -3133,6 +3133,8 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     else if (factor.d0 > 0)
     {
       bits  = log ((double)factor.d0)/log(2);
+    } else {
+      bits = 0.0;   // should not be reachable
     }
     mystuff->stats.ghzdays = mystuff->stats.ghzdays * (bits - floor(bits));
 
