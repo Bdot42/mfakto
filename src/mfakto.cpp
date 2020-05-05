@@ -317,7 +317,7 @@ int init_CL(int num_streams, cl_int *devnumber)
     }
     else for(i=0; i < numplatforms; i++) // autoselect: search for AMD
     {
-      char buf[128];
+      char buf[128] = {0};
       status = clGetPlatformInfo(platformlist[i], CL_PLATFORM_VENDOR,
                         sizeof(buf), buf, NULL);
       if(status != CL_SUCCESS)
@@ -1018,7 +1018,7 @@ int load_kernels(cl_int *devnumber)
       std::cerr << "Failed to allocate host memory.(binaries, " << (sizeof(char *) * numDevices) << " bytes)\n";
       break;
     }
-    int active_device = 0;
+    size_t active_device = 0;
     for(i = 0; i < numDevices; i++)
     {
       if(binarySizes[i] != 0)
@@ -3119,7 +3119,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 
     cl_ulong f_tmp;
     double bits;
-    // estimate the primenet credit for the factor
+    // estimate the PrimeNet credit for the factor
     if (factor.d2 > 0)
     {
       f_tmp = ((cl_ulong)factor.d2 << 32) + factor.d1;
@@ -3133,6 +3133,8 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     else if (factor.d0 > 0)
     {
       bits  = log ((double)factor.d0)/log(2);
+    } else {
+      bits = 0.0;   // should not be reachable
     }
     mystuff->stats.ghzdays = mystuff->stats.ghzdays * (bits - floor(bits));
 
