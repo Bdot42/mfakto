@@ -71,9 +71,9 @@ General requirements:
 - C and C++ development tools
 - an OpenCL SDK
 
-Please note: the AMD APP SDK has been discontinued. If you still decide to use
-it to compile mfakto, make sure you have version 2.5 or later. You can download
-the AMD APP SDK here: https://community.amd.com/thread/227948
+Please note: the AMD APP SDK has been discontinued. If you still want to use it
+to compile mfakto, make sure you have version 2.5 or later. You can download
+the SDK here: https://community.amd.com/thread/227948
 
 #############
 # 1.1 Linux #
@@ -167,14 +167,17 @@ Steps:
 - mfakto should compile out of the box as macOS contains a native OpenCL
   implementation
 
+You may see some warnings, but they are safe to ignore.
+
 ####################
 # 2 Running mfakto #
 ####################
 
 General requirements:
-- AMD Catalyst 11.4 or higher. Consider using 11.10 or above as the
-  now-discontinued AMD APP SDK is required for older versions.
-- otherwise: AMD APP SDK 2.5 or higher
+- AMD Catalyst 11.4 or higher. Consider using 14.4 or above as previous
+  versions have a bug that causes high CPU loads.
+- AMD APP SDK 2.5 or higher unless using AMD Catalyst 11.10 or above. However,
+  this is not recommended as the AMD APP SDK has been discontinued.
 - for Intel integrated GPUs: Compute Runtime for OpenCL
 
 macOS users do not need any additional software as OpenCL is already part of
@@ -238,10 +241,12 @@ either the '-d c' option or Prime95 / mprime.
 ###############
 
 Requirements:
-- AMD Catalyst 11.4 is the minimum required version. Consider using 11.10 or
-  above as the now-discontinued AMD APP SDK is required for older versions.
-- otherwise: AMD APP SDK 2.5 or higher. In this case, make sure the path to the
-  appropriate library folder is in the system Path variable:
+- AMD Catalyst 11.4 is the minimum required version. Consider using 14.4 or
+  above as previous versions have a bug that causes high CPU loads.
+- AMD APP SDK 2.5 or higher unless using AMD Catalyst 11.10 or above. However,
+  this is not recommended as the AMD APP SDK has been discontinued. If you
+  still want to use it to compile mfakto, make sure the path to the appropriate
+  library folder is in the system Path variable:
 
       32 bits: %AMDAPPSDKROOT%\lib\x86
       64 bits: %AMDAPPSDKROOT%\lib\x86_64
