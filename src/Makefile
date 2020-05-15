@@ -63,7 +63,7 @@ AMD_APP_LIB = -L$(AMD_APP_DIR)/lib/$(ARCH)
 OPTIMIZE_FLAG = -O3 -funroll-loops  -ffast-math -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las -flto
 #OPTIMIZE_FLAG = -g
 
-# Compiler settings for .c files (CPU)
+# compiler settings for C and C++ files
 CC = gcc
 CPP = $(CC)
 CFLAGS = $(BITS) -Wall $(OPTIMIZE_FLAG) $(AMD_APP_INCLUDE) -DBUILD_OPENCL
