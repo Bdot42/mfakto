@@ -20,8 +20,12 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#if defined(BUILD_OPENCL)
-#include <CL/cl.h>
+#if defined BUILD_OPENCL
+  #if defined __APPLE__ || __MACOSX
+    #include <OpenCL/cl.h>
+  #else
+    #include <CL/cl.h>
+  #endif
 #endif
 
 #include "params.h"
@@ -39,7 +43,7 @@ void my_signal_handler(int signum)
 invoked so we just register it again. */
   signal(signum, &my_signal_handler);
 #endif
-  
+
   signal_handler_mystuff->quit++;
   if(signal_handler_mystuff->quit == 1)
   {
