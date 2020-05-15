@@ -236,8 +236,8 @@ Other:
 
 
 * without atomics, mfakto may not correctly process multiple factors found in
-the same block / grid. It may report only one factor or even an incorrect one,
-the latter due to scrambled data from multiple factors. PrimeNet automatically
+the same class. It may report only one factor or even an incorrect one, the
+latter due to scrambled data from multiple factors. PrimeNet automatically
 rejects factors that do not divide a Mersenne number. If this happens, run the
 exponent and bit level again on the CPU or another device. You can run mfakto
 on the CPU using the '-d c' option or use Prime95 instead. Lowering GridSize in
