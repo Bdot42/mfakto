@@ -21,32 +21,31 @@
 # Run "make -f Makefile.macOS" to compile mfakto for macOS
 
 # Users may see an "out of sync" warning when compiling mfakto. Although
-# harmless, the warning can be resolved by running the following command prior
+# harmless, the warning can be silenced by running the following command prior
 # to compilation:
 #
 # export SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
 
-BITFLAG := -m64
+ARCH = x86_64
 
-# Compiler settings for .c files (CPU)
+# compiler settings for C and C++ files
 CC = gcc
 CPP = $(CC)
-CFLAGS = $(BITFLAG) -Wall
-CPP_FLAGS =
-
-OPENCLC=/System/Library/Frameworks/OpenCL.framework/Libraries/openclc
+CFLAGS = -arch $(ARCH) -Wall
+CPPFLAGS =
 
 # Linker
 LD = g++
-LDFLAGS = $(BITFLAG)
+LDFLAGS = -arch $(ARCH)
 
 ##############################################################################
 
-CSRC  = sieve.c timer.c parse.c read_config.c mfaktc.c checkpoint.c \
+CSRC = sieve.c timer.c parse.c read_config.c mfaktc.c checkpoint.c \
 	signal_handler.c filelocking.c output.c
-CLSRC = barrett15.cl  barrett.cl  common.cl  gpusieve.cl  mfakto_Kernels.cl  montgomery.cl  mul24.cl
 
-COBJS  = $(CSRC:.c=.o) mfakto.o gpusieve.o perftest.o menu.o kbhit.o
+# CLSRC = barrett15.cl  barrett.cl  common.cl  gpusieve.cl  mfakto_Kernels.cl  montgomery.cl  mul24.cl
+
+COBJS = $(CSRC:.c=.o) mfakto.o gpusieve.o perftest.o menu.o kbhit.o
 
 ##############################################################################
 
@@ -59,13 +58,13 @@ clean :
 	rm -f *.o *~
 
 sieve.o : sieve.c
-	$(CC) $(CFLAGS) $(CFLAGS_EXTRA_SIEVE) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 %.o : %.cpp
-	$(CPP) $(CFLAGS) $(CPP_FLAGS) -c $< -o $@
+	$(CPP) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 ../%.cl : %.cl
 	cp $< ..
@@ -85,35 +84,28 @@ filelocking.o: filelocking.c
 mfaktc.o: mfaktc.c params.h my_types.h compatibility.h \
   sieve.h read_config.h parse.h timer.h checkpoint.h signal_handler.h \
   filelocking.h perftest.h mfakto.h gpusieve.h output.h selftest-data.h
-    $OPENCLC -x cl -cl-std=CL1.2 -Os -arch $* -emit-llvm -o $@ -c $<
 
 output.o: output.c params.h my_types.h output.h filelocking.h compatibility.h
-    $OPENCLC -x cl -cl-std=CL1.2 -Os -arch $* -emit-llvm -o $@ -c $<
 
 parse.o: parse.c compatibility.h filelocking.h parse.h
 
 read_config.o: read_config.c params.h my_types.h
-    $OPENCLC -x cl -cl-std=CL1.2 -Os -arch $* -emit-llvm -o $@ -c $<
 
 sieve.o: sieve.c params.h compatibility.h
 
 signal_handler.o: signal_handler.c params.h my_types.h compatibility.h
-    $OPENCLC -x cl -cl-std=CL1.2 -Os -arch $* -emit-llvm -o $@ -c $<
 
 timer.o: timer.c timer.h compatibility.h
 
 gpusieve.o: gpusieve.cpp my_types.h params.h compatibility.h
-    $OPENCLC -x cl -cl-std=CL1.2 -Os -arch $* -emit-llvm -o $@ -c $<
 
 mfakto.o: mfakto.cpp params.h my_types.h compatibility.h \
- 	read_config.h parse.h sieve.h timer.h checkpoint.h filelocking.h \
- 	perftest.h mfakto.h output.h gpusieve.h signal_handler.h
- 	  $OPENCLC -x cl -cl-std=CL1.2 -Os -arch $* -emit-llvm -o $@ -c $<
+  read_config.h parse.h sieve.h timer.h checkpoint.h filelocking.h \
+  perftest.h mfakto.h output.h gpusieve.h signal_handler.h
 
 perftest.o: perftest.cpp params.h my_types.h compatibility.h \
- 	read_config.h parse.h sieve.h timer.h checkpoint.h filelocking.h \
- 	signal_handler.h mfakto.h
-   	$OPENCLC -x cl -cl-std=CL1.2 -Os -arch $* -emit-llvm -o $@ -c $<
+  read_config.h parse.h sieve.h timer.h checkpoint.h filelocking.h \
+  signal_handler.h mfakto.h
 
 menu.o: menu.h compatibility.h my_types.h
 

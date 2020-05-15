@@ -751,7 +751,7 @@ other return value
   {
     if(mystuff->h_RES[0] == 0)
     {
-      printf("ERROR: selftest failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+      printf("ERROR: self-test failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
       printf("  no factor found\n");
       retval = 1;
     }
@@ -810,7 +810,7 @@ k_max and k_min are used as 64bit temporary integers here...
       }
       if(k_min != 1) /* the factor should appear ONCE */
       {
-        printf("ERROR: selftest failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+        printf("ERROR: self-test failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
         printf("  expected result: %08X %08X %08X\n", f_hi, f_med, f_low);
         for(i=0; (i<mystuff->h_RES[0]) && (i<10); i++)
         {
@@ -820,7 +820,7 @@ k_max and k_min are used as 64bit temporary integers here...
       }
       else
       {
-        if(mystuff->mode != MODE_SELFTEST_SHORT)printf("selftest for M%u passed (%s)!\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+        if(mystuff->mode != MODE_SELFTEST_SHORT)printf("self-test for M%u passed (%s)!\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
       }
     }
   }
@@ -896,7 +896,7 @@ RET_ERROR we might have a serios problem
       if (i < (sizeof(index)/sizeof(index[0])))
       {
         ind = index[i];
-        printf("######### testcase %d/%d (M%u[%d-%d]) #########\r",
+        printf("######### test case %d/%d (M%u[%d-%d]) #########\r",
           i+1, (int) (sizeof(index)/sizeof(index[0])), st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
       }
       else
@@ -905,7 +905,7 @@ RET_ERROR we might have a serios problem
     else // treat type <> 1 as full test
     {
       ind = i;
-      printf("######### testcase %d/%d (M%u[%d-%d]) #########\n",
+      printf("######### test case %d/%d (M%u[%d-%d]) #########\n",
         i+1, total_selftests, st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
     }
     f_class = (int)(st_data[ind].k % mystuff->num_classes);
@@ -978,7 +978,7 @@ RET_ERROR we might have a serios problem
     if (mystuff->quit) break;
   }
 
-  printf("Selftest statistics                                    \n");
+  printf("Self-test statistics                                   \n");
   printf("  number of tests           %d\n", num_selftests);
   printf("  successful tests          %d\n", st_success);
   if(st_nofactor > 0)   printf("  no factor found           %d\n", st_nofactor);
@@ -991,12 +991,12 @@ RET_ERROR we might have a serios problem
 
   if(st_success == num_selftests)
   {
-    printf("selftest PASSED!\n\n");
+    printf("self-test PASSED!\n\n");
     retval=0;
   }
   else
   {
-    printf("selftest FAILED!\n\n");
+    printf("self-test FAILED!\n\n");
   }
   mystuff->verbosity = verbosity_save;
   return retval;
@@ -1028,7 +1028,7 @@ int main(int argc, char **argv)
   strcpy(mystuff.inifile, "mfakto.ini");
   mystuff.force_rebuild = 0;
 
-  printf("%s (%dbit build)\n\n", MFAKTO_VERSION, (int)(sizeof(void*)*8));
+  printf("%s (%d-bit build)\n\n", MFAKTO_VERSION, (int)(sizeof(void*)*8));
 
   while(i<argc)
   {
@@ -1192,12 +1192,12 @@ int main(int argc, char **argv)
 /* print current configuration */
   if(mystuff.verbosity >= 1)
   {
-    printf("Compiletime options\n");
+    printf("Compile-time options\n");
     if (mystuff.gpu_sieving == 0)
     {
 #ifdef SIEVE_SIZE_LIMIT
-      printf("  SIEVE_SIZE_LIMIT          %dkiB\n", SIEVE_SIZE_LIMIT);
-      printf("  SIEVE_SIZE                %dbits\n", SIEVE_SIZE);
+      printf("  SIEVE_SIZE_LIMIT          %d kiB\n", SIEVE_SIZE_LIMIT);
+      printf("  SIEVE_SIZE                %d bits\n", SIEVE_SIZE);
 #endif
       printf("  SIEVE_SPLIT               %d\n", SIEVE_SPLIT);
     }
@@ -1286,7 +1286,7 @@ int main(int argc, char **argv)
     {
 // macOS does not support setting CPU affinity
 #if !defined __APPLE__
-  // might be best just doing as _WIN32
+  // might be best to just use _WIN32
   #if defined _MSC_VER || __MINGW32__ || __CYGWIN__
         SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
   #else
@@ -1307,7 +1307,7 @@ int main(int argc, char **argv)
 
 /* before we start real work run a small selftest */
     mystuff.mode = MODE_SELFTEST_SHORT;
-    if(mystuff.verbosity >= 1) printf("Started a simple selftest ...\n");
+    if(mystuff.verbosity >= 1) printf("Started a simple self-test ...\n");
     if (selftest(&mystuff, MODE_SELFTEST_SHORT) != 0) return ERR_SELFTEST; /* selftest failed :( */
     mystuff.mode = MODE_NORMAL;
     /* allow for ^C */
@@ -1397,7 +1397,7 @@ int main(int argc, char **argv)
   {
     if (0 != selftest(&mystuff, mystuff.mode))
     {
-      printf ("ERROR: selftest failed, exiting.\n");
+      printf ("ERROR: self-test failed, exiting.\n");
       cleanup_CL();
       sieve_free();
       return ERR_SELFTEST;

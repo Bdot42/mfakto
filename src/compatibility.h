@@ -21,17 +21,17 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #include <unistd.h> // needed for usleep()
 #endif
 
+/* Windows is not POSIX-compliant */
+#ifdef _MSC_VER
+  #define strncasecmp _strnicmp
+#endif
 
 /* define some format strings */
-#ifdef _MSC_VER
+#if defined __APPLE__ || _MSC_VER
   #define PRId64 "lld"
   #define PRIu64 "llu"
   #define PRIx64 "llx"
-  
-  #define strncasecmp _strnicmp
-#elif __MINGW32__
-  #include <inttypes.h>
-#elif __CYGWIN__
+#elif __MINGW32__ || __CYGWIN__
   #include <inttypes.h>
 #else
   #define PRId64 "Ld"
@@ -47,6 +47,6 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #ifdef __cplusplus
-#define MAX(a,b)    (((a) > (b)) ? (a) : (b))
-#define MIN(a,b)    (((a) < (b)) ? (a) : (b))
+  #define MAX(a,b)    (((a) > (b)) ? (a) : (b))
+  #define MIN(a,b)    (((a) < (b)) ? (a) : (b))
 #endif

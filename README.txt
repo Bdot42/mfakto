@@ -86,8 +86,8 @@ Steps:
 - install ROCm
 - navigate to the mfakto folder
 - cd src
-- verify that the AMD_APP_DIR variable in the makefile points to the SDK
-  installation directory
+- verify that the AMD_APP_DIR variable in the makefile points to the ROCm
+  directory
 - make
 - mfakto should compile without errors in its root folder
 
@@ -96,24 +96,25 @@ Steps:
 #######################
 
 Requires:
-- Microsoft Visual Studio 2012
+- Microsoft Visual Studio
 - GPUOpen OpenCL SDK
 
 Steps:
-- install the GPUOpen OpenCL SDK
-- launch Visual Studio and open the mfaktoVS12.sln file. You can use a later
-  version as Visual Studio will automatically convert your projects. If the
-  option does not appear, right-click the solution and select "Retarget
-  solution" from the menu.
+- download and install the GPUOpen OpenCL SDK from GitHub:
+  https://github.com/GPUOpen-LibrariesAndSDKs/OCL-SDK/releases
+- open mfaktoVS12.sln in Visual Studio. You can use any recent version as
+  Visual Studio will automatically update your project settings. If the option
+  does not appear, right-click the solution and select "Retarget solution" from
+  the menu.
 - open the project properties and select the configuration and platform
-- go to C/C++ > General > Additional Include Directories and add the path to
-  the OpenCL headers:
+- go to C/C++ > General > Additional Include Directories and verify that it
+  contains the path to the OpenCL headers:
 
       $(OCL_ROOT)\include
 
-- now go to Linker > General > Additional Library Directories and add the path
-  to the appropriate library folder. You may need to restart your computer for
-  Visual Studio to recognize the OCL_ROOT system variable.
+- now go to Linker > General > Additional Library Directories and verify that
+  it contains the correct library path. You may need to restart your computer
+  for Visual Studio to recognize the OCL_ROOT system variable.
 
       32 bits: $(OCL_ROOT)\lib\x86
       64 bits: $(OCL_ROOT)\lib\x86_64
@@ -125,15 +126,18 @@ Steps:
 ########################
 
 Requires:
-- MinGW
+- MinGW (64-bit)
 - GPUOpen OpenCL SDK
 - optional: MSYS2
 
 Initial steps:
-- install the GPUOpen OpenCL SDK
+- download and install a 64-bit MinGW compiler. Our recommendation is to use
+  MinGW-w64 as it is actively maintained: http://mingw-w64.org
+- download and install the GPUOpen OpenCL SDK from GitHub:
+  https://github.com/GPUOpen-LibrariesAndSDKs/OCL-SDK/releases
 - add the "bin" folder in the MinGW directory to your system Path variable
 - verify that the AMD_APP_DIR variable in the makefile points to the SDK
-  installation directory (see note)
+  directory (see note)
 
 MinGW can be used with or without MSYS to compile mfakto. In the latter case:
 - navigate to the mfakto folder
@@ -146,13 +150,23 @@ Otherwise:
 
       pacman -S mingw-w64-x86_64-gcc make
 
-- launch the 32-bit or 64-bit MinGW shell and navigate to the mfakto folder
+- start the 32-bit or 64-bit MinGW shell and navigate to the mfakto folder
 - cd src
 - make (cross your fingers)
 
-Important note: make does not support spaces in file names. If your OpenCL SDK
-installation directory contains spaces, then you will need to either create a
-symbolic link or copy the files to another folder.
+You may see some warnings, but they are safe to ignore.
+
+Additional notes:
+- make does not support spaces in file names. If your OpenCL SDK directory
+  contains spaces, then you will need to either create a symbolic link or copy
+  the files to another folder.
+- mfakto may not compile correctly with Win-builds. It is recommended to use
+  the native Windows package instead:
+  http://mingw-w64.org/doku.php/download/mingw-builds
+- To compile mfakto for both 32 and 64 bits, you will need to install MinGW-w64
+  for both the i686 and x86_64 architectures.
+- mfakto may give an "entry point not found" error on startup. Running make
+  with the "static=yes" flag should prevent this.
 
 #############
 # 1.3 macOS #
@@ -167,17 +181,15 @@ Steps:
 - mfakto should compile out of the box as macOS contains a native OpenCL
   implementation
 
-You may see some warnings, but they are safe to ignore.
-
 ####################
 # 2 Running mfakto #
 ####################
 
 General requirements:
-- AMD Catalyst 11.4 or higher. Consider using 14.4 or above as previous
+- AMD Catalyst 11.4 or higher. Consider using at least 14.4 as some previous
   versions have a bug that causes high CPU loads.
-- AMD APP SDK 2.5 or higher unless using AMD Catalyst 11.10 or above. However,
-  this is not recommended as the AMD APP SDK has been discontinued.
+- AMD APP SDK 2.5 or higher for systems without Catalyst 11.10 or above. It is
+  recommended to update your drivers as the SDK has been discontinued.
 - for Intel integrated GPUs: Compute Runtime for OpenCL
 
 macOS users do not need any additional software as OpenCL is already part of
@@ -213,21 +225,23 @@ AMD:
 - all devices that support OpenCL 1.1 or later
 - all APUs
 - OpenCL 1.0 devices, such as the FireStream 9250 / 9270 and Radeon HD 4000
-  series, can also run mfakto but do not support atomic operations*
+  series, can run mfakto but do not support atomic operations*
 - not supported: FireStream 9170 and Radeon HD 2000 / 3000 series (as kernel
   compilation fails)
 
 Other:
-- Intel HD Graphics 4000 and later. Self-tests currently fail on macOS.
+- Intel HD Graphics 4000 and later. Currently not supported on macOS.
 - OpenCL-enabled CPUs via the '-d c' option
 - not currently supported: Nvidia devices
 
-* without atomics, mfakto does not correctly process multiple factors found in
-the same block / grid. Tests have shown that it will report only one factor. It
-may even return a scrambled factor due to a mix of bytes from multiple factors.
-PrimeNet will automatically reject factors that do not divide a Mersenne
-number. If this happens, rerun the exponent and bit level on the CPU with
-either the '-d c' option or Prime95 / mprime.
+
+* without atomics, mfakto may not correctly process multiple factors found in
+the same class. It may report only one factor or even an incorrect one, the
+latter due to scrambled data from multiple factors. PrimeNet automatically
+rejects factors that do not divide a Mersenne number. If this happens, run the
+exponent and bit level again on the CPU or another device. You can run mfakto
+on the CPU using the '-d c' option or use Prime95 instead. Lowering GridSize in
+mfakto.ini can also reduce the chance of error.
 
 #############
 # 2.2 Linux #
@@ -241,12 +255,12 @@ either the '-d c' option or Prime95 / mprime.
 ###############
 
 Requirements:
-- AMD Catalyst 11.4 is the minimum required version. Consider using 14.4 or
-  above as previous versions have a bug that causes high CPU loads.
-- AMD APP SDK 2.5 or higher unless using AMD Catalyst 11.10 or above. However,
-  this is not recommended as the AMD APP SDK has been discontinued. If you
-  still want to use it to compile mfakto, make sure the path to the appropriate
-  library folder is in the system Path variable:
+- AMD Catalyst 11.4 or higher. Consider using at least 14.4 as some previous
+  versions have a bug that causes high CPU loads.
+- AMD APP SDK 2.5 or higher for systems without Catalyst 11.10 or above. It is
+  recommended to update your drivers as the SDK has been discontinued.
+  If you still want to use it to compile mfakto, make sure the path to the
+  appropriate library folder is in the system Path variable:
 
       32 bits: %AMDAPPSDKROOT%\lib\x86
       64 bits: %AMDAPPSDKROOT%\lib\x86_64
@@ -355,38 +369,53 @@ Submitting results:
 ##################
 
 - On some devices, such as the Radeon HD 7700 - 7900 series, mfakto may be very
-  slow at full GPU load. It will warn about this during startup.
-  This is due to fewer registers being available to the kernels.
+  slow at full GPU load due to fewer registers being available to the kernels.
+  It will warn about this during startup.
   Set VectorSize=2 in mfakto.ini and restart mfakto to resolve this.
 
 - The user interface has not been extensively tested against invalid inputs.
   Although there are some checks, they are not foolproof by any means.
 
-- Your GUI may lag while running mfakto. In severe cases, Windows may restart
-  the driver or even throw a BSoD.
+- Your GUI may lag while running mfakto. On some Windows systems, the OS may
+  restart the driver or even throw a BSoD in severe cases.
   Try lowering GridSize or NumStreams in your mfakto.ini file. Smaller grids
-  should have better responsiveness at a slight performance loss. To prevent
-  graphics driver crashes on Windows, another option is to increase the GPU
-  processing time: https://support.microsoft.com/en-us/help/2665946
+  should have better responsiveness at a slight performance loss. Another
+  option for Windows users is to increase the GPU processing time:
+  https://support.microsoft.com/en-us/help/2665946
 
-- SievePrimesAdjust is not always optimal. Test it out to find the best
-  SievePrimes value and set SievePrimesAdjust to 0 in your mfakto.ini file.
+- SievePrimesAdjust is not always optimal. Experiment to find the best
+  SievePrimes value and set SievePrimesAdjust=0 in your mfakto.ini file.
 
 - GPU is not found, fallback to CPU
   This happens on Linux when there is no X server. It can also happen on
   Windows when the GPU is not the primary display adapter. Try running mfakto
   on the main display rather than remotely. If that fails, then your graphics
-  driver may be too old. It's also possible that the first GPU is not an AMD
-  one. In this case, use the -d switch to specify a different device number.
-  You can run clinfo to get a list of devices.
+  driver may be too old. It's also possible that the first device is not an
+  AMD GPU. In this case, use the -d switch to specify a different device
+  number. You can run 'clinfo' to get a list of devices.
+
+- on devices that do not support atomic operations, mfakto may not correctly
+  process multiple factors found in the same class. It may report only one
+  factor or even an incorrect one, the latter due to scrambled data from
+  multiple factors.
+  If this happens, run the exponent and bit level again on the CPU or another
+  device. You can tell mfakto to run on the CPU using the '-d c' option or use
+  Prime95 instead. Lowering GridSize in mfakto.ini can also reduce the chance
+  of error.
+
+- mfakto does not support Intel HD Graphics on macOS
+  Due to buggy drivers shipped with macOS, mfakto presently does not work with
+  Intel HD Graphics. Unless Apple fixes the issue, Intel integrated GPUs may
+  not be supported in the foreseeable future.
+
 
 ##################
 # 4.1 Non-issues #
 ##################
 
 - mfakto runs slower on small ranges. Usually it doesn't make much sense to
-  run mfakto with an upper limit below 64 bits. mfaktc is designed to find
-  factors between 64 and 92 bits and is best suited for long-running jobs.
+  run mfakto with an upper limit below 64 bits. mfakto is designed to find
+  factors between 64 and 92 bits, and is best suited for long-running jobs.
 
 - mfakto can find factors outside the given range.
   This is because mfakto works on huge factor blocks, controlled by GridSize in
@@ -411,8 +440,8 @@ before making changes. ;-)
 #########
 
 Q: Does mfakto support multiple GPUs?
-A: No, but you can use the -d option to tell an instance to run on a specific
-   device. Please also read the next question.
+A: Currently no, but you can use the -d option to start an instance on a
+   specific device. Please also see the next question.
 
 Q: Can I run multiple instances of mfakto on the same computer?
 A: Yes. In most cases, this is necessary to make full use of a GPU when sieving

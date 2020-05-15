@@ -33,3 +33,6 @@ x64/
 *.ckp.bu
 results.txt
 worktodo.txt
+
+# other
+.DS_Store

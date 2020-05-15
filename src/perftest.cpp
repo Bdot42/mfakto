@@ -22,7 +22,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <fstream>
 #include "string.h"
-#if defined(__APPLE__) || defined(__MACOSX)
+#if defined __APPLE__ || __MACOSX
   #include "OpenCL/cl.h"
 #else
   #include "CL/cl.h"
@@ -1768,8 +1768,10 @@ if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
   if (mystuff.small_exp == 1)
     strcat(program_options, " -DSMALL_EXP");
 
-  if (mystuff.CompileOptions[0])  // if mfakto.ini defined compile options, override the default with them
+  // compile options defined in mfakto.ini override the defaults
+  if (mystuff.CompileOptions[0]) {
     strcpy(program_options, mystuff.CompileOptions);
+  }
 
     printf("Compiling kernels (build options: \"%s\").", program_options);
 
