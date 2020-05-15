@@ -1192,7 +1192,7 @@ int main(int argc, char **argv)
 /* print current configuration */
   if(mystuff.verbosity >= 1)
   {
-    printf("Compiletime options\n");
+    printf("Compile-time options\n");
     if (mystuff.gpu_sieving == 0)
     {
 #ifdef SIEVE_SIZE_LIMIT

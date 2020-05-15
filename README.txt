@@ -239,8 +239,9 @@ Other:
 the same block / grid. It may report only one factor or even an incorrect one,
 the latter due to scrambled data from multiple factors. PrimeNet automatically
 rejects factors that do not divide a Mersenne number. If this happens, run the
-exponent and bit level again on the CPU or another device. You can tell mfakto
-to run on the CPU using the '-d c' option or use Prime95 instead.
+exponent and bit level again on the CPU or another device. You can run mfakto
+on the CPU using the '-d c' option or use Prime95 instead. Lowering GridSize in
+mfakto.ini can also reduce the chance of error.
 
 #############
 # 2.2 Linux #
@@ -378,8 +379,8 @@ Submitting results:
 - Your GUI may lag while running mfakto. On some Windows systems, the OS may
   restart the driver or even throw a BSoD in severe cases.
   Try lowering GridSize or NumStreams in your mfakto.ini file. Smaller grids
-  should have better responsiveness at a slight performance loss. For Windows
-  users, another option is to increase the GPU processing time:
+  should have better responsiveness at a slight performance loss. Another
+  option for Windows users is to increase the GPU processing time:
   https://support.microsoft.com/en-us/help/2665946
 
 - SievePrimesAdjust is not always optimal. Experiment to find the best
@@ -393,13 +394,14 @@ Submitting results:
   AMD GPU. In this case, use the -d switch to specify a different device
   number. You can run 'clinfo' to get a list of devices.
 
-- on devices that do not support atomic oprations, mfakto may not correctly
-  process multiple factors found in the same block / grid. It may report only
-  one factor or even an incorrect one, the latter due to scrambled data from
+- on devices that do not support atomic operations, mfakto may not correctly
+  process multiple factors found in the same class. It may report only one
+  factor or even an incorrect one, the latter due to scrambled data from
   multiple factors.
   If this happens, run the exponent and bit level again on the CPU or another
   device. You can tell mfakto to run on the CPU using the '-d c' option or use
-  Prime95 instead.
+  Prime95 instead. Lowering GridSize in mfakto.ini can also reduce the chance
+  of error.
 
 - mfakto does not support Intel HD Graphics on macOS
   Due to buggy drivers shipped with macOS, mfakto presently does not work with
@@ -438,7 +440,7 @@ before making changes. ;-)
 #########
 
 Q: Does mfakto support multiple GPUs?
-A: Currently no, but you can use the -d option to tell an instance to run on a
+A: Currently no, but you can use the -d option to start an instance on a
    specific device. Please also see the next question.
 
 Q: Can I run multiple instances of mfakto on the same computer?
