@@ -1028,7 +1028,7 @@ int main(int argc, char **argv)
   strcpy(mystuff.inifile, "mfakto.ini");
   mystuff.force_rebuild = 0;
 
-  printf("%s (%dbit build)\n\n", MFAKTO_VERSION, (int)(sizeof(void*)*8));
+  printf("%s (%d-bit build)\n\n", MFAKTO_VERSION, (int)(sizeof(void*)*8));
 
   while(i<argc)
   {
@@ -1196,8 +1196,8 @@ int main(int argc, char **argv)
     if (mystuff.gpu_sieving == 0)
     {
 #ifdef SIEVE_SIZE_LIMIT
-      printf("  SIEVE_SIZE_LIMIT          %dkiB\n", SIEVE_SIZE_LIMIT);
-      printf("  SIEVE_SIZE                %dbits\n", SIEVE_SIZE);
+      printf("  SIEVE_SIZE_LIMIT          %d kiB\n", SIEVE_SIZE_LIMIT);
+      printf("  SIEVE_SIZE                %d bits\n", SIEVE_SIZE);
 #endif
       printf("  SIEVE_SPLIT               %d\n", SIEVE_SPLIT);
     }

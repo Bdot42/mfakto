@@ -21,7 +21,7 @@ along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
-#if defined(__APPLE__) || defined(__MACOSX)
+#if defined __APPLE__ || __MACOSX
   #include <OpenCL/cl.h>
 #else
   #include <CL/cl.h>
@@ -44,24 +44,24 @@ void print_help(char *string)
   printf("under certain conditions; see COPYING for details.\n\n\n");
 
   printf("Usage: %s [options]\n", string);
-  printf("  -h|--help              display this help\n");
+  printf("  -h | --help            display this help\n");
   printf("  -d <xy>                specify to use OpenCL platform number x and\n");
   printf("                         device number y in this program\n");
   printf("  -d c                   force using all CPUs\n");
   printf("  -d g                   force using the first GPU\n");
   printf("  -v <n>                 verbosity level: 0=terse, 1=normal, 2=verbose, 3=debug\n");
-  printf("  -tf <exp> <min> <max>  trial factor M<exp> from 2^<min> to 2^<max>\n");
+  printf("  -tf <exp> <min> <max>  trial factor M<exp> from <min> to <max> bits\n");
   printf("                         instead of parsing the worktodo file\n");
-  printf("  -i|--inifile <file>    load <file> as inifile (default: mfakto.ini)\n");
-  printf("  -st                    selftest using the optimal kernel per testcase\n");
-  printf("  -st2                   selftest using all possible kernels\n");
+  printf("  -i | --inifile <file>  load <file> as INI file (default: mfakto.ini)\n");
+  printf("  -st                    self-test using the optimal kernel per test case\n");
+  printf("  -st2                   self-test using all possible kernels\n");
   printf("\n");
   printf("options for debugging purposes\n");
   printf("  --timertest            test of timer functions\n");
   printf("  --sleeptest            test of sleep functions\n");
-  printf("  --perftest [<n>]       performance tests, repeat each test <n> times (def: 10)\n");
+  printf("  --perftest [n]         performance tests, repeat each test <n> times (def: 10)\n");
   printf("  --CLtest               test of some OpenCL functions\n");
-  printf("                         specify -d before --CLtest to test the specified device\n");
+  printf("                         specify -d before --CLtest to test specified device\n");
 }
 
 
@@ -125,7 +125,7 @@ void print_dez96(int96 a, char *buf)
   }
 }
 
-/* unused 
+/* unused
 
 void print_dez144(int144 a, char *buf)
 {
@@ -352,8 +352,8 @@ void print_status_line(mystuff_t *mystuff)
       index = 0;
     }
   }
-  
-  
+
+
   if(mystuff->mode == MODE_NORMAL)
   {
     if(mystuff->printmode == 1)index += sprintf(buffer + index, "\r");

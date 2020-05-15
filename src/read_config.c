@@ -47,7 +47,7 @@ static int my_read_int(char *inifile, char *name, int *value)
     {
       char msg[80];
       inifile_unavailable = 1;
-      sprintf(msg, "Cannot load inifile \"%.55s\"", inifile);
+      sprintf(msg, "Cannot load INI file \"%.55s\"", inifile);
       perror(msg);
     }
     return 1;
@@ -77,7 +77,7 @@ static int my_read_ulong(char *inifile, char *name, unsigned long long int *valu
     {
       char msg[80];
       inifile_unavailable = 1;
-      sprintf(msg, "Cannot load inifile \"%.55s\"", inifile);
+      sprintf(msg, "Cannot load INI file \"%.55s\"", inifile);
       perror(msg);
     }
     return 1;
@@ -112,7 +112,7 @@ static int my_read_string(char *inifile, char *name, char *string, unsigned int 
     {
       char msg[80];
       inifile_unavailable = 1;
-      sprintf(msg, "Cannot load inifile \"%.55s\"", inifile);
+      sprintf(msg, "Cannot load INI file \"%.55s\"", inifile);
       perror(msg);
     }
     return 1;
@@ -147,7 +147,7 @@ int read_config(mystuff_t *mystuff)
   {
     if(my_read_int(mystuff->inifile, "Verbosity", &i))
     {
-      printf("WARNING: Cannot read Verbosity from inifile, set to 1 by default\n");
+      printf("WARNING: Cannot read Verbosity from INI file, set to 1 by default\n");
       mystuff->verbosity = 1;
     }
     else
@@ -155,14 +155,14 @@ int read_config(mystuff_t *mystuff)
   }
 
   if(mystuff->verbosity >= 1)printf("\nRuntime options\n"
-                                    "  Inifile                   %s\n"
+                                    "  INI file                  %s\n"
                                     "  Verbosity                 %d\n", mystuff->inifile, mystuff->verbosity);
 
 /*****************************************************************************/
 
   if(my_read_int(mystuff->inifile, "SieveOnGPU", &i))
   {
-    printf("WARNING: Cannot read SieveOnGPU from inifile, set to 0 by default\n");
+    printf("WARNING: Cannot read SieveOnGPU from INI file, set to 0 by default\n");
     i=0;
   }
   else if(i != 0 && i != 1)
@@ -187,7 +187,7 @@ int read_config(mystuff_t *mystuff)
 
     if(my_read_int(mystuff->inifile, "SievePrimesMin", &i))
     {
-      printf("WARNING: Cannot read SievePrimesMin from inifile, using default value (%d)\n", 5000);
+      printf("WARNING: Cannot read SievePrimesMin from INI file, using default value (%d)\n", 5000);
       i = 5000;
     }
     else if((i < SIEVE_PRIMES_MIN) || (i >= SIEVE_PRIMES_MAX))
@@ -203,7 +203,7 @@ int read_config(mystuff_t *mystuff)
 
     if(my_read_int(mystuff->inifile, "SievePrimesMax", &i))
     {
-      printf("WARNING: Cannot read SievePrimesMax from inifile, using default value (%d)\n", 200000);
+      printf("WARNING: Cannot read SievePrimesMax from INI file, using default value (%d)\n", 200000);
       i = 200000;
     }
     else if((i < (int) mystuff->sieve_primes_min) || (i > SIEVE_PRIMES_MAX))
@@ -218,19 +218,19 @@ int read_config(mystuff_t *mystuff)
   /*****************************************************************************/
     if(my_read_int(mystuff->inifile, "SievePrimes", &i))
     {
-      printf("WARNING: Cannot read SievePrimes from inifile, using default value (%d)\n", SIEVE_PRIMES_DEFAULT);
+      printf("WARNING: Cannot read SievePrimes from INI file, using default value (%d)\n", SIEVE_PRIMES_DEFAULT);
       i = SIEVE_PRIMES_DEFAULT;
     }
     else
     {
       if((cl_uint)i>mystuff->sieve_primes_max)
       {
-        printf("WARNING: Read SievePrimes=%d from inifile, using max value (%d)\n", i, mystuff->sieve_primes_max);
+        printf("WARNING: Read SievePrimes=%d from INI file, using max value (%d)\n", i, mystuff->sieve_primes_max);
         i = mystuff->sieve_primes_max;
       }
       else if( i < (int) mystuff->sieve_primes_min)
       {
-        printf("WARNING: Read SievePrimes=%d from inifile, using min value (%d)\n", i, mystuff->sieve_primes_min);
+        printf("WARNING: Read SievePrimes=%d from INI file, using min value (%d)\n", i, mystuff->sieve_primes_min);
         i = mystuff->sieve_primes_min;
       }
     }
@@ -241,7 +241,7 @@ int read_config(mystuff_t *mystuff)
 
     if(my_read_int(mystuff->inifile, "SievePrimesAdjust", &i))
     {
-      printf("WARNING: Cannot read SievePrimesAdjust from inifile, using default value (0)\n");
+      printf("WARNING: Cannot read SievePrimesAdjust from INI file, using default value (0)\n");
       i = 0;
     }
     else if(i != 0 && i != 1)
@@ -260,7 +260,7 @@ int read_config(mystuff_t *mystuff)
 #else
     if(my_read_int(mystuff->inifile, "SieveSizeLimit", &i))
     {
-      printf("WARNING: Cannot read SieveSizeLimit from inifile, using default value (32)\n");
+      printf("WARNING: Cannot read SieveSizeLimit from INI file, using default value (32)\n");
       i=32;
     }
     else if(i <= 13*17*19*23/8192)
@@ -277,19 +277,19 @@ int read_config(mystuff_t *mystuff)
 
     if(my_read_int(mystuff->inifile, "NumStreams", &i))
     {
-      printf("WARNING: Cannot read NumStreams from inifile, using default value (%d)\n",NUM_STREAMS_DEFAULT);
+      printf("WARNING: Cannot read NumStreams from INI file, using default value (%d)\n",NUM_STREAMS_DEFAULT);
       i=NUM_STREAMS_DEFAULT;
     }
     else
     {
       if(i>NUM_STREAMS_MAX)
       {
-        printf("WARNING: Read NumStreams=%d from inifile, using max value (%d)\n",i,NUM_STREAMS_MAX);
+        printf("WARNING: Read NumStreams=%d from INI file, using max value (%d)\n",i,NUM_STREAMS_MAX);
         i=NUM_STREAMS_MAX;
       }
       else if(i<NUM_STREAMS_MIN)
       {
-        printf("WARNING: Read NumStreams=%d from inifile, using min value (%d)\n",i,NUM_STREAMS_MIN);
+        printf("WARNING: Read NumStreams=%d from INI file, using min value (%d)\n",i,NUM_STREAMS_MIN);
         i=NUM_STREAMS_MIN;
       }
     }
@@ -324,19 +324,19 @@ int read_config(mystuff_t *mystuff)
 
     if(my_read_int(mystuff->inifile, "GridSize", &i))
     {
-      printf("WARNING: Cannot read GridSize from inifile, using default value (3)\n");
+      printf("WARNING: Cannot read GridSize from INI file, using default value (3)\n");
       i = 3;
     }
     else
     {
       if(i > 4)
       {
-        printf("WARNING: Read GridSize=%d from inifile, using max value (4)\n", i);
+        printf("WARNING: Read GridSize=%d from INI file, using max value (4)\n", i);
         i = 4;
       }
       else if(i < 0)
       {
-        printf("WARNING: Read GridSize=%d from inifile, using min value (0)\n", i);
+        printf("WARNING: Read GridSize=%d from INI file, using min value (0)\n", i);
         i = 0;
       }
     }
@@ -351,7 +351,7 @@ int read_config(mystuff_t *mystuff)
 
     if(my_read_ulong(mystuff->inifile, "SieveCPUMask", &ul))
     {
-      printf("WARNING: Cannot read SieveCPUMask from inifile, set to 0 by default\n");
+      printf("WARNING: Cannot read SieveCPUMask from INI file, set to 0 by default\n");
       ul=0;
     }
     #ifdef __MINGW32__
@@ -390,7 +390,7 @@ int read_config(mystuff_t *mystuff)
 
     if(my_read_int(mystuff->inifile, "MoreClasses", &i))
     {
-      printf("WARNING: Cannot read MoreClasses from inifile, set to 1 by default\n");
+      printf("WARNING: Cannot read MoreClasses from INI file, set to 1 by default\n");
       i=1;
     }
     else if(i != 0 && i != 1)
@@ -410,19 +410,19 @@ int read_config(mystuff_t *mystuff)
 
     if(my_read_int(mystuff->inifile, "GPUSievePrimes", &i))
     {
-      printf("WARNING: Cannot read GPUSievePrimes from inifile, using default value (%d)\n",GPU_SIEVE_PRIMES_DEFAULT);
+      printf("WARNING: Cannot read GPUSievePrimes from INI file, using default value (%d)\n",GPU_SIEVE_PRIMES_DEFAULT);
       i = GPU_SIEVE_PRIMES_DEFAULT;
     }
     else
     {
       if(i > GPU_SIEVE_PRIMES_MAX)
       {
-        printf("WARNING: Read GPUSievePrimes=%d from inifile, using max value (%d)\n",i,GPU_SIEVE_PRIMES_MAX);
+        printf("WARNING: Read GPUSievePrimes=%d from INI file, using max value (%d)\n",i,GPU_SIEVE_PRIMES_MAX);
         i = GPU_SIEVE_PRIMES_MAX;
       }
       else if(i < GPU_SIEVE_PRIMES_MIN)
       {
-        printf("WARNING: Read GPUSievePrimes=%d from inifile, using min value (%d)\n",i,GPU_SIEVE_PRIMES_MIN);
+        printf("WARNING: Read GPUSievePrimes=%d from INI file, using min value (%d)\n",i,GPU_SIEVE_PRIMES_MIN);
         i = GPU_SIEVE_PRIMES_MIN;
       }
     }
@@ -433,7 +433,7 @@ int read_config(mystuff_t *mystuff)
 
     if(my_read_int(mystuff->inifile, "GPUSieveProcessSize", &i))
     {
-      printf("WARNING: Cannot read GPUSieveProcessSize from inifile, using default value (%d)\n",GPU_SIEVE_PROCESS_SIZE_DEFAULT);
+      printf("WARNING: Cannot read GPUSieveProcessSize from INI file, using default value (%d)\n",GPU_SIEVE_PROCESS_SIZE_DEFAULT);
       i = GPU_SIEVE_PROCESS_SIZE_DEFAULT;
     }
     else
@@ -446,12 +446,12 @@ int read_config(mystuff_t *mystuff)
       }
       if(i > GPU_SIEVE_PROCESS_SIZE_MAX)
       {
-        printf("WARNING: Read GPUSieveProcessSize=%d from inifile, using max value (%d)\n",i,GPU_SIEVE_PROCESS_SIZE_MAX);
+        printf("WARNING: Read GPUSieveProcessSize=%d from INI file, using max value (%d)\n",i,GPU_SIEVE_PROCESS_SIZE_MAX);
         i = GPU_SIEVE_PROCESS_SIZE_MAX;
       }
       else if(i < GPU_SIEVE_PROCESS_SIZE_MIN)
       {
-        printf("WARNING: Read GPUSieveProcessSize=%d from inifile, using min value (%d)\n",i,GPU_SIEVE_PROCESS_SIZE_MIN);
+        printf("WARNING: Read GPUSieveProcessSize=%d from INI file, using min value (%d)\n",i,GPU_SIEVE_PROCESS_SIZE_MIN);
         i = GPU_SIEVE_PROCESS_SIZE_MIN;
       }
     }
@@ -462,19 +462,19 @@ int read_config(mystuff_t *mystuff)
 
     if(my_read_int(mystuff->inifile, "GPUSieveSize", &i))
     {
-      printf("WARNING: Cannot read GPUSieveSize from inifile, using default value (%d)\n",GPU_SIEVE_SIZE_DEFAULT);
+      printf("WARNING: Cannot read GPUSieveSize from INI file, using default value (%d)\n",GPU_SIEVE_SIZE_DEFAULT);
       i = GPU_SIEVE_SIZE_DEFAULT;
     }
     else
     {
       if(i > GPU_SIEVE_SIZE_MAX)
       {
-        printf("WARNING: Read GPUSieveSize=%d from inifile, using max value (%d)\n",i,GPU_SIEVE_SIZE_MAX);
+        printf("WARNING: Read GPUSieveSize=%d from INI file, using max value (%d)\n",i,GPU_SIEVE_SIZE_MAX);
         i = GPU_SIEVE_SIZE_MAX;
       }
       else if(i < GPU_SIEVE_SIZE_MIN)
       {
-        printf("WARNING: Read GPUSieveSize=%d from inifile, using min value (%d)\n",i,GPU_SIEVE_SIZE_MIN);
+        printf("WARNING: Read GPUSieveSize=%d from INI file, using min value (%d)\n",i,GPU_SIEVE_SIZE_MIN);
         i = GPU_SIEVE_SIZE_MIN;
       }
       if (i * 1024 * 1024 % mystuff->gpu_sieve_processing_size != 0)
@@ -493,14 +493,14 @@ int read_config(mystuff_t *mystuff)
 
     if(my_read_int(mystuff->inifile, "FlushInterval", &i))
     {
-      printf("WARNING: Cannot read FlushInterval from inifile, using default value 0\n");
+      printf("WARNING: Cannot read FlushInterval from INI file, using default value 0\n");
       i = 0;
     }
     else
     {
       if(i < 0)
       {
-        printf("WARNING: Read FlushInterval=%d from inifile, using min value (0)\n",i);
+        printf("WARNING: Read FlushInterval=%d from INI file, using min value (0)\n",i);
         i = 0;
       }
     }
@@ -513,7 +513,7 @@ int read_config(mystuff_t *mystuff)
   if(my_read_string(mystuff->inifile, "WorkFile", mystuff->workfile, 50))
   {
     sprintf(mystuff->workfile, "worktodo.txt");
-    printf("WARNING: Cannot read WorkFile from inifile, using default (%s)\n", mystuff->workfile);
+    printf("WARNING: Cannot read WorkFile from INI file, using default (%s)\n", mystuff->workfile);
   }
   if(mystuff->verbosity >= 1)printf("  WorkFile                  %s\n", mystuff->workfile);
 
@@ -522,7 +522,7 @@ int read_config(mystuff_t *mystuff)
   if(my_read_string(mystuff->inifile, "ResultsFile", mystuff->resultfile, 50))
   {
     sprintf(mystuff->resultfile, "results.txt");
-    printf("WARNING: Cannot read ResultsFile from inifile, using default (%s)\n", mystuff->resultfile);
+    printf("WARNING: Cannot read ResultsFile from INI file, using default (%s)\n", mystuff->resultfile);
   }
   if(mystuff->verbosity >= 1)printf("  ResultsFile               %s\n", mystuff->resultfile);
 
@@ -530,7 +530,7 @@ int read_config(mystuff_t *mystuff)
 
   if(my_read_int(mystuff->inifile, "Checkpoints", &i))
   {
-    printf("WARNING: Cannot read Checkpoints from inifile, enabled by default\n");
+    printf("WARNING: Cannot read Checkpoints from INI file, enabled by default\n");
     i=1;
   }
   else if(i < 0)
@@ -556,17 +556,17 @@ int read_config(mystuff_t *mystuff)
   {
     if(my_read_int(mystuff->inifile, "CheckpointDelay", &i))
     {
-      printf("WARNING: Cannot read CheckpointDelay from inifile, set to 300s by default\n");
+      printf("WARNING: Cannot read CheckpointDelay from INI file, set to 300 s by default\n");
       i = 300;
     }
     if(i > 3600)
     {
-      printf("WARNING: Maximum value for CheckpointDelay is 3600s\n");
+      printf("WARNING: Maximum value for CheckpointDelay is 3600 s\n");
       i = 3600;
     }
     if(i < 0)
     {
-      printf("WARNING: Minimum value for CheckpointDelay is 0s\n");
+      printf("WARNING: Minimum value for CheckpointDelay is 0 s\n");
       i = 0;
     }
     if(mystuff->verbosity >= 1)printf("  CheckpointDelay           %d s\n", i);
@@ -577,7 +577,7 @@ int read_config(mystuff_t *mystuff)
 
   if(my_read_int(mystuff->inifile, "Stages", &i))
   {
-    printf("WARNING: Cannot read Stages from inifile, enabled by default\n");
+    printf("WARNING: Cannot read Stages from INI file, enabled by default\n");
     i=1;
   }
   else if(i != 0 && i != 1)
@@ -596,7 +596,7 @@ int read_config(mystuff_t *mystuff)
 
   if(my_read_int(mystuff->inifile, "StopAfterFactor", &i))
   {
-    printf("WARNING: Cannot read StopAfterFactor from inifile, set to 1 by default\n");
+    printf("WARNING: Cannot read StopAfterFactor from INI file, set to 1 by default\n");
     i=1;
   }
   else if( (i < 0) || (i > 2) )
@@ -616,7 +616,7 @@ int read_config(mystuff_t *mystuff)
 
   if(my_read_int(mystuff->inifile, "PrintMode", &i))
   {
-    printf("WARNING: Cannot read PrintMode from inifile, set to 0 by default\n");
+    printf("WARNING: Cannot read PrintMode from INI file, set to 0 by default\n");
     i=0;
   }
   else if(i != 0 && i != 1)
@@ -664,7 +664,7 @@ int read_config(mystuff_t *mystuff)
   {
 //    sprintf(mystuff->stats.progressheader, "    class | candidates |    time |    ETA | avg. rate | SievePrimes | CPU wait");
     sprintf(mystuff->stats.progressheader, "Date   Time     Pct    ETA | Exponent    Bits | GHz-d/day    Sieve     Wait");
-    printf("WARNING, no ProgressHeader specified in inifile, using default\n");
+    printf("WARNING: no ProgressHeader specified in INI file, using default\n");
   }
   if(mystuff->verbosity >= 2)printf("  ProgressHeader            \"%s\"\n", mystuff->stats.progressheader);
 
@@ -674,7 +674,7 @@ int read_config(mystuff_t *mystuff)
   if(my_read_string(mystuff->inifile, "ProgressFormat", mystuff->stats.progressformat, 250))
   {
     sprintf(mystuff->stats.progressformat, "%%d %%T  %%p %%e | %%M %%l-%%u |   %%g  %%s  %%W%%%%");
-    printf("WARNING, no ProgressFormat specified in inifile, using default\n");
+    printf("WARNING: no ProgressFormat specified in INI file, using default\n");
   }
   if(mystuff->verbosity >= 2)printf("  ProgressFormat            \"%s\"\n", mystuff->stats.progressformat);
 
@@ -702,7 +702,7 @@ int read_config(mystuff_t *mystuff)
 
   if(my_read_int(mystuff->inifile, "VectorSize", &i))
   {
-    printf("WARNING: Cannot read VectorSize from inifile, set to 4 by default\n");
+    printf("WARNING: Cannot read VectorSize from INI file, set to 4 by default\n");
     i=4;
   }
   else if((i < 1 || i > 4) && i != 8 && i != 16 )
@@ -724,7 +724,7 @@ int read_config(mystuff_t *mystuff)
 
   if (my_read_string(mystuff->inifile, "GPUType", tmp, 50))
   {
-    printf("WARNING: Cannot read GPUType from inifile, using default (AUTO)\n");
+    printf("WARNING: Cannot read GPUType from INI file, using default (AUTO)\n");
     strcpy(tmp, "AUTO");
     mystuff->gpu_type = GPU_AUTO;
   }
@@ -753,7 +753,7 @@ int read_config(mystuff_t *mystuff)
 
   if(my_read_int(mystuff->inifile, "SmallExp", &i))
   {
-    printf("WARNING: Cannot read SmallExp from inifile, set to 0 by default\n");
+    printf("WARNING: Cannot read SmallExp from INI file, set to 0 by default\n");
     i=0;
   }
   else if(i != 0 && i != 1)
@@ -815,7 +815,7 @@ int read_array(char *filename, char *keyname, cl_uint num, cl_uint *arr)
     {
       char msg[80];
       inifile_unavailable = 1;
-      sprintf(msg, "Cannot load inifile \"%.55s\"", filename);
+      sprintf(msg, "Cannot load INI file \"%.55s\"", filename);
       perror(msg);
     }
     return 1;
