@@ -978,7 +978,7 @@ RET_ERROR we might have a serios problem
     if (mystuff->quit) break;
   }
 
-  printf("Self-test statistics                                   \n");
+  printf("Self-test statistics                                      \n");
   printf("  number of tests           %d\n", num_selftests);
   printf("  successful tests          %d\n", st_success);
   if(st_nofactor > 0)   printf("  no factor found           %d\n", st_nofactor);
