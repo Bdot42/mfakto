@@ -259,14 +259,14 @@ Requirements:
   versions have a bug that causes high CPU loads.
 - AMD APP SDK 2.5 or higher for systems without Catalyst 11.10 or above. It is
   recommended to update your drivers as the SDK has been discontinued.
-  If you still want to use it to compile mfakto, make sure the path to the
+  If you still want to use it to run mfakto, make sure the path to the
   appropriate library folder is in the system Path variable:
 
       32 bits: %AMDAPPSDKROOT%\lib\x86
       64 bits: %AMDAPPSDKROOT%\lib\x86_64
 
-- you may need the Microsoft Visual C++ 2010 Redistributable Package for your
-  platform and language:
+- you may also need the Microsoft Visual C++ 2010 Redistributable Package for
+  your platform and language:
 
       32 bits: https://microsoft.com/en-us/download/details.aspx?id=5555
       64 bits: https://microsoft.com/en-us/download/details.aspx?id=14632
