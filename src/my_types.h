@@ -16,10 +16,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
+
 #ifndef __MY_TYPES_H
 #define __MY_TYPES_H
 #include "params.h"
-#if defined(__APPLE__) || defined(__MACOSX)
+#if defined __APPLE__ || __MACOSX
   #include "OpenCL/cl.h"
 #else
   #include "CL/cl.h"

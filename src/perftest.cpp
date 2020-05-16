@@ -18,6 +18,8 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 /* This file contains functions for performance-testing of various mfakto-areas */
 
+#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
+
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
