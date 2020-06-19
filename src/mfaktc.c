@@ -56,6 +56,10 @@ GPU_type gpu_types[]={
   {GPU_GCN,     64,  "GCN"},
   {GPU_GCN2,    64,  "GCN2"},
   {GPU_GCN3,    64,  "GCN3"},
+  {GPU_GCN4,    64,  "GCN4"},
+  {GPU_GCN5,    64,  "GCN5"},
+  {GPU_GCNF,    64,  "GCNF"},
+  {GPU_RDNA,    64,  "RDNA"},
   {GPU_APU,     80,  "APU"},
   {GPU_CPU,      1,  "CPU"},
   {GPU_NVIDIA,   8,  "NVIDIA"},
@@ -282,6 +286,94 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff, cl_uint do_test)
       MG88,             // "cl_mg88"          428.96
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
+      {
+/*  GPU_GCN4  (Ellesmere/Lexa/Baffin) (only barrett tested) */
+      BARRETT69_MUL15,
+      BARRETT70_MUL15,
+      BARRETT71_MUL15,
+      BARRETT73_MUL15,
+      BARRETT74_MUL15,
+      BARRETT76_MUL32,
+      BARRETT82_MUL15,
+      BARRETT77_MUL32,
+      BARRETT87_MUL32,
+      BARRETT83_MUL15,
+      BARRETT79_MUL32,
+      BARRETT88_MUL32,
+      BARRETT88_MUL15,
+      BARRETT92_MUL32,
+      MG62,
+      _63BIT_MUL24,
+      _71BIT_MUL24,
+      MG88,
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+    {
+/*  GPU_GCN5  (Vega 56/Vega 64/"Vega" Ryzen 2xxx-3xxx iGPU) (only barrett tested) */
+      BARRETT69_MUL15,
+      BARRETT70_MUL15,
+      BARRETT71_MUL15,
+      BARRETT73_MUL15,
+      BARRETT74_MUL15,
+      BARRETT76_MUL32,
+      BARRETT77_MUL32,
+      BARRETT82_MUL15,
+      BARRETT87_MUL32,
+      BARRETT83_MUL15,
+      BARRETT79_MUL32,
+      BARRETT88_MUL32,
+      BARRETT88_MUL15,
+      BARRETT92_MUL32,
+      MG62,
+      _63BIT_MUL24,
+      _71BIT_MUL24,
+      MG88,
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+    {
+/*  GPU_GCNF  (Last GCN - Radeon VII) (only barrett tested) */
+      BARRETT76_MUL32,
+      BARRETT77_MUL32,
+      BARRETT87_MUL32,
+      BARRETT70_MUL15,
+      BARRETT69_MUL15,
+      BARRETT79_MUL32,
+      BARRETT88_MUL32,
+      BARRETT71_MUL15,
+      BARRETT92_MUL32,
+      BARRETT73_MUL15,
+      BARRETT74_MUL15,
+      BARRETT82_MUL15,
+      BARRETT83_MUL15,
+      BARRETT88_MUL15,
+      MG62,
+      _63BIT_MUL24,
+      _71BIT_MUL24,
+      MG88,
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
+	{
+/*  GPU_RDNA  (1st gen RDNA) (only barett tested) */
+      BARRETT69_MUL15,
+      BARRETT70_MUL15,
+      BARRETT71_MUL15,
+      BARRETT73_MUL15,
+      BARRETT74_MUL15,
+      BARRETT76_MUL32,
+      BARRETT77_MUL32,
+      BARRETT82_MUL15,
+      BARRETT83_MUL15,
+      BARRETT87_MUL32,
+      BARRETT88_MUL32,
+      BARRETT79_MUL32,
+      BARRETT88_MUL15,
+      BARRETT92_MUL32,
+      MG62,
+      _63BIT_MUL24,
+      _71BIT_MUL24,
+      MG88,
+      UNKNOWN_KERNEL,
+      UNKNOWN_KERNEL },
     {
 /*  GPU_APU,  (BeaverCreek=???, v=4)  */
       BARRETT70_MUL15,  // "cl_barrett15_70" (79.66 M/s)
@@ -472,7 +564,7 @@ other return value
   mystuff->stats.ghzdays = primenet_ghzdays(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage);
   max_class = mystuff->num_classes-1;
 
-  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d (%.2fGHz-days)\n",
+  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d (%.2f GHz-days)\n",
     mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, mystuff->stats.ghzdays);
   timer_init(&timer);
   time(&time_last_checkpoint);
@@ -507,7 +599,7 @@ other return value
   if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->verbosity >= 2)
   {
     #ifdef __MINGW32__
-      printf("  k_min = %llu - k_max = %I64u\n", k_min, k_max);
+      printf("  k_min = %I64u - k_max = %I64u\n", k_min, k_max);
     #else
       printf("  k_min = %llu - k_max = %llu\n", k_min, k_max);
     #endif
@@ -659,7 +751,7 @@ other return value
   {
     if(mystuff->h_RES[0] == 0)
     {
-      printf("ERROR: selftest failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+      printf("ERROR: self-test failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
       printf("  no factor found\n");
       retval = 1;
     }
@@ -718,7 +810,7 @@ k_max and k_min are used as 64bit temporary integers here...
       }
       if(k_min != 1) /* the factor should appear ONCE */
       {
-        printf("ERROR: selftest failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+        printf("ERROR: self-test failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
         printf("  expected result: %08X %08X %08X\n", f_hi, f_med, f_low);
         for(i=0; (i<mystuff->h_RES[0]) && (i<10); i++)
         {
@@ -728,7 +820,7 @@ k_max and k_min are used as 64bit temporary integers here...
       }
       else
       {
-        if(mystuff->mode != MODE_SELFTEST_SHORT)printf("selftest for M%u passed (%s)!\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+        if(mystuff->mode != MODE_SELFTEST_SHORT)printf("self-test for M%u passed (%s)!\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
       }
     }
   }
@@ -804,7 +896,7 @@ RET_ERROR we might have a serios problem
       if (i < (sizeof(index)/sizeof(index[0])))
       {
         ind = index[i];
-        printf("######### testcase %d/%d (M%u[%d-%d]) #########\r",
+        printf("######### test case %d/%d (M%u[%d-%d]) #########\r",
           i+1, (int) (sizeof(index)/sizeof(index[0])), st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
       }
       else
@@ -813,7 +905,7 @@ RET_ERROR we might have a serios problem
     else // treat type <> 1 as full test
     {
       ind = i;
-      printf("######### testcase %d/%d (M%u[%d-%d]) #########\n",
+      printf("######### test case %d/%d (M%u[%d-%d]) #########\n",
         i+1, total_selftests, st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
     }
     f_class = (int)(st_data[ind].k % mystuff->num_classes);
@@ -886,7 +978,7 @@ RET_ERROR we might have a serios problem
     if (mystuff->quit) break;
   }
 
-  printf("Selftest statistics                                    \n");
+  printf("Self-test statistics                                      \n");
   printf("  number of tests           %d\n", num_selftests);
   printf("  successful tests          %d\n", st_success);
   if(st_nofactor > 0)   printf("  no factor found           %d\n", st_nofactor);
@@ -899,12 +991,12 @@ RET_ERROR we might have a serios problem
 
   if(st_success == num_selftests)
   {
-    printf("selftest PASSED!\n\n");
+    printf("self-test PASSED!\n\n");
     retval=0;
   }
   else
   {
-    printf("selftest FAILED!\n\n");
+    printf("self-test FAILED!\n\n");
   }
   mystuff->verbosity = verbosity_save;
   return retval;
@@ -923,17 +1015,20 @@ int main(int argc, char **argv)
 
   mystuff.mode = MODE_NORMAL;
   mystuff.quit = 0;
-  mystuff.verbosity = -1;
+  mystuff.verbosity = 1;
+  mystuff.override_v = 0;
   mystuff.bit_min = -1;
   mystuff.bit_max_assignment = -1;
   mystuff.bit_max_stage = -1;
   mystuff.gpu_sieving = 0;
-  mystuff.gpu_sieve_size = GPU_SIEVE_SIZE_DEFAULT * 1024 * 1024;		/* Size (in bits) of the GPU sieve.  Default is 64M bits. */
-  mystuff.gpu_sieve_processing_size = GPU_SIEVE_PROCESS_SIZE_DEFAULT * 1024;	/* Default to 16K bits processed by each block in a Barrett kernel. */
+  /* GPU sieve size in bits. Default is 64 Mib. */
+  mystuff.gpu_sieve_size = GPU_SIEVE_SIZE_DEFAULT * 1024 * 1024;
+  /* Default to 16 Kib processed by each block in a Barrett kernel. */
+  mystuff.gpu_sieve_processing_size = GPU_SIEVE_PROCESS_SIZE_DEFAULT * 1024;
   strcpy(mystuff.inifile, "mfakto.ini");
   mystuff.force_rebuild = 0;
 
-  printf("%s (%dbit build)\n\n", MFAKTO_VERSION, (int)(sizeof(void*)*8));
+  printf("%s (%d-bit build)\n\n", MFAKTO_VERSION, (int)(sizeof(void*)*8));
 
   while(i<argc)
   {
@@ -964,6 +1059,7 @@ int main(int argc, char **argv)
       }
 
       mystuff.verbosity = tmp;
+      mystuff.override_v = 1;
     }
     else if(!strcmp((char*)"-d", argv[i]))
     {
@@ -1014,10 +1110,6 @@ int main(int argc, char **argv)
       if(*ptr || errno || (long)bit_max != strtol(argv[i+3],&ptr,10) )
       {
         printf("ERROR: can't parse parameter <max> for option \"-tf\"\n");
-        return ERR_PARAM;
-      }
-      if(!valid_assignment(exponent, bit_min, bit_max, mystuff.verbosity))
-      {
         return ERR_PARAM;
       }
       use_worktodo = 0;
@@ -1086,17 +1178,26 @@ int main(int argc, char **argv)
     i++;
   }
 
+  /* hack to allow setting the verbosity level */
+  if (!use_worktodo)
+  {
+    if(!valid_assignment(exponent, bit_min, bit_max, mystuff.verbosity))
+    {
+      return ERR_PARAM;
+    }
+  }
+
   read_config(&mystuff);
 
 /* print current configuration */
   if(mystuff.verbosity >= 1)
   {
-    printf("Compiletime options\n");
+    printf("Compile-time options\n");
     if (mystuff.gpu_sieving == 0)
     {
 #ifdef SIEVE_SIZE_LIMIT
-      printf("  SIEVE_SIZE_LIMIT          %dkiB\n", SIEVE_SIZE_LIMIT);
-      printf("  SIEVE_SIZE                %dbits\n", SIEVE_SIZE);
+      printf("  SIEVE_SIZE_LIMIT          %d kiB\n", SIEVE_SIZE_LIMIT);
+      printf("  SIEVE_SIZE                %d bits\n", SIEVE_SIZE);
 #endif
       printf("  SIEVE_SPLIT               %d\n", SIEVE_SPLIT);
     }
@@ -1183,11 +1284,14 @@ int main(int argc, char **argv)
     // no need to do this if we're sieving on the GPU
     if (mystuff.cpu_mask)
     {
-#if defined _MSC_VER || __MINGW32__ || __CYGWIN__ // might be best just doing as _WIN32
-      SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
-#else
-
-      sched_setaffinity(0, sizeof(mystuff.cpu_mask), (cpu_set_t *)&(mystuff.cpu_mask));
+// macOS does not support setting CPU affinity
+#if !defined __APPLE__
+  // might be best to just use _WIN32
+  #if defined _MSC_VER || __MINGW32__ || __CYGWIN__
+        SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
+  #else
+        sched_setaffinity(0, sizeof(mystuff.cpu_mask), (cpu_set_t *)&(mystuff.cpu_mask));
+  #endif
 #endif
     }
 #ifdef SIEVE_SIZE_LIMIT
@@ -1203,7 +1307,7 @@ int main(int argc, char **argv)
 
 /* before we start real work run a small selftest */
     mystuff.mode = MODE_SELFTEST_SHORT;
-    if(mystuff.verbosity >= 1) printf("Started a simple selftest ...\n");
+    if(mystuff.verbosity >= 1) printf("Started a simple self-test ...\n");
     if (selftest(&mystuff, MODE_SELFTEST_SHORT) != 0) return ERR_SELFTEST; /* selftest failed :( */
     mystuff.mode = MODE_NORMAL;
     /* allow for ^C */
@@ -1293,7 +1397,7 @@ int main(int argc, char **argv)
   {
     if (0 != selftest(&mystuff, mystuff.mode))
     {
-      printf ("ERROR: selftest failed, exiting.\n");
+      printf ("ERROR: self-test failed, exiting.\n");
       cleanup_CL();
       sieve_free();
       return ERR_SELFTEST;

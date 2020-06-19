@@ -1,3 +1,14 @@
+# build artifacts
+*.o
+*.obj
+*~
+
+# binaries
+mfakto
+*.elf
+*.exe
+
+# copied from source directory
 *.cl
 !src/*.cl
 *.exe
@@ -5,6 +16,7 @@
 !src/*.h
 *.ini
 !src/*.ini
+
 *.o
 *.obj
 *.opensdf
@@ -12,6 +24,16 @@
 *.suo
 *.vcxproj.user
 *~
+
+# machine-specific Visual Studio files
+*.suo
+*.sdf
+*.opensdf
+*.vcxproj.user
+
+# Visual Studio build folders
+ipch/
+Release/
 Debug/
 Release/
 ipch/
@@ -20,3 +42,12 @@ mfakto_Kernels.elf
 src/all
 src/depend
 x64/
+
+# instance-specific files
+*.ckp
+*.ckp.bu
+results.txt
+worktodo.txt
+
+# other
+.DS_Store

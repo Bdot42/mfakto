@@ -18,11 +18,17 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 /* This file contains functions for performance-testing of various mfakto-areas */
 
+#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
+
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include "string.h"
-#include "CL/cl.h"
+#if defined __APPLE__ || __MACOSX
+  #include "OpenCL/cl.h"
+#else
+  #include "CL/cl.h"
+#endif
 #include "params.h"
 #include "my_types.h"
 #include "compatibility.h"
@@ -1315,7 +1321,7 @@ int test_tf_kernels(cl_uint par, int devicenumber)
       test_cpu_tf_kernels((cl_uint) par);
       if (mystuff.quit) break;
     }
-    printf("\nNote, the calculated GHz-days/day assume sufficiently fast CPU sieve with SievePrimes=%u.\n", mystuff.sieve_primes);  
+    printf("\nNote, the calculated GHz-days/day assume sufficiently fast CPU sieve with SievePrimes=%u.\n", mystuff.sieve_primes);
   }
 
   return 0;
@@ -1737,7 +1743,7 @@ void CL_test(cl_int devnumber)
   }
   else
   {
-    std::cerr << "\nKernel file \""KERNEL_FILE"\" not found, it needs to be in the same directory as the executable.\n";
+    std::cerr << "\nKernel file \"" KERNEL_FILE "\" not found, it needs to be in the same directory as the executable.\n";
   }
 
   program = clCreateProgramWithSource(context, 1, (const char **)&source, &size, &status);
@@ -1767,8 +1773,10 @@ if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
   if (mystuff.small_exp == 1)
     strcat(program_options, " -DSMALL_EXP");
 
-  if (mystuff.CompileOptions[0])  // if mfakto.ini defined compile options, override the default with them
+  // compile options defined in mfakto.ini override the defaults
+  if (mystuff.CompileOptions[0]) {
     strcpy(program_options, mystuff.CompileOptions);
+  }
 
     printf("Compiling kernels (build options: \"%s\").", program_options);
 
@@ -2063,4 +2071,3 @@ if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
 #ifdef __cplusplus
 }
 #endif
-

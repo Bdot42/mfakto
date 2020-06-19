@@ -1,5 +1,13 @@
 version 0.15 (...)
-- compatibility with Intel HD Graphics
+- recognition of more, newer GPUs
+- fixed issue: kernel compilation does not work correctly if a device number
+  greater than 1 is specified
+- fixed an issue where verbosity was not passed to valid_assignment()
+- removed dependency on AMD APP SDK as it has been discontinued
+- updated Windows build instructions and fixed some errors
+- mfakto now compiles and runs on macOS
+- fixed Linux compilation issues
+- some compatibility with Intel HD Graphics
 - menu / keypressed evaluation to dynamically adjust settings like
   SievePrimes, SieveSize, SieveProcessSize (and others)
 - bugfix: SieveCPUMask on Linux had "random" results.
@@ -15,7 +23,8 @@ version 0.14 (2014-04-17)
 - slight performance improvement for the montgomery kernels
 - improved English wording in program output, ini file etc. (thanks to kracker)
 - recognition of new GPUs (8xxx, R9, new APUs) (thanks to kracker)
-- added a warning when using VectorSize=1 (AMD driver issue (?), http://devgurus.amd.com/thread/167571)
+- added a warning when using VectorSize=1 (possible AMD driver issue, see
+  https://community.amd.com/thread/167571 for details)
 - fix for a small memory leak (~0.5kB per assignment)
 - compatible with windows 8.1
 
@@ -66,13 +75,12 @@ version 0.12 (2012-07-29)
 
 version 0.11 (2012-05-21)
 - new 24-bit barrett kernel for FCs up to 2^70 - very fast!
-- new 15-bit barrett kernel for FCs up to 2^73 - almost as fast, 
+- new 15-bit barrett kernel for FCs up to 2^73 - almost as fast,
   especially on Cayman this one has a speedup of 50%
 - new SievePrimesMin ini-file variable to replace the so-far fix
   value of 5000
 - new V5UserID and ComputerID ini-file variables that let you configure
-  these ID's for the results file output (so far only useful for 
-	mersenne-aries.sili.net)
+  these ID's for the results file output (so far only useful for mersenne.ca)
 - new TimeStampInResults ini-file variable allows to configure that each
   output line in the results file should be preceded by a time stamp
 - new ProgressHeader and PrintFormat ini-file variables to adapt the
@@ -183,4 +191,3 @@ version 0.04 (2011-06-09)
   - fixed bit-shifting offset in square_72_144_shl
 	- fixed carry in sub72
 - unrolled the modulo loop in the 95-bit kernel: 10% faster
-

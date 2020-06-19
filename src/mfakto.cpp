@@ -317,7 +317,7 @@ int init_CL(int num_streams, cl_int *devnumber)
     }
     else for(i=0; i < numplatforms; i++) // autoselect: search for AMD
     {
-      char buf[128];
+      char buf[128] = {0};
       status = clGetPlatformInfo(platformlist[i], CL_PLATFORM_VENDOR,
                         sizeof(buf), buf, NULL);
       if(status != CL_SUCCESS)
@@ -518,7 +518,7 @@ int init_CL(int num_streams, cl_int *devnumber)
   if (strstr(deviceinfo.exts, "global_int32_base_atomics") == NULL)
   {
     printf("\nWARNING: Device does not support atomic operations. This may lead to errors\n"
-           "         when multiple factors are found in the same block. Possible errors\n"
+           "         when multiple factors are found in the same class. Possible errors\n"
            "         include reporting just one of the factors, or (less likely) scrambled\n"
            "         factors. If the reported factor(s) are not accepted by primenet,\n"
            "         please re-run this test on the CPU, or on a GPU with atomics.\n");
@@ -597,8 +597,12 @@ void set_gpu_type()
         strstr(deviceinfo.d_name, "Neptune")    ||    // 8970M, 8990M
         strstr(deviceinfo.d_name, "Curacao")    ||    // R9 265, R9 270, R9 270X
         strstr(deviceinfo.d_name, "Tonga")      ||    // R9 285
-        strstr(deviceinfo.d_name, "Hainan")      ||    // R9 285
-        strstr(deviceinfo.d_name, "Kalindi")          // GCN APU, Kabini, R7 ???
+        strstr(deviceinfo.d_name, "Hainan")     ||    // R9 285
+        strstr(deviceinfo.d_name, "Antigua")    ||    // R9 380(X)
+        strstr(deviceinfo.d_name, "Kalindi")    ||    // GCN APU, Kabini, R7 ???
+        strstr(deviceinfo.d_name, "D300")       ||    // FirePro D-series
+        strstr(deviceinfo.d_name, "D500")       ||
+        strstr(deviceinfo.d_name, "D700")
         )
     {
       mystuff.gpu_type = GPU_GCN;
@@ -616,6 +620,32 @@ void set_gpu_type()
             )
     {
       mystuff.gpu_type = GPU_GCN3;   // these cards have improved int32 performance over the previous GCNs, making for a changed kernel selection
+    }
+    else if (strstr(deviceinfo.d_name, "Ellesmere")  ||    // RX 470/480/570/580/590
+             strstr(deviceinfo.d_name, "Lexa")       ||    // small GCN 4.0 - not tested, only assumption
+             strstr(deviceinfo.d_name, "Baffin")           // small GCN 4.0 - not tested, only assumption
+            )
+    {
+      mystuff.gpu_type = GPU_GCN4;
+    }
+     else if (strstr(deviceinfo.d_name, "gfx901")   ||     // Vega 64(?)
+              strstr(deviceinfo.d_name, "gfx900")   ||     // Vega 56
+              strstr(deviceinfo.d_name, "gfx902")   ||     //  Vega Ryzen 2xxx-3xxx iGPU
+              strstr(deviceinfo.d_name, "gfx903")          //  Vega Ryzen 2xxx-3xxx iGPU
+             )
+    {
+      mystuff.gpu_type = GPU_GCN5;
+    }
+     else if (strstr(deviceinfo.d_name, "gfx906")          // Radeon VII
+             )
+    {
+      mystuff.gpu_type = GPU_GCNF;
+    }
+     else if (strstr(deviceinfo.d_name, "gfx1010") ||      // RX 5700(XT)
+              strstr(deviceinfo.d_name, "gfx1012")         // RX 5500XT
+             )
+    {
+      mystuff.gpu_type = GPU_RDNA;
     }
     else if (strstr(deviceinfo.d_name, "Cayman")      ||  // 6950, 6970
              strstr(deviceinfo.d_name, "Devastator")  ||  // 7xx0D (iGPUs of A4/6/8/10)
@@ -682,7 +712,7 @@ void set_gpu_type()
   {
     printf("WARNING: VectorSize=1 is known to fail on AMD GPUs and drivers. "
            "If the selftest fails, please increase VectorSize to 2 at least. "
-           "See http://devgurus.amd.com/thread/167571 for latest news about this issue.");
+           "See http://community.amd.com/thread/167571 for latest news about this issue.");
   }
 
   if (((mystuff.gpu_type >= GPU_GCN) && (mystuff.gpu_type <= GPU_GCN3)) && (mystuff.vectorsize > 3))
@@ -700,7 +730,7 @@ void set_gpu_type()
     printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
     printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
     printf("  number of multiprocessors %d (%d compute elements)\n", deviceinfo.units, deviceinfo.units * gpu_types[mystuff.gpu_type].CE_per_multiprocessor);
-    printf("  clock rate                %dMHz\n", deviceinfo.max_clock);
+    printf("  clock rate                %d MHz\n", deviceinfo.max_clock);
 
     printf("\nAutomatic parameters\n");
 
@@ -708,7 +738,7 @@ void set_gpu_type()
     printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
   }
 }
-  
+
 /*
  * load_kernels
  * compile cl files or load the precompiled binary, and load all kernels
@@ -735,7 +765,9 @@ int load_kernels(cl_int *devnumber)
     strcat(program_options, " -g");
   #else
     if ((mystuff.gpu_type != GPU_NVIDIA) && (mystuff.gpu_type != GPU_INTEL)) // NV & INTEL do not know optimisation flags
-      strcat(program_options, " -O3");
+      #if !defined __APPLE__
+        strcat(program_options, " -O3");
+      #endif
   #endif
 
     if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
@@ -986,10 +1018,12 @@ int load_kernels(cl_int *devnumber)
       std::cerr << "Failed to allocate host memory.(binaries, " << (sizeof(char *) * numDevices) << " bytes)\n";
       break;
     }
+    size_t active_device = 0;
     for(i = 0; i < numDevices; i++)
     {
       if(binarySizes[i] != 0)
       {
+        active_device = i;
         binaries[i] = (char *)malloc( sizeof(char) * binarySizes[i]);
         if(!binaries[i])
         {
@@ -1016,14 +1050,15 @@ int load_kernels(cl_int *devnumber)
     /* dump out each binary into its own separate file. */
     if (1 < numDevices)
     {
-      std::cout << "Warning: Dumping only the first of " << numDevices <<
-        " binary formats - if loading the binary file " << mystuff.binfile <<  " fails, delete it and specify the -d <n> option for mfakto.\n";
+        std::cout << "Info: Dumping only 1 of " << numDevices << " binary formats.\n";
+        std::cout << "      If the kernel file " << mystuff.binfile <<  " fails to load, delete it and\n";
+        std::cout << "      restart mfakto with the -d <n> option.\n";
     }
-    if(binarySizes[0] != 0)
+    if(binarySizes[active_device] != 0)
     {
         char deviceName[1024];
         status = clGetDeviceInfo(
-                     devices[0],
+                     devices[active_device],
                      CL_DEVICE_NAME,
                      sizeof(deviceName),
                      deviceName,
@@ -1040,21 +1075,19 @@ int load_kernels(cl_int *devnumber)
           char header[180];
           sprintf(header, "Compile options: %s\n", program_options);
           f.write(header, strlen(header));
-          f.write(binaries[0], binarySizes[0]);
+          f.write(binaries[active_device], binarySizes[active_device]);
           f.close();
           if (mystuff.verbosity > 1) printf("Wrote binary kernel for \"%s\" to \"%s\".\n", deviceName, mystuff.binfile);
         }
         else
         {
-          std::cerr << "Failed to open binary file " << mystuff.binfile << "to save kernel.\n";
+          std::cerr << "Failed to open binary file " << mystuff.binfile << " to save kernel.\n";
         }
     }
     else
     {
-        printf(
-            "binary kernel(%s) : %s\n",
-            mystuff.binfile,
-            "Skipping as there is no binary data to write.\n");
+        printf("Did not create binary kernel: %s\n", mystuff.binfile);
+        printf("Skipping as there is no binary data to write.\n");
         remove(mystuff.binfile);
     }
     break;
@@ -3086,7 +3119,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 
     cl_ulong f_tmp;
     double bits;
-    // estimate the primenet credit for the factor
+    // estimate the PrimeNet credit for the factor
     if (factor.d2 > 0)
     {
       f_tmp = ((cl_ulong)factor.d2 << 32) + factor.d1;
@@ -3100,6 +3133,8 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     else if (factor.d0 > 0)
     {
       bits  = log ((double)factor.d0)/log(2);
+    } else {
+      bits = 0.0;   // should not be reachable
     }
     mystuff->stats.ghzdays = mystuff->stats.ghzdays * (bits - floor(bits));
 

@@ -1,0 +1,112 @@
+# This file is part of mfaktc (mfakto).
+# Copyright (C) 2009 - 2011, 2014  Oliver Weihe (o.weihe@t-online.de)
+#                                  Bertram Franz (bertramf@gmx.net)
+#
+# mfaktc (mfakto) is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# mfaktc (mfakto) is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
+#
+# Version 0.15
+#
+#
+# Run "make -f Makefile.macOS" to compile mfakto for macOS
+
+# Users may see an "out of sync" warning when compiling mfakto. Although
+# harmless, the warning can be silenced by running the following command prior
+# to compilation:
+#
+# export SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+
+ARCH = x86_64
+
+# compiler settings for C and C++ files
+CC = gcc
+CPP = $(CC)
+CFLAGS = -arch $(ARCH) -Wall
+CPPFLAGS =
+
+# Linker
+LD = g++
+LDFLAGS = -arch $(ARCH)
+
+##############################################################################
+
+CSRC = sieve.c timer.c parse.c read_config.c mfaktc.c checkpoint.c \
+	signal_handler.c filelocking.c output.c
+
+# CLSRC = barrett15.cl  barrett.cl  common.cl  gpusieve.cl  mfakto_Kernels.cl  montgomery.cl  mul24.cl
+
+COBJS = $(CSRC:.c=.o) mfakto.o gpusieve.o perftest.o menu.o kbhit.o
+
+##############################################################################
+
+all: ../mfakto ../barrett15.cl  ../barrett.cl  ../common.cl  ../gpusieve.cl  ../mfakto_Kernels.cl  ../montgomery.cl  ../mul24.cl ../datatypes.h ../tf_debug.h ../mfakto.ini
+
+../mfakto : $(COBJS)
+	$(LD) $^ $(LDFLAGS) -o $@ -framework OpenCL
+
+clean :
+	rm -f *.o *~
+
+sieve.o : sieve.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+%.o : %.cpp
+	$(CPP) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+../%.cl : %.cl
+	cp $< ..
+
+../%.h : %.h
+	cp $< ..
+
+../%.ini : %.ini
+	cp $< ..
+
+##############################################################################
+
+checkpoint.o: checkpoint.c params.h timer.h
+
+filelocking.o: filelocking.c
+
+mfaktc.o: mfaktc.c params.h my_types.h compatibility.h \
+  sieve.h read_config.h parse.h timer.h checkpoint.h signal_handler.h \
+  filelocking.h perftest.h mfakto.h gpusieve.h output.h selftest-data.h
+
+output.o: output.c params.h my_types.h output.h filelocking.h compatibility.h
+
+parse.o: parse.c compatibility.h filelocking.h parse.h
+
+read_config.o: read_config.c params.h my_types.h
+
+sieve.o: sieve.c params.h compatibility.h
+
+signal_handler.o: signal_handler.c params.h my_types.h compatibility.h
+
+timer.o: timer.c timer.h compatibility.h
+
+gpusieve.o: gpusieve.cpp my_types.h params.h compatibility.h
+
+mfakto.o: mfakto.cpp params.h my_types.h compatibility.h \
+  read_config.h parse.h sieve.h timer.h checkpoint.h filelocking.h \
+  perftest.h mfakto.h output.h gpusieve.h signal_handler.h
+
+perftest.o: perftest.cpp params.h my_types.h compatibility.h \
+  read_config.h parse.h sieve.h timer.h checkpoint.h filelocking.h \
+  signal_handler.h mfakto.h
+
+menu.o: menu.h compatibility.h my_types.h
+
+kbhit.o: kbhit.h

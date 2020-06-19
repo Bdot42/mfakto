@@ -1,81 +1,90 @@
 # This file is part of mfaktc (mfakto).
 # Copyright (C) 2009 - 2011, 2014  Oliver Weihe (o.weihe@t-online.de)
 #                                  Bertram Franz (bertramf@gmx.net)
-# 
+#
 # mfaktc (mfakto) is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # mfaktc (mfakto) is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#                                 
+#
 # You should have received a copy of the GNU General Public License
 # along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
-# 
-#  Version 0.14
-# 
 #
-# Example: "make -j x bitness=32 static=yes" Build 32 bit and link statically with x threads 
+# Version 0.15
 #
-# Check if bitness requested, set x86_64(64bit) as default
-BITS := x86_64
-BITFLAG := -m64
-ifdef bitness 
-ifeq ($(bitness), 32)
-  BITFLAG := -m32
-  BITS := x86
-endif
-ifeq ($(bitness), 64)
-  BITFLAG := -m64
-  BITS := x86_64
-endif
+#
+# Example: "make bitness=32 static=yes" to compile for 32 bits and link
+#          statically
+
+# set x86_64 (64-bit) as default
+ARCH := x86_64
+BITS := -m64
+
+# check whether to build 32-bit version
+ifdef bitness
+  ifeq ($(bitness), 32)
+    ARCH := x86
+    BITS := -m32
+  endif
 endif
 
-# Check if building statically was requested
+# Check if static linking is requested
 ifdef static
-ifeq ($(static), yes)
-  STATIC := -static
-endif
+  ifeq ($(static), yes)
+    STATIC := -static
+  endif
 endif
 
+# use OS-specific commands
+ifeq ($(OS), Windows_NT)
+  CP = copy
+  RM = del /f
+else
+  CP = cp
+  RM = rm -f
+endif
 
-# where is the AMD_APP Toolkit installed?
-AMD_APP_DIR = /opt/AMDAPP
+# where is the OpenCL SDK installed?
+AMD_APP_DIR = /opt/rocm/opencl
 AMD_APP_INCLUDE = -I$(AMD_APP_DIR)/include
-AMD_APP_LIB = -L$(AMD_APP_DIR)/lib/$(BITS) -L/opt/rocm/opencl/lib/x86_64
+AMD_APP_LIB = -L$(AMD_APP_DIR)/lib/$(ARCH)
+
+# Change needed for compilation with amdgpu-pro
+# AMD_APP_DIR = /opt/amdgpu-pro/opencl
 
 # optimize or debug
 #OPTIMIZE_FLAG = -O3
-#OPTIMIZE_FLAG = -O3 -funroll-loops  -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las 
+#OPTIMIZE_FLAG = -O3 -funroll-loops  -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las
 OPTIMIZE_FLAG = -O3 -funroll-loops  -ffast-math -finline-functions -frerun-loop-opt -fgcse-sm -fgcse-las -flto
 #OPTIMIZE_FLAG = -g
 #OPTIMIZE_FLAG = -ggdb
 
-# Compiler settings for .c files (CPU)
+# compiler settings for C and C++ files
 CC = gcc
 CPP = $(CC)
-#CFLAGS = $(BITFLAG) -Wall $(OPTIMIZE_FLAG) $(AMD_APP_INCLUDE) -DBUILD_OPENCL
-CFLAGS = $(BITFLAG) -Wall $(OPTIMIZE_FLAG)
-CPP_FLAGS =
+CFLAGS = $(BITS) -Wall $(OPTIMIZE_FLAG) $(AMD_APP_INCLUDE) -DBUILD_OPENCL
+CPPFLAGS =
 #CFLAGS_EXTRA_SIEVE = -funroll-all-loops 
 #CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -floop-parallelize-all -fvariable-expansion-in-unroller -fno-align-labels 
-CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -fno-align-labels 
-
+CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -fno-align-labels
 
 # Linker
 LD = g++
-LDFLAGS = $(BITFLAG) $(STATIC) $(OPTIMIZE_FLAG) $(AMD_APP_LIB) -lOpenCL
+LDFLAGS = $(BITS) $(STATIC) $(OPTIMIZE_FLAG) $(AMD_APP_LIB) -lOpenCL
 
 ##############################################################################
 
-CSRC  = sieve.c timer.c parse.c read_config.c mfaktc.c checkpoint.c \
+CSRC = sieve.c timer.c parse.c read_config.c mfaktc.c checkpoint.c \
 	signal_handler.c filelocking.c output.c
-CLSRC = barrett15.cl  barrett.cl  common.cl  gpusieve.cl  mfakto_Kernels.cl  montgomery.cl  mul24.cl
 
-COBJS  = $(CSRC:.c=.o) mfakto.o gpusieve.o perftest.o menu.o kbhit.o
+# CLSRC = barrett15.cl  barrett.cl  common.cl  gpusieve.cl  mfakto_Kernels.cl  montgomery.cl  mul24.cl
+
+COBJS = $(CSRC:.c=.o) mfakto.o gpusieve.o perftest.o menu.o kbhit.o
 
 ##############################################################################
 
@@ -86,26 +95,26 @@ all: ../mfakto ../barrett15.cl  ../barrett.cl  ../common.cl  ../gpusieve.cl  ../
 	$(LD) $^ $(LDFLAGS) -o $@
 
 clean :
-	rm -f *.o *~ depend
+	$(RM) -f *.o *~ depend
 
 sieve.o : sieve.c
 	$(CC) $(CFLAGS) $(CFLAGS_EXTRA_SIEVE) -c $< -o $@
-	
+
 %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 %.o : %.cpp
-	$(CPP) $(CFLAGS) $(CPP_FLAGS) -c $< -o $@
+	$(CPP) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 ../%.cl : %.cl
-	cp $< ..
+	$(CP) $< ..
 
 ../%.h : %.h
-	cp $< ..
+	$(CP) $< ..
 
 ../%.ini : %.ini
-	cp $< ..
-	
+	$(CP) $< ..
+
 ##############################################################################
 
 depend: $(CSRC)

@@ -1,22 +1,17 @@
-Preface for the mfakto-0.15pre5 testing version
+** Preface for mfakto 0.15pre7 **
 
-This version is tested to provide correct results. But it is preliminary as it
-contains test code that results in slightly lower performance. This version is
-intended to provide information to better optimize the final version.
+This is a developmental version of mfakto. It has been verified to produce
+correct results. However, performance has not been optimized and there may be
+bugs and incomplete features. Please help improve mfakto by doing tests,
+providing feedback and reporting issues. Of course, code contributions are
+always welcome too.
 
-To run this test and help improve mfakto, extract the depot and run on an idle machine
+You can get support via the following means:
 
-perftestmfakto.cmd
-
-This test will take between one and two hours, during which you should not use the
-computer - at least nothing that would put measurable load on CPU or GPU.
-
-When the script finished, zip the testresults subfolder that it created and send it
-to me (bertramf@gmx.net).
-
-Thanks for your help,
-Bdot
-
+- the official thread at the GIMPS forum:
+  https://mersenneforum.org/showthread.php?t=15646
+- opening a ticket on GitHub: https://github.com/Bdot42/mfakto/issues
+- contacting Bertram Franz at bertramf@gmx.net
 
 #################
 # mfakto README #
@@ -24,252 +19,445 @@ Bdot
 
 Contents
 
-0   What is mfakto?
-1   Compilation
-1.1 Compilation (Linux)
-1.2 Compilation (Windows)
-2   Running mfakto
-2.1 Supported GPUs
-2.2 Running mfakto (Linux)
-2.3 Running mfakto (Windows)
-3   Howto get work and report results from/to the primenet server
-4   Known issues
-4.1 Stuff that looks like an issue but actually isn't an issue
-5   Tuning
-6   FAQ
-7   Plans
-
+0      What is mfakto?
+1      Compilation
+1.1    Linux
+1.2.1  Windows: MSVC
+1.2.2  Windows: MinGW
+1.3    macOS
+2      Running mfakto
+2.1    Supported GPUs
+2.2    Linux
+2.3    Windows
+2.4    macOS
+3      Getting work and reporting results
+4      Known issues
+4.1    Non-issues
+5      Tuning
+6      FAQ
+7      Plans
 
 
 #####################
 # 0 What is mfakto? #
 #####################
 
-mfakto is the OpenCL-port of mfaktc. It aims to have the same features and functions as mfaktc.
-mfaktc is a program that trial factors Mersenne numbers and which
-stands for "Mersenne FAKTorisation with CUDA". Faktorisation is a mixture of the
-English word "factorisation" and the German word "Faktorisierung".
-mfakto is a GPU program, utilizing mostly GPU resources, but it can use the CPU for sieving.
+mfakto is an OpenCL port of mfaktc that aims to have the same features and
+functions. mfaktc is a program that trial factors Mersenne numbers. It stands
+for "Mersenne faktorisation* with CUDA" and was written for Nvidia GPUs. Both
+programs are used primarily in the Great Internet Mersenne Prime Search.
+
+Primality tests are computationally intensive, but we can save time by finding
+small factors. GPUs are very efficient at this task due to their parallel
+nature. Only one factor is needed to prove a number composite.
+
+Using a modified Sieve of Eratosthenes, mfakto generates a list of possible
+factors for a given Mersenne number. It then uses modular exponentiation to
+test these factors. Although this step is only done on the GPU in practice,
+mfakto can perform both steps on either the CPU or GPU. You can find more
+details at the GIMPS website:
+https://mersenne.org/various/math.php#trial_factoring
+
+
+* portmanteau of the English word "factorisation" and the German word
+"Faktorisierung"
 
 
 #################
 # 1 Compilation #
 #################
 
-  Requires:
-- AMD APP SDK 2.5 or above is required.
-- A C and C++ compiler, MSVC, GCC, etc depending on your system.
+General requirements:
+- C and C++ development tools
+- an OpenCL SDK
 
+Please note: the AMD APP SDK has been discontinued. If you still want to use it
+to compile mfakto, make sure you have version 2.5 or later. You can download
+the SDK here: https://community.amd.com/thread/227948
 
-###########################
-# 1.1 Compilation (Linux) #
-###########################
+#############
+# 1.1 Linux #
+#############
 
-- Install AMD APP SDK >= 2.5
+Requires:
+- ROCm
+
+Steps:
+- install ROCm
+- navigate to the mfakto folder
 - cd src
-- Set AMD_APP_DIR in Makefile to the SDK's location if not installed in the default location.
+- verify that the AMD_APP_DIR variable in the makefile points to the ROCm
+  directory
 - make
-- mfakto should be compiled assuming no errors, in the root folder of mfakto.
+- mfakto should compile without errors in its root folder
 
-#############################
-# 1.2 Compilation (Windows) #
-#############################
+#######################
+# 1.2.1 Windows: MSVC #
+#######################
 
-- Install AMD APP SDK >= 2.5
-- Use the VS2010 solution to build the 32-bit or 64-bit binary, or
-- use the Makefile to build using MinGW and gcc
+Requires:
+- Microsoft Visual Studio
+- GPUOpen OpenCL SDK
 
+Steps:
+- download and install the GPUOpen OpenCL SDK from GitHub:
+  https://github.com/GPUOpen-LibrariesAndSDKs/OCL-SDK/releases
+- open mfaktoVS12.sln in Visual Studio. You can use any recent version as
+  Visual Studio will automatically update your project settings. If the option
+  does not appear, right-click the solution and select "Retarget solution" from
+  the menu.
+- open the project properties and select the configuration and platform
+- go to C/C++ > General > Additional Include Directories and verify that it
+  contains the path to the OpenCL headers:
+
+      $(OCL_ROOT)\include
+
+- now go to Linker > General > Additional Library Directories and verify that
+  it contains the correct library path. You may need to restart your computer
+  for Visual Studio to recognize the OCL_ROOT system variable.
+
+      32 bits: $(OCL_ROOT)\lib\x86
+      64 bits: $(OCL_ROOT)\lib\x86_64
+
+- select Build > Build Solution to compile mfakto
+
+########################
+# 1.2.2 Windows: MinGW #
+########################
+
+Requires:
+- MinGW (64-bit)
+- GPUOpen OpenCL SDK
+- optional: MSYS2
+
+Initial steps:
+- download and install a 64-bit MinGW compiler. Our recommendation is to use
+  MinGW-w64 as it is actively maintained: http://mingw-w64.org
+- download and install the GPUOpen OpenCL SDK from GitHub:
+  https://github.com/GPUOpen-LibrariesAndSDKs/OCL-SDK/releases
+- add the "bin" folder in the MinGW directory to your system Path variable
+- verify that the AMD_APP_DIR variable in the makefile points to the SDK
+  directory (see note)
+
+MinGW can be used with or without MSYS to compile mfakto. In the latter case:
+- navigate to the mfakto folder
+- cd src
+- mingw32-make
+
+Otherwise:
+- install MSYS2 using the instructions at the home page: https://www.msys2.org
+- launch the MSYS2 shell and install the required packages:
+
+      pacman -S mingw-w64-x86_64-gcc make
+
+- start the 32-bit or 64-bit MinGW shell and navigate to the mfakto folder
+- cd src
+- make (cross your fingers)
+
+You may see some warnings, but they are safe to ignore.
+
+Additional notes:
+- make does not support spaces in file names. If your OpenCL SDK directory
+  contains spaces, then you will need to either create a symbolic link or copy
+  the files to another folder.
+- mfakto may not compile correctly with Win-builds. It is recommended to use
+  the native Windows package instead:
+  http://mingw-w64.org/doku.php/download/mingw-builds
+- To compile mfakto for both 32 and 64 bits, you will need to install MinGW-w64
+  for both the i686 and x86_64 architectures.
+- mfakto may give an "entry point not found" error on startup. Running make
+  with the "static=yes" flag should prevent this.
+
+#############
+# 1.3 macOS #
+#############
+
+Requires:
+- Command Line Tools
+
+Steps:
+- cd src
+- make -f Makefile.macOS
+- mfakto should compile out of the box as macOS contains a native OpenCL
+  implementation
 
 ####################
 # 2 Running mfakto #
 ####################
 
-  Requirements:
-- AMD Catalyst driver, version >= 11.4
-- AMD APP SDK version >= 2.5 (not required for Catalyst 11.10 or above)
+General requirements:
+- AMD Catalyst 11.4 or higher. Consider using at least 14.4 as some previous
+  versions have a bug that causes high CPU loads.
+- AMD APP SDK 2.5 or higher for systems without Catalyst 11.10 or above. It is
+  recommended to update your drivers as the SDK has been discontinued.
+- for Intel integrated GPUs: Compute Runtime for OpenCL
 
-Open a command shell and run 'mfakto -h' in the mfakto folder for parameters it accepts.
-You may also want to check mfakto.ini for changing and tweaking mfakto.
-Typically you will want to get work from a worktodo file which can be specified in mfakto.ini.
+macOS users do not need any additional software as OpenCL is already part of
+the system.
 
-Please run the built-in selftest (mfakto -st) each time you've:
-- Recompiled the code
-- Downloaded a new binary from somewhere
-- Changed the graphics driver
-- Changed your hardware
+Open a terminal window and run 'mfakto -h' for possible parameters. You may
+also want to check mfakto.ini for additional settings. mfakto typically fetches
+work from worktodo.txt as specified in the INI file. See section 3 on how to
+obtain assignments and report results.
 
-worktodo.txt example: 
--- cut here --
-Factor=bla,66362159,64,68
-Factor=bla,3321932839,50,61
--- cut here --
+A typical worktodo.txt file looks like this:
+  -- begin example --
+  Factor=[assignment ID],66362159,64,68
+  Factor=[assignment ID],3321932899,76,77
+  -- end example --
 
-Then run 'mfakto'. If everything is working as expected this should trial
-factor M66362159 from 2^64 to 2^68 and after that trial factor
-M3321932839 from 2^50 to 2^61.
+You can launch mfakto after getting assignments. In this case, mfakto should
+trial factor M66362159 from 64 to 68 bits, followed by M3321932899 from 76 to
+77 bits.
+
+mfakto has a built-in self-test that automatically optimizes parameters. Please
+run 'mfakto -st' each time you:
+- Recompile the code
+- Download a new binary from somewhere
+- Change the graphics driver
+- Change your hardware
 
 ######################
 # 2.1 Supported GPUs #
 ######################
 
-  AMD:
-- R9 xxx, R7 xxx, R5 xxx
-- HD7xxx, HD8xxx
-- HD5xxx, HD6xxx, including the builtin HD6xxx on AMD APUs
-- HD4xxx, FireStream 92xx (no atomic operations available) *
-- not supported: (kernel compilation fails): HD2xxx, HD3xxx, FireStream 91xx
+AMD:
+- all devices that support OpenCL 1.1 or later
+- all APUs
+- OpenCL 1.0 devices, such as the FireStream 9250 / 9270 and Radeon HD 4000
+  series, can run mfakto but do not support atomic operations*
+- not supported: FireStream 9170 and Radeon HD 2000 / 3000 series (as kernel
+  compilation fails)
 
-* without atomics, reporting multiple factors found in the same block/grid
-will not work. Tests showed that only one of the factors will be reported, 
-but theoretically it could happen that even the reported factor is incorrect
-(due to consisting of a mix of bytes of multiple factors). In cases when
-mfakto reports a factor but the factor is incorrect (rejected by primenet),
-please rerun the test of the exponent and the bitlevel on the CPU (e.g.
-prime95 or mfakto -d c).
+Other:
+- Intel HD Graphics 4000 and later. Currently not supported on macOS.
+- OpenCL-enabled CPUs via the '-d c' option
+- not currently supported: Nvidia devices
 
-##############################
-# 2.2 Running mfakto (Linux) #
-##############################
 
-- AMD APP SDK 2.5 or higher and Catalyst 11.4 or higher is required
+* without atomics, mfakto may not correctly process multiple factors found in
+the same class. It may report only one factor or even an incorrect one, the
+latter due to scrambled data from multiple factors. PrimeNet automatically
+rejects factors that do not divide a Mersenne number. If this happens, run the
+exponent and bit level again on the CPU or another device. You can run mfakto
+on the CPU using the '-d c' option or use Prime95 instead. Lowering GridSize in
+mfakto.ini can also reduce the chance of error.
+
+#############
+# 2.2 Linux #
+#############
+
+- build mfakto using the above instructions
 - run mfakto
-- precompiled version is currently only available for 64-bit (built on SuSE 11.4)
 
-################################
-# 2.3 Running mfakto (Windows) #
-################################
+###############
+# 2.3 Windows #
+###############
 
-- AMD Catalyst 11.4 or higher is required
-- if driver < 11.10, install AMD APP SDK 2.5 and make sure
-  %AMD_APP_DIR%/lib/x86_64 is in the path.
-- Microsoft Visual C++ 2010 Redistributable Package for your platform and
-  language, e.g.
-  http://www.microsoft.com/downloads/details.aspx?familyid=BD512D9E-43C8-4655-81BF-9350143D5867&displaylang=de
-- 64-bit and 32-bit binaries are available.
+Requirements:
+- AMD Catalyst 11.4 or higher. Consider using at least 14.4 as some previous
+  versions have a bug that causes high CPU loads.
+- AMD APP SDK 2.5 or higher for systems without Catalyst 11.10 or above. It is
+  recommended to update your drivers as the SDK has been discontinued.
+  If you still want to use it to run mfakto, make sure the path to the
+  appropriate library folder is in the system Path variable:
 
-####################################################################
-# 3 How to get work and report results from/to the primenet server #
-####################################################################
+      32 bits: %AMDAPPSDKROOT%\lib\x86
+      64 bits: %AMDAPPSDKROOT%\lib\x86_64
 
-Getting work:
-    Step 1) go to http://www.mersenne.org/ and login with your username and
-            password
-    Step 2) on the menu on the left click "Manual Testing" and than
-            "Assignments"
-    Step 3) choose the number of assignments by choosing
-            "Number of CPUs (cores) you need assignments for (maximum 12)"
-            and "Number of assignments you want for each core"
-    Step 4) Change "Preferred work type" to "Trial factoring"
-    Step 5) click the button "Get Assignments"
-    Step 6) copy&paste the "Factor=..." lines directly into the worktodo.txt
-            in your mfakto directory
+- you may also need the Microsoft Visual C++ 2010 Redistributable Package for
+  your platform and language:
 
-Start mfakto and stress your GPU! ;)
+      32 bits: https://microsoft.com/en-us/download/details.aspx?id=5555
+      64 bits: https://microsoft.com/en-us/download/details.aspx?id=14632
 
-Advanced usage (extend the upper limit):
-    Since mfakto works best on long running jobs you may want to extend the
-    upper TF limit of your assignments a little bit. Take a look how much TF
-    is usually done here: http://www.mersenne.org/various/math.php
-    Lets assume that you've received an assignment like this:
-        Factor=<some hex key>,78467119,65,66
-    This means that primenet server assigned you to TF M78467119 from 2^65
-    to 2^66. Take a look at the site noted above, those exponent should be
-    TFed up to 2^71. Primenet will do this in multiple assignments (step by
-    step) but since mfakto runs very fast on modern GPUs you might want to
-    TF up to 2^71 or even 2^72 directly. Just replace the 66 at the end of
-    the line with e.g. 72 before you start mfakto:
-        e.g. Factor=<some hex key>,78467119,65,72
-    When you increase the upper limit of your assignments it is important to
-    report the results once you've finished up to the desired level. (Do not
-    report partially results before!)
+Steps:
+- build mfakto using the above instructions or download a stable version. Only
+  the 64-bit binary is currently distributed.
+- go to the mfakto folder and launch the executable
+- mfakto defaults to the first AMD GPU it finds. To use the Intel integrated
+  GPU, you may need to specify it using the -d option.
 
+#############
+# 2.4 macOS #
+#############
+
+- build mfakto using the above instructions
+- mfakto should run without any additional software
+
+########################################
+# 3 Getting work and reporting results #
+########################################
+
+You must have a PrimeNet account to participate. Simply visit the GIMPS website
+at https://mersenne.org to create one. Once you've signed up, you can get
+assignments in several ways.
+
+From the GIMPS website:
+    Step 1) log in to the GIMPS website with your username and password
+    Step 2) on the menu bar, select Manual Testing > Assignments
+    Step 3) open the link to the manual GPU assignment request form
+    Step 4) enter the number of assignments or GHz-days you want
+    Step 5) click "Get Assignments"
+
+    Users with older GPUs may want to use the regular form.
+
+Using the GPU to 72 tool:
+    GPU to 72 is a website that "subcontracts" assignments from the PrimeNet
+    server. It was previously the only means to obtain work at high bit levels.
+    Although the manual GPU assignment form now serves this purpose, GPU to 72
+    remains the more popular option.
+
+    GPU to 72 website: https://gpu72.com
+
+Using the MISFIT tool:
+    MISFIT is a Windows tool that automatically requests assignments and
+    submits results. You can get it here: https://mersenneforum.org/misfit
+
+From mersenne.ca:
+    James Heinrich's website mersenne.ca offers assignments for exponents up
+    to 32 bits. You can get such work here: https://mersenne.ca/tf1G
+
+    Be aware that mfakto currently does not work below 60 bits.
+
+Advanced usage:
+    As mfakto works best on long-running jobs, you may want to manually extend
+    your assignments. Let's assume you've received an assignment like this:
+        Factor=[assignment ID],78467119,65,66
+
+    This means the PrimeNet server has assigned you to trial factor M78467119
+    from 65 to 66 bits. However, take a look at the factoring limits:
+    http://mersenne.org/various/math.php
+
+    According to the table, the exponent is factored to 71 bits before being
+    tested. Because mfakto runs very fast on modern GPUs, you might want to go
+    directly to 71 or even 72 bits. Simply edit the ending bit level before
+    starting mfakto. For example:
+        Factor=[assignment ID],78467119,65,72
+
+    It is important to submit the results once you're done. Do not report
+    partial results as the exponent may be reassigned to someone else in the
+    interim, resulting in duplicate work and wasted cycles.
+
+    Please do not manually extend assignments from GPU to 72 as users are
+    requested not to "trial factor past the level you've pledged."
+
+
+    Once you have your assignments, copy the "Factor=..." lines directly into
+    your worktodo.txt file. Start mfakto, sit back and let it do its job.
+    Running mfakto is also a great way to stress test your GPU. ;-)
+
+Submitting results:
+    mfakto currently cannot communicate with the PrimeNet server, so you must
+    manually submit the results. To prevent abuse, admin approval is required
+    for manual submissions. You can request approval by contacting George
+    Woltman at woltman@alum.mit.edu or posting on the GIMPS forum:
+    https://mersenneforum.org/forumdisplay.php?f=38
+
+    Step 1) log in to the GIMPS website with your username and password
+    Step 2) on the menu bar, select Manual Testing > Results
+    Step 3) upload the results.txt file produced by mfakto. You may archive or
+            delete the file after it has been processed.
+
+    There are several tools that can automate this process. You can find a
+    complete list here:
+    https://mersenneforum.org/showpost.php?p=465293&postcount=24
 
 
 ##################
 # 4 Known issues #
 ##################
 
-- On HD77xx, 78xx, 79xx and R series, mfakto may run very slow at 99% GPU load.
-  mfakto warns about the issue during startup.
-  The reason is because of the lower number of registers available to the kernels.
-  Set VectorSize=2 in mfakto.ini and restart mfakto. It should be better now.
-- The user interface is not hardened against malformed input. There are some
-  checks but if you really try you should be able to screw it up.
-- The GUI of your OS may be very laggy while running mfakto. In severe
-  cases, if a single kernel invocation takes too long, Windows may decide
-  the driver is faulty and reboot.
-  Try lowering GridSize in mfakto.ini. Smaller grids should have better
-  responsiveness at a little performance penalty. Performancewise this is not
-  recommended on GPUs which can handle well over 100M/s candidates.
-  If that does not help, try lowering NumStreams to 2 or even 1.
-- SievePrimesAdjust works now, but is not always optimal. Test it out and
-  see what the best SievePrimes is, set it and fix it by setting
-  SievePrimesAdjust to 0.
-- GPU is not found, fallback to CPU
-  This happens on Linux when there is no X-server running, or the X-server
-  is not accessible. It happens on Windows when not connected to the primay
-  display (e.g. being connected through terminal services). So please try to
-  run mfakto locally on the main X-display. If that fails as well or is not the case,
-  then the graphics driver may be too old. Also, check the output of clinfo (part of AMD APP SDK)
-  for your GPU. If the drivers and AMD APP SDK are up to date, then maybe
-  your AMD GPU is not the first GPU. Try the -d switch to specify a different
-  device number.
+- On some devices, such as the Radeon HD 7700 - 7900 series, mfakto may be very
+  slow at full GPU load due to fewer registers being available to the kernels.
+  It will warn about this during startup.
+  Set VectorSize=2 in mfakto.ini and restart mfakto to resolve this.
 
-##################################################################
-# 4.1 Stuff that looks like an issue but actually isn't an issue #
-##################################################################
+- The user interface has not been extensively tested against invalid inputs.
+  Although there are some checks, they are not foolproof by any means.
+
+- Your GUI may lag while running mfakto. On some Windows systems, the OS may
+  restart the driver or even throw a BSoD in severe cases.
+  Try lowering GridSize or NumStreams in your mfakto.ini file. Smaller grids
+  should have better responsiveness at a slight performance loss. Another
+  option for Windows users is to increase the GPU processing time:
+  https://support.microsoft.com/en-us/help/2665946
+
+- SievePrimesAdjust is not always optimal. Experiment to find the best
+  SievePrimes value and set SievePrimesAdjust=0 in your mfakto.ini file.
+
+- GPU is not found, fallback to CPU
+  This happens on Linux when there is no X server. It can also happen on
+  Windows when the GPU is not the primary display adapter. Try running mfakto
+  on the main display rather than remotely. If that fails, then your graphics
+  driver may be too old. It's also possible that the first device is not an
+  AMD GPU. In this case, use the -d switch to specify a different device
+  number. You can run 'clinfo' to get a list of devices.
+
+- on devices that do not support atomic operations, mfakto may not correctly
+  process multiple factors found in the same class. It may report only one
+  factor or even an incorrect one, the latter due to scrambled data from
+  multiple factors.
+  If this happens, run the exponent and bit level again on the CPU or another
+  device. You can tell mfakto to run on the CPU using the '-d c' option or use
+  Prime95 instead. Lowering GridSize in mfakto.ini can also reduce the chance
+  of error.
+
+- mfakto does not support Intel HD Graphics on macOS
+  Due to buggy drivers shipped with macOS, mfakto presently does not work with
+  Intel HD Graphics. Unless Apple fixes the issue, Intel integrated GPUs may
+  not be supported in the foreseeable future.
+
+
+##################
+# 4.1 Non-issues #
+##################
 
 - mfakto runs slower on small ranges. Usually it doesn't make much sense to
-  run mfakto with an upper limit smaller than 2^64. It is designed for trial
-  factoring above 2^64 up to 2^92 (factor sizes). ==> mfakto needs
-  "long runs"!
+  run mfakto with an upper limit below 64 bits. mfakto is designed to find
+  factors between 64 and 92 bits, and is best suited for long-running jobs.
+
 - mfakto can find factors outside the given range.
-  E.g. './mfakto.exe -tf 66362159 40 41' has a high change to report
-  124246422648815633 as a factor. Actually this is a factor of M66362159 but
-  it's size is between 2^56 and 2^57! Of course
-  './mfakto.exe -tf 66362159 56 57' will find this factor, too. The reason
-  for this behaviour is that mfakto works on huge factor blocks. This is
-  controlled by GridSize in mfakto.ini. The default value is 3 which means
-  that mfakto runs up to 1048576 factor candidates at once (per class). So
-  the last block of each class is filled up with factor candidates above the
-  upper limit. While this is a huge overhead for small ranges it's safe to
-  ignore it on bigger ranges. If a class contains 100 blocks the overhead is
-  on average 0.5%. When a class needs 1000 blocks the overhead is 0.05%...
+  This is because mfakto works on huge factor blocks, controlled by GridSize in
+  the INI file. The default value GridSize=3 means mfakto runs up to 1048576
+  factor candidates at once, per class. So the last block of each class is
+  filled with factor candidates above the upper limit. This is a huge overhead
+  for small ranges but can be safely ignored for larger ranges. For example,
+  the average overhead is 0.5% for a class with 100 blocks but only 0.05% for
+  one with 1000 blocks.
 
 
 ############
 # 5 Tuning #
 ############
 
-Read mfakto.ini and think before editing. ;)
-
+You can find additional settings in the mfakto.ini file. Read it carefully
+before making changes. ;-)
 
 
 #########
 # 6 FAQ #
 #########
 
-Q Does mfakto support multiple GPUs?
-A No, but using the commandline option "-d <GPU number>" you should
-  be able to specify which GPU to use for each specific mfakto instance.
-  Please read the next question, too.
+Q: Does mfakto support multiple GPUs?
+A: Currently no, but you can use the -d option to start an instance on a
+   specific device. Please also see the next question.
 
-Q Can I run multiple instances of mfakto on the same computer?
-A Yes, and in most cases this is necessary to make full use of the GPU(s) if sieving with CPU.
-  If the sieve is running on the GPU(default), one instance should fully utilize
-  a single GPU.
-  
-Q Which tasks should I assign to mfakto?
-A Currently, the 73-bit-barrett kernel is the fastest one, working for factors
-  from 60 bits to 73 bits. Selecting tasks for this kernel will give best
-  results. The 79-bit-barrett kernel is quite fast too.
+Q: Can I run multiple instances of mfakto on the same computer?
+A: Yes. In most cases, this is necessary to make full use of a GPU when sieving
+   on the CPU. Otherwise, one instance should fully utilize a single GPU.
 
-Q I modified something in the kernel files but my changes are not picked up by
-  mfakto. Why not?
-A Since mfakto version 0.14, mfakto tries to load precompiled kernel files.
-  The ini-file parameter UseBinfile (default: mfakto_Kernels.elf) defines the
-  file name of the precompiled kernels. Delete the file and restart mfakto, it
-  will then compile the kernels from the source files.
+Q: What tasks should I assign to mfakto?
+A: The 73-bit Barrett kernel is currently the fastest and works for factors
+   between 60 to 73 bits. Selecting tasks for this kernel will give best
+   results. However, the 79-bit Barrett kernel is quite fast too.
+
+Q: I modified something in the kernel files, but my changes are not picked up
+   by mfakto. How come?
+A: mfakto tries to load the pre-compiled kernel files in version 0.14 and
+   later. The INI file parameter UseBinfile defines the name of the file
+   containing the pre-compiled kernels. You can force mfakto to recompile the
+   kernels by deleting the file and restarting mfakto.
 
 
 ###########
