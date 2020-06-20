@@ -6,7 +6,6 @@
 
 #ifndef _MSC_VER
 #ifndef __MINGW32__
-//#ifndef __CYGWIN__
 
 #include <termios.h>
 
@@ -26,7 +25,6 @@ class keyboard
 
 };
 
-//#endif
 #endif
 #endif
 #endif
