@@ -41,12 +41,17 @@ ifdef static
 endif
 
 # use OS-specific commands
+ifneq (, $(shell which install))
+  CP = install -m 555
+  RM = rm -f
+else
 ifeq ($(OS), Windows_NT)
   CP = copy
   RM = del /f
 else
   CP = cp
   RM = rm -f
+endif
 endif
 
 # where is the OpenCL SDK installed?
@@ -89,6 +94,7 @@ COBJS = $(CSRC:.c=.o) mfakto.o gpusieve.o perftest.o menu.o kbhit.o
 ##############################################################################
 
 all: ../mfakto ../barrett15.cl  ../barrett.cl  ../common.cl  ../gpusieve.cl  ../mfakto_Kernels.cl  ../montgomery.cl  ../mul24.cl ../datatypes.h ../tf_debug.h ../mfakto.ini
+	#@echo OS is $(OS) and ARCH is $(ARCH) and SHELL is $(SHELL)
 	echo $@ > $@
 
 ../mfakto : $(COBJS)
