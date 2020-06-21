@@ -23,7 +23,6 @@ mfakto
 *.sdf
 *.suo
 *.vcxproj.user
-*~
 
 # machine-specific Visual Studio files
 *.suo
