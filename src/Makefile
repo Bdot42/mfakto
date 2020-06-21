@@ -74,8 +74,8 @@ CC = gcc
 CPP = $(CC)
 CFLAGS = $(BITS) -Wall $(OPTIMIZE_FLAG) $(AMD_APP_INCLUDE) -DBUILD_OPENCL
 CPPFLAGS =
-#CFLAGS_EXTRA_SIEVE = -funroll-all-loops 
-#CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -floop-parallelize-all -fvariable-expansion-in-unroller -fno-align-labels 
+#CFLAGS_EXTRA_SIEVE = -funroll-all-loops
+#CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -floop-parallelize-all -fvariable-expansion-in-unroller -fno-align-labels
 CFLAGS_EXTRA_SIEVE = -funroll-all-loops -funsafe-loop-optimizations -fira-region=all -fsched-spec-load -fsched-stalled-insns=10 -fsched-stalled-insns-dep=10 -fno-align-labels
 
 # Linker
@@ -101,7 +101,7 @@ all: ../mfakto ../barrett15.cl  ../barrett.cl  ../common.cl  ../gpusieve.cl  ../
 	$(LD) $^ $(LDFLAGS) -o $@
 
 clean :
-	$(RM) -f *.o *~ depend
+	$(RM) *.o *~ depend
 
 sieve.o : sieve.c
 	$(CC) $(CFLAGS) $(CFLAGS_EXTRA_SIEVE) -c $< -o $@
