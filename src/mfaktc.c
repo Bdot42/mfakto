@@ -1004,8 +1004,8 @@ RET_ERROR we might have a serios problem
 
 int main(int argc, char **argv)
 {
-  unsigned int exponent = 1;
-  int bit_min = -1, bit_max = -1;
+  unsigned long exponent = 1;
+  long bit_min = -1, bit_max = -1;
   int parse_ret = -1;
   int devicenumber = 0;
 
@@ -1032,6 +1032,7 @@ int main(int argc, char **argv)
 
   while(i<argc)
   {
+    errno = 0; /* make sure this is 0 before calling strtoul() and similar */
     if((!strcmp((char*)"-h", argv[i])) || (!strcmp((char*)"--help", argv[i])))
     {
       print_help(argv[0]);
@@ -1094,20 +1095,20 @@ int main(int argc, char **argv)
         printf("ERROR: missing parameters for option \"-tf\"\n");
         return ERR_PARAM;
       }
-      exponent=(unsigned int)strtoul(argv[i+1],&ptr,10);
-      if(*ptr || errno || (unsigned long)exponent != strtoul(argv[i+1],&ptr,10) )
+      exponent = strtoul(argv[i+1],&ptr,10);
+      if (*ptr || errno || exponent != strtoul(argv[i+1],&ptr,10))
       {
         printf("ERROR: can't parse parameter <exp> for option \"-tf\"\n");
         return ERR_PARAM;
       }
-      bit_min=(int)strtol(argv[i+2],&ptr,10);
-      if(*ptr || errno || (long)bit_min != strtol(argv[i+2],&ptr,10) )
+      bit_min = strtol(argv[i+2],&ptr,10);
+      if(*ptr || errno || bit_min != strtol(argv[i+2],&ptr,10) )
       {
         printf("ERROR: can't parse parameter <min> for option \"-tf\"\n");
         return ERR_PARAM;
       }
-      bit_max=(int)strtol(argv[i+3],&ptr,10);
-      if(*ptr || errno || (long)bit_max != strtol(argv[i+3],&ptr,10) )
+      bit_max = strtol(argv[i+3],&ptr,10);
+      if(*ptr || errno || bit_max != strtol(argv[i+3],&ptr,10) )
       {
         printf("ERROR: can't parse parameter <max> for option \"-tf\"\n");
         return ERR_PARAM;

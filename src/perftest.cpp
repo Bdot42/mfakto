@@ -1020,11 +1020,13 @@ GPUKernels test_cpu_tf_kernels(cl_uint par)
 //  printf("%llu FCs, %f ms\n", num_fcs, time1/1000.0);
   num_loops = 1 + (cl_uint)(200000.0*par/time1); // run for about 2 seconds when par==10
   num_fcs = (cl_ulong)num_loops*mystuff.h_ktab[0][mystuff.threads_per_grid-1];
-  printf("exponent=%u, %lldM FCs (sieved: %lldM FCs) each, ",
-    mystuff.exponent, num_fcs >> 20, ((cl_ulong)num_loops*mystuff.threads_per_grid)>>20);
+  std::cout << "exponent=" << mystuff.exponent << ", " << (num_fcs >> 20)
+            << "M FCs (sieved: " << (((cl_ulong)num_loops*mystuff.threads_per_grid)>>20)
+            << "M FCs) each, ";
   // this single test is worth so many GHz-days
   ghzdt = (double) num_fcs / k * 4620 / 960 * ghzd;
-  printf("k=%llu, %f GHz-days (assignment), %f GHz-days (per test): ", k, ghzd, ghzdt); fflush(stdout);
+  std::cout << "k=" << k << ", " << ghzd << " GHz-days (assignment), " << ghzdt
+            << " GHz-days (per test): " << std::flush;
   for (use_kernel = _71BIT_MUL24; use_kernel < UNKNOWN_KERNEL; use_kernel++)
   {
     new_class=1; // tell run_kernel to re-submit the one-time kernel arguments
@@ -1156,10 +1158,11 @@ GPUKernels test_gpu_tf_kernels(cl_uint par)
     num_fcs <<=1;
   } while (time1 < 100000.0*par);
 
-  printf("exponent=%u, %lldM FCs each, ", mystuff.exponent, num_fcs>>20);
+  std::cout << "exponent=" << mystuff.exponent << ", " << (num_fcs>>20) << "M FCs each, ";
   // this single test is worth so many GHz-days
   ghzdt = (double) num_fcs / k * 4620 / 960 * ghzd;
-  printf("k=%llu, %f GHz-days (assignment), %f GHz-days (per test): ", k, ghzd, ghzdt); fflush(stdout);
+  std::cout << "k=" << k << ", " << ghzd << " GHz-days (assignment), " << ghzdt
+            << " GHz-days (per test): " << std::flush;
   for (use_kernel = BARRETT79_MUL32_GS; use_kernel < UNKNOWN_GS_KERNEL; use_kernel++)
   {
     timer_init(&timer);
