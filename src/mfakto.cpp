@@ -616,7 +616,8 @@ void set_gpu_type()
     else if (strstr(deviceinfo.d_name, "Hawaii")     ||    // R9 290, R9 290X
                 // Hawaii is both desktop graphics (1:8) and workstation graphics (1:2) in W8100, W9100, S9150
                 // 1:8 is just below the sweet spot for using DP. FirePro cards would run faster using DP
-             strstr(deviceinfo.d_name, "Vesuvius")         // 295X2
+             strstr(deviceinfo.d_name, "Vesuvius")   ||    // 295X2
+             strstr(deviceinfo.d_name, "gfx803")           // Fury X
             )
     {
       mystuff.gpu_type = GPU_GCN3;   // these cards have improved int32 performance over the previous GCNs, making for a changed kernel selection
