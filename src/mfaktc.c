@@ -353,7 +353,7 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff, cl_uint do_test)
       UNKNOWN_KERNEL,
       UNKNOWN_KERNEL },
 	{
-/*  GPU_RDNA  (1st gen RDNA) (only barett tested) */
+/*  GPU_RDNA  (1st/2nd gen RDNA) (only barett tested) */
       BARRETT69_MUL15,
       BARRETT70_MUL15,
       BARRETT71_MUL15,

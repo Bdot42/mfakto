@@ -648,7 +648,6 @@ void set_gpu_type()
               strstr(deviceinfo.d_name, "gfx1030") ||      // RX 6800-6900 XT (untested but kernel list should be similar)
               strstr(deviceinfo.d_name, "gfx1031") ||      // RX 6700 (XT)
               strstr(deviceinfo.d_name, "gfx1032"))        // lower end RDNA2
-             )
     {
       mystuff.gpu_type = GPU_RDNA;
     }
