@@ -642,8 +642,12 @@ void set_gpu_type()
     {
       mystuff.gpu_type = GPU_GCNF;
     }
-     else if (strstr(deviceinfo.d_name, "gfx1010") ||      // RX 5700(XT)
-              strstr(deviceinfo.d_name, "gfx1012")         // RX 5500XT
+     else if (strstr(deviceinfo.d_name, "gfx1010") ||      // RX 5600-5700 XT
+              strstr(deviceinfo.d_name, "gfx1012") ||      // RX 5300-5500 XT
+              strstr(deviceinfo.d_name, "gfx1011") ||      //
+              strstr(deviceinfo.d_name, "gfx1030") ||      // RX 6800-6900 XT (untested but kernel list should be similar)
+              strstr(deviceinfo.d_name, "gfx1031") ||      // RX 6700 (XT)
+              strstr(deviceinfo.d_name, "gfx1032"))        // lower end RDNA2
              )
     {
       mystuff.gpu_type = GPU_RDNA;
