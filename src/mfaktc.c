@@ -1074,7 +1074,7 @@ int main(int argc, char **argv)
       }
       else if (argv[i+1][0] == 'g')  // run on GPU
       {
-        devicenumber = 10000;
+        devicenumber = 0;
       }
       else
       {
