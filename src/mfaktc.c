@@ -24,7 +24,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
   #include <unistd.h>
   #include <sched.h>
 #endif
-#if defined __MINGW32__ || __CYGWIN__
+#if defined __MINGW32__ || defined __CYGWIN__
   #include <windows.h>
 #endif
 #include <string.h>
@@ -1287,7 +1287,7 @@ int main(int argc, char **argv)
 // macOS does not support setting CPU affinity
 #if !defined __APPLE__
   // might be best to just use _WIN32
-  #if defined _MSC_VER || __MINGW32__ || __CYGWIN__
+  #if defined _MSC_VER || defined __MINGW32__ || defined __CYGWIN__
         SetThreadAffinityMask(GetCurrentThread(), mystuff.cpu_mask);
   #else
         sched_setaffinity(0, sizeof(mystuff.cpu_mask), (cpu_set_t *)&(mystuff.cpu_mask));
