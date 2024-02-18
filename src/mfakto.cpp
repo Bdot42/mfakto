@@ -737,7 +737,7 @@ void set_gpu_type()
     printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
     printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
 #ifdef _MSC_VER
-    // check for C33010 in Visual Studio; this should not be reachable
+    // avoid warning C33010 in Visual Studio; this should not be reachable
     if (mystuff.gpu_type < GPUKernels::AUTOSELECT_KERNEL || mystuff.gpu_type > GPUKernels::UNKNOWN_GS_KERNEL) {
         std::cerr << "Error: kernel out of range in set_gpu_type()";
         exit(1);
@@ -2497,11 +2497,11 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   cl_ulong twait=0;
   cl_uint cwait=0, i;
 // for TF_72BIT
-  int72  k_base;
+  int72  k_base = {0};
   int144 b_preinit = {0};
   int192 b_192 = {0};
   cl_uint8 b_in = {{0}};
-  int96  factor, prev_factor = {0};
+  int96  factor = {0}, prev_factor = {0};
   cl_uint  factorsfound=0;
   cl_uint  shiftcount, ln2b, count=1, shared_mem_required, numblocks;
   cl_ulong b_preinit_lo, b_preinit_mid, b_preinit_hi;
@@ -2738,7 +2738,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 
         if (use_kernel >= BARRETT73_MUL15_GS && use_kernel <= BARRETT74_MUL15_GS)
         {
-          int75 k_base;
+          int75 k_base = {0};
           k_base.d0 =  k_min & 0x7FFF;
           k_base.d1 = (k_min >> 15) & 0x7FFF;
           k_base.d2 = (k_min >> 30) & 0x7FFF;
@@ -2809,7 +2809,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
             }
             else if (((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT74_MUL15)) || (use_kernel == MG88))
             {
-              int75 k_base;
+              int75 k_base = {0};
               k_base.d0 =  k_min_grid[i] & 0x7FFF;
               k_base.d1 = (k_min_grid[i] >> 15) & 0x7FFF;
               k_base.d2 = (k_min_grid[i] >> 30) & 0x7FFF;
@@ -2828,7 +2828,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
             else
             {
 #ifdef _MSC_VER
-                // check for C33010 in Visual Studio; this should not be reachable
+                // avoid warning C33010 in Visual Studio; this should not be reachable
                 if (use_kernel < GPUKernels::AUTOSELECT_KERNEL || use_kernel > GPUKernels::UNKNOWN_GS_KERNEL) {
                     std::cerr << "Error: kernel out of range in tf_class_opencl()";
                     return RET_ERROR;
