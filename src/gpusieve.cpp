@@ -29,7 +29,7 @@ See (http://www.mersenneforum.org/showthread.php?t=11900) for Ben's initial work
 */
 
 #include <cstdlib>
-#if defined(__APPLE__) || defined(__MACOSX)
+#if defined __APPLE__
   #include "OpenCL/cl.h"
 #else
   #include "CL/cl.h"

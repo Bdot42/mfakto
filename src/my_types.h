@@ -22,7 +22,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #ifndef __MY_TYPES_H
 #define __MY_TYPES_H
 #include "params.h"
-#if defined __APPLE__ || __MACOSX
+#if defined __APPLE__
   #include "OpenCL/cl.h"
 #else
   #include "CL/cl.h"
