@@ -736,10 +736,13 @@ void set_gpu_type()
     printf("  device (driver) version   %s (%s)\n", deviceinfo.d_ver, deviceinfo.dr_version);
     printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
     printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
+#ifdef _MSC_VER
+    // check for C33010 in Visual Studio; this should not be reachable
     if (mystuff.gpu_type < GPUKernels::AUTOSELECT_KERNEL || mystuff.gpu_type > GPUKernels::UNKNOWN_GS_KERNEL) {
         std::cerr << "Error: kernel out of range in set_gpu_type()";
         exit(1);
     }
+#endif
     printf("  number of multiprocessors %d (%d compute elements)\n", deviceinfo.units, deviceinfo.units * gpu_types[mystuff.gpu_type].CE_per_multiprocessor);
     printf("  clock rate                %d MHz\n", deviceinfo.max_clock);
 
@@ -2824,10 +2827,13 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
             }
             else
             {
+#ifdef _MSC_VER
+                // check for C33010 in Visual Studio; this should not be reachable
                 if (use_kernel < GPUKernels::AUTOSELECT_KERNEL || use_kernel > GPUKernels::UNKNOWN_GS_KERNEL) {
                     std::cerr << "Error: kernel out of range in tf_class_opencl()";
                     return RET_ERROR;
                 }
+#endif
                 status = run_kernel64(kernel_info[use_kernel].kernel, mystuff->exponent, k_min_grid[i], i, b_preinit4, mystuff->d_RES, mystuff->bit_min-63);
             }
             if(status != CL_SUCCESS)
