@@ -917,7 +917,7 @@ GPUKernels test_cpu_tf_kernels(cl_uint par)
   shiftcount=10;  // no exp below 2^10 ;-)
   while((1ULL<<shiftcount) < (unsigned long long int)mystuff.exponent)shiftcount++;
 #ifdef DETAILED_INFO
-  printf("bits in exp %u: %u, ", mystuff->exponent, shiftcount);
+  printf("bits in exp %u: %u, ", mystuff.exponent, shiftcount);
 #endif
   shiftcount -= 6; // all kernels can handle 5 bits of pre-shift (max 2^63)
   ln2b = mystuff.exponent >> shiftcount;

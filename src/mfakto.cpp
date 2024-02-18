@@ -2282,7 +2282,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
 
 //  shared_mem_required = (shared_mem_required + 127) & 0xFFFFFF80; // 128-byte-multiple
 #ifdef DETAILED_INFO
-  printf("run_gs_kernel: shared_mem: %u, loc/glob threads: %u/%u\n", shared_mem_required, localThreads, globalThreads);
+  printf("run_gs_kernel: shared_mem: %u, loc/glob threads: %zu/%zu\n", shared_mem_required, localThreads, globalThreads);
 #endif
   if (new_class)
   {
