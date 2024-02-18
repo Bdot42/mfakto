@@ -21,6 +21,9 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#ifdef _MSC_VER
+#include <tuple>
+#endif
 #include "string.h"
 #include "mfakto.h"
 #include "compatibility.h"
@@ -733,6 +736,13 @@ void set_gpu_type()
     printf("  device (driver) version   %s (%s)\n", deviceinfo.d_ver, deviceinfo.dr_version);
     printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
     printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
+#ifdef _MSC_VER
+    // avoid warning C33010 in Visual Studio; this should not be reachable
+    if (mystuff.gpu_type < GPUKernels::AUTOSELECT_KERNEL || mystuff.gpu_type > GPUKernels::UNKNOWN_GS_KERNEL) {
+        std::cerr << "Error: kernel out of range in set_gpu_type()";
+        exit(1);
+    }
+#endif
     printf("  number of multiprocessors %d (%d compute elements)\n", deviceinfo.units, deviceinfo.units * gpu_types[mystuff.gpu_type].CE_per_multiprocessor);
     printf("  clock rate                %d MHz\n", deviceinfo.max_clock);
 
@@ -818,7 +828,11 @@ int load_kernels(cl_int *devnumber)
         f.close();
         source[size] = '\0';
         char source_options[150];
+#ifdef _MSC_VER
+        std::ignore = sscanf(source, "Compile options: %149[^\r\n]\n", source_options);
+#else
         sscanf(source, "Compile options: %149[^\r\n]\n", source_options);
+#endif
         if (strcmp(source_options, program_options) != 0)
         {
           printf("\nCannot use binary kernel: its build options (%s) are different than the current build options (%s). Rebuilding kernels.\n", source_options, program_options);
@@ -2483,11 +2497,11 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   cl_ulong twait=0;
   cl_uint cwait=0, i;
 // for TF_72BIT
-  int72  k_base;
+  int72  k_base = {0};
   int144 b_preinit = {0};
   int192 b_192 = {0};
   cl_uint8 b_in = {{0}};
-  int96  factor, prev_factor = {0};
+  int96  factor = {0}, prev_factor = {0};
   cl_uint  factorsfound=0;
   cl_uint  shiftcount, ln2b, count=1, shared_mem_required, numblocks;
   cl_ulong b_preinit_lo, b_preinit_mid, b_preinit_hi;
@@ -2724,7 +2738,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 
         if (use_kernel >= BARRETT73_MUL15_GS && use_kernel <= BARRETT74_MUL15_GS)
         {
-          int75 k_base;
+          int75 k_base = {0};
           k_base.d0 =  k_min & 0x7FFF;
           k_base.d1 = (k_min >> 15) & 0x7FFF;
           k_base.d2 = (k_min >> 30) & 0x7FFF;
@@ -2795,7 +2809,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
             }
             else if (((use_kernel >= BARRETT73_MUL15) && (use_kernel <= BARRETT74_MUL15)) || (use_kernel == MG88))
             {
-              int75 k_base;
+              int75 k_base = {0};
               k_base.d0 =  k_min_grid[i] & 0x7FFF;
               k_base.d1 = (k_min_grid[i] >> 15) & 0x7FFF;
               k_base.d2 = (k_min_grid[i] >> 30) & 0x7FFF;
@@ -2813,11 +2827,18 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
             }
             else
             {
-              status = run_kernel64(kernel_info[use_kernel].kernel, mystuff->exponent, k_min_grid[i], i, b_preinit4, mystuff->d_RES, mystuff->bit_min-63);
+#ifdef _MSC_VER
+                // avoid warning C33010 in Visual Studio; this should not be reachable
+                if (use_kernel < GPUKernels::AUTOSELECT_KERNEL || use_kernel > GPUKernels::UNKNOWN_GS_KERNEL) {
+                    std::cerr << "Error: kernel out of range in tf_class_opencl()";
+                    return RET_ERROR;
+                }
+#endif
+                status = run_kernel64(kernel_info[use_kernel].kernel, mystuff->exponent, k_min_grid[i], i, b_preinit4, mystuff->d_RES, mystuff->bit_min-63);
             }
             if(status != CL_SUCCESS)
             {
-              std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Starting kernel " << kernel_info[use_kernel].kernelname << ". (run_kernel)\n";
+              std::cerr << "Error " << status << " (" << ClErrorString(status) << "): Starting kernel " << kernel_info[use_kernel].kernelname << ". (run_kernel)\n";
               return RET_ERROR;
             }
 

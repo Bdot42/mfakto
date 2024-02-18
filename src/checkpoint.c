@@ -81,9 +81,9 @@ checkpoint_write() writes the checkpoint file.
 //              c3 = timer_diff(&cptimer);
     if ((i>34) && (res==0))
     {
-      remove(filename_save); // dont care if failed, it may not have existed
-//               c4 = timer_diff(&cptimer);
-      rename(filename, filename_save); // dito
+      remove(filename_save); // don't care if it fails, it may not have existed
+//              c4 = timer_diff(&cptimer);
+      (void) rename(filename, filename_save); // ditto
       if (rename(filename_write, filename))
       {
         printf("WARNING: rename %s to %s failed.\n", filename_write, filename);
@@ -144,7 +144,7 @@ returns 0 otherwise
         version[ptr-ptr2]='\0';
       }
       else sprintf(version, "%s", MFAKTO_VERSION);
-      sscanf(ptr,": %d %d", cur_class, num_factors);
+      (void) sscanf(ptr,": %d %d", cur_class, num_factors);
       sprintf(buffer2,"%u %d %d %d %s: %d %d", exp, bit_min, bit_max, mystuff.num_classes, version, *cur_class, *num_factors);
       chksum=checkpoint_checksum(buffer2,(int)strlen(buffer2));
       // no trainling '\n' for the compare buffer to allow interchanging \n\r and \n files 

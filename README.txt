@@ -275,8 +275,8 @@ Steps:
 - build mfakto using the above instructions or download a stable version. Only
   the 64-bit binary is currently distributed.
 - go to the mfakto folder and launch the executable
-- mfakto defaults to the first AMD GPU it finds. To use the Intel integrated
-  GPU, you may need to specify it using the -d option.
+- mfakto defaults to the first OpenCL-supported GPU it finds. You can specify a
+  different GPU using the -d option.
 
 #############
 # 2.4 macOS #
