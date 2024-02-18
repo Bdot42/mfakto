@@ -144,6 +144,7 @@
       <AdditionalIncludeDirectories>$(OCL_ROOT)\include</AdditionalIncludeDirectories>
       <TreatWarningAsError>false</TreatWarningAsError>
       <OmitFramePointers>false</OmitFramePointers>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -175,6 +176,7 @@
       <AdditionalIncludeDirectories>$(OCL_ROOT)\include</AdditionalIncludeDirectories>
       <TreatWarningAsError>false</TreatWarningAsError>
       <OmitFramePointers>false</OmitFramePointers>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

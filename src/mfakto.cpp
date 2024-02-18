@@ -21,6 +21,9 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#ifdef _MSC_VER
+#include <tuple>
+#endif
 #include "string.h"
 #include "mfakto.h"
 #include "compatibility.h"
@@ -818,7 +821,11 @@ int load_kernels(cl_int *devnumber)
         f.close();
         source[size] = '\0';
         char source_options[150];
+#ifdef _MSC_VER
+        std::ignore= sscanf(source, "Compile options: %149[^\r\n]\n", source_options);
+#else
         sscanf(source, "Compile options: %149[^\r\n]\n", source_options);
+#endif
         if (strcmp(source_options, program_options) != 0)
         {
           printf("\nCannot use binary kernel: its build options (%s) are different than the current build options (%s). Rebuilding kernels.\n", source_options, program_options);
