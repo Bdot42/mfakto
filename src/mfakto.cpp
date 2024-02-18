@@ -2825,7 +2825,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
             else
             {
                 if (use_kernel < GPUKernels::AUTOSELECT_KERNEL || use_kernel > GPUKernels::UNKNOWN_GS_KERNEL) {
-                    std::cerr << "Error: kernel out of range in int tf_class_opencl()";
+                    std::cerr << "Error: kernel out of range in tf_class_opencl()";
                     return RET_ERROR;
                 }
                 status = run_kernel64(kernel_info[use_kernel].kernel, mystuff->exponent, k_min_grid[i], i, b_preinit4, mystuff->d_RES, mystuff->bit_min-63);
