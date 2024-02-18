@@ -736,6 +736,10 @@ void set_gpu_type()
     printf("  device (driver) version   %s (%s)\n", deviceinfo.d_ver, deviceinfo.dr_version);
     printf("  maximum threads per block %d\n", (int)deviceinfo.maxThreadsPerBlock);
     printf("  maximum threads per grid  %d\n", (int)deviceinfo.maxThreadsPerGrid);
+    if (mystuff.gpu_type < GPUKernels::AUTOSELECT_KERNEL || mystuff.gpu_type > GPUKernels::UNKNOWN_GS_KERNEL) {
+        std::cerr << "Error: kernel out of range in set_gpu_type()";
+        exit(1);
+    }
     printf("  number of multiprocessors %d (%d compute elements)\n", deviceinfo.units, deviceinfo.units * gpu_types[mystuff.gpu_type].CE_per_multiprocessor);
     printf("  clock rate                %d MHz\n", deviceinfo.max_clock);
 
@@ -822,7 +826,7 @@ int load_kernels(cl_int *devnumber)
         source[size] = '\0';
         char source_options[150];
 #ifdef _MSC_VER
-        std::ignore= sscanf(source, "Compile options: %149[^\r\n]\n", source_options);
+        std::ignore = sscanf(source, "Compile options: %149[^\r\n]\n", source_options);
 #else
         sscanf(source, "Compile options: %149[^\r\n]\n", source_options);
 #endif
@@ -2820,11 +2824,15 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
             }
             else
             {
-              status = run_kernel64(kernel_info[use_kernel].kernel, mystuff->exponent, k_min_grid[i], i, b_preinit4, mystuff->d_RES, mystuff->bit_min-63);
+                if (use_kernel < GPUKernels::AUTOSELECT_KERNEL || use_kernel > GPUKernels::UNKNOWN_GS_KERNEL) {
+                    std::cerr << "Error: kernel out of range in int tf_class_opencl()";
+                    return RET_ERROR;
+                }
+                status = run_kernel64(kernel_info[use_kernel].kernel, mystuff->exponent, k_min_grid[i], i, b_preinit4, mystuff->d_RES, mystuff->bit_min-63);
             }
             if(status != CL_SUCCESS)
             {
-              std::cerr<< "Error " << status << " (" << ClErrorString(status) << "): Starting kernel " << kernel_info[use_kernel].kernelname << ". (run_kernel)\n";
+              std::cerr << "Error " << status << " (" << ClErrorString(status) << "): Starting kernel " << kernel_info[use_kernel].kernelname << ". (run_kernel)\n";
               return RET_ERROR;
             }
 
