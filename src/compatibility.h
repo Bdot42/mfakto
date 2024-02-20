@@ -27,11 +27,11 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 /* define some format strings */
-#if defined __APPLE__ || _MSC_VER
+#if defined __APPLE__ || defined _MSC_VER
   #define PRId64 "lld"
   #define PRIu64 "llu"
   #define PRIx64 "llx"
-#elif __MINGW32__ || __CYGWIN__
+#elif __MINGW32__ || defined __CYGWIN__
   #include <inttypes.h>
 #else
   #define PRId64 "Ld"

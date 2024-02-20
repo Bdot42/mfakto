@@ -2282,7 +2282,7 @@ __kernel void cl_barrett32_77_gs(__private uint exp, const int96_t k_base, const
 
 //  shared_mem_required = (shared_mem_required + 127) & 0xFFFFFF80; // 128-byte-multiple
 #ifdef DETAILED_INFO
-  printf("run_gs_kernel: shared_mem: %u, loc/glob threads: %u/%u\n", shared_mem_required, localThreads, globalThreads);
+  printf("run_gs_kernel: shared_mem: %u, loc/glob threads: %zu/%zu\n", shared_mem_required, localThreads, globalThreads);
 #endif
   if (new_class)
   {
@@ -2699,6 +2699,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
   // as a first test, copy the sieve bits into the usual sieve array - later, the kernels will do that.
         static double peak=0.0;
         cl_uint ind=0, pos=0, *dest=mystuff->h_ktab[h_ktab_index];
+        int total_overflows = 0;
         for (i=0; i<mystuff->gpu_sieve_size/32; i++)
         {
           cl_uint ii, word=mystuff->h_bitarray[i];
@@ -2726,9 +2727,14 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
               }*/
             }
             pos++;
-            if (pos > 0xffffff) printf("Overflow!\n");
+            if (pos > 0xffffff) {
+                total_overflows++;
+            }
             word >>= 1;
           }
+        }
+        if (total_overflows > 0) {
+            printf("Overflow occured %u times for exponent %u in tf_class_opencl()\n", total_overflows, mystuff->exponent);
         }
         if (peak < (double) ind * 100.0 / (double) pos) peak=(double) ind * 100.0 / (double) pos;
         printf("bit-extract: %u/%u words (%u bits) processed, %u bits set (%f%% -- max=%f%% @ %u).\n",
