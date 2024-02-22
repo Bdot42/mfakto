@@ -778,10 +778,14 @@ int load_kernels(cl_int *devnumber)
   #ifdef CL_DEBUG
     strcat(program_options, " -g");
   #else
-    if ((mystuff.gpu_type != GPU_NVIDIA) && (mystuff.gpu_type != GPU_INTEL)) // NV & INTEL do not know optimisation flags
+    // Nvidia and Intel do not know optimisation flags
+    if (mystuff.gpu_type != GPU_NVIDIA && mystuff.gpu_type != GPU_INTEL)
     {
+        // same goes for macOS and Intel CPUs (and possibly others)
 #if !defined __APPLE__
-        strcat(program_options, " -O3");
+        if (mystuff.gpu_type != GPU_CPU && !strstr(deviceinfo.v_name, "Intel")) {
+            strcat(program_options, " -O3");
+        }
 #endif
     }
   #endif
