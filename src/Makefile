@@ -93,6 +93,7 @@ COBJS = $(CSRC:.c=.o) mfakto.o gpusieve.o perftest.o menu.o kbhit.o
 
 ##############################################################################
 
+.PHONY all:
 all: ../mfakto ../barrett15.cl  ../barrett.cl  ../common.cl  ../gpusieve.cl  ../mfakto_Kernels.cl  ../montgomery.cl  ../mul24.cl ../datatypes.h ../tf_debug.h ../mfakto.ini
 	#@echo OS is $(OS) and ARCH is $(ARCH) and SHELL is $(SHELL)
 	echo $@ > $@
@@ -100,7 +101,8 @@ all: ../mfakto ../barrett15.cl  ../barrett.cl  ../common.cl  ../gpusieve.cl  ../
 ../mfakto : $(COBJS)
 	$(LD) $^ $(LDFLAGS) -o $@
 
-clean :
+.PHONY clean:
+clean:
 	$(RM) *.o *~ depend
 
 sieve.o : sieve.c
