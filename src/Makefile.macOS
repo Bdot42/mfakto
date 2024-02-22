@@ -78,37 +78,3 @@ sieve.o : sieve.c
 	cp $< ..
 
 ##############################################################################
-
-checkpoint.o: checkpoint.c params.h timer.h
-
-filelocking.o: filelocking.c
-
-mfaktc.o: mfaktc.c params.h my_types.h compatibility.h \
-  sieve.h read_config.h parse.h timer.h checkpoint.h signal_handler.h \
-  filelocking.h perftest.h mfakto.h gpusieve.h output.h selftest-data.h
-
-output.o: output.c params.h my_types.h output.h filelocking.h compatibility.h
-
-parse.o: parse.c compatibility.h filelocking.h parse.h
-
-read_config.o: read_config.c params.h my_types.h
-
-sieve.o: sieve.c params.h compatibility.h
-
-signal_handler.o: signal_handler.c params.h my_types.h compatibility.h
-
-timer.o: timer.c timer.h compatibility.h
-
-gpusieve.o: gpusieve.cpp my_types.h params.h compatibility.h
-
-mfakto.o: mfakto.cpp params.h my_types.h compatibility.h \
-  read_config.h parse.h sieve.h timer.h checkpoint.h filelocking.h \
-  perftest.h mfakto.h output.h gpusieve.h signal_handler.h
-
-perftest.o: perftest.cpp params.h my_types.h compatibility.h \
-  read_config.h parse.h sieve.h timer.h checkpoint.h filelocking.h \
-  signal_handler.h mfakto.h
-
-menu.o: menu.h compatibility.h my_types.h
-
-kbhit.o: kbhit.h
