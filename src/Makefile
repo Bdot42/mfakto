@@ -45,13 +45,13 @@ ifneq (, $(shell which install))
   CP = install -m 555
   RM = rm -f
 else
-ifeq ($(OS), Windows_NT)
-  CP = copy
-  RM = del /f
-else
-  CP = cp
-  RM = rm -f
-endif
+  ifeq ($(OS), Windows_NT)
+    CP = copy
+    RM = del /f
+  else
+    CP = cp
+    RM = rm -f
+  endif
 endif
 
 # where is the OpenCL SDK installed?
@@ -127,4 +127,6 @@ depend: $(CSRC)
 	$(CC) -MM $(CFLAGS) $(CSRC) > $@.tmp
 	mv $@.tmp $@
 
+ifneq ($(MAKECMDGOALS), clean)
 include depend
+endif
