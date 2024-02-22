@@ -779,9 +779,11 @@ int load_kernels(cl_int *devnumber)
     strcat(program_options, " -g");
   #else
     if ((mystuff.gpu_type != GPU_NVIDIA) && (mystuff.gpu_type != GPU_INTEL)) // NV & INTEL do not know optimisation flags
-      #if !defined __APPLE__
+    {
+#if !defined __APPLE__
         strcat(program_options, " -O3");
-      #endif
+#endif
+    }
   #endif
 
     if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");
