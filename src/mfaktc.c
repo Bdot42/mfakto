@@ -810,6 +810,13 @@ k_max and k_min are used as 64bit temporary integers here...
       }
       if(k_min != 1) /* the factor should appear ONCE */
       {
+#ifdef _MSC_VER
+          // avoid warning C33010 in Visual Studio; this should not be reachable
+          if (use_kernel < AUTOSELECT_KERNEL || use_kernel > UNKNOWN_GS_KERNEL) {
+              printf("ERROR: kernel out of range in tf()");
+              return RET_QUIT;
+          }
+#endif
         printf("ERROR: self-test failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
         printf("  expected result: %08X %08X %08X\n", f_hi, f_med, f_low);
         for(i=0; (i<mystuff->h_RES[0]) && (i<10); i++)
