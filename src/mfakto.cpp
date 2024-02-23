@@ -754,7 +754,7 @@ void set_gpu_type()
   }
 
   if (mystuff.gpu_type == GPU_CPU && mystuff.gpu_sieving == 1) {
-      printf("Info: ignoring SieveOnGPU=1 in INI file as mfakto is running only on CPU");
+      printf("Info: overriding SieveOnGPU=1 in INI file as mfakto is running only on CPU\n\n");
       mystuff.gpu_sieving = 0;
   }
 }
