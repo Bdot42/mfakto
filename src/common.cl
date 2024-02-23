@@ -17,11 +17,101 @@ You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 Version 0.15
-
 */
+
 /*
  Common functions and defines for various kernels
 */
+
+// prototypes
+
+void check_big_factor96(const int96_v f, const int96_v a, __global uint * const RES);
+
+void calculate_FC32(const uint exponent, const uint tid, const __global uint * restrict k_tab, const int96_t k_base, __private int96_v * restrict const f);
+
+void calculate_FC32_mad(const uint exponent, const uint tid, const __global uint * restrict k_tab, const int96_t k_base, __private int96_v * restrict const f);
+
+void mod_simple_96(int96_v * const res, const int96_v q, const int96_v n, const float_v nf
+#if (TRACE_KERNEL > 1)
+                  , const uint tid
+#endif
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+);
+
+void mod_simple_96_and_check_big_factor96(const int96_v q,const int96_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+);
+
+void mod_simple_even_96_and_check_big_factor96(const int96_v q,const int96_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+);
+
+void mod_simple_75(int75_v * const res, const int75_v q, const int75_v n, const float_v nf
+#if (TRACE_KERNEL > 1)
+                  , const uint tid
+#endif
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+);
+
+void mod_simple_75_big(int75_v * const res, const int75_v q, const int75_v n, const float_v nf
+#if (TRACE_KERNEL > 1)
+                  , const uint tid
+#endif
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+);
+
+void mod_simple_even_75_and_check_big_factor75(const int75_v q, const int75_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+);
+
+void mod_simple_even_75_and_check_big_factor75_big(const int75_v q, const int75_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+);
+
+void mod_simple_75_and_check_big_factor75(const int75_v q, const int75_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+);
+
+void mod_simple_90_and_check_big_factor90(const int90_v q, const int90_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+);
+
+void calculate_FC75(const uint exponent, const uint tid, const __global uint * restrict k_tab, const int75_t k_base, __private int75_v * restrict const f);
+
+void mod_simple_90(int90_v * const res, const int90_v q, const int90_v n, const float_v nf
+#if (TRACE_KERNEL > 1)
+                  , const uint tid
+#endif
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+);
+
+void mod_simple_even_90_and_check_big_factor90(const int90_v q, const int90_v n, const float_v nf, __global uint * const RES
+#ifdef CHECKS_MODBASECASE
+                  , const int bit_max64, const uint limit, __global uint * restrict modbasecase_debug
+#endif
+);
+
+void calculate_FC90(const uint exponent, const uint tid, const __global uint * restrict k_tab, const int75_t k_base, __private int90_v * restrict const f);
 
 // portability
 

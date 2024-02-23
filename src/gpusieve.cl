@@ -26,8 +26,16 @@ This code is a GPU-based sieve for mfakto.
 
 Thanks go also to Ben Buhrow for his erato.cu program and to Rocke Verser for his gpusieve program.
 See (http://www.mersenneforum.org/showthread.php?t=11900) for Ben's initial work.
-
 */
+
+// function prototypes
+
+unsigned int modularinverse (uint n, uint orig_d);
+
+uint extract_bits(const uint bits_to_process, const uint tid, const uint lid, __local ushort *bitcount, __local ushort *smem, const __global uint * restrict bit_array);
+
+// end prototypes
+
 // TRACE_SIEVE_KERNEL: higher is more trace, 0-5 currently used
 #define TRACE_SIEVE_KERNEL 0
 
