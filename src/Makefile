@@ -130,5 +130,7 @@ depend: $(CSRC)
 	mv $@.tmp $@
 
 ifneq ($(MAKECMDGOALS), clean)
+ifneq (, $(wildcard depend))
 include depend
+endif
 endif
