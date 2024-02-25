@@ -729,6 +729,7 @@ void set_gpu_type()
       "Please change to VectorSize=2 in %s and restart mfakto for optimal performance.\n\n",
       mystuff.inifile);
   }
+
   if(mystuff.verbosity >= 1)
   {
     printf("\nOpenCL device info\n");
@@ -750,6 +751,11 @@ void set_gpu_type()
 
     printf("  threads per grid          %d\n", mystuff.threads_per_grid);
     printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
+  }
+
+  if (mystuff.gpu_type == GPU_CPU && mystuff.gpu_sieving == 1) {
+      printf("Info: overriding SieveOnGPU=1 in INI file as mfakto is running only on CPU\n\n");
+      mystuff.gpu_sieving = 0;
   }
 }
 
@@ -778,10 +784,16 @@ int load_kernels(cl_int *devnumber)
   #ifdef CL_DEBUG
     strcat(program_options, " -g");
   #else
-    if ((mystuff.gpu_type != GPU_NVIDIA) && (mystuff.gpu_type != GPU_INTEL)) // NV & INTEL do not know optimisation flags
-      #if !defined __APPLE__
-        strcat(program_options, " -O3");
-      #endif
+    // Nvidia and Intel do not know optimisation flags
+    if (mystuff.gpu_type != GPU_NVIDIA && mystuff.gpu_type != GPU_INTEL)
+    {
+        // same goes for macOS and Intel CPUs (and possibly others)
+#if !defined __APPLE__
+        if (mystuff.gpu_type != GPU_CPU && strstr(deviceinfo.v_name, "Intel") == NULL) {
+            strcat(program_options, " -O3");
+        }
+#endif
+    }
   #endif
 
     if (mystuff.more_classes == 1)  strcat(program_options, " -DMORE_CLASSES");

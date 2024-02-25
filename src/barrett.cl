@@ -31,7 +31,26 @@ void div_160_96(int96_v * const res, __private uint qd5, const int96_v n, const 
 void mul_96(int96_v * const res, const int96_v a, const int96_v b);
 void mul_96_192_no_low2(int192_v *const res, const int96_v a, const int96_v b);
 void mul_96_192_no_low3(int192_v *const res, const int96_v a, const int96_v b);
-
+void square_96_192(int192_v * const res, const int96_v a);
+void square_96_160(int192_v * const res, const int96_v a);
+void shl_96(int96_v * const a);
+void shl_192(int192_v * const a);
+void check_barrett32_76(uint shifter, const int96_v f, const uint tid, const int192_t bb, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF);
+void check_barrett32_77(uint shifter, const int96_v f, const uint tid, const int192_t bb, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF);
+void check_barrett32_78(uint shifter, const int96_v f, const uint tid, const int192_t bb, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF);
+void check_barrett32_79(uint shifter, const int96_v f, const uint tid, const int192_t bb, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF);
+void check_barrett32_87(uint shifter, const int96_v f, const uint tid, const int192_t bb, const uint bit_max65, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF);
+void check_barrett32_88(uint shifter, const int96_v f, const uint tid, const int192_t bb, const uint bit_max65, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF);
+void check_barrett32_89(uint shifter, const int96_v f, const uint tid, const int192_t bb, const uint bit_max65, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF);
+void check_barrett32_92(uint shifter, const int96_v f, const uint tid, const int192_t bb, const uint bit_max65, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF);
 
 /****************************************
  ****************************************
@@ -1126,7 +1145,7 @@ DIV_160_96 here. */
  * square - reduce - shift
  */
 void check_barrett32_76(uint shifter, const int96_v f, const uint tid, const int192_t bb, __global uint * restrict RES
-                        MODBASECASE_PAR_DEF         )
+                        MODBASECASE_PAR_DEF)
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
@@ -1281,7 +1300,7 @@ Precalculated here since it is the same for all steps in the following loop */
  * square - shift - reduce
  */
 void check_barrett32_77(uint shifter, const int96_v f, const uint tid, const int192_t bb, __global uint * restrict RES
-                        MODBASECASE_PAR_DEF         )
+                        MODBASECASE_PAR_DEF)
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
@@ -1426,7 +1445,7 @@ Precalculated here since it is the same for all steps in the following loop */
 }
 
 void check_barrett32_79(uint shifter, const int96_v f, const uint tid, const int192_t bb, __global uint * restrict RES
-                        MODBASECASE_PAR_DEF         )
+                        MODBASECASE_PAR_DEF)
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
@@ -1592,7 +1611,7 @@ Precalculated here since it is the same for all steps in the following loop */
 }
 
 void check_barrett32_87(uint shifter, const int96_v f, const uint tid, const int192_t bb, const uint bit_max65, __global uint * restrict RES
-                        MODBASECASE_PAR_DEF         )
+                        MODBASECASE_PAR_DEF)
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
@@ -1741,7 +1760,7 @@ Precalculated here since it is the same for all steps in the following loop */
 }
 
 void check_barrett32_88(uint shifter, const int96_v f, const uint tid, const int192_t bb, const uint bit_max65, __global uint * restrict RES
-                        MODBASECASE_PAR_DEF         )
+                        MODBASECASE_PAR_DEF)
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
@@ -1884,7 +1903,7 @@ Precalculated here since it is the same for all steps in the following loop */
 
 
 void check_barrett32_92(uint shifter, const int96_v f, const uint tid, const int192_t bb, const uint bit_max65, __global uint * restrict RES
-                        MODBASECASE_PAR_DEF         )
+                        MODBASECASE_PAR_DEF)
 {
   __private int96_v  a, u, tmp96;
   __private int192_v b, tmp192;
@@ -2069,7 +2088,7 @@ __kernel void cl_barrett32_76(__private uint exponent, const int96_t k_base, con
                            const __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max65
-                           MODBASECASE_PAR_DEF         )
+                           MODBASECASE_PAR_DEF)
 {
   __private int96_v f;
   __private uint    tid;
@@ -2098,7 +2117,7 @@ __kernel void cl_barrett32_77(__private uint exponent, const int96_t k_base, con
                            const __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max65
-                           MODBASECASE_PAR_DEF         )
+                           MODBASECASE_PAR_DEF)
 {
   __private int96_v f;
   __private uint    tid;
@@ -2127,7 +2146,7 @@ __kernel void cl_barrett32_79(__private uint exponent, const int96_t k_base, con
                            __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max65
-                           MODBASECASE_PAR_DEF         )
+                           MODBASECASE_PAR_DEF)
 {
   __private int96_v f;
   __private uint    tid;
@@ -2156,7 +2175,7 @@ __kernel void cl_barrett32_87(__private uint exponent, const int96_t k_base, con
                            __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max65
-                           MODBASECASE_PAR_DEF         )
+                           MODBASECASE_PAR_DEF)
 {
   __private int96_v f;
   __private uint    tid;
@@ -2185,7 +2204,7 @@ __kernel void cl_barrett32_88(__private uint exponent, const int96_t k_base, con
                            __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max65
-                           MODBASECASE_PAR_DEF         )
+                           MODBASECASE_PAR_DEF)
 {
   __private int96_v f;
   __private uint    tid;
@@ -2214,7 +2233,7 @@ __kernel void cl_barrett32_92(__private uint exponent, const int96_t k_base, con
                            __private int192_t bb,
 #endif
                            __global uint * restrict RES, const int bit_max65
-                           MODBASECASE_PAR_DEF         )
+                           MODBASECASE_PAR_DEF)
 {
   __private int96_v f;
   __private uint    tid;
@@ -2256,7 +2275,7 @@ __kernel void cl_barrett32_76_gs(__private uint exponent, const int96_t k_base,
 #endif
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-                                 MODBASECASE_PAR_DEF         )
+                                 MODBASECASE_PAR_DEF)
 /*
 shiftcount is used for precomputing without mod
 a is precomputed on host ONCE.
@@ -2401,7 +2420,7 @@ __kernel void cl_barrett32_77_gs(__private uint exponent, const int96_t k_base,
 #endif
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-                                 MODBASECASE_PAR_DEF         )
+                                 MODBASECASE_PAR_DEF)
 /*
 shiftcount is used for precomputing without mod
 a is precomputed on host ONCE.
@@ -2546,7 +2565,7 @@ __kernel void cl_barrett32_79_gs(__private uint exponent, const int96_t k_base,
 #endif
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-                                 MODBASECASE_PAR_DEF         )
+                                 MODBASECASE_PAR_DEF)
 /*
 shiftcount is used for precomputing without mod
 a is precomputed on host ONCE.
@@ -2691,7 +2710,7 @@ __kernel void cl_barrett32_87_gs(__private uint exponent, const int96_t k_base,
 #endif
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-                                 MODBASECASE_PAR_DEF         )
+                                 MODBASECASE_PAR_DEF)
 /*
 shiftcount is used for precomputing without mod
 a is precomputed on host ONCE.
@@ -2836,7 +2855,7 @@ __kernel void cl_barrett32_88_gs(__private uint exponent, const int96_t k_base,
 #endif
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-                                 MODBASECASE_PAR_DEF         )
+                                 MODBASECASE_PAR_DEF)
 /*
 shiftcount is used for precomputing without mod
 a is precomputed on host ONCE.
@@ -2981,7 +3000,7 @@ __kernel void cl_barrett32_92_gs(__private uint exponent, const int96_t k_base,
 #endif
                                  __global uint * restrict RES, const int bit_max65,
                                  const uint shared_mem_allocated // only used to verify assumptions
-                                 MODBASECASE_PAR_DEF         )
+                                 MODBASECASE_PAR_DEF)
 /*
 shiftcount is used for precomputing without mod
 a is precomputed on host ONCE.

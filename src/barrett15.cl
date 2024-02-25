@@ -26,6 +26,86 @@ Version 0.15
  ****************************************
  ****************************************/
 
+// function prototypes
+
+int75_v sub_if_gte_75(const int75_v a, const int75_v b);
+
+void mul_75(int75_v * const res, const int75_v a, const int75_v b);
+
+void mul_75_big(int75_v * const res, const int75_v a, const int75_v b);
+
+void mul_75_150_no_low3(int150_v * const res, const int75_v a, const int75_v b);
+
+void mul_75_150_no_low5(int150_v * const res, const int75_v a, const int75_v b);
+
+void mul_75_150_no_low5_big(int150_v * const res, const int75_v a, const int75_v b);
+
+void mul_75_150(int150_v * const res, const int75_v a, const int75_v b);
+
+void square_75_150(int150_v * const res, const int75_v a);
+
+void square_75_150_big(int150_v * const res, const int75_v a);
+
+void shl_75(int75_v * const a);
+
+void shl_150(int150_v * const a);
+
+void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const float_v nf
+#if (TRACE_KERNEL > 1)
+                  , const uint tid
+#endif
+                  MODBASECASE_PAR_DEF
+);
+
+void check_barrett15_69(uint shifter, const int75_v f, const uint tid, const uint8 b_in, const int bit_max65, __global uint * restrict RES
+     MODBASECASE_PAR_DEF);
+
+void check_barrett15_70(uint shifter, const int75_v f, const uint tid, const uint8 b_in, const int bit_max65, __global uint * restrict RES
+     MODBASECASE_PAR_DEF);
+
+void check_barrett15_71(uint shifter, const int75_v f, const uint tid, const uint8 b_in, const int bit_max65, __global uint * restrict RES
+     MODBASECASE_PAR_DEF);
+
+void check_barrett15_73(uint shifter, const int75_v f, const uint tid, const uint8 b_in, const int bit_max65, __global uint * restrict RES
+     MODBASECASE_PAR_DEF);
+
+void check_barrett15_74(uint shifter, const int75_v f, const uint tid, const uint8 b_in, const int bit_max65, __global uint * restrict RES
+     MODBASECASE_PAR_DEF);
+
+int90_v sub_if_gte_90(const int90_v a, const int90_v b);
+
+void mul_90(int90_v * const res, const int90_v a, const int90_v b);
+
+void mul_90_180_no_low3(int180_v * const res, const int90_v a, const int90_v b);
+
+void mul_90_180_no_low5(int180_v * const res, const int90_v a, const int90_v b);
+
+void mul_90_180(int180_v * const res, const int90_v a, const int90_v b);
+
+void square_90_180(int180_v * const res, const int90_v a);
+
+void shl_90(int90_v * const a);
+
+void shl_180(int180_v * const a);
+
+void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const float_v nf
+#if (TRACE_KERNEL > 1)
+                  , const uint tid
+#endif
+                  MODBASECASE_PAR_DEF
+);
+
+void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uint8 b_in, const int bit_max65, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF);
+
+void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uint8 b_in, const int bit_max65, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF);
+
+void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uint8 b_in, const int bit_max65, __global uint * restrict RES
+                        MODBASECASE_PAR_DEF);
+
+// end prototypes
+
 int75_v sub_if_gte_75(const int75_v a, const int75_v b)
 /* return (a>b)?a-b:a */
 {
@@ -465,7 +545,8 @@ void div_150_75_d(int75_v * const res, const uint qhi, const int75_v n, const do
                   , const uint tid
 #endif
                   MODBASECASE_PAR_DEF
-)/* res = q / n (integer division)
+)
+/* res = q / n (integer division)
     during function entry, qhi contains the upper 30 bits of an 180-bit-value. The remaining bits are zero implicitely.
     this is not a vector, as the first value is the same for all FCs*/
     // do 2*45 bit reductions using double: should be sufficient for 90 bits (and 86 anyways)
@@ -610,7 +691,8 @@ void div_150_75(int75_v * const res, const uint qhi, const int75_v n, const floa
                   , const uint tid
 #endif
                   MODBASECASE_PAR_DEF
-)/* res = q / n (integer division) */
+)
+/* res = q / n (integer division) */
 {
   __private float_v qf;
   __private float   qf_1;   // for the first conversion which does not need vectors yet
@@ -2502,7 +2584,8 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
                   , const uint tid
 #endif
                   MODBASECASE_PAR_DEF
-)/* res = q / n (integer division)
+)
+/* res = q / n (integer division)
     during function entry, qhi contains the upper 30 bits of an 180-bit-value. The remaining bits are zero implicitely.
     this is not a vector, as the first value is the same for all FCs*/
     // try with 4 * 23 bit reductions: should be sufficient for 90 bits (and 86 anyways)
