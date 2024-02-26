@@ -28,7 +28,6 @@ mfakto
 ipch/
 Release/
 Debug/
-src/all
 x64/
 
 # instance-specific files
