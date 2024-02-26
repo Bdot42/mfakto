@@ -2,7 +2,8 @@
 *.o
 *.obj
 *~
-src/depend.tmp
+src/*.tmp
+src/depend
 
 # binaries
 mfakto
@@ -12,13 +13,12 @@ mfakto
 # copied from source directory
 *.cl
 !src/*.cl
-*.exe
 *.h
 !src/*.h
 *.ini
 !src/*.ini
 
-# machine-specific Visual Studio files
+# device-specific Visual Studio files
 *.suo
 *.sdf
 *.opensdf
@@ -28,12 +28,7 @@ mfakto
 ipch/
 Release/
 Debug/
-Release/
-ipch/
-mfakto
-mfakto_Kernels.elf
 src/all
-src/depend
 x64/
 
 # instance-specific files
