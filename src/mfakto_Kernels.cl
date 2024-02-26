@@ -99,8 +99,8 @@ Version 0.15
 // this kernel is only used for a quick test at startup - no need to be correct ;-)
 // currently this kernel is used for testing what happens without atomics when multiple factors are found
 __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
-                           const float qr, __global uint *res
-)
+                        const float qr, __global uint *res
+                        MODBASECASE_PAR_DEF)
 {
   __private uint i,f, tid;
   int180_v resv;
@@ -264,9 +264,9 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   div_180_90(&r, i, a, ff
 #endif
 #if (TRACE_KERNEL > 1)
-                  , tid
+                , tid
 #endif
-                  );
+                MODBASECASE_PAR);
   // enforce evaluation ... otherwise some calculations are optimized away ;-)
   res[30] = V(r.d5) + V(r.d4) + V(r.d3) + V(r.d2) + V(r.d1) + V(r.d0);
 
@@ -296,9 +296,9 @@ __kernel void test_k(const ulong hi, const ulong lo, const ulong q,
   div_180_90(&r, i, b, ff
 #endif
 #if (TRACE_KERNEL > 1)
-                  , tid
+                , tid
 #endif
-                  );
+                MODBASECASE_PAR);
   // enforce evaluation ... otherwise some calculations are optimized away ;-)
   //res[31] = r.d5.s0 + r.d4.s0 + r.d3.s0 + r.d2.s0 + r.d1.s0 + r.d0.s0;
 
