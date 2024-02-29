@@ -24,6 +24,34 @@ Version 0.15
    only included once. Do not define typedefs etc for the second time this file
    is included for the small factor kernel */
 
+// function prototypes
+
+void mul_24_48(uint_v * const res_hi, uint_v * const res_lo, const uint_v a, const uint_v b);
+
+int72_v sub_if_gte_72(const int72_v a, const int72_v b);
+
+void mul_72(int72_v * const res, const int72_v a, const int72_t b);
+
+void square_72_144(int144_v * const res, const int72_v a);
+
+void square_72_144_shl(int144_v * const res, const int72_v a);
+
+#ifdef _63BIT_MUL24_K
+void mod_144_64
+#else
+void mod_144_72
+#endif
+    (int72_v * const res, __private int144_v q, const int72_v n, const float_v nf
+#if (TRACE_KERNEL > 1)
+                , const uint tid
+#endif
+#ifdef CHECKS_MODBASECASE
+                , __global uint * restrict modbasecase_debug
+#endif
+);
+
+// end prototypes
+
 #ifndef _63BIT_MUL24_K
 
 /***********************************************
@@ -31,7 +59,6 @@ Version 0.15
  * for the 71-bit-kernel
  *
  ***********************************************/
-
 
 void mul_24_48(uint_v * const res_hi, uint_v * const res_lo, const uint_v a, const uint_v b)
 /* res_hi*(2^24) + res_lo = a * b */
@@ -205,12 +232,11 @@ void mod_144_72
 #endif
     (int72_v * const res, __private int144_v q, const int72_v n, const float_v nf
 #if (TRACE_KERNEL > 1)
-                   , const uint tid
+                , const uint tid
 #endif
 #ifdef CHECKS_MODBASECASE
-                   , __global uint * restrict modbasecase_debug
+                , __global uint * restrict modbasecase_debug
 #endif
-
 )
 /* res = q mod n */
 {

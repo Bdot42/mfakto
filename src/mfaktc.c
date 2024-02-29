@@ -749,11 +749,12 @@ other return value
   }
   else // mystuff->mode != MODE_NORMAL
   {
-    if(mystuff->h_RES[0] == 0)
+    if (mystuff->h_RES[0] == 0)
     {
-      printf("ERROR: self-test failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
-      printf("  no factor found\n");
-      retval = 1;
+        // the extra spaces are used to clear the #'s
+        printf("ERROR: self-test failed for M%u (%s)     \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+        printf("  no factor found\n");
+        retval = 1;
     }
     else // mystuff->h_RES[0] > 0
     {
@@ -817,17 +818,20 @@ k_max and k_min are used as 64bit temporary integers here...
               return RET_QUIT;
           }
 #endif
-        printf("ERROR: self-test failed for M%u (%s)\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
-        printf("  expected result: %08X %08X %08X\n", f_hi, f_med, f_low);
-        for(i=0; (i<mystuff->h_RES[0]) && (i<10); i++)
-        {
-          printf("  reported result: %08X %08X %08X\n", mystuff->h_RES[i*3 + 1], mystuff->h_RES[i*3 + 2], mystuff->h_RES[i*3 + 3]);
-        }
-        retval = 2;
+          // the extra spaces are used to clear the #'s
+          printf("ERROR: self-test failed for M%u (%s)     \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+          printf("  expected result: %08X %08X %08X\n", f_hi, f_med, f_low);
+          for (i=0; (i < mystuff->h_RES[0]) && (i < 10); i++)
+          {
+              printf("  reported result: %08X %08X %08X\n", mystuff->h_RES[i*3 + 1], mystuff->h_RES[i*3 + 2], mystuff->h_RES[i*3 + 3]);
+          }
+          retval = 2;
       }
       else
       {
-        if(mystuff->mode != MODE_SELFTEST_SHORT)printf("self-test for M%u passed (%s)!\n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+          if (mystuff->mode != MODE_SELFTEST_SHORT) {
+              printf("self-test for M%u passed (%s)!            \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+          }
       }
     }
   }
@@ -985,7 +989,8 @@ RET_ERROR we might have a serios problem
     if (mystuff->quit) break;
   }
 
-  printf("Self-test statistics                                      \n");
+  printf("                                                          \n");
+  printf("Self-test statistics\n");
   printf("  number of tests           %d\n", num_selftests);
   printf("  successful tests          %d\n", st_success);
   if(st_nofactor > 0)   printf("  no factor found           %d\n", st_nofactor);
