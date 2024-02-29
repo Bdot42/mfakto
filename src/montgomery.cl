@@ -58,7 +58,9 @@ uint_v neginvmod2pow15(const uint_v n);
 
 int90_v squaremod_REDC90(const int90_v x, const int90_v m, const uint_v t);
 
-mod_REDC90(int90_v a, const int90_v m, const uint_v t);
+int90_v mod_REDC90(int90_v a, const int90_v m, const uint_v t);
+
+// end prototypes
 
 ulong_v invmod2pow64(const ulong_v n)
 {
