@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 Version 0.15
-
 */
 
 /*
@@ -31,10 +30,37 @@ T: the intermediate result of squaring and doubling
     m := (T mod {R})k mod {R}
     t := (T + mN)/R
     if t > N return t - N else return t.
-
 */
 
-ulong_v invmod2pow64 (const ulong_v n)
+// function prototypes
+
+ulong_v invmod2pow64(const ulong_v n);
+
+ulong_v neginvmod2pow64(const ulong_v n);
+
+ulong_v mulmod_REDC64(const ulong_v a, const ulong_v b, const ulong_v N, const ulong_v Ns);
+
+ulong_v onemod_REDC64(const ulong_v N, const ulong_v Ns);
+
+ulong_v mod_REDC64(const ulong_v a, const ulong_v N, const ulong_v Ns);
+
+void square_45_90(int90_v * const res, const int90_v a);
+
+int90_v sub_90(const int90_v a, const int90_v b);
+
+int90_v neg_90(const int90_v b);
+
+void shl_45(int90_v * const a);
+
+uint_v invmod2pow15 (const uint_v n);
+
+uint_v neginvmod2pow15(const uint_v n);
+
+int90_v squaremod_REDC90(const int90_v x, const int90_v m, const uint_v t);
+
+mod_REDC90(int90_v a, const int90_v m, const uint_v t);
+
+ulong_v invmod2pow64(const ulong_v n)
 {
   ulong_v r;
   const uint_v in = CONVERT_UINT_V(n);
@@ -53,7 +79,7 @@ ulong_v invmod2pow64 (const ulong_v n)
   return r;
 }
 
-ulong_v neginvmod2pow64 (const ulong_v n)
+ulong_v neginvmod2pow64(const ulong_v n)
 {
   ulong_v r;
   const uint_v in = CONVERT_UINT_V(n);
@@ -72,7 +98,7 @@ ulong_v neginvmod2pow64 (const ulong_v n)
   return r;
 }
 
-ulong_v mulmod_REDC64 (const ulong_v a, const ulong_v b, const ulong_v N, const ulong_v Ns)
+ulong_v mulmod_REDC64(const ulong_v a, const ulong_v b, const ulong_v N, const ulong_v Ns)
 {
   ulong_v r1, r2;
 
@@ -92,7 +118,7 @@ ulong_v mulmod_REDC64 (const ulong_v a, const ulong_v b, const ulong_v N, const 
 
 // mulmod_REDC(1, 1, N, Ns)
 // Note that mulmod_REDC(a, 1, N, Ns) == mulmod_REDC(1, 1, N, Ns*a).
-ulong_v onemod_REDC64 (const ulong_v N, const ulong_v Ns)
+ulong_v onemod_REDC64(const ulong_v N, const ulong_v Ns)
 {
   ulong_v r;
 
@@ -377,7 +403,7 @@ void shl_45(int90_v * const a)
   a->d0 = (a->d0 << 1u) & 0x7FFF;
 }
 
-uint_v invmod2pow15 (const uint_v n)
+uint_v invmod2pow15(const uint_v n)
 {
   uint_v r;
 
@@ -392,7 +418,7 @@ uint_v invmod2pow15 (const uint_v n)
   return r & 0x7FFF;
 }
 
-uint_v neginvmod2pow15 (const uint_v n)
+uint_v neginvmod2pow15(const uint_v n)
 {
   uint_v r;
 
@@ -408,7 +434,7 @@ uint_v neginvmod2pow15 (const uint_v n)
 }
 
 
-int90_v squaremod_REDC90 (const int90_v x, const int90_v m, const uint_v t)
+int90_v squaremod_REDC90(const int90_v x, const int90_v m, const uint_v t)
 {
   /*Alex Kruppa:
 Unless your modulus is quite large so that sub-quadratic multiplication algorithms become attractive,
