@@ -51,12 +51,14 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 /* Global variables */
 
-cl_uint             new_class=1;
+cl_uint             new_class = 1;
 cl_device_id        *devices;
 cl_program          program = NULL;
 
-cl_context          context=NULL;
-cl_command_queue    commandQueue, commandQueuePrf=NULL;
+cl_context          context = NULL;
+cl_command_queue    commandQueue, commandQueuePrf = NULL;
+
+int only_use_cpu = 1;
 
 #ifdef __cplusplus
 extern "C"
@@ -270,9 +272,13 @@ int init_CL(int num_streams, cl_int *devnumber)
 
   if (*devnumber < 0)
   {
-    devtype = CL_DEVICE_TYPE_CPU;
-    *devnumber = 0;
-    if (mystuff.verbosity > 0) {printf("(CPU) - "); fflush(NULL);}
+      devtype = CL_DEVICE_TYPE_CPU;
+      *devnumber = 0;
+      if (mystuff.verbosity > 0) {
+          printf("(CPU) - ");
+          fflush(NULL);
+      }
+      only_use_cpu = 1;
   }
 
   if (numplatforms > 0)
@@ -753,7 +759,7 @@ void set_gpu_type()
     printf("  optimizing kernels for    %s\n\n", gpu_types[mystuff.gpu_type].gpu_name);
   }
 
-  if (mystuff.gpu_type == GPU_CPU && mystuff.gpu_sieving == 1) {
+  if (only_use_cpu == 1 && mystuff.gpu_sieving == 1) {
       printf("Info: overriding SieveOnGPU=1 in INI file as mfakto is running only on CPU\n\n");
       mystuff.gpu_sieving = 0;
   }
