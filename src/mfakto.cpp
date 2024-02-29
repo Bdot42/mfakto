@@ -58,7 +58,7 @@ cl_program          program = NULL;
 cl_context          context = NULL;
 cl_command_queue    commandQueue, commandQueuePrf = NULL;
 
-int only_use_cpu = 1;
+int only_use_cpu = 0;
 
 #ifdef __cplusplus
 extern "C"
