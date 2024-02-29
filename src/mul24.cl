@@ -24,14 +24,6 @@ Version 0.15
    only included once. Do not define typedefs etc for the second time this file
    is included for the small factor kernel */
 
-#ifndef _63BIT_MUL24_K
-
-/***********************************************
- * vector implementations of all sizes
- * for the 71-bit-kernel
- *
- ***********************************************/
-
 // function prototypes
 
 void mul_24_48(uint_v * const res_hi, uint_v * const res_lo, const uint_v a, const uint_v b);
@@ -59,6 +51,14 @@ void mod_144_72
 );
 
 // end prototypes
+
+#ifndef _63BIT_MUL24_K
+
+/***********************************************
+ * vector implementations of all sizes
+ * for the 71-bit-kernel
+ *
+ ***********************************************/
 
 void mul_24_48(uint_v * const res_hi, uint_v * const res_lo, const uint_v a, const uint_v b)
 /* res_hi*(2^24) + res_lo = a * b */
