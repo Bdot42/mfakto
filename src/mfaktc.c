@@ -752,7 +752,7 @@ other return value
     if (mystuff->h_RES[0] == 0)
     {
         // the extra spaces are used to clear the #'s
-        printf("ERROR: self-test failed for M%u (%s)            \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+        printf("ERROR: self-test failed for M%u (%s)     \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
         printf("  no factor found\n");
         retval = 1;
     }
@@ -819,7 +819,7 @@ k_max and k_min are used as 64bit temporary integers here...
           }
 #endif
           // the extra spaces are used to clear the #'s
-          printf("ERROR: self-test failed for M%u (%s)            \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+          printf("ERROR: self-test failed for M%u (%s)     \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
           printf("  expected result: %08X %08X %08X\n", f_hi, f_med, f_low);
           for (i=0; (i < mystuff->h_RES[0]) && (i < 10); i++)
           {
