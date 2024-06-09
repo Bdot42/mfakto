@@ -707,7 +707,8 @@ void set_gpu_type()
     {
       mystuff.gpu_type = GPU_NVIDIA;  // working only with VectorSize=1 and GPU sieving
     }
-    else if (strstr(deviceinfo.d_name, "Intel(R) HD Graphics"))
+    else if (strstr(deviceinfo.d_name, "Intel(R) HD Graphics") ||
+             strstr(deviceinfo.d_name, "Intel(R) UHD Graphics"))
     {
       mystuff.gpu_type = GPU_INTEL;  // IntelHD
     }
