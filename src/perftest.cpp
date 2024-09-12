@@ -1395,6 +1395,8 @@ int perftest(int par, int devicenumber)
   // 5. TF kernels
   test_tf_kernels((cl_uint)par, devicenumber);
 
+  printf("\nPerftest Finished\n");
+
   return 0;
 }
 

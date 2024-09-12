@@ -24,6 +24,8 @@ extern "C" {
 
 int read_config(mystuff_t *mystuff);
 int read_array(char * filename, char *name, cl_uint num, cl_uint *arr);
+int my_read_int(char* inifile, char* name, int* value);
+int my_read_string(char* inifile, char* name, char* string, unsigned int len);
 
 #ifdef __cplusplus
 }

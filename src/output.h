@@ -21,6 +21,7 @@ along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
 extern "C" {
 #endif
 void print_help(char *string);
+void logprintf(mystuff_t* mustuff, const char* fmt, ...);
 
 void print_dez72(int96 a, char *buf);
 void print_dez144(int144 a, char *buf);

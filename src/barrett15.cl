@@ -547,9 +547,9 @@ void div_150_75_d(int75_v * const res, const uint qhi, const int75_v n, const do
                   MODBASECASE_PAR_DEF
 )
 /* res = q / n (integer division)
-    during function entry, qhi contains the upper 30 bits of an 180-bit-value. The remaining bits are zero implicitely.
+    during function entry, qhi contains the upper 30 bits of an 150-bit-value. The remaining bits are zero implicitly.
     this is not a vector, as the first value is the same for all FCs*/
-    // do 2*45 bit reductions using double: should be sufficient for 90 bits (and 86 anyways)
+    // do 2*45 bit reductions using double: should be sufficient for 90 bits (and 75 anyways)
 {
   __private double_v qf;
   __private double   qf_1;   // for the first conversion which does not need vectors yet
@@ -559,7 +559,7 @@ void div_150_75_d(int75_v * const res, const uint qhi, const int75_v n, const do
   __private int150_v nn, q;
 
 #if (TRACE_KERNEL > 1)
-  if (tid==TRACE_TID) printf((__constant char *)"div_150_75_d#0: q=%x:<150x0>, n=%x:%x:%x:%x:%x, nf=%#G\n",
+  if (tid==TRACE_TID) printf((__constant char *)"div_150_75_d#0: q=%x:<120x0>, n=%x:%x:%x:%x:%x, nf=%#G\n",
         qhi, V(n.d4), V(n.d3), V(n.d2), V(n.d1), V(n.d0), V(nf));
 #endif
 
@@ -1042,9 +1042,8 @@ Precalculated here since it is the same for all steps in the following loop */
 #if defined USE_DP
   // ffd = f as double, needed in div_180_90_d).
   ffd = CONVERT_DOUBLE_RTP_V(mad24(f.d4, 32768u, f.d3));
-  ffd = ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d2, 32768u, f.d1));
-  // this is at least 45 bits - f.d0 is not needed
-  ffd = ffd * 32768.0;
+  ffd = ffd * 1073741824.0 + CONVERT_DOUBLE_RTP_V(mad24(f.d2, 32768u, f.d1));
+  ffd = ffd * 32768.0 + CONVERT_DOUBLE_RTP_V(f.d0);
   ffd = as_double(0x3feffffffffffffdL) / ffd;     // should be a bit less than 1.0
 
   div_150_75_d(&u, tmp, f, ffd
@@ -1059,7 +1058,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #else
   // PERF: as div is only used here, use all those zeros directly in there
   //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper part (15 bits) of a 150-bit value. The lower 135 bits are all zero implicitely
+  //       tmp contains the upper part (15 bits) of a 150-bit value. The lower 135 bits are all zero implicitly
 
   div_150_75(&u, tmp, f, ff
 #if (TRACE_KERNEL > 1)
@@ -1218,8 +1217,7 @@ Precalculated here since it is the same for all steps in the following loop */
   // ffd = f as double, needed in div_180_90_d).
   ffd = CONVERT_DOUBLE_RTP_V(mad24(f.d4, 32768u, f.d3));
   ffd = ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d2, 32768u, f.d1));
-  // this is at least 45 bits - f.d0 is not needed
-  ffd = ffd * 32768.0;
+  ffd = ffd * 32768.0 + CONVERT_DOUBLE_RTP_V(f.d0);
   ffd = as_double(0x3feffffffffffffdL) / ffd;     // should be a bit less than 1.0
 
   div_150_75_d(&u, tmp, f, ffd
@@ -1234,7 +1232,7 @@ Precalculated here since it is the same for all steps in the following loop */
 #else
   // PERF: as div is only used here, use all those zeros directly in there
   //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper part (15 bits) of a 150-bit value. The lower 135 bits are all zero implicitely
+  //       tmp contains the upper part (15 bits) of a 150-bit value. The lower 135 bits are all zero implicitly
 
   div_150_75(&u, tmp, f, ff
 #if (TRACE_KERNEL > 1)
@@ -1387,8 +1385,7 @@ ff = 1/f as float, needed in div_192_96().
   // ffd = f as double, needed in div_180_90_d).
   ffd = CONVERT_DOUBLE_RTP_V(mad24(f.d4, 32768u, f.d3));
   ffd = ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d2, 32768u, f.d1));
-  // this is at least 45 bits - f.d0 is not needed
-  ffd = ffd * 32768.0;
+  ffd = ffd * 32768.0 + CONVERT_DOUBLE_RTP_V(f.d0);
   ffd = as_double(0x3feffffffffffffdL) / ffd;     // should be a bit less than 1.0
 
   div_150_75_d(&u, tmp, f, ffd
@@ -1403,7 +1400,7 @@ ff = 1/f as float, needed in div_192_96().
 #else
   // PERF: as div is only used here, use all those zeros directly in there
   //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper part (15 bits) of a 150-bit value. The lower 135 bits are all zero implicitely
+  //       tmp contains the upper part (15 bits) of a 150-bit value. The lower 135 bits are all zero implicitly
 
   div_150_75(&u, tmp, f, ff
 #if (TRACE_KERNEL > 1)
@@ -1562,8 +1559,7 @@ ff = 1/f as float, needed in div_192_96().
   // ffd = f as double, needed in div_180_90_d).
   ffd = CONVERT_DOUBLE_RTP_V(mad24(f.d4, 32768u, f.d3));
   ffd = ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d2, 32768u, f.d1));
-  // this is at least 45 bits - f.d0 is not needed
-  ffd = ffd * 32768.0;
+  ffd = ffd * 32768.0 + CONVERT_DOUBLE_RTP_V(f.d0);
   ffd = as_double(0x3feffffffffffffdL) / ffd;     // should be a bit less than 1.0
 
   div_150_75_d(&u, tmp, f, ffd
@@ -1578,7 +1574,7 @@ ff = 1/f as float, needed in div_192_96().
 #else
   // PERF: as div is only used here, use all those zeros directly in there
   //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper part (15 bits) of a 150-bit value. The lower 135 bits are all zero implicitely
+  //       tmp contains the upper part (15 bits) of a 150-bit value. The lower 135 bits are all zero implicitly
 
   div_150_75(&u, tmp, f, ff
 #if (TRACE_KERNEL > 1)
@@ -1764,8 +1760,7 @@ ff = 1/f as float, needed in div_192_96().
   // ffd = f as double, needed in div_180_90_d).
   ffd = CONVERT_DOUBLE_RTP_V(mad24(f.d4, 32768u, f.d3));
   ffd = ffd * 1073741824.0+ CONVERT_DOUBLE_RTP_V(mad24(f.d2, 32768u, f.d1));
-  // this is at least 45 bits - f.d0 is not needed
-  ffd = ffd * 32768.0;
+  ffd = ffd * 32768.0 + CONVERT_DOUBLE_RTP_V(f.d0);
   ffd = as_double(0x3feffffffffffffdL) / ffd;     // should be a bit less than 1.0
 
   div_150_75_d(&u, tmp, f, ffd
@@ -1780,7 +1775,7 @@ ff = 1/f as float, needed in div_192_96().
 #else
   // PERF: as div is only used here, use all those zeros directly in there
   //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper part (15 bits) of a 150-bit value. The lower 135 bits are all zero implicitely
+  //       tmp contains the upper part (15 bits) of a 150-bit value. The lower 135 bits are all zero implicitly
 
   div_150_75(&u, tmp, f, ff
 #if (TRACE_KERNEL > 1)
@@ -2429,7 +2424,7 @@ void div_180_90_d(int90_v * const res, const uint qhi, const int90_v n, const do
 #endif
                   MODBASECASE_PAR_DEF
 )/* res = q / n (integer division)
-    during function entry, qhi contains the upper 30 bits of an 180-bit-value. The remaining bits are zero implicitely.
+    during function entry, qhi contains the upper 30 bits of an 180-bit-value. The remaining bits are zero implicitly.
     this is not a vector, as the first value is the same for all FCs*/
     // do 2*45 bit reductions using double: should be sufficient for 90 bits (and 86 anyways)
 {
@@ -2586,7 +2581,7 @@ void div_180_90(int90_v * const res, const uint qhi, const int90_v n, const floa
                   MODBASECASE_PAR_DEF
 )
 /* res = q / n (integer division)
-    during function entry, qhi contains the upper 30 bits of an 180-bit-value. The remaining bits are zero implicitely.
+    during function entry, qhi contains the upper 30 bits of an 180-bit-value. The remaining bits are zero implicitly.
     this is not a vector, as the first value is the same for all FCs*/
     // try with 4 * 23 bit reductions: should be sufficient for 90 bits (and 86 anyways)
 {
@@ -3018,7 +3013,7 @@ void check_barrett15_82(uint shifter, const int90_v f, const uint tid, const uin
 
   // PERF: as div is only used here, use all those zeros directly in there
   //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
+  //       tmp contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitly
 
   div_180_90(&u, tmp, f, ff
 #if (TRACE_KERNEL > 1)
@@ -3233,7 +3228,7 @@ void check_barrett15_83(uint shifter, const int90_v f, const uint tid, const uin
 
   // PERF: as div is only used here, use all those zeros directly in there
   //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
+  //       tmp contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitly
 
   div_180_90(&u, tmp, f, ff
 #if (TRACE_KERNEL > 1)
@@ -3445,7 +3440,7 @@ void check_barrett15_88(uint shifter, const int90_v f, const uint tid, const uin
 
   // PERF: as div is only used here, use all those zeros directly in there
   //       here, no vectorized data is necessary yet: the precalculated "b" value is the same for all
-  //       tmp contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitely
+  //       tmp contains the upper 2 parts (30 bits) of a 180-bit value. The lower 150 bits are all zero implicitly
 
   div_180_90(&u, tmp, f, ff
 #if (TRACE_KERNEL > 1)

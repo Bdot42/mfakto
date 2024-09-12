@@ -136,6 +136,7 @@ int init_CLstreams(int gs_reinit_only)
         printf("ERROR: malloc(h_ktab[%d]) failed\n", i);
         return 1;
       }
+      memset(mystuff.h_ktab[i], 0, sizeof(*mystuff.h_ktab[i]));
       mystuff.d_ktab[i] = clCreateBuffer(context,
                         CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                         mystuff.threads_per_grid * sizeof(cl_uint),
@@ -152,6 +153,7 @@ int init_CLstreams(int gs_reinit_only)
       printf("ERROR: malloc(h_RES) failed\n");
       return 1;
     }
+    memset(mystuff.h_RES, 0, sizeof(*mystuff.h_RES));
     mystuff.d_RES = clCreateBuffer(context,
                       CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                       32 * sizeof(cl_uint),
@@ -168,6 +170,7 @@ int init_CLstreams(int gs_reinit_only)
       printf("ERROR: malloc(h_modbasecase_debug) failed\n");
       return 1;
     }
+    memset(mystuff.h_modbasecase_debug, 0, sizeof(mystuff.h_modbasecase_debug));
     mystuff.d_modbasecase_debug = clCreateBuffer(context,
                       CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                       32 * sizeof(cl_uint),
@@ -643,6 +646,7 @@ void set_gpu_type()
       mystuff.gpu_type = GPU_GCN3;   // these cards have improved int32 performance over the previous GCNs, making for a changed kernel selection
     }
     else if (strstr(deviceinfo.d_name, "Ellesmere")  ||    // RX 470/480/570/580/590
+             strstr(deviceinfo.d_name, "gfx804")     ||    // RX 550
              strstr(deviceinfo.d_name, "Lexa")       ||    // small GCN 4.0 - not tested, only assumption
              strstr(deviceinfo.d_name, "Baffin")           // small GCN 4.0 - not tested, only assumption
             )
@@ -718,8 +722,8 @@ void set_gpu_type()
     {
       mystuff.gpu_type = GPU_NVIDIA;  // working only with VectorSize=1 and GPU sieving
     }
-    else if (strstr(deviceinfo.d_name, "Intel(R) HD Graphics") ||
-             strstr(deviceinfo.d_name, "Intel(R) UHD Graphics"))
+    else if (strstr(deviceinfo.d_name, "Intel(R)") &&
+             strstr(deviceinfo.d_name, "Graphics"))
     {
       mystuff.gpu_type = GPU_INTEL;  // IntelHD
     }
@@ -3132,9 +3136,11 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
 #endif
 
   mystuff->stats.grid_count = count;
-  mystuff->stats.class_time = timer_diff(&timer)/1000;
+  mystuff->stats.class_time = timer_diff(&timer) / 1000;
+  mystuff->stats.bit_level_time += timer_diff(&timer) / 1000;
 /* prevent division by zero if timer resolution is too low */
   if(mystuff->stats.class_time == 0)mystuff->stats.class_time = 1;
+  if(mystuff->stats.bit_level_time == 0)mystuff->stats.bit_level_time = 1;
   mystuff->stats.cpu_wait_time = twait;
 
   if(mystuff->stats.grid_count > 2 * mystuff->num_streams)mystuff->stats.cpu_wait = (float)twait / ((float)mystuff->stats.class_time * 10);
@@ -3217,6 +3223,7 @@ int tf_class_opencl(cl_ulong k_min, cl_ulong k_max, mystuff_t *mystuff, enum GPU
     mystuff->stats.ghzdays = mystuff->stats.ghzdays * (bits - floor(bits));
 
     print_factor(mystuff, i, string, bits);
+    sprintf(mystuff->factors_string, mystuff->factors_string[0] ? "%s,\"%s\"" : "%s\"%s\"", mystuff->factors_string, string);
     prev_factor = factor;
   }
   if(factorsfound>=10)

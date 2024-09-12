@@ -47,13 +47,13 @@ unsigned int checkpoint_checksum(char *string, int chars)
   return chksum;
 }
 
-void checkpoint_write(unsigned int exp, int bit_min, int bit_max, unsigned int cur_class, int num_factors)
+void checkpoint_write(unsigned int exp, int bit_min, int bit_max, unsigned int cur_class, int num_factors, char *factors_string, unsigned long long int bit_level_time)
 /*
 checkpoint_write() writes the checkpoint file.
 */
 {
   FILE *f;
-  char buffer[100], filename[32], filename_save[32], filename_write[32];
+  char buffer[600], filename[32], filename_save[32], filename_write[32];
   unsigned int i, res;
 
   sprintf(filename, "M%u.ckp", exp);
@@ -72,10 +72,10 @@ checkpoint_write() writes the checkpoint file.
               unsigned long long c1, c2, c3, c4, c5;
               timer_init(&cptimer); */
 
-    sprintf(buffer,"%u %d %d %d %s: %d %d", exp, bit_min, bit_max, mystuff.num_classes, MFAKTO_VERSION, cur_class, num_factors);
+    sprintf(buffer,"%u %d %d %d %s: %d %d %s %llu", exp, bit_min, bit_max, mystuff.num_classes, MFAKTO_VERSION, cur_class, num_factors, strlen(factors_string) ? factors_string : "0", bit_level_time);
     i=checkpoint_checksum(buffer,(int)strlen(buffer));
 //              c1 = timer_diff(&cptimer);
-    i=fprintf(f,"%u %d %d %d %s: %d %d %08X\n", exp, bit_min, bit_max, mystuff.num_classes, MFAKTO_VERSION, cur_class, num_factors, i);
+    i=fprintf(f,"%u %d %d %d %s: %d %d %s %llu %08X\n", exp, bit_min, bit_max, mystuff.num_classes, MFAKTO_VERSION, cur_class, num_factors, strlen(factors_string) ? factors_string : "0", bit_level_time, i);
 //              c2 = timer_diff(&cptimer);
     res=fclose(f);
 //              c3 = timer_diff(&cptimer);
@@ -99,12 +99,12 @@ checkpoint_write() writes the checkpoint file.
 }
 
 
-int checkpoint_read(unsigned int exp, int bit_min, int bit_max, unsigned int *cur_class, int *num_factors, int verbosity)
+int checkpoint_read(unsigned int exp, int bit_min, int bit_max, unsigned int *cur_class, int* num_factors, char* factors_string, unsigned long long int* bit_level_time, int verbosity)
 /*
 checkpoint_read() reads the checkpoint file and compares values for exp,
 bit_min, bit_max, NUM_CLASSES read from file with current values.
-If these parameters are equal than it sets cur_class and num_factors to the
-values from the checkpoint file.
+If these parameters are equal than it sets cur_class and num_factors,
+factors_string, and bit_level_time to the values from the checkpoint file.
 
 returns 1 on success (valid checkpoint file)
 returns 0 otherwise
@@ -112,9 +112,9 @@ returns 0 otherwise
 {
   FILE *f;
   int ret=0,i,chksum;
-  char buffer[100], buffer2[100], *ptr, *ptr2, filename[20], filename_save[32], version[81];
+  char buffer[600], buffer2[600], *ptr, *ptr2, filename[20], filename_save[32], version[81];
   
-  for(i=0;i<100;i++)buffer[i]=0;
+  for(i=0;i<600;i++)buffer[i]=0;
 
   *cur_class=-1;
   *num_factors=0;
@@ -127,7 +127,7 @@ returns 0 otherwise
     if (verbosity>1) printf("No checkpoint file \"%s\" found.\n", filename);
     return 0;
   }
-  i=(int)fread(buffer,sizeof(char),99,f);
+  i=(int)fread(buffer,sizeof(char),599,f);
   buffer[i] = 0;
   sprintf(buffer2,"%u %d %d %d ", exp, bit_min, bit_max, mystuff.num_classes);
   ptr=strstr(buffer, buffer2);
@@ -144,15 +144,17 @@ returns 0 otherwise
         version[ptr-ptr2]='\0';
       }
       else sprintf(version, "%s", MFAKTO_VERSION);
-      (void) sscanf(ptr,": %d %d", cur_class, num_factors);
-      sprintf(buffer2,"%u %d %d %d %s: %d %d", exp, bit_min, bit_max, mystuff.num_classes, version, *cur_class, *num_factors);
+      (void) sscanf(ptr,": %d %d %s %llu", cur_class, num_factors, factors_string, bit_level_time);
+      sprintf(buffer2,"%u %d %d %d %s: %d %d %s %llu", exp, bit_min, bit_max, mystuff.num_classes, version, *cur_class, *num_factors, factors_string, *bit_level_time);
       chksum=checkpoint_checksum(buffer2,(int)strlen(buffer2));
       // no trainling '\n' for the compare buffer to allow interchanging \n\r and \n files 
-      i=sprintf(buffer2,"%u %d %d %d %s: %d %d %08X", exp, bit_min, bit_max, mystuff.num_classes, version, *cur_class, *num_factors, chksum);
+      i=sprintf(buffer2,"%u %d %d %d %s: %d %d %s %llu %08X", exp, bit_min, bit_max, mystuff.num_classes, version, *cur_class, *num_factors, factors_string, *bit_level_time, chksum);
       if(*cur_class >= 0 && \
          *cur_class < mystuff.num_classes && \
          *num_factors >= 0 && \
-         strncmp(buffer, buffer2, i) == 0)
+         strncmp(buffer, buffer2, i) == 0 && \
+         ((*num_factors == 0 && strlen(factors_string) == 1) || \
+          (*num_factors >= 1 && strlen(factors_string) > 1)))
       {
         ret=1;
       }
@@ -161,6 +163,8 @@ returns 0 otherwise
         if (verbosity>0) printf("Cannot use checkpoint file \"%s\": Bad content \"%s\".\n", filename, buffer);
 //        printf("Cannot use checkpoint file \"%s\": Bad content \"%s\".\n%s\n", filename, buffer, buffer2);
       }
+      if (factors_string[0] == '0')
+          factors_string[0] = 0;
     }
   }
   else
@@ -180,7 +184,7 @@ returns 0 otherwise
     if (rename(filename_save, filename) == 0)
     {
       if (verbosity>1) printf("Renamed backup file \"%s\" to \"%s\", trying to load it.\n", filename_save, filename);
-      return checkpoint_read(exp, bit_min, bit_max, cur_class, num_factors, mystuff.verbosity);
+      return checkpoint_read(exp, bit_min, bit_max, cur_class, num_factors, factors_string, bit_level_time, mystuff.verbosity);
     }
   }
   return ret;

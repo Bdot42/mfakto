@@ -21,6 +21,9 @@ along with mfaktc.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <string.h>
 #if defined __APPLE__
   #include <OpenCL/cl.h>
 #else
@@ -62,6 +65,23 @@ void print_help(char *string)
   printf("  --perftest [n]         performance tests, repeat each test <n> times (def: 10)\n");
   printf("  --CLtest               test of some OpenCL functions\n");
   printf("                         specify -d before --CLtest to test specified device\n");
+}
+
+
+
+void logprintf(mystuff_t* mystuff, const char* fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+    va_end(args);
+
+    if (mystuff->logging == 1 && mystuff->logfileptr != NULL) {
+        va_start(args, fmt);
+        vfprintf(mystuff->logfileptr, fmt, args);
+        va_end(args);
+    }
 }
 
 
@@ -172,13 +192,13 @@ void print_dez192(int192 a, char *buf)
 
 void print_timestamp(FILE *outfile)
 {
-  time_t now;
+  char* ptr;
+  const time_t now = time(NULL);
   static time_t previous_time=0;
 
-  now = time(NULL);
   if (previous_time + 5 < now) // have at least 5 seconds between successive time stamps in the results file
   {
-    char *ptr = ctime(&now);
+    ptr = asctime(gmtime(&now));
     ptr[24] = '\0'; // cut off the newline
     fprintf(outfile, "[%s]\n", ptr);
     previous_time = now;
@@ -189,6 +209,7 @@ void print_timestamp(FILE *outfile)
 void print_status_line(mystuff_t *mystuff)
 {
   unsigned long long int eta;
+  unsigned long long int elapsed;
   int i = 0, max_class_number;
   char buffer[256];
   int index = 0;
@@ -204,7 +225,7 @@ void print_status_line(mystuff_t *mystuff)
 
   if(mystuff->stats.output_counter == 0)
   {
-    printf("%s\n", mystuff->stats.progressheader);
+    logprintf(mystuff, "%s\n", mystuff->stats.progressheader);
     mystuff->stats.output_counter = 20;
   }
   if(mystuff->printmode == 0)mystuff->stats.output_counter--;
@@ -233,7 +254,7 @@ void print_status_line(mystuff_t *mystuff)
       else if(mystuff->stats.progressformat[i+1] == 'g') // speed (GHz-days/day)
       {
         if(mystuff->mode == MODE_NORMAL)
-          index += sprintf(buffer + index, "%7.2f", mystuff->stats.ghzdays * 86400000.0f / ((double)mystuff->stats.class_time * (double)max_class_number));
+          index += sprintf(buffer + index, "%8.2f", mystuff->stats.ghzdays * 86400000.0f / ((double)mystuff->stats.class_time * (double)max_class_number));
         else
           index += sprintf(buffer + index, "   n.a.");
       }
@@ -243,6 +264,17 @@ void print_status_line(mystuff_t *mystuff)
         else if(mystuff->stats.class_time < 1000000ULL )index += sprintf(buffer + index, "%6.2f", (double)mystuff->stats.class_time/1000.0);
         else if(mystuff->stats.class_time < 10000000ULL)index += sprintf(buffer + index, "%6.1f", (double)mystuff->stats.class_time/1000.0);
         else                                            index += sprintf(buffer + index, "%6.0f", (double)mystuff->stats.class_time/1000.0);
+      }
+      else if (mystuff->stats.progressformat[i + 1] == 'E')
+      {
+          if (mystuff->mode == MODE_NORMAL)
+          {
+              elapsed = mystuff->stats.bit_level_time / 1000;
+                   if (elapsed < 3600) index += sprintf(buffer + index, "%2" PRIu64 "m%02" PRIu64 "s", elapsed / 60, elapsed % 60);
+              else if (elapsed < 86400)index += sprintf(buffer + index, "%2" PRIu64 "h%02" PRIu64 "m", elapsed / 3600, (elapsed / 60) % 60);
+              else                     index += sprintf(buffer + index, "%2" PRIu64 "d%02" PRIu64 "h", elapsed / 86400, (elapsed / 3600) % 24);
+          }
+          else if (mystuff->mode == MODE_SELFTEST_FULL)index += sprintf(buffer + index, "  n.a.");
       }
       else if(mystuff->stats.progressformat[i+1] == 'e') // eta
       {
@@ -348,7 +380,7 @@ void print_status_line(mystuff_t *mystuff)
     if(index > 200) /* buffer has 256 bytes, single format strings are limited to 50 bytes */
     {
       buffer[index] = 0;
-      printf("%s", buffer);
+      logprintf(mystuff, "%s", buffer);
       index = 0;
     }
   }
@@ -366,7 +398,41 @@ void print_status_line(mystuff_t *mystuff)
   }
 
   buffer[index] = 0;
-  printf("%s", buffer);
+  logprintf(mystuff, "%s", buffer);
+}
+
+void get_utc_timestamp(char* timestamp)
+{
+    time_t now;
+    struct tm* utc_time;
+
+    time(&now);
+    utc_time = gmtime(&now);
+    strftime(timestamp, sizeof(char[50]), "%Y-%m-%d %H:%M:%S", utc_time);
+}
+
+const char* getArchitectureJSON() {
+#if defined(__x86_64__) || defined(_M_X64)
+    return ", \"architecture\": \"x86_64\"";
+#elif defined(i386) || defined(__i386__) || defined(__i386) || defined(_M_IX86)
+    return ", \"architecture\": \"x86_32\"";
+#elif defined(__aarch64__) || defined(_M_ARM64)
+    return ", \"architecture\": \"ARM64\"";
+#else
+    return "";
+#endif
+}
+
+void getOSJSON(char* string) {
+#if defined(_WIN32) || defined(_WIN64)
+    sprintf(string, ", \"os\":{\"os\": \"Windows\"%s}", getArchitectureJSON());
+#elif defined(__APPLE__)
+    sprintf(string, ", \"os\":{\"os\": \"Darwin\"%s}", getArchitectureJSON());
+#elif defined(__linux__)
+    sprintf(string, ", \"os\":{\"os\": \"Linux\"%s}", getArchitectureJSON());
+#elif defined(__unix__)
+    sprintf(string, ", \"os\":{\"os\": \"Unix\"%s}", getArchitectureJSON());
+#endif
 }
 
 
@@ -374,10 +440,21 @@ void print_result_line(mystuff_t *mystuff, int factorsfound)
 /* printf the final result line (STDOUT and resultfile) */
 {
   char UID[110]; /* 50 (V5UserID) + 50 (ComputerID) + 8 + spare */
-  char string[200];
+  char aidjson[111];
+  char userjson[61]; /* 50 (V5UserID) + 11 spare */
+  char computerjson[65];  /* 50 (ComputerID) + 15 spare */
+  char factorjson[513];
+  char osjson[200];
+  char txtstring[200];
+  char timestamp[50];
+
   unsigned int max_class_number;
 
-  FILE *resultfile=NULL;
+  FILE *txtresultfile=NULL;
+
+  char jsonstring[1100];
+  FILE *jsonresultfile=NULL;
+
   if (mystuff->more_classes)  max_class_number = 960;
   else                        max_class_number = 96;
 
@@ -386,41 +463,61 @@ void print_result_line(mystuff_t *mystuff, int factorsfound)
   else
     UID[0]=0;
 
+  if (mystuff->assignment_key[0] && strspn(mystuff->assignment_key, "0123456789abcdefABCDEF") == 32 && strlen(mystuff->assignment_key) == 32)
+    sprintf(aidjson, ", \"aid\":\"%s\"", mystuff->assignment_key);
+  else
+    aidjson[0] = 0;
+
+  if (mystuff->V5UserID[0])
+    sprintf(userjson, ", \"user\":\"%s\"", mystuff->V5UserID);
+  else
+    userjson[0] = 0;
+
+  if (mystuff->ComputerID[0])
+    sprintf(computerjson, ", \"computer\":\"%s\"", mystuff->ComputerID);
+  else
+    computerjson[0] = 0;
+
+  if (mystuff->factors_string[0])
+    sprintf(factorjson, ", \"factors\":[%s]", mystuff->factors_string);
+  else
+    factorjson[0] = 0;
+
+  getOSJSON(osjson);
+  get_utc_timestamp(timestamp);
+
   if(mystuff->mode == MODE_NORMAL)
   {
-    resultfile = fopen_and_lock(mystuff->resultfile, "a");
-    if(mystuff->print_timestamp == 1)print_timestamp(resultfile);
+    txtresultfile = fopen_and_lock(mystuff->resultfile, "a");
+    if(mystuff->print_timestamp == 1)print_timestamp(txtresultfile);
+    jsonresultfile = fopen_and_lock(mystuff->jsonresultfile, "a");
   }
+  bool partialresult = (mystuff->mode == MODE_NORMAL) && (mystuff->stats.class_counter < max_class_number);
   if(factorsfound)
   {
-    if((mystuff->mode == MODE_NORMAL) && (mystuff->stats.class_counter < max_class_number))
-    {
-      sprintf(string, "found %d factor%s for M%u from 2^%2d to 2^%2d (partially tested) [%s %s]",
+      sprintf(txtstring, "found %d factor%s for M%u from 2^%2d to 2^%2d %s[%s %s]",
          factorsfound, (factorsfound > 1) ? "s" : "", mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage,
-         MFAKTO_VERSION, mystuff->stats.kernelname);
-    }
-    else
-    {
-      sprintf(string, "found %d factor%s for M%u from 2^%2d to 2^%2d [%s %s]",
-        factorsfound, (factorsfound > 1) ? "s" : "", mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage,
-        MFAKTO_VERSION, mystuff->stats.kernelname);
-    }
+         partialresult ? "(partially tested) " : "", MFAKTO_VERSION, mystuff->stats.kernelname);
   }
   else
   {
-    sprintf(string, "no factor for M%u from 2^%d to 2^%d [%s %s]",
+    sprintf(txtstring, "no factor for M%u from 2^%d to 2^%d [%s %s]",
       mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage,
       MFAKTO_VERSION, mystuff->stats.kernelname);
   }
+  sprintf(jsonstring, "{\"exponent\":%u, \"worktype\":\"TF\", \"status\":\"%s\", \"bitlo\":%2d, \"bithi\":%2d, \"rangecomplete\":%s%s, \"program\":{\"name\":\"mfakto\", \"version\":\"%s\", \"subversion\":\"%s\"}, \"timestamp\":\"%s\"%s%s%s%s}",
+      mystuff->exponent, factorsfound > 0 ? "F" : "NF", mystuff->bit_min, mystuff->bit_max_stage, partialresult ? "false" : "true", factorjson, SHORT_MFAKTO_VERSION, mystuff->stats.kernelname, timestamp, userjson, computerjson, aidjson, osjson);
 
   if(mystuff->mode != MODE_SELFTEST_SHORT)
   {
-    printf("%s\n", string);
+    printf("%s\n", txtstring);
   }
   if(mystuff->mode == MODE_NORMAL)
   {
-    fprintf(resultfile, "%s%s\n", UID, string);
-    unlock_and_fclose(resultfile);
+    fprintf(txtresultfile, "%s%s\n", UID, txtstring);
+    unlock_and_fclose(txtresultfile);
+    fprintf(jsonresultfile, "%s\n", jsonstring);
+    unlock_and_fclose(jsonresultfile);
   }
 }
 
@@ -449,8 +546,8 @@ void print_factor(mystuff_t *mystuff, int factor_number, char *factor, double bi
   {
     if(mystuff->mode != MODE_SELFTEST_SHORT)
     {
-      if(mystuff->printmode == 1 && factor_number == 0)printf("\n");
-      printf("M%u has a factor: %s (%f bits, %f GHz-d)\n", mystuff->exponent, factor, bits, mystuff->stats.ghzdays);
+      if(mystuff->printmode == 1 && factor_number == 0)logprintf(mystuff, "\n");
+      logprintf(mystuff, "M%u has a factor: %s (%f bits, %f GHz-d)\n", mystuff->exponent, factor, bits, mystuff->stats.ghzdays);
     }
     if(mystuff->mode == MODE_NORMAL)
     {

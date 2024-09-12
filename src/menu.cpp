@@ -71,7 +71,7 @@ static void validate_settings(mystuff_t *mystuff)
       mystuff->gpu_sieve_size -= 1024*1024;   // sieve_size must be a multiple of sieve_processing_size
     while (mystuff->gpu_sieve_size < GPU_SIEVE_SIZE_MIN * 1024*1024)
       mystuff->gpu_sieve_size += 3*1024*1024;  // make sure it's not too low
-    // if (mystuff->flush < 0) ... // it's an unsigned int -> huge ints will cause the class to be flushed only implicitely after the last block
+    // if (mystuff->flush < 0) ... // it's an unsigned int -> huge ints will cause the class to be flushed only implicitly after the last block
   }
   else
   {

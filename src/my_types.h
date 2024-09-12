@@ -21,6 +21,7 @@ along with mfaktc (mfakto).  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef __MY_TYPES_H
 #define __MY_TYPES_H
+#include <stdio.h>
 #include "params.h"
 #if defined __APPLE__
   #include "OpenCL/cl.h"
@@ -227,6 +228,7 @@ typedef struct _stats_t
   cl_uint  class_number;              /* the number of the last processed class */
   cl_uint  grid_count;                /* number of grids processed in the last processed class */
   cl_ulong class_time;                /* time (in ms) needed to process the last processed class */
+  unsigned long long bit_level_time;  /* time (in ms) since the bitlevel was started */
   cl_ulong cpu_wait_time;             /* time (ms) CPU was waiting for the GPU */
   float    cpu_wait;                  /* percentage CPU was waiting for the GPU */
   cl_uint  output_counter;            /* count how often the status line was written since last headline */
@@ -292,6 +294,7 @@ typedef struct _mystuff_t
   cl_uint  quit;
   cl_ulong cpu_mask;         /* CPU affinity mask for the siever thread */
   cl_int   verbosity;        /* -1 = uninitialized, 0 = reduced number of screen printfs, 1= default, >= 2 = some additional printfs */
+  cl_int   logging;
   cl_uint  selftestsize;
   cl_uint  force_rebuild;    /* 1: delete the previous binfile */
 
@@ -300,8 +303,13 @@ typedef struct _mystuff_t
   char workfile[51];         /* allow filenames up to 50 chars... */
   char inifile[51];	         /* allow filenames up to 50 chars... */
   char resultfile[51];
+  char jsonresultfile[51];
+  char logfile[51];
+  FILE *logfileptr;
   char V5UserID[51];         /* primenet V5UserID and ComputerID */
   char ComputerID[51];       /* currently only used for screen/result output */
+  char assignment_key[100]; /* the assignment ID */
+  char factors_string[500];            /* store factors in global state */
   char CompileOptions[151];  /* additional compile options */
   char binfile[51];          /* compiled kernels file to use, empty if not desired */
 

@@ -412,7 +412,7 @@ void div_192_96(int96_v * const res, __private uint qd5, const int96_v n, const 
   qf_1 = 9007199254740992.0f;
 #endif
 
-  qi=CONVERT_UINT_V(qf_1*nf); // the multiplication implicitely promotes qf_1 to a vector of the right size
+  qi=CONVERT_UINT_V(qf_1*nf); // the multiplication implicitly promotes qf_1 to a vector of the right size
 
   MODBASECASE_QI_ERROR(1<<22, 1, qi, 0);
 
@@ -847,7 +847,7 @@ DIV_160_96 here. */
   qf_1 = 9007199254740992.0f;
 #endif
 
-  qi=CONVERT_UINT_V(qf_1*nf); // the multiplication implicitely promotes qf_1 to a vector of the right size
+  qi=CONVERT_UINT_V(qf_1*nf); // the multiplication implicitly promotes qf_1 to a vector of the right size
 
   MODBASECASE_QI_ERROR(1<<22, 1, qi, 0);
 

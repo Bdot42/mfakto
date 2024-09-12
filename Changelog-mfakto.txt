@@ -1,3 +1,8 @@
+version 0.16
+- merge features from mfaktc 0.23
+- json results output
+- logging
+
 version 0.15 (...)
 - more GPU models are now detected
 - some support for Intel HD Graphics

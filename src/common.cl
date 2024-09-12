@@ -144,11 +144,11 @@ uint popcount(uint x)
 #endif
 #endif // OCL < 1.2
 
-#if defined GCN || GCN4 || GCN5 || RDNA
-#define GCN_DP
+#if defined GCN || GCN4 || GCN5 || RDNA || NVIDIA
+#define SLOW_DP
 #endif
 
-#if defined USE_DP || cl_khr_fp64 && ! defined GCN_DP
+#if defined USE_DP || cl_khr_fp64 && ! defined SLOW_DP
 #pragma  OPENCL EXTENSION cl_khr_fp64 : enable
 #define USE_DP
 #else

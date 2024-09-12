@@ -519,10 +519,20 @@ GPUKernels find_fastest_kernel(mystuff_t *mystuff, cl_uint do_test)
   }
   if (do_test && use_kernel != test_use_kernel)
   {
-    printf("Fastest kernel: Overriding predefined:  %s with tested: %s\n", kernel_info[use_kernel].kernelname, kernel_info[test_use_kernel].kernelname);
+    logprintf(mystuff, "Fastest kernel: Overriding predefined:  %s with tested: %s\n", kernel_info[use_kernel].kernelname, kernel_info[test_use_kernel].kernelname);
     if (test_use_kernel != UNKNOWN_KERNEL) use_kernel = test_use_kernel;
   }
   return use_kernel;
+}
+
+
+void close_log(mystuff_t* mystuff)
+{
+    if (mystuff->logfileptr != NULL)
+    {
+        fclose(mystuff->logfileptr);
+        mystuff->logfileptr = NULL;
+    }
 }
 
 
@@ -565,12 +575,14 @@ other return value
   mystuff->stats.ghzdays = primenet_ghzdays(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage);
   max_class = mystuff->num_classes-1;
 
-  if(mystuff->mode != MODE_SELFTEST_SHORT)printf("Starting trial factoring M%u from 2^%d to 2^%d (%.2f GHz-days)\n",
+  if(mystuff->mode != MODE_SELFTEST_SHORT)logprintf(mystuff, "Starting trial factoring M%u from 2^%d to 2^%d (%.2f GHz-days)\n",
     mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, mystuff->stats.ghzdays);
   timer_init(&timer);
   time(&time_last_checkpoint);
 
   mystuff->stats.class_counter = 0;
+  mystuff->stats.bit_level_time = 0;
+  mystuff->factors_string[0] = 0;
 
   k_min=calculate_k(mystuff->exponent,mystuff->bit_min);
   k_max=calculate_k(mystuff->exponent,mystuff->bit_max_stage);
@@ -600,9 +612,9 @@ other return value
   if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->verbosity >= 2)
   {
     #ifdef __MINGW32__
-      printf("  k_min = %I64u - k_max = %I64u\n", k_min, k_max);
+      logprintf(mystuff, "  k_min = %I64u - k_max = %I64u\n", k_min, k_max);
     #else
-      printf("  k_min = %llu - k_max = %llu\n", k_min, k_max);
+      logprintf(mystuff, "  k_min = %llu - k_max = %llu\n", k_min, k_max);
     #endif
   }
 
@@ -612,7 +624,7 @@ other return value
 
     if(use_kernel == AUTOSELECT_KERNEL || use_kernel == UNKNOWN_KERNEL)
     {
-      printf("ERROR: No suitable kernel found for bit_min=%d, bit_max=%d.\n",
+      logprintf(mystuff, "ERROR: No suitable kernel found for bit_min=%d, bit_max=%d.\n",
                  mystuff->bit_min, mystuff->bit_max_stage);
       return RET_ERROR;
     }
@@ -620,16 +632,17 @@ other return value
 
   sprintf(mystuff->stats.kernelname, "%s_%d", kernel_info[use_kernel].kernelname, mystuff->vectorsize);
 
-  if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->verbosity >= 1)printf("Using GPU kernel \"%s\"\n", mystuff->stats.kernelname);
+  if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->verbosity >= 1)logprintf(mystuff, "Using GPU kernel \"%s\"\n", mystuff->stats.kernelname);
 
   if(mystuff->mode == MODE_NORMAL)
   {
-    if((mystuff->checkpoints > 0) && (checkpoint_read(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, &cur_class, &factorsfound, mystuff->verbosity) == 1))
+    if((mystuff->checkpoints > 0) && (checkpoint_read(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, &cur_class, &factorsfound, mystuff->factors_string, &(mystuff->stats.bit_level_time), mystuff->verbosity) == 1))
     {
-      printf("\nFound a valid checkpoint file.\n");
-      if(mystuff->verbosity >= 1) printf("  last finished class was: %d\n", cur_class);
-      if(mystuff->verbosity >= 2) printf("  found %d factor%s already\n", factorsfound, factorsfound == 1 ? "" : "s");
-      printf("\n");
+      logprintf(mystuff, "\nFound a valid checkpoint file.\n");
+      if(mystuff->verbosity >= 1) logprintf(mystuff, "  last finished class was: %d\n", cur_class);
+      if(mystuff->verbosity >= 1) logprintf(mystuff, "  found %d factor%s already\n", factorsfound, factorsfound == 1 ? "" : "s");
+      if(mystuff->verbosity >= 1) logprintf(mystuff, "  previous work took %llu ms\n\n", mystuff->stats.bit_level_time);
+      else                        logprintf(mystuff, "\n");
       cur_class++; // the checkpoint contains the last completely processed class!
 
 /* calculate the number of classes which are already processed. This value is needed to estimate ETA */
@@ -666,7 +679,7 @@ other return value
    we can be sure that if RET_QUIT is returned the last class hasn't
    finished. The signal handler which sets mystuff->quit not active during
    selftests so we need to check for RET_QUIT only when doing real work. */
-        if(mystuff->printmode == 1)printf("\n");
+        if(mystuff->printmode == 1)logprintf(mystuff, "\n");
         return RET_QUIT;
       }
       else
@@ -683,7 +696,7 @@ other return value
           }
           else
           {
-            printf("ERROR: Unknown GPU sieve kernel selected (%d)!\n", use_kernel);  return RET_ERROR;
+            logprintf(mystuff, "ERROR: Unknown GPU sieve kernel selected (%d)!\n", use_kernel);  return RET_ERROR;
           }
         }
         else
@@ -695,13 +708,13 @@ other return value
           }
           else
           {
-            printf("ERROR: Unknown kernel selected (%d)!\n", use_kernel);  return RET_ERROR;
+            logprintf(mystuff, "ERROR: Unknown kernel selected (%d)!\n", use_kernel);  return RET_ERROR;
           }
         }
 
         if (numfactors == RET_ERROR)
         {
-          printf("ERROR from tf_class.\n");
+          logprintf(mystuff, "ERROR from tf_class.\n");
           return RET_ERROR;
         }
         factorsfound+=numfactors;
@@ -729,7 +742,7 @@ other return value
                  ((mystuff->checkpoints == 1) && (now - time_last_checkpoint > (time_t) mystuff->checkpointdelay)) ||
                    mystuff->quit )
             {
-              checkpoint_write(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, cur_class, factorsfound);
+              checkpoint_write(mystuff->exponent, mystuff->bit_min, mystuff->bit_max_stage, cur_class, factorsfound, mystuff->factors_string, mystuff->stats.bit_level_time);
               do_checkpoint = mystuff->checkpoints;
               time_last_checkpoint = now;
             }
@@ -740,7 +753,7 @@ other return value
       fflush(NULL);
     }
   }
-  if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->printmode == 1)printf("\n");
+  if(mystuff->mode != MODE_SELFTEST_SHORT && mystuff->printmode == 1)logprintf(mystuff, "\n");
   print_result_line(mystuff, factorsfound);
 
   if(mystuff->mode == MODE_NORMAL)
@@ -753,8 +766,8 @@ other return value
     if (mystuff->h_RES[0] == 0)
     {
         // the extra spaces are used to clear the #'s
-        printf("ERROR: self-test failed for M%u (%s)     \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
-        printf("  no factor found\n");
+        logprintf(mystuff, "ERROR: self-test failed for M%u (%s)     \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+        logprintf(mystuff, "  no factor found\n");
         retval = 1;
     }
     else // mystuff->h_RES[0] > 0
@@ -815,23 +828,23 @@ k_max and k_min are used as 64bit temporary integers here...
 #ifdef _MSC_VER
           // avoid warning C33010 in Visual Studio; this should not be reachable
           if (use_kernel < AUTOSELECT_KERNEL || use_kernel > UNKNOWN_GS_KERNEL) {
-              printf("ERROR: kernel out of range in tf()");
+              logprintf(mystuff, "ERROR: kernel out of range in tf()");
               return RET_QUIT;
           }
 #endif
           // the extra spaces are used to clear the #'s
-          printf("ERROR: self-test failed for M%u (%s)     \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
-          printf("  expected result: %08X %08X %08X\n", f_hi, f_med, f_low);
+          logprintf(mystuff, "ERROR: self-test failed for M%u (%s)     \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+          logprintf(mystuff, "  expected result: %08X %08X %08X\n", f_hi, f_med, f_low);
           for (i=0; (i < mystuff->h_RES[0]) && (i < 10); i++)
           {
-              printf("  reported result: %08X %08X %08X\n", mystuff->h_RES[i*3 + 1], mystuff->h_RES[i*3 + 2], mystuff->h_RES[i*3 + 3]);
+              logprintf(mystuff, "  reported result: %08X %08X %08X\n", mystuff->h_RES[i*3 + 1], mystuff->h_RES[i*3 + 2], mystuff->h_RES[i*3 + 3]);
           }
           retval = 2;
       }
       else
       {
           if (mystuff->mode != MODE_SELFTEST_SHORT) {
-              printf("self-test for M%u passed (%s)!            \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
+              logprintf(mystuff, "self-test for M%u passed (%s)!            \n", mystuff->exponent, kernel_info[use_kernel].kernelname);
           }
       }
     }
@@ -842,26 +855,26 @@ k_max and k_min are used as 64bit temporary integers here...
     time_run = timer_diff(&timer)/1000;
     time_est = time_run;
 
-    if(restart == 0)printf("tf(): total time spent: ");
-    else            printf("tf(): time spent since restart:   ");
+    if(restart == 0)logprintf(mystuff, "tf(): total time spent: ");
+    else            logprintf(mystuff, "tf(): time spent since restart:   ");
 
 /*  restart == 0 ==> time_est = time_run */
 
-    if(time_run > 86400000ULL)printf("%" PRIu64 "d ",   time_run / 86400000ULL);
-    if(time_run > 3600000ULL) printf("%2" PRIu64 "h ", (time_run /  3600000ULL) % 24ULL);
-    if(time_run > 60000ULL)   printf("%2" PRIu64 "m ", (time_run /    60000ULL) % 60ULL);
-    printf("%2" PRIu64 ".%03" PRIu64 "s", (time_run / 1000ULL) % 60ULL, time_run % 1000ULL);
+    if(time_run > 86400000ULL)logprintf(mystuff, "%" PRIu64 "d ",   time_run / 86400000ULL);
+    if(time_run > 3600000ULL) logprintf(mystuff, "%2" PRIu64 "h ", (time_run /  3600000ULL) % 24ULL);
+    if(time_run > 60000ULL)   logprintf(mystuff, "%2" PRIu64 "m ", (time_run /    60000ULL) % 60ULL);
+    logprintf(mystuff, "%2" PRIu64 ".%03" PRIu64 "s", (time_run / 1000ULL) % 60ULL, time_run % 1000ULL);
     if(restart != 0)
     {
       time_est = (time_run * mystuff->stats.class_counter ) / (cl_ulong)(mystuff->stats.class_counter-restart);
-      printf("\n      estimated total time spent: ");
-      if(time_est > 86400000ULL)printf("%" PRIu64 "d ",   time_est / 86400000ULL);
-      if(time_est > 3600000ULL) printf("%2" PRIu64 "h ", (time_est /  3600000ULL) % 24ULL);
-      if(time_est > 60000ULL)   printf("%2" PRIu64 "m ", (time_est /    60000ULL) % 60ULL);
-      printf("%2" PRIu64 ".%03" PRIu64 "s", (time_est / 1000ULL) % 60ULL, time_est % 1000ULL);
+      logprintf(mystuff, "\n      estimated total time spent: ");
+      if(time_est > 86400000ULL)logprintf(mystuff, "%" PRIu64 "d ",   time_est / 86400000ULL);
+      if(time_est > 3600000ULL) logprintf(mystuff, "%2" PRIu64 "h ", (time_est /  3600000ULL) % 24ULL);
+      if(time_est > 60000ULL)   logprintf(mystuff, "%2" PRIu64 "m ", (time_est /    60000ULL) % 60ULL);
+      logprintf(mystuff, "%2" PRIu64 ".%03" PRIu64 "s", (time_est / 1000ULL) % 60ULL, time_est % 1000ULL);
     }
-    if(mystuff->mode == MODE_NORMAL) printf(" (%.2f GHz-days / day)", mystuff->stats.ghzdays * 86400000.0 / (double) time_est);
-    printf("\n\n");
+    if(mystuff->mode == MODE_NORMAL) logprintf(mystuff, " (%.2f GHz-days / day)", mystuff->stats.ghzdays * 86400000.0 / (double) time_est);
+    logprintf(mystuff, "\n\n");
   }
   return retval;
 }
@@ -908,7 +921,7 @@ RET_ERROR we might have a serios problem
       if (i < (sizeof(index)/sizeof(index[0])))
       {
         ind = index[i];
-        printf("######### test case %d/%d (M%u[%d-%d]) #########\r",
+        logprintf(mystuff, "######### test case %d/%d (M%u[%d-%d]) #########\r",
           i+1, (int) (sizeof(index)/sizeof(index[0])), st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
       }
       else
@@ -917,7 +930,7 @@ RET_ERROR we might have a serios problem
     else // treat type <> 1 as full test
     {
       ind = i;
-      printf("######### test case %d/%d (M%u[%d-%d]) #########\n",
+      logprintf(mystuff, "######### test case %d/%d (M%u[%d-%d]) #########\n",
         i+1, total_selftests, st_data[ind].exp, st_data[ind].bit_min, st_data[ind].bit_min + 1);
     }
     f_class = (int)(st_data[ind].k % mystuff->num_classes);
@@ -983,33 +996,33 @@ RET_ERROR we might have a serios problem
       else if(tf_res == RET_ERROR) return RET_ERROR; /* bail out, we might have a serios problem */
       else           st_unknown++;
 #ifdef DETAILED_INFO
-      printf("Test %d finished, so far suc: %d, no: %d, wr: %d, unk: %d\n", num_selftests, st_success, st_nofactor, st_wrongfactor, st_unknown);
+      logprintf(mystuff, "Test %d finished, so far suc: %d, no: %d, wr: %d, unk: %d\n", num_selftests, st_success, st_nofactor, st_wrongfactor, st_unknown);
 #endif
       if (mystuff->quit) break;
     }
     if (mystuff->quit) break;
   }
 
-  printf("                                                          \n");
-  printf("Self-test statistics\n");
-  printf("  number of tests           %d\n", num_selftests);
-  printf("  successful tests          %d\n", st_success);
-  if(st_nofactor > 0)   printf("  no factor found           %d\n", st_nofactor);
-  if(st_wrongfactor > 0)printf("  wrong factor reported     %d\n", st_wrongfactor);
-  if(st_unknown > 0)    printf("  unknown return value      %d\n", st_unknown);
-  printf("\n");
+  logprintf(mystuff, "\n");
+  logprintf(mystuff, "Self-test statistics\n");
+  logprintf(mystuff, "  number of tests           %d\n", num_selftests);
+  logprintf(mystuff, "  successful tests          %d\n", st_success);
+  if(st_nofactor > 0)   logprintf(mystuff, "  no factor found           %d\n", st_nofactor);
+  if(st_wrongfactor > 0)logprintf(mystuff, "  wrong factor reported     %d\n", st_wrongfactor);
+  if(st_unknown > 0)    logprintf(mystuff, "  unknown return value      %d\n", st_unknown);
+  logprintf(mystuff, "\n");
 
   // restore SievePrimes ini value
   mystuff->sieve_primes = sieve_primes_save;
 
   if(st_success == num_selftests)
   {
-    printf("self-test PASSED!\n\n");
+    logprintf(mystuff, "self-test PASSED!\n\n");
     retval=0;
   }
   else
   {
-    printf("self-test FAILED!\n\n");
+    logprintf(mystuff, "self-test FAILED!\n\n");
   }
   mystuff->verbosity = verbosity_save;
   return retval;
@@ -1026,6 +1039,7 @@ int main(int argc, char **argv)
   char *ptr;
   int use_worktodo = 1;
 
+  //memset(&mystuff, 0, sizeof(mystuff));
   mystuff.mode = MODE_NORMAL;
   mystuff.quit = 0;
   mystuff.verbosity = 1;
@@ -1033,6 +1047,8 @@ int main(int argc, char **argv)
   mystuff.bit_min = -1;
   mystuff.bit_max_assignment = -1;
   mystuff.bit_max_stage = -1;
+  mystuff.logging = -1;
+  mystuff.logfileptr = NULL;
   mystuff.gpu_sieving = 0;
   /* GPU sieve size in bits. Default is 64 Mib. */
   mystuff.gpu_sieve_size = GPU_SIEVE_SIZE_DEFAULT * 1024 * 1024;
@@ -1041,7 +1057,19 @@ int main(int argc, char **argv)
   strcpy(mystuff.inifile, "mfakto.ini");
   mystuff.force_rebuild = 0;
 
-  printf("%s (%d-bit build)\n\n", MFAKTO_VERSION, (int)(sizeof(void*)*8));
+
+  // need to see if we should log all the output before all of the other preamble
+  my_read_int(mystuff.inifile, "Logging", &(mystuff.logging));
+  if (mystuff.logging == 1 && mystuff.logfileptr == NULL)
+  {
+      if (my_read_string(mystuff.inifile, "LogFile", mystuff.logfile, 50))
+      {
+          sprintf(mystuff.logfile, "mfakto.log");
+      }
+      mystuff.logfileptr = fopen(mystuff.logfile, "a");
+  }
+
+  logprintf(&mystuff, "%s (%d-bit build)\n\n", MFAKTO_VERSION, (int)(sizeof(void*)*8));
 
   while(i<argc)
   {
@@ -1055,20 +1083,20 @@ int main(int argc, char **argv)
     {
       if(i+1 >= argc)
       {
-        printf("ERROR: no verbosity level specified for option \"-v\"\n");
+        logprintf(&mystuff, "ERROR: no verbosity level specified for option \"-v\"\n");
         return ERR_PARAM;
       }
       tmp = (int)strtol(argv[i+1], &ptr, 10);
       if(*ptr || errno || tmp != strtol(argv[i+1], &ptr, 10) )
       {
-        printf("ERROR: can't parse verbosity level for option \"-v\"\n");
+        logprintf(&mystuff, "ERROR: can't parse verbosity level for option \"-v\"\n");
         return ERR_PARAM;
       }
       i++;
 
       if(tmp < 0)
       {
-        printf("WARNING: minimum verbosity level is 0\n");
+        logprintf(&mystuff, "WARNING: minimum verbosity level is 0\n");
         tmp = 0;
       }
 
@@ -1079,7 +1107,7 @@ int main(int argc, char **argv)
     {
       if(i+1 >= argc)
       {
-        printf("ERROR: no device number specified for option \"-d\"\n");
+        logprintf(&mystuff, "ERROR: no device number specified for option \"-d\"\n");
         return ERR_PARAM;
       }
       if (argv[i+1][0] == 'c')  // run on CPU
@@ -1095,7 +1123,7 @@ int main(int argc, char **argv)
         devicenumber = strtol(argv[i+1],&ptr,10);
         if(*ptr || errno || devicenumber != strtol(argv[i+1],&ptr,10) )
         {
-          printf("ERROR: can't parse <device number> for option \"-d\"\n");
+          logprintf(&mystuff, "ERROR: can't parse <device number> for option \"-d\"\n");
           return ERR_PARAM;
 	      }
       }
@@ -1105,25 +1133,25 @@ int main(int argc, char **argv)
     {
       if(i+3 >= argc)
       {
-        printf("ERROR: missing parameters for option \"-tf\"\n");
+        logprintf(&mystuff, "ERROR: missing parameters for option \"-tf\"\n");
         return ERR_PARAM;
       }
       exponent = strtoul(argv[i+1],&ptr,10);
       if (*ptr || errno || exponent != strtoul(argv[i+1],&ptr,10))
       {
-        printf("ERROR: can't parse parameter <exp> for option \"-tf\"\n");
+        logprintf(&mystuff, "ERROR: can't parse parameter <exp> for option \"-tf\"\n");
         return ERR_PARAM;
       }
       bit_min = strtol(argv[i+2],&ptr,10);
       if(*ptr || errno || bit_min != strtol(argv[i+2],&ptr,10) )
       {
-        printf("ERROR: can't parse parameter <min> for option \"-tf\"\n");
+        logprintf(&mystuff, "ERROR: can't parse parameter <min> for option \"-tf\"\n");
         return ERR_PARAM;
       }
       bit_max = strtol(argv[i+3],&ptr,10);
       if(*ptr || errno || bit_max != strtol(argv[i+3],&ptr,10) )
       {
-        printf("ERROR: can't parse parameter <max> for option \"-tf\"\n");
+        logprintf(&mystuff, "ERROR: can't parse parameter <max> for option \"-tf\"\n");
         return ERR_PARAM;
       }
       use_worktodo = 0;
@@ -1143,7 +1171,7 @@ int main(int argc, char **argv)
       i++;
       if (i >= argc)
       {
-        printf("ERROR: missing parameters for option \"-i <inifile>\".\n");
+        logprintf(&mystuff, "ERROR: missing parameters for option \"-i <inifile>\".\n");
         return ERR_PARAM;
       }
       strncpy(mystuff.inifile, argv[i], 50);
@@ -1206,53 +1234,53 @@ int main(int argc, char **argv)
 /* print current configuration */
   if(mystuff.verbosity >= 1)
   {
-    printf("Compile-time options\n");
+    logprintf(&mystuff, "Compile-time options\n");
     if (mystuff.gpu_sieving == 0)
     {
 #ifdef SIEVE_SIZE_LIMIT
-      printf("  SIEVE_SIZE_LIMIT          %d kiB\n", SIEVE_SIZE_LIMIT);
-      printf("  SIEVE_SIZE                %d bits\n", SIEVE_SIZE);
+      logprintf(&mystuff, "  SIEVE_SIZE_LIMIT          %d kiB\n", SIEVE_SIZE_LIMIT);
+      logprintf(&mystuff, "  SIEVE_SIZE                %d bits\n", SIEVE_SIZE);
 #endif
-      printf("  SIEVE_SPLIT               %d\n", SIEVE_SPLIT);
+      logprintf(&mystuff, "  SIEVE_SPLIT               %d\n", SIEVE_SPLIT);
     }
   }
   if(mystuff.gpu_sieving == 0 && SIEVE_SPLIT > mystuff.sieve_primes_min)
   {
-    printf("ERROR: SIEVE_SPLIT must be <= SievePrimesMin\n");
+    logprintf(&mystuff, "ERROR: SIEVE_SPLIT must be <= SievePrimesMin\n");
     return ERR_PARAM;
   }
   if(mystuff.verbosity >= 1)
   {
 #ifdef USE_DEVICE_PRINTF
-    printf("  USE_DEVICE_PRINTF         enabled (DEBUG option)\n");
+    logprintf(&mystuff, "  USE_DEVICE_PRINTF         enabled (DEBUG option)\n");
 #endif
 #ifdef CHECKS_MODBASECASE
-    printf("  CHECKS_MODBASECASE        enabled (DEBUG option)\n");
+    logprintf(&mystuff, "  CHECKS_MODBASECASE        enabled (DEBUG option)\n");
 #endif
 #ifdef DEBUG_STREAM_SCHEDULE
-    printf("  DEBUG_STREAM_SCHEDULE     enabled (DEBUG option)\n");
+    logprintf(&mystuff, "  DEBUG_STREAM_SCHEDULE     enabled (DEBUG option)\n");
 #endif
 #ifdef DEBUG_STREAM_SCHEDULE_CHECK
-    printf("  DEBUG_STREAM_SCHEDULE_CHECK\n                            enabled (DEBUG option)\n");
+    logprintf(&mystuff, "  DEBUG_STREAM_SCHEDULE_CHECK\n                            enabled (DEBUG option)\n");
 #endif
 #ifdef DEBUG_FACTOR_FIRST
-    printf("  DEBUG_FACTOR_FIRST        enabled (DEBUG option)\n");
+    logprintf(&mystuff, "  DEBUG_FACTOR_FIRST        enabled (DEBUG option)\n");
 #endif
 #ifdef RAW_GPU_BENCH
-    printf("  RAW_GPU_BENCH             enabled (DEBUG option)\n");
+    logprintf(&mystuff, "  RAW_GPU_BENCH             enabled (DEBUG option)\n");
 #endif
 #ifdef DETAILED_INFO
-    printf("  DETAILED_INFO             enabled (DEBUG option)\n");
+    logprintf(&mystuff, "  DETAILED_INFO             enabled (DEBUG option)\n");
 #endif
 #ifdef CL_PERFORMANCE_INFO
-    printf("  CL_PERFORMANCE_INFO       enabled (DEBUG option)\n");
+    logprintf(mystuff, "  CL_PERFORMANCE_INFO       enabled (DEBUG option)\n");
 #endif
-    printf("\n");
+    logprintf(&mystuff, "\n");
   }
 
   if(init_CL(mystuff.num_streams, &devicenumber)!=CL_SUCCESS)
   {
-    printf("ERROR: init_CL(%d, %d) failed\n", mystuff.num_streams, devicenumber);
+    logprintf(&mystuff, "ERROR: init_CL(%d, %d) failed\n", mystuff.num_streams, devicenumber);
     return ERR_INIT;
   }
 
@@ -1280,20 +1308,20 @@ int main(int argc, char **argv)
     mystuff.threads_per_grid = 256;
     if (mystuff.threads_per_grid > deviceinfo.maxThreadsPerGrid)
     {
-      printf("ERROR: device only supports %u threads per grid. A minimum of 256 is required for GPU sieving.\n", (unsigned int) deviceinfo.maxThreadsPerGrid);
+      logprintf(&mystuff, "ERROR: device only supports %u threads per grid. A minimum of 256 is required for GPU sieving.\n", (unsigned int) deviceinfo.maxThreadsPerGrid);
       return ERR_MEM;
     }
   }
 
   if (load_kernels(&devicenumber)!=CL_SUCCESS)
   {
-    printf("ERROR: load_kernels(%d) failed\n", devicenumber);
+    logprintf(&mystuff, "ERROR: load_kernels(%d) failed\n", devicenumber);
     return ERR_INIT;
   }
 
   if (init_CLstreams(0))
   {
-    printf("ERROR: init_CLstreams (malloc buffers?) failed\n");
+    logprintf(&mystuff, "ERROR: init_CLstreams (malloc buffers?) failed\n");
     return ERR_MEM;
   }
   if (mystuff.gpu_sieving == 0)
@@ -1326,7 +1354,7 @@ int main(int argc, char **argv)
 
 /* before we start real work run a small selftest */
     mystuff.mode = MODE_SELFTEST_SHORT;
-    if(mystuff.verbosity >= 1) printf("Started a simple self-test ...\n");
+    if(mystuff.verbosity >= 1) logprintf(&mystuff, "Started a simple self-test ...\n");
     if (selftest(&mystuff, MODE_SELFTEST_SHORT) != 0) return ERR_SELFTEST; /* selftest failed :( */
     mystuff.mode = MODE_NORMAL;
     /* allow for ^C */
@@ -1345,7 +1373,7 @@ int main(int argc, char **argv)
 
       if (parse_ret == OK)
       {
-        if(mystuff.verbosity >= 1)printf("got assignment: exp=%u bit_min=%d bit_max=%d (%.2f GHz-days)\n", mystuff.exponent, mystuff.bit_min, mystuff.bit_max_assignment, primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_max_assignment));
+        if(mystuff.verbosity >= 1)logprintf(&mystuff, "got assignment: exp=%u bit_min=%d bit_max=%d (%.2f GHz-days)\n", mystuff.exponent, mystuff.bit_min, mystuff.bit_max_assignment, primenet_ghzdays(mystuff.exponent, mystuff.bit_min, mystuff.bit_max_assignment));
 
         mystuff.bit_max_stage = mystuff.bit_max_assignment;
 
@@ -1355,18 +1383,18 @@ int main(int argc, char **argv)
           if(mystuff.sieve_primes > mystuff.sieve_primes_upper_limit)
           {
             mystuff.sieve_primes = mystuff.sieve_primes_upper_limit;
-            printf("WARNING: SievePrimes is too big for the current assignment, lowering to %u\n", mystuff.sieve_primes_upper_limit);
-            printf("         It is not allowed to sieve primes which are equal or bigger than the \n");
-            printf("         exponent itself!\n");
+            logprintf(&mystuff, "WARNING: SievePrimes is too big for the current assignment, lowering to %u\n", mystuff.sieve_primes_upper_limit);
+            logprintf(&mystuff, "         It is not allowed to sieve primes which are equal or bigger than the \n");
+            logprintf(&mystuff, "         exponent itself!\n");
           }
         }
         else
         {
           if (mystuff.exponent < mystuff.gpu_sieve_min_exp)
           {
-            printf("WARNING: SievePrimes is too big for the current assignment, adjusting\n");
-            printf("         It is not allowed to sieve primes which are equal or bigger than the \n");
-            printf("         exponent itself.\n");
+            logprintf(&mystuff, "WARNING: SievePrimes is too big for the current assignment, adjusting\n");
+            logprintf(&mystuff, "         It is not allowed to sieve primes which are equal or bigger than the \n");
+            logprintf(&mystuff, "         exponent itself.\n");
             gpusieve_free(&mystuff);
             init_CLstreams(1);
           }
@@ -1394,11 +1422,11 @@ int main(int argc, char **argv)
               if(mystuff.bit_max_stage == mystuff.bit_max_assignment)parse_ret = clear_assignment(mystuff.workfile, mystuff.exponent, mystuff.bit_min, mystuff.bit_max_assignment, 0);
               else                                                   parse_ret = clear_assignment(mystuff.workfile, mystuff.exponent, mystuff.bit_min, mystuff.bit_max_assignment, mystuff.bit_max_stage);
 
-                   if(parse_ret == CANT_OPEN_WORKFILE)   printf("ERROR: clear_assignment() / modify_assignment(): can't open \"%s\"\n", mystuff.workfile);
-              else if(parse_ret == CANT_OPEN_TEMPFILE)   printf("ERROR: clear_assignment() / modify_assignment(): can't open \"__worktodo__.tmp\"\n");
-              else if(parse_ret == ASSIGNMENT_NOT_FOUND) printf("ERROR: clear_assignment() / modify_assignment(): assignment not found in \"%s\"\n", mystuff.workfile);
-              else if(parse_ret == CANT_RENAME)          printf("ERROR: clear_assignment() / modify_assignment(): can't rename workfiles\n");
-              else if(parse_ret != OK)                   printf("ERROR: clear_assignment() / modify_assignment(): Unknown error (%d)\n", parse_ret);
+                   if(parse_ret == CANT_OPEN_WORKFILE)   logprintf(&mystuff, "ERROR: clear_assignment() / modify_assignment(): can't open \"%s\"\n", mystuff.workfile);
+              else if(parse_ret == CANT_OPEN_TEMPFILE)   logprintf(&mystuff, "ERROR: clear_assignment() / modify_assignment(): can't open \"__worktodo__.tmp\"\n");
+              else if(parse_ret == ASSIGNMENT_NOT_FOUND) logprintf(&mystuff, "ERROR: clear_assignment() / modify_assignment(): assignment not found in \"%s\"\n", mystuff.workfile);
+              else if(parse_ret == CANT_RENAME)          logprintf(&mystuff, "ERROR: clear_assignment() / modify_assignment(): can't rename workfiles\n");
+              else if(parse_ret != OK)                   logprintf(&mystuff, "ERROR: clear_assignment() / modify_assignment(): Unknown error (%d)\n", parse_ret);
             }
 
             mystuff.bit_min = mystuff.bit_max_stage;
@@ -1406,9 +1434,9 @@ int main(int argc, char **argv)
           }
         }
       }
-      else if(parse_ret == CANT_OPEN_FILE)             printf("ERROR: get_next_assignment(): can't open \"%s\"\n", mystuff.workfile);
-      else if(parse_ret == VALID_ASSIGNMENT_NOT_FOUND) printf("ERROR: get_next_assignment(): no valid assignment found in \"%s\"\n", mystuff.workfile);
-      else if(parse_ret != OK)                         printf("ERROR: get_next_assignment(): Unknown error (%d)\n", parse_ret);
+      else if(parse_ret == CANT_OPEN_FILE)             logprintf(&mystuff, "ERROR: get_next_assignment(): can't open \"%s\"\n", mystuff.workfile);
+      else if(parse_ret == VALID_ASSIGNMENT_NOT_FOUND) logprintf(&mystuff, "ERROR: get_next_assignment(): no valid assignment found in \"%s\"\n", mystuff.workfile);
+      else if(parse_ret != OK)                         logprintf(&mystuff, "ERROR: get_next_assignment(): Unknown error (%d)\n", parse_ret);
     }
     while(parse_ret == OK && use_worktodo && !mystuff.quit);
   }
