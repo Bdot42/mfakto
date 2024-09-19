@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  Linux:
+    name: Linux
+    runs-on: ubuntu-24.04
+    env:
+      CC: gcc
+      CPP: g++
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y ocl-icd-opencl-dev pocl-opencl-icd
+    - name: Build
+      run: |
+        make -C src -O -j "$(nproc)" CC=${CC} CPP=${CPP}
+    - name: Test
+      run: |
+        ./mfakto -d 11
+
+  WindowsMSVC:
+    name: Windows MSVC
+    runs-on: windows-2022
+    env:
+      OCL_ROOT: "OpenCL-SDK-v2024.05.08-Win-x64"
+      OCL_URL: https://github.com/KhronosGroup/OpenCL-SDK/releases/download/v2024.05.08/OpenCL-SDK-v2024.05.08-Win-x64.zip
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Setup
+      run: |
+        Invoke-WebRequest $env:OCL_URL -OutFile OpenCL-SDK.zip
+        unzip OpenCL-SDK.zip
+        mkdir $env:OCL_ROOT\lib\x86_64
+        cp $env:OCL_ROOT\lib\*.lib $env:OCL_ROOT\lib\x86_64
+    - name: Build
+      run: |
+        msbuild mfaktoVS12.vcxproj /property:OCL_ROOT="$env:OCL_ROOT"
+
+  WindowsMSYS2:
+    name: Windows MSYS2
+    runs-on: windows-2022
+    env:
+      CC: gcc
+      CPP: g++
+    steps:
+    - uses: actions/checkout@v4
+    - name: Path Setup
+      run: |
+        echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        echo "C:\msys64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Setup
+      run: |
+        pacman -S --needed --noconfirm mingw-w64-x86_64-opencl-icd mingw-w64-x86_64-opencl-headers
+    - name: Build
+      run: |
+        make -C src -O -j $env:NUMBER_OF_PROCESSORS CC=$env:CC CPP=$env:CPP AMD_APP_INCLUDE="-IC:\msys64\mingw64\include" AMD_APP_LIB="-LC:\msys64\mingw64\lib"
+
+  MacOS:
+    name: MacOS
+    runs-on: macos-13
+    env:
+      CC: gcc
+      CPP: g++
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup
+      run: |
+        brew install pocl
+    - name: Build
+      run: |
+        make -C src -f Makefile.macOS -j "$(sysctl -n hw.ncpu)" CC=${CC} CPP=${CPP} CFLAGS="$(pkg-config --cflags pocl)" LDFLAGS="$(pkg-config --libs pocl)"
+    - name: Test
+      run: |
+        ./mfakto -d 11
