@@ -733,13 +733,6 @@ void set_gpu_type()
     }
   }
 
-  if (mystuff.vectorsize == 1 && mystuff.gpu_type < GPU_CPU)
-  {
-    printf("WARNING: VectorSize=1 is known to fail on AMD GPUs and drivers. "
-           "If the selftest fails, please increase VectorSize to 2 at least. "
-           "See http://community.amd.com/thread/167571 for latest news about this issue.");
-  }
-
   if (((mystuff.gpu_type >= GPU_GCN) && (mystuff.gpu_type <= GPU_GCN3)) && (mystuff.vectorsize > 3))
   {
     printf("\nWARNING: Your GPU was detected as GCN (Graphics Core Next). "
