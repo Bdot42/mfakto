@@ -151,10 +151,9 @@ typedef struct _int180_v
 #define CONVERT_ULONG_V convert_ulong
 // AS_UINT is applied only to logical results. For vector operations, these are 0 (false) or -1 (true)
 // For scalar operations, they result in 0 (false) or 1 (true) ==> to unify, negate here
-#define AS_INT_V(x) as_int((x)?-1:0)
-#define AS_LONG_V(x) as_long((x)?-1:0)
-#define AS_UINT_V(x) as_uint((x)?-1:0)
-#define AS_ULONG_V(x) as_ulong((x)?-1:0)
+inline uint AS_UINT_V(bool x) {
+  return 0U - x;
+}
 // to unify printf's:
 #define V(x) x
 #else
@@ -213,10 +212,13 @@ typedef struct _int180_v
 #define CONVERT_DOUBLE_RTP_V CONC(convert_double,VECTOR_SIZE)
 #define CONVERT_UINT_V CONC(convert_uint,VECTOR_SIZE)
 #define CONVERT_ULONG_V CONC(convert_ulong,VECTOR_SIZE)
-#define AS_INT_V CONC(as_int,VECTOR_SIZE)
-#define AS_LONG_V CONC(as_long,VECTOR_SIZE)
-#define AS_UINT_V CONC(as_uint,VECTOR_SIZE)
-#define AS_ULONG_V CONC(as_ulong,VECTOR_SIZE)
+// AS_UINT_V should only be used on the results of vector operations that would
+// return bool for scalars.
+// The resulting vector contains -1 for true and 0 for false.
+//#define AS_UINT_V(x) CONC(as_uint,VECTOR_SIZE)(x)
+inline uint_v AS_UINT_V(int_v x) {
+  return CONC(as_uint,VECTOR_SIZE)(x);
+}
 // to unify printf's:
 #define V(x) x.s0
 #endif
@@ -224,16 +226,8 @@ typedef struct _int180_v
 // define to efficiently handle carry/borrow
 // ADD_COND returns val+1 if cond is true, otherwise val
 // SUB_COND returns val-1 if cond is true, otherwise val
-#if defined VLIW4 || defined VLIW5
-// VLIW4/5 native instructions already return -1 on vector "true": use it directly
 #define ADD_COND(val, cond) (val - AS_UINT_V(cond))
 #define SUB_COND(val, cond) (val + AS_UINT_V(cond))
-#else
-// GCN (and others) don't really know vectors and return 1 for "true" in their native instructions
-// use this define to allow the optimizer to circumvent the OpenCL convention to return -1
-#define ADD_COND(val, cond) (val + AS_UINT_V((cond) ? 1 : 0))
-#define SUB_COND(val, cond) (val - AS_UINT_V((cond) ? 1 : 0))
-#endif
 
 #define CONVERT_FLOAT convert_float
 #define CONVERT_FLOAT_RTP convert_float
